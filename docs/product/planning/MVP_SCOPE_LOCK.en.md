@@ -15,6 +15,7 @@ The goal is to validate real value with non-technical users, with focus on:
 - the user should not build strategy logic from scratch
 - `stop loss` and `take profit` are mandatory in all presets
 - the interface must not expose JSON, technical contracts, or raw logic
+- the interface must be English-first and i18n-ready from day one
 - any change outside this scope must be reviewed before implementation
 
 ## Frozen MVP Scope
@@ -143,6 +144,7 @@ The scope is considered locked when:
 
 ### Context and goal
 Deliver a simple, clear, and demoable web MVP for Pacifica.
+- See the executable breakdown in [MVP_HANDOFF_PACK.en.md](./MVP_HANDOFF_PACK.en.md).
 
 ### Scope of this task
 Implement only what is listed in the frozen scope above.

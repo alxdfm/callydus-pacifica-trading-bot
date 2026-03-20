@@ -15,6 +15,7 @@ O objetivo é validar valor real com usuários não técnicos, com foco em:
 - o usuário não deve montar lógica de estratégia do zero
 - `stop loss` e `take profit` são obrigatórios em todos os presets
 - a interface não deve expor JSON, contrato técnico ou lógica bruta
+- a interface deve nascer em inglês e preparada para i18n desde o início
 - qualquer mudança fora deste escopo deve ser consultada antes da implementação
 
 ## Escopo Fechado do MVP
@@ -143,6 +144,7 @@ O escopo está fechado quando:
 
 ### Contexto e objetivo
 Entregar um MVP web simples, claro e demonstrável para a Pacifica.
+- Ver o detalhamento executável em [MVP_HANDOFF_PACK.pt-BR.md](./MVP_HANDOFF_PACK.pt-BR.md).
 
 ### Escopo desta task
 Implementar apenas o que está listado no escopo fechado acima.

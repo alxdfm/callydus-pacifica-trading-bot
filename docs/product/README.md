@@ -50,6 +50,7 @@ Execution planning, epics, and role-based task breakdowns.
 - [Onboarding acceptance criteria](./quality/PRODUCT_ONBOARDING_ACCEPTANCE_CRITERIA.en.md)
 
 ### Execution planning
+- [MVP handoff pack](./planning/MVP_HANDOFF_PACK.en.md)
 - [MVP scope lock](./planning/MVP_SCOPE_LOCK.en.md)
 - [MVP epics and tasks](./planning/PRODUCT_EPICS_AND_TASKS.en.md)
 - [MVP design tasks and deliverables](./planning/PRODUCT_DESIGN_TASKS_AND_DELIVERABLES.en.md)
@@ -76,8 +77,10 @@ Execution planning, epics, and role-based task breakdowns.
 - without completed onboarding, the Dashboard must stay locked
 - the MVP interface must not expose JSON or technical logic
 - any change outside the MVP scope lock must be consulted before implementation
+- the product must be primarily English and built with i18n from day one
 
 ## Language Convention
+- the product UI is English-first and must support i18n
 - English documents: `*.en.md`
 - Portuguese documents: `*.pt-BR.md`
 
