@@ -26,7 +26,7 @@ O usuário escolhe um preset com base no estilo de operação e ajusta apenas o 
 - parâmetros editáveis
 - observação de validação
 
-## Preset 1: Conservador
+## Preset 1: Mais seguro
 ### Objetivo
 Buscar entradas mais seletivas, com menor frequência e maior proteção.
 
@@ -56,7 +56,7 @@ Buscar entradas mais seletivas, com menor frequência e maior proteção.
 - quando a prioridade é proteção
 - quando o produto precisa de uma narrativa mais segura
 
-## Preset 2: Médio
+## Preset 2: Equilibrado
 ### Objetivo
 Equilibrar frequência de operações e filtragem de sinais.
 
@@ -87,7 +87,7 @@ Equilibrar frequência de operações e filtragem de sinais.
 - quando a demo precisa mostrar mais atividade
 - quando queremos um preset com bom equilíbrio narrativo
 
-## Preset 3: Neutro
+## Preset 3: Mais ativo
 ### Objetivo
 Aumentar a frequência de oportunidades com regras mais abertas, sem prometer agressividade.
 

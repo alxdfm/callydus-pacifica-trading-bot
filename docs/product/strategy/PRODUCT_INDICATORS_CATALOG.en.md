@@ -42,9 +42,9 @@ Freeze the set of indicators allowed in the MVP so presets remain simple, the co
 - the future interface can hide details, but should not change the base vocabulary
 
 ## Relationship to Presets
-- Conservative: `emaFast`, `emaSlow`, `rsi`, `atr`
-- Medium: `emaFast`, `emaSlow`, `rsi`, `volume`, `volumeSma`, `atr`
-- Neutral: `volume`, `volumeSma`, `rsi`, `emaFast`, `emaSlow`, `atr`
+- Safer: `emaFast`, `emaSlow`, `rsi`, `atr`
+- Balanced: `emaFast`, `emaSlow`, `rsi`, `volume`, `volumeSma`, `atr`
+- More active: `volume`, `volumeSma`, `rsi`, `emaFast`, `emaSlow`, `atr`
 
 ## Out of MVP
 - MACD

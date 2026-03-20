@@ -56,7 +56,7 @@ Permitir escolha, revisão e ativação do preset.
 
 ### Entregáveis da Sprint
 - tela de presets funcional
-- cards finais de `Conservador`, `Médio` e `Neutro`
+- cards finais de `Mais seguro`, `Equilibrado` e `Mais ativo`
 - comparação curta entre presets
 - painel de revisão do preset selecionado
 - ativação do preset

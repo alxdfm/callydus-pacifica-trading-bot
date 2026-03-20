@@ -13,7 +13,7 @@ Deliver the complete experience of choosing, comparing, reviewing, and activatin
 ## Final Sprint Deliverables
 - complete presets desktop screen
 - complete presets mobile screen
-- final `Conservative`, `Medium`, and `Neutral` cards
+- final `Safer`, `Balanced`, and `More active` cards
 - summary comparator
 - review panel with editable fields
 - final activation CTA with states
@@ -48,10 +48,10 @@ Close the macro structure of the Presets screen for desktop and mobile.
 - the structure clearly supports choice, review, and activation
 - block order is clear on desktop and mobile
 
-## Task D2.2: Design final Conservative preset card
+## Task D2.2: Design final Safer preset card
 
 ### Objective
-Translate the `Conservative` preset into an easy-to-understand decision card.
+Translate the `Safer` preset into an easy-to-understand decision card.
 
 ### Scope
 - name
@@ -69,7 +69,7 @@ Translate the `Conservative` preset into an easy-to-understand decision card.
 - validate card legibility on desktop and mobile
 
 ### Deliverables
-- final `Conservative` preset card
+- final `Safer` preset card
 
 ### Dependencies
 - D2.1
@@ -77,10 +77,10 @@ Translate the `Conservative` preset into an easy-to-understand decision card.
 ### Done criteria
 - the card communicates safety and selectivity without too much text
 
-## Task D2.3: Design final Medium preset card
+## Task D2.3: Design final Balanced preset card
 
 ### Objective
-Translate the `Medium` preset into a balanced card that compares well with the other two.
+Translate the `Balanced` preset into a balanced card that compares well with the other two.
 
 ### Scope
 - name
@@ -95,10 +95,10 @@ Translate the `Medium` preset into a balanced card that compares well with the o
 - define balanced frequency
 - define behavioral focus
 - define selection CTA
-- validate differentiation against `Conservative` and `Neutral`
+- validate differentiation against `Safer` and `More active`
 
 ### Deliverables
-- final `Medium` preset card
+- final `Balanced` preset card
 
 ### Dependencies
 - D2.1
@@ -106,10 +106,10 @@ Translate the `Medium` preset into a balanced card that compares well with the o
 ### Done criteria
 - the card communicates balance between protection and opportunity
 
-## Task D2.4: Design final Neutral preset card
+## Task D2.4: Design final More active preset card
 
 ### Objective
-Translate the `Neutral` preset into a card that communicates more activity without sounding aggressive or promising returns.
+Translate the `More active` preset into a card that communicates more activity without sounding aggressive or promising returns.
 
 ### Scope
 - name
@@ -126,7 +126,7 @@ Translate the `Neutral` preset into a card that communicates more activity witho
 - review wording to avoid implying return promises
 
 ### Deliverables
-- final `Neutral` preset card
+- final `More active` preset card
 
 ### Dependencies
 - D2.1

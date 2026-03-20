@@ -59,9 +59,9 @@ Construir a página principal de presets no layout compartilhado do app.
 Exibir os três presets oficiais do MVP com seus conteúdos principais.
 
 ### Escopo
-- `Conservador`
-- `Médio`
-- `Neutro`
+- `Mais seguro`
+- `Equilibrado`
+- `Mais ativo`
 
 ### Atividades
 - mapear catálogo final dos presets

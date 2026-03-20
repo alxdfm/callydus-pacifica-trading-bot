@@ -60,7 +60,7 @@ Allow the user to choose a preset, review editable fields, and activate the bot.
 - preset activation
 
 ### Designer Tasks
-- design final `Conservative`, `Medium`, and `Neutral` cards
+- design final `Safer`, `Balanced`, and `More active` cards
 - define risk and frequency visual treatment
 - define short comparison panel
 - define review panel with editable fields

@@ -6,11 +6,11 @@ Verify whether the initial preset proposal fits the trigger, risk, and execution
 ## Executive Summary
 The initial preset proposal **fits the contract**.
 
-The volume concern is resolved by adopting `volumeSma` as a derived indicator in the final catalog. This keeps the main contract intact and makes the Medium and Neutral presets explicit.
+The volume concern is resolved by adopting `volumeSma` as a derived indicator in the final catalog. This keeps the main contract intact and makes the Balanced and More active presets explicit.
 
 ## Conclusion by Preset
 
-### 1. Conservative
+### 1. Safer
 **Status:** directly fits.
 
 **Why it fits**
@@ -27,7 +27,7 @@ The volume concern is resolved by adopting `volumeSma` as a derived indicator in
 **Required adjustment**
 - none
 
-### 2. Medium
+### 2. Balanced
 **Status:** directly fits.
 
 **Why it fits**
@@ -45,7 +45,7 @@ The volume concern is resolved by adopting `volumeSma` as a derived indicator in
 **Required adjustment**
 - none
 
-### 3. Neutral
+### 3. More active
 **Status:** directly fits.
 
 **Why it fits**
@@ -57,17 +57,17 @@ The volume concern is resolved by adopting `volumeSma` as a derived indicator in
 - volume must be used as an explicit trigger, not a vague notion
 
 **Contract reading**
-- more signals than Conservative
-- less filtering than Conservative
+- more signals than Safer
+- less filtering than Safer
 - more visible activity in the interface
 
 **Required adjustment**
 - none
 
 ## Product Verdict
-- **Conservative:** ready
-- **Medium:** ready
-- **Neutral:** ready
+- **Safer:** ready
+- **Balanced:** ready
+- **More active:** ready
 
 ## Recommendation
 Keep the contract as it is and finalize `volumeSma` in the indicator catalog.

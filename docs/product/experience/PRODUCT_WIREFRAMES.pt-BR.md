@@ -18,7 +18,7 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 |                 +------------------+------------------+------------------------+
 |                 +--------------------------------------------------------------+
 |                 | Active Preset: Medio                                         |
-|                 | Risk: Medium | Symbol: BTC/USDC | Timeframe: 15m            |
+|                 | Risk: Balanced | Symbol: BTC/USDC | Timeframe: 15m            |
 |                 | Long: ON | Short: ON | Position Size: 5%                    |
 |                 | [Review Preset] [Change Preset]                              |
 |                 +--------------------------------------+-----------------------+
@@ -58,7 +58,7 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 | 2                                      |
 +----------------------------------------+
 | Active Preset: Medio                   |
-| Risk: Medium | BTC/USDC | 15m          |
+| Risk: Balanced | BTC/USDC | 15m          |
 | Long ON | Short ON | Size 5%           |
 | [Review] [Change]                      |
 +----------------------------------------+
@@ -94,8 +94,8 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 | - Dashboard     | "Choose a preset. Logic is already configured."              |
 | - Presets       | "Stop loss and take profit are mandatory in all presets."    |
 | - Current       +------------------+------------------+------------------------+
-| - History       | Conservative     | Medium           | Neutral                |
-|                 | Risk: Low        | Risk: Medium     | Risk: Medium           |
+| - History       | Safer     | Balanced           | More active                |
+|                 | Risk: Low        | Risk: Balanced     | Risk: Balanced           |
 |                 | Frequency: Low   | Frequency: Mid   | Frequency: High        |
 |                 | Focus: Protection| Focus: Balance   | Focus: Opportunity     |
 |                 | [Select]         | [Select]         | [Select]               |
@@ -107,9 +107,9 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 |                 | Med  | Balanced  | Confirmed   | 1.2% | RR 2.0              |
 |                 | Med  | Higher    | Looser      | 1.0% | RR 1.6              |
 |                 +--------------------------------------+-----------------------+
-|                 | Selected Preset: Medium              | Activation            |
+|                 | Selected Preset: Balanced              | Activation            |
 |                 | Balanced preset with volume          | Ready to activate     |
-|                 | confirmation and trend alignment.    | Preset: Medium        |
+|                 | confirmation and trend alignment.    | Preset: Balanced        |
 |                 |                                      | Symbol: BTC/USDC      |
 |                 | Symbol: [ BTC/USDC                ]  | Size: 5%              |
 |                 | Position Size: [ 5 ] %              | Long: ON              |
@@ -127,27 +127,27 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 | Choose a preset with ready logic.      |
 | TP and SL are mandatory in all presets.|
 +----------------------------------------+
-| Conservative                           |
+| Safer                           |
 | Risk: Low | Frequency: Low             |
 | Focus: Protection                      |
 | [Select]                               |
 +----------------------------------------+
-| Medium                                 |
-| Risk: Medium | Frequency: Balanced     |
+| Balanced                                 |
+| Risk: Balanced | Frequency: Balanced     |
 | Focus: Balance                         |
 | [Select]                               |
 +----------------------------------------+
-| Neutral                                |
-| Risk: Medium | Frequency: Higher       |
+| More active                                |
+| Risk: Balanced | Frequency: Higher       |
 | Focus: Opportunity                     |
 | [Select]                               |
 +----------------------------------------+
 | Comparison                             |
-| Conservative: safer, fewer entries     |
-| Medium: balanced                       |
-| Neutral: more activity                 |
+| Safer: safer, fewer entries     |
+| Balanced: balanced                       |
+| More active: more activity                 |
 +----------------------------------------+
-| Selected Preset: Medium                |
+| Selected Preset: Balanced                |
 | Symbol: [ BTC/USDC ]                   |
 | Position Size: [ 5 ] %                 |
 | Long: [ON]                             |

@@ -185,7 +185,7 @@ This is the recommended base format for the MVP.
 ### Overall Structure
 ```json
 {
-  "name": "Conservative",
+  "name": "Safer",
   "version": 1,
   "timeframe": "15m",
   "symbol": "BTC/USDC",
@@ -283,5 +283,5 @@ This is the recommended base format for the MVP.
 - one clear preset structure
 - simple user-facing reading
 - direct translation into execution
-- a clean base for Conservative, Medium, and Neutral presets
+- a clean base for Safer, Balanced, and More active presets
 - a stable contract for the future web interface to abstract without changing the model

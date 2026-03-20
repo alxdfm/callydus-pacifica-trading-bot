@@ -77,9 +77,9 @@ Design work covers:
 - selected preset review panel
 
 ### Tasks
-- design final `Conservative` preset card
-- design final `Medium` preset card
-- design final `Neutral` preset card
+- design final `Safer` preset card
+- design final `Balanced` preset card
+- design final `More active` preset card
 - define risk and frequency visuals
 - define summary comparison between presets
 - design panel with MVP editable fields

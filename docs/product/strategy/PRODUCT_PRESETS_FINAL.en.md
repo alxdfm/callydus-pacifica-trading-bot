@@ -15,7 +15,7 @@ Turn the presets into final JSON contracts ready for the bot to consume, and def
 - indicators and triggers are fixed per preset
 - the final indicator catalog is the only one allowed in the MVP
 
-## Preset 1: Conservative
+## Preset 1: Safer
 
 ### Purpose
 More selective entries, lower frequency, and stronger protection.
@@ -23,7 +23,7 @@ More selective entries, lower frequency, and stronger protection.
 ### Final JSON
 ```json
 {
-  "name": "Conservative",
+  "name": "Safer",
   "version": 1,
   "timeframe": "15m",
   "symbol": "BTC/USDC",
@@ -104,7 +104,7 @@ More selective entries, lower frequency, and stronger protection.
 }
 ```
 
-## Preset 2: Medium
+## Preset 2: Balanced
 
 ### Purpose
 Balance trade frequency and signal filtering.
@@ -112,7 +112,7 @@ Balance trade frequency and signal filtering.
 ### Final JSON
 ```json
 {
-  "name": "Medium",
+  "name": "Balanced",
   "version": 1,
   "timeframe": "15m",
   "symbol": "BTC/USDC",
@@ -207,7 +207,7 @@ Balance trade frequency and signal filtering.
 }
 ```
 
-## Preset 3: Neutral
+## Preset 3: More active
 
 ### Purpose
 Increase opportunity frequency with looser rules, without becoming confusing.
@@ -215,7 +215,7 @@ Increase opportunity frequency with looser rules, without becoming confusing.
 ### Final JSON
 ```json
 {
-  "name": "Neutral",
+  "name": "More active",
   "version": 1,
   "timeframe": "5m",
   "symbol": "BTC/USDC",

@@ -34,9 +34,9 @@ Objective:
 The central and most important block of the screen.
 
 Cards:
-- Conservative
-- Medium
-- Neutral
+- Safer
+- Balanced
+- More active
 
 Each card should show:
 - preset name
@@ -162,17 +162,17 @@ Use:
 
 ## Suggested Content per Card
 
-### Conservative
+### Safer
 - risk: low
 - frequency: lower
 - focus: protection and selectivity
 
-### Medium
+### Balanced
 - risk: medium
 - frequency: balanced
 - focus: balance between opportunity and protection
 
-### Neutral
+### More active
 - risk: medium
 - frequency: higher
 - focus: more opportunities with looser rules

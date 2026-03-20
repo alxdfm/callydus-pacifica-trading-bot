@@ -26,7 +26,7 @@ The user selects a preset based on trading style and adjusts only what is necess
 - editable parameters
 - validation note
 
-## Preset 1: Conservative
+## Preset 1: Safer
 ### Objective
 Seek more selective entries, with lower frequency and stronger protection.
 
@@ -56,7 +56,7 @@ Seek more selective entries, with lower frequency and stronger protection.
 - when protection is the main priority
 - when the product needs a safer narrative
 
-## Preset 2: Medium
+## Preset 2: Balanced
 ### Objective
 Balance trade frequency and signal filtering.
 
@@ -87,7 +87,7 @@ Balance trade frequency and signal filtering.
 - when the demo needs more visible activity
 - when we want a good narrative balance
 
-## Preset 3: Neutral
+## Preset 3: More active
 ### Objective
 Increase opportunity frequency with looser rules, without claiming aggressiveness.
 

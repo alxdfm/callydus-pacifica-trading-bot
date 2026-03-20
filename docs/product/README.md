@@ -50,6 +50,7 @@ Execution planning, epics, and role-based task breakdowns.
 - [Onboarding acceptance criteria](./quality/PRODUCT_ONBOARDING_ACCEPTANCE_CRITERIA.en.md)
 
 ### Execution planning
+- [MVP scope lock](./planning/MVP_SCOPE_LOCK.en.md)
 - [MVP epics and tasks](./planning/PRODUCT_EPICS_AND_TASKS.en.md)
 - [MVP design tasks and deliverables](./planning/PRODUCT_DESIGN_TASKS_AND_DELIVERABLES.en.md)
 - [MVP development tasks and deliverables](./planning/PRODUCT_DEV_TASKS_AND_DELIVERABLES.en.md)
@@ -64,7 +65,7 @@ Execution planning, epics, and role-based task breakdowns.
 - trading bot focused on ease of use
 - presets as the main configuration mechanism
 - mandatory `stop loss` and `take profit`
-- 3 MVP presets: `Conservative`, `Medium`, `Neutral`
+- 3 MVP presets: `Safer`, `Balanced`, `More active`
 - dashboard as the operational center
 - manual trade intervention via `market order`
 - mandatory onboarding with Solana wallet + Pacifica API keys
@@ -74,6 +75,7 @@ Execution planning, epics, and role-based task breakdowns.
 - the user must provide valid Pacifica API keys
 - without completed onboarding, the Dashboard must stay locked
 - the MVP interface must not expose JSON or technical logic
+- any change outside the MVP scope lock must be consulted before implementation
 
 ## Language Convention
 - English documents: `*.en.md`

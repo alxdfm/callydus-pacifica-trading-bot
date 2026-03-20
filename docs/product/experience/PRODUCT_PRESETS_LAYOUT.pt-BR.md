@@ -34,9 +34,9 @@ Objetivo:
 Bloco central e mais importante da tela.
 
 Cards:
-- Conservador
-- Médio
-- Neutro
+- Mais seguro
+- Equilibrado
+- Mais ativo
 
 Cada card deve mostrar:
 - nome do preset
@@ -162,17 +162,17 @@ Uso:
 
 ## Sugestão de Conteúdo por Card
 
-### Conservador
+### Mais seguro
 - risco: baixo
 - frequência: menor
 - foco: proteção e seletividade
 
-### Médio
+### Equilibrado
 - risco: médio
 - frequência: equilibrada
 - foco: equilíbrio entre oportunidade e proteção
 
-### Neutro
+### Mais ativo
 - risco: médio
 - frequência: maior
 - foco: mais oportunidades com regras mais abertas

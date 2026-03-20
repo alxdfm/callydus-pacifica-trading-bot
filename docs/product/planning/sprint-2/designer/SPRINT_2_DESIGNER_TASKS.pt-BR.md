@@ -13,7 +13,7 @@ Entregar a experiência completa de escolha, comparação, revisão e ativação
 ## Entregáveis finais da Sprint
 - tela de presets desktop completa
 - tela de presets mobile completa
-- cards finais de `Conservador`, `Médio` e `Neutro`
+- cards finais de `Mais seguro`, `Equilibrado` e `Mais ativo`
 - comparador resumido
 - painel de revisão com campos editáveis
 - CTA final de ativação com estados
@@ -48,10 +48,10 @@ Fechar a estrutura macro da tela de Presets para desktop e mobile.
 - a estrutura responde claramente a escolha, revisão e ativação
 - a ordem dos blocos é clara em desktop e mobile
 
-## Task D2.2: Desenhar card final do preset Conservador
+## Task D2.2: Desenhar card final do preset Mais seguro
 
 ### Objetivo
-Traduzir o preset `Conservador` em um card de decisão fácil de entender.
+Traduzir o preset `Mais seguro` em um card de decisão fácil de entender.
 
 ### Escopo
 - nome
@@ -69,7 +69,7 @@ Traduzir o preset `Conservador` em um card de decisão fácil de entender.
 - validar legibilidade do card em desktop e mobile
 
 ### Entregáveis
-- card final do preset `Conservador`
+- card final do preset `Mais seguro`
 
 ### Dependências
 - D2.1
@@ -77,10 +77,10 @@ Traduzir o preset `Conservador` em um card de decisão fácil de entender.
 ### Critério de pronto
 - o card comunica segurança e seletividade sem excesso de texto
 
-## Task D2.3: Desenhar card final do preset Médio
+## Task D2.3: Desenhar card final do preset Equilibrado
 
 ### Objetivo
-Traduzir o preset `Médio` em um card equilibrado e comparável com os outros dois.
+Traduzir o preset `Equilibrado` em um card equilibrado e comparável com os outros dois.
 
 ### Escopo
 - nome
@@ -95,10 +95,10 @@ Traduzir o preset `Médio` em um card equilibrado e comparável com os outros do
 - definir frequência equilibrada
 - definir foco do comportamento
 - definir CTA de seleção
-- validar diferenciação frente ao `Conservador` e `Neutro`
+- validar diferenciação frente ao `Mais seguro` e `Mais ativo`
 
 ### Entregáveis
-- card final do preset `Médio`
+- card final do preset `Equilibrado`
 
 ### Dependências
 - D2.1
@@ -106,10 +106,10 @@ Traduzir o preset `Médio` em um card equilibrado e comparável com os outros do
 ### Critério de pronto
 - o card comunica equilíbrio entre proteção e oportunidade
 
-## Task D2.4: Desenhar card final do preset Neutro
+## Task D2.4: Desenhar card final do preset Mais ativo
 
 ### Objetivo
-Traduzir o preset `Neutro` em um card que comunica maior atividade sem parecer agressivo ou prometer retorno.
+Traduzir o preset `Mais ativo` em um card que comunica maior atividade sem parecer agressivo ou prometer retorno.
 
 ### Escopo
 - nome
@@ -126,7 +126,7 @@ Traduzir o preset `Neutro` em um card que comunica maior atividade sem parecer a
 - revisar linguagem para evitar interpretação de promessa de ganho
 
 ### Entregáveis
-- card final do preset `Neutro`
+- card final do preset `Mais ativo`
 
 ### Dependências
 - D2.1

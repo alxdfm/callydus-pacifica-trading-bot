@@ -33,9 +33,9 @@ Each preset should include at least:
 
 ## Risk Levels
 Initial catalog suggestion:
-- Conservative
-- Medium
-- Neutral
+- Safer
+- Balanced
+- More active
 
 Notes:
 - risk level should help the user understand the preset profile
@@ -43,9 +43,9 @@ Notes:
 - it must remain consistent with the actual strategy behavior
 
 ## Initial Direction for the 3 Presets
-- Conservative: lower frequency, more protection, more selectivity
-- Medium: balance between frequency and protection
-- Neutral: focus on opportunity volume with looser rules
+- Safer: lower frequency, more protection, more selectivity
+- Balanced: balance between frequency and protection
+- More active: focus on opportunity volume with looser rules
 
 ## General Rules
 - `stop loss` and `take profit` are mandatory in every preset

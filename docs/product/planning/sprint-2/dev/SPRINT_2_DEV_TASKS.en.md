@@ -59,9 +59,9 @@ Build the main presets page inside the shared application layout.
 Display the three official MVP presets with their main contents.
 
 ### Scope
-- `Conservative`
-- `Medium`
-- `Neutral`
+- `Safer`
+- `Balanced`
+- `More active`
 
 ### Activities
 - map final preset catalog

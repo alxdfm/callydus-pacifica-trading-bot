@@ -15,7 +15,7 @@ Transformar os presets em contratos JSON finais, já prontos para o bot consumir
 - os indicadores e gatilhos ficam fechados por preset
 - o catálogo final de indicadores é o único permitido no MVP
 
-## Preset 1: Conservador
+## Preset 1: Mais seguro
 
 ### Propósito
 Entradas mais seletivas, menor frequência e maior proteção.
@@ -23,7 +23,7 @@ Entradas mais seletivas, menor frequência e maior proteção.
 ### JSON Final
 ```json
 {
-  "name": "Conservador",
+  "name": "Mais seguro",
   "version": 1,
   "timeframe": "15m",
   "symbol": "BTC/USDC",
@@ -104,7 +104,7 @@ Entradas mais seletivas, menor frequência e maior proteção.
 }
 ```
 
-## Preset 2: Médio
+## Preset 2: Equilibrado
 
 ### Propósito
 Equilibrar frequência de operações e filtragem de sinais.
@@ -112,7 +112,7 @@ Equilibrar frequência de operações e filtragem de sinais.
 ### JSON Final
 ```json
 {
-  "name": "Médio",
+  "name": "Equilibrado",
   "version": 1,
   "timeframe": "15m",
   "symbol": "BTC/USDC",
@@ -207,7 +207,7 @@ Equilibrar frequência de operações e filtragem de sinais.
 }
 ```
 
-## Preset 3: Neutro
+## Preset 3: Mais ativo
 
 ### Propósito
 Aumentar a frequência de oportunidades com regras mais abertas, sem virar uma configuração confusa.
@@ -215,7 +215,7 @@ Aumentar a frequência de oportunidades com regras mais abertas, sem virar uma c
 ### JSON Final
 ```json
 {
-  "name": "Neutro",
+  "name": "Mais ativo",
   "version": 1,
   "timeframe": "5m",
   "symbol": "BTC/USDC",

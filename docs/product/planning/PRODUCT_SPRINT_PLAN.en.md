@@ -56,7 +56,7 @@ Allow preset selection, review, and activation.
 
 ### Sprint Deliverables
 - functional presets screen
-- final `Conservative`, `Medium`, and `Neutral` cards
+- final `Safer`, `Balanced`, and `More active` cards
 - short preset comparison
 - selected preset review panel
 - preset activation
