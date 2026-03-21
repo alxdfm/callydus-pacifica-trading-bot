@@ -81,7 +81,7 @@ Tela focada em intervenção operacional.
 Tela focada em leitura posterior.
 
 #### Organização visual
-- topo: filtros simples
+- topo: titulo e contexto curto da lista encerrada
 - centro: lista cronológica de trades encerrados
 - detalhe opcional ao selecionar um item
 

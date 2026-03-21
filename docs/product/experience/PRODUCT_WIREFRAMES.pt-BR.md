@@ -8,19 +8,19 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 ### Desktop
 ```text
 +----------------------------------------------------------------------------------+
-| Topbar: Pacifica Connected | Bot Active | Balance | [Pause Bot]                 |
+| Topbar: Pacifica Connected | Bot Active | Balance | [Pausar bot]                 |
 +----------------------------------------------------------------------------------+
 | Sidebar         | Dashboard                                                     |
-| - Dashboard     | "Conta conectada. Bot ativo com preset Medio."               |
+| - Dashboard     | "Conta conectada. Bot ativo com preset Balanced."               |
 | - Presets       +------------------+------------------+------------------------+
-| - Current       | Balance          | PnL              | Active Trades          |
+| - Current Trades | Balance          | PnL              | Active Trades          |
 | - History       | $12,450          | +$184            | 2                      |
 |                 +------------------+------------------+------------------------+
 |                 +--------------------------------------------------------------+
-|                 | Active Preset: Medio                                         |
+|                 | Preset ativo: Balanced                                         |
 |                 | Risk: Balanced | Symbol: BTC/USDC | Timeframe: 15m            |
 |                 | Long: ON | Short: ON | Position Size: 5%                    |
-|                 | [Review Preset] [Change Preset]                              |
+|                 | [Review preset] [Change preset]                              |
 |                 +--------------------------------------+-----------------------+
 |                 | Current Trades                       | Recent Trades         |
 |                 | 2 open trades                        | Closed recently       |
@@ -46,7 +46,7 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 +----------------------------------------+
 | Dashboard                              |
 | Pacifica Connected | Bot Active        |
-| [Pause Bot]                            |
+| [Pausar bot]                            |
 +----------------------------------------+
 | Balance                                |
 | $12,450                                |
@@ -57,10 +57,10 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 | Active Trades                          |
 | 2                                      |
 +----------------------------------------+
-| Active Preset: Medio                   |
+| Preset ativo: Balanced                   |
 | Risk: Balanced | BTC/USDC | 15m          |
 | Long ON | Short ON | Size 5%           |
-| [Review] [Change]                      |
+| [Review preset] [Change preset]      |
 +----------------------------------------+
 | Current Trades                         |
 | LONG BTC/USDC                          |
@@ -78,7 +78,7 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 | Alerts                                 |
 | Reconciliation OK                      |
 +----------------------------------------+
-| Bottom Nav: Dashboard | Presets | Now  |
+| Bottom Nav: Dashboard | Presets | Current Trades |
 |              History                 |
 +----------------------------------------+
 ```
@@ -93,7 +93,7 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 | Sidebar         | Presets                                                       |
 | - Dashboard     | "Choose a preset. Logic is already configured."              |
 | - Presets       | "Stop loss and take profit are mandatory in all presets."    |
-| - Current       +------------------+------------------+------------------------+
+| - Current Trades+------------------+------------------+------------------------+
 | - History       | Safer     | Balanced           | More active                |
 |                 | Risk: Low        | Risk: Balanced     | Risk: Balanced           |
 |                 | Frequency: Low   | Frequency: Mid   | Frequency: High        |
@@ -156,7 +156,7 @@ Traduzir as decisões de layout e navegação em wireframes textuais para orient
 +----------------------------------------+
 | [Activate Preset]                      |
 +----------------------------------------+
-| Bottom Nav: Dashboard | Presets | Now  |
+| Bottom Nav: Dashboard | Presets | Current Trades |
 |              History                 |
 +----------------------------------------+
 ```

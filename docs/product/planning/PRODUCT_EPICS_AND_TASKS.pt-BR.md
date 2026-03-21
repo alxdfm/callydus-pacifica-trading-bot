@@ -142,7 +142,7 @@ Permitir consulta simples ao resultado das operações encerradas.
 - desenhar lista de histórico
 - definir formato compacto de cada item
 - definir tratamento visual de resultado positivo e negativo
-- definir filtros simples, se incluídos
+- manter historico sem filtros no MVP
 
 ### Tasks do Dev
 - implementar tela de histórico

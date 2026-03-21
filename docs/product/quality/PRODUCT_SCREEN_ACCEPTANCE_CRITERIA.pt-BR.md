@@ -99,7 +99,7 @@ Telas cobertas:
 ### Critérios de UX
 - o histórico não deve competir visualmente com os trades atuais
 - a leitura do resultado deve ser rápida
-- filtros simples, se existirem, devem ser fáceis de entender
+- a tela nao deve incluir filtros no MVP
 
 ### Critérios de Conteúdo
 - o histórico deve indicar se o encerramento foi por alvo, stop ou ação manual

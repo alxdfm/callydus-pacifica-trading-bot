@@ -13,7 +13,7 @@ Translate layout and navigation decisions into textual wireframes to guide desig
 | Sidebar         | Dashboard                                                     |
 | - Dashboard     | "Account connected. Bot active with Balanced preset."          |
 | - Presets       +------------------+------------------+------------------------+
-| - Current       | Balance          | PnL              | Active Trades          |
+| - Current Trades | Balance          | PnL              | Active Trades          |
 | - History       | $12,450          | +$184            | 2                      |
 |                 +------------------+------------------+------------------------+
 |                 +--------------------------------------------------------------+
@@ -78,8 +78,8 @@ Translate layout and navigation decisions into textual wireframes to guide desig
 | Alerts                                 |
 | Reconciliation OK                      |
 +----------------------------------------+
-| Bottom Nav: Dashboard | Presets | Now  |
-|              History                 |
+| Bottom Nav: Dashboard | Presets | Current Trades |
+|              History                        |
 +----------------------------------------+
 ```
 
@@ -156,8 +156,8 @@ Translate layout and navigation decisions into textual wireframes to guide desig
 +----------------------------------------+
 | [Activate Preset]                      |
 +----------------------------------------+
-| Bottom Nav: Dashboard | Presets | Now  |
-|              History                 |
+| Bottom Nav: Dashboard | Presets | Current Trades |
+|              History                        |
 +----------------------------------------+
 ```
 

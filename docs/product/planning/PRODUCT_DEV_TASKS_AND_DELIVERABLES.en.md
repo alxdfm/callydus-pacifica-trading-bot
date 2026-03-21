@@ -158,7 +158,7 @@ Development work covers:
 - display entry, exit, result, and closing reason
 - display platform-generated trade identification
 - implement simple chronological reading
-- implement simple filters if included in scope
+- do not implement filters in MVP History
 
 ### Done criteria
 - history shows enough data for simple review

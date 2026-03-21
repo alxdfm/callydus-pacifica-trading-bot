@@ -150,7 +150,7 @@ O trabalho de Design cobre:
 - definir item de trade encerrado
 - definir visual de resultado positivo e negativo
 - definir apresentação do motivo de encerramento
-- definir filtros simples, se aplicáveis
+- nao incluir filtros na tela de historico do MVP
 - definir estado vazio do histórico
 
 ### Critério de pronto

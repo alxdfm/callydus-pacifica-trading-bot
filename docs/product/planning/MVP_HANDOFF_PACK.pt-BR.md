@@ -177,7 +177,7 @@ Mostrar rapidamente o estado da conta, do bot e dos trades em andamento.
 - exibição do preset ativo
 - exibição do status do bot
 - lista de trades atuais e recentes
-- ação global de pausar/retomar bot, se mantida no produto
+- ação global de pausar/retomar bot
 - consistência de status com as demais telas
 
 ### Estados Obrigatórios

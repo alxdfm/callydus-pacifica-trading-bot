@@ -43,6 +43,8 @@ Execution planning, epics, and role-based task breakdowns.
 - [Onboarding screen layout](./experience/PRODUCT_ONBOARDING_LAYOUT.en.md)
 - [Detailed dashboard layout](./experience/PRODUCT_DASHBOARD_LAYOUT.en.md)
 - [Detailed presets screen layout](./experience/PRODUCT_PRESETS_LAYOUT.en.md)
+- [Detailed current trades screen layout](./experience/PRODUCT_CURRENT_TRADES_LAYOUT.en.md)
+- [Detailed history screen layout](./experience/PRODUCT_HISTORY_LAYOUT.en.md)
 - [Textual wireframes](./experience/PRODUCT_WIREFRAMES.en.md)
 
 ### Quality criteria
@@ -50,6 +52,7 @@ Execution planning, epics, and role-based task breakdowns.
 - [Onboarding acceptance criteria](./quality/PRODUCT_ONBOARDING_ACCEPTANCE_CRITERIA.en.md)
 
 ### Execution planning
+- [MVP open decisions checklist](./planning/MVP_OPEN_DECISIONS.en.md)
 - [MVP handoff pack](./planning/MVP_HANDOFF_PACK.en.md)
 - [MVP scope lock](./planning/MVP_SCOPE_LOCK.en.md)
 - [MVP epics and tasks](./planning/PRODUCT_EPICS_AND_TASKS.en.md)

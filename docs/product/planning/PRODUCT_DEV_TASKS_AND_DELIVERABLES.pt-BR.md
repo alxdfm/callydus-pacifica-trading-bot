@@ -158,7 +158,7 @@ O trabalho de Desenvolvimento cobre:
 - exibir entrada, saída, resultado e motivo de encerramento
 - exibir identificação de trade gerado pela plataforma
 - implementar leitura cronológica simples
-- implementar filtros simples, se incluídos no escopo
+- nao implementar filtros no historico do MVP
 
 ### Critério de pronto
 - histórico exibe dados suficientes para revisão simples
