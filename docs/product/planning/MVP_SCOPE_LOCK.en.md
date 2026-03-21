@@ -33,7 +33,7 @@ Includes:
 Strategy selection and activation through presets.
 
 Includes:
-- 3 fixed presets: `Mais seguro`, `Equilibrado`, `Mais ativo`
+- 3 fixed presets: `Safer`, `Balanced`, `More active`
 - simple preset comparison
 - review of the selected preset
 - explicit preset activation
@@ -144,7 +144,7 @@ The scope is considered locked when:
 
 ### Context and goal
 Deliver a simple, clear, and demoable web MVP for Pacifica.
-- See the executable breakdown in [MVP_HANDOFF_PACK.en.md](./MVP_HANDOFF_PACK.en.md).
+See the executable breakdown in [MVP_HANDOFF_PACK.en.md](./MVP_HANDOFF_PACK.en.md).
 
 ### Scope of this task
 Implement only what is listed in the frozen scope above.

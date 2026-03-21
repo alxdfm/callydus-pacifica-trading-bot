@@ -11,6 +11,14 @@ Fechar a consistencia visual e de interacao do MVP inteiro, cobrindo estados tra
 - microinteracoes criticas
 - responsividade do fluxo completo
 - revisao final para handoff
+- copy base em inglês e labels preparados para i18n
+
+## Definition of Ready
+- o MVP Scope Lock está aprovado
+- o MVP Handoff Pack está disponível
+- as telas principais já estão definidas no planejamento
+- a linguagem base é inglês e a interface precisa aceitar tradução
+- nenhuma task deve expor JSON ou lógica técnica ao usuário final
 
 ## Entregaveis finais da Sprint
 - revisao visual consolidada do MVP
@@ -25,6 +33,9 @@ Fechar a consistencia visual e de interacao do MVP inteiro, cobrindo estados tra
 ### Objetivo
 Garantir que onboarding, presets, dashboard, trades atuais e historico compartilhem a mesma linguagem visual e a mesma hierarquia de produto.
 
+### Prioridade
+P0
+
 ### Escopo
 - tipografia
 - espacamento
@@ -38,6 +49,7 @@ Garantir que onboarding, presets, dashboard, trades atuais e historico compartil
 - validar padrao de titulo, subtitulo e blocos principais
 - revisar consistencia visual de tags, badges e status
 - alinhar pesos visuais dos CTAs mais importantes
+- manter as telas compatíveis com copy em inglês primeiro e localizada
 
 ### Entregaveis
 - revisao consolidada de consistencia visual
@@ -47,11 +59,15 @@ Garantir que onboarding, presets, dashboard, trades atuais e historico compartil
 
 ### Criterio de pronto
 - o produto parece uma unica experiencia e nao um conjunto de telas isoladas
+- o sistema de layout tolera strings traduzidas mais longas
 
 ## Task D5.2: Definir e revisar estados vazios do MVP
 
 ### Objetivo
 Garantir que o produto continue claro e usavel quando ainda nao houver dados operacionais.
+
+### Prioridade
+P0
 
 ### Escopo
 - sem trades atuais
@@ -74,11 +90,15 @@ Garantir que o produto continue claro e usavel quando ainda nao houver dados ope
 
 ### Criterio de pronto
 - estados vazios orientam o usuario sem parecer erro de sistema
+- as mensagens de estado vazio podem ser traduzidas sem redesenho
 
 ## Task D5.3: Definir e revisar estados de loading
 
 ### Objetivo
 Padronizar como a interface comunica carregamento e processamento ao longo do fluxo principal.
+
+### Prioridade
+P0
 
 ### Escopo
 - carregamento de onboarding
@@ -101,11 +121,15 @@ Padronizar como a interface comunica carregamento e processamento ao longo do fl
 
 ### Criterio de pronto
 - o usuario entende quando o sistema esta carregando ou processando algo
+- a copy de loading permanece compativel com i18n
 
 ## Task D5.4: Definir e revisar estados de erro
 
 ### Objetivo
 Padronizar a comunicacao visual de falhas operacionais e falhas de carregamento.
+
+### Prioridade
+P0
 
 ### Escopo
 - erro de credencial
@@ -129,11 +153,15 @@ Padronizar a comunicacao visual de falhas operacionais e falhas de carregamento.
 
 ### Criterio de pronto
 - erros sao compreensiveis e acionaveis sem excesso de dramatizacao
+- a copy de erro suporta inglês primeiro e versões localizadas
 
 ## Task D5.5: Revisar microinteracoes criticas do MVP
 
 ### Objetivo
 Refinar interacoes que afetam diretamente a confianca do usuario no produto.
+
+### Prioridade
+P0
 
 ### Escopo
 - conectar wallet
@@ -159,11 +187,15 @@ Refinar interacoes que afetam diretamente a confianca do usuario no produto.
 
 ### Criterio de pronto
 - as interacoes principais parecem confiaveis e intencionais
+- a copy de confirmação permanece traduzível
 
 ## Task D5.6: Validar responsividade do fluxo completo
 
 ### Objetivo
 Garantir que o MVP seja demonstravel de ponta a ponta em desktop e mobile.
+
+### Prioridade
+P1
 
 ### Escopo
 - onboarding
@@ -187,11 +219,15 @@ Garantir que o MVP seja demonstravel de ponta a ponta em desktop e mobile.
 
 ### Criterio de pronto
 - o fluxo principal continua usavel e coerente em desktop e mobile
+- o fluxo completo tolera strings traduzidas mais longas no mobile
 
 ## Task D5.7: Preparar handoff final de design para demo
 
 ### Objetivo
 Consolidar o material final que o Dev precisa para fechar o MVP sem ambiguidades restantes.
+
+### Prioridade
+P1
 
 ### Escopo
 - componentes finais
@@ -199,6 +235,7 @@ Consolidar o material final que o Dev precisa para fechar o MVP sem ambiguidades
 - regras de interacao
 - ajustes responsivos
 - observacoes finais de design
+- orientação de chaves de i18n para a copy da demo
 
 ### Atividades
 - organizar os artefatos finais do MVP
@@ -220,3 +257,4 @@ Consolidar o material final que o Dev precisa para fechar o MVP sem ambiguidades
 
 ### Criterio de pronto
 - Dev consegue fechar o MVP para demo sem duvidas relevantes de design
+- Dev consegue fechar o MVP com copy em inglês primeiro e traduzida

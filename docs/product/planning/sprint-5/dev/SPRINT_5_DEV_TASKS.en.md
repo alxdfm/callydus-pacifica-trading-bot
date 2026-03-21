@@ -10,6 +10,14 @@ Close the full MVP flow with cross-screen integration, cross-cutting state cover
 - synchronization between active preset, bot, and operational data
 - bug and friction fixes in the main flow
 - final MVP validation
+- English default locale and i18n-ready demo copy
+
+## Definition of Ready
+- MVP scope lock is approved
+- MVP handoff pack is available
+- the earlier sprints have defined the main screens and flows
+- the base language is English and translation keys are expected
+- no task should introduce strategy logic outside the locked scope
 
 ## Final Sprint Deliverables
 - functional flow from onboarding to history
@@ -22,6 +30,9 @@ Close the full MVP flow with cross-screen integration, cross-cutting state cover
 
 ### Objective
 Ensure the user can move through the main flow without dead ends or broken paths.
+
+### Priority
+P0
 
 ### Scope
 - onboarding
@@ -37,6 +48,7 @@ Ensure the user can move through the main flow without dead ends or broken paths
 - ensure links and actions lead to the correct screen
 - review active navigation states
 - adjust relevant return paths and secondary paths
+- keep navigation labels locale-aware
 
 ### Deliverables
 - integrated MVP navigation
@@ -46,11 +58,15 @@ Ensure the user can move through the main flow without dead ends or broken paths
 
 ### Done Criteria
 - the user can navigate through the MVP without broken links or incoherent detours
+- navigation copy remains localized through the same i18n flow
 
 ## Task V5.2: Review guards and gating in the main flow
 
 ### Objective
 Ensure the product blocks only what should be blocked, at the right time.
+
+### Priority
+P0
 
 ### Scope
 - incomplete onboarding blocking
@@ -73,11 +89,15 @@ Ensure the product blocks only what should be blocked, at the right time.
 
 ### Done Criteria
 - the user is blocked only when necessary and with predictable behavior
+- guard messages remain locale-aware
 
 ## Task V5.3: Implement and consolidate MVP empty states
 
 ### Objective
 Cover the main no-data scenarios so the flow does not look incomplete or broken.
+
+### Priority
+P0
 
 ### Scope
 - no current trades
@@ -101,11 +121,15 @@ Cover the main no-data scenarios so the flow does not look incomplete or broken.
 
 ### Done Criteria
 - lack of data does not look like a system failure
+- empty-state copy is sourced from i18n
 
 ## Task V5.4: Implement and consolidate loading states
 
 ### Objective
 Cover the main loading and processing scenarios of the core flow.
+
+### Priority
+P0
 
 ### Scope
 - page loading
@@ -129,11 +153,15 @@ Cover the main loading and processing scenarios of the core flow.
 
 ### Done Criteria
 - the system always communicates when it is loading or processing something relevant
+- loading copy comes from the i18n layer
 
 ## Task V5.5: Implement and consolidate error states
 
 ### Objective
 Cover the main failure cases with clear messaging and consistent handling.
+
+### Priority
+P0
 
 ### Scope
 - credential error
@@ -158,11 +186,15 @@ Cover the main failure cases with clear messaging and consistent handling.
 
 ### Done Criteria
 - main failures are understandable and handled without breaking the flow
+- error copy remains translation-friendly
 
 ## Task V5.6: Validate consistency between active preset, bot, and operational screens
 
 ### Objective
 Ensure that the state reflected on screen matches the real operational state.
+
+### Priority
+P0
 
 ### Scope
 - active preset
@@ -189,11 +221,15 @@ Ensure that the state reflected on screen matches the real operational state.
 
 ### Done Criteria
 - the user does not encounter relevant contradictions across screens
+- state labels remain locale-agnostic while the UI stays localized
 
 ## Task V5.7: Fix bugs and friction in the main flow
 
 ### Objective
 Reduce friction that would hurt the MVP demonstration.
+
+### Priority
+P1
 
 ### Scope
 - functional bugs
@@ -216,11 +252,15 @@ Reduce friction that would hurt the MVP demonstration.
 
 ### Done Criteria
 - the main flow can be demonstrated without breakages or major friction
+- fixes preserve the English-first and translated UI behavior
 
 ## Task V5.8: Validate the full MVP flow for demo
 
 ### Objective
 Confirm that the product is ready for a controlled demonstration from onboarding to history.
+
+### Priority
+P1
 
 ### Scope
 - full onboarding
@@ -246,3 +286,4 @@ Confirm that the product is ready for a controlled demonstration from onboarding
 
 ### Done Criteria
 - the MVP is ready for a controlled demo with reduced risk of failure in the main flow
+- the demo flow behaves the same in English-first and translated copy

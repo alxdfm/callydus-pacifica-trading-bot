@@ -42,9 +42,9 @@ Fechar o conjunto de indicadores permitidos no MVP para que os presets tenham le
 - a interface futura pode esconder detalhes, mas não mudar o vocabulário base
 
 ## Relação com os Presets
-- Mais seguro: `emaFast`, `emaSlow`, `rsi`, `atr`
-- Equilibrado: `emaFast`, `emaSlow`, `rsi`, `volume`, `volumeSma`, `atr`
-- Mais ativo: `volume`, `volumeSma`, `rsi`, `emaFast`, `emaSlow`, `atr`
+- Safer: `emaFast`, `emaSlow`, `rsi`, `atr`
+- Balanced: `emaFast`, `emaSlow`, `rsi`, `volume`, `volumeSma`, `atr`
+- More active: `volume`, `volumeSma`, `rsi`, `emaFast`, `emaSlow`, `atr`
 
 ## Fora do MVP
 - MACD

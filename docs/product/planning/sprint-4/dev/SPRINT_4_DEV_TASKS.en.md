@@ -13,6 +13,14 @@ Deliver functional Current Trades and History screens, with per-trade manual int
 - close reason
 - platform trade identification
 - loading, empty, and error states
+- English default locale and i18n-ready trade/history copy
+
+## Definition of Ready
+- MVP scope lock is approved
+- MVP handoff pack is available
+- dashboard is already feeding operational state
+- the base language is English and translation keys are expected
+- no task should introduce strategy logic outside the locked scope
 
 ## Final Sprint Deliverables
 - functional Current Trades screen
@@ -30,12 +38,16 @@ Deliver functional Current Trades and History screens, with per-trade manual int
 ### Objective
 Build the route and main structure of the Current Trades screen using the shared application layout.
 
+### Priority
+P0
+
 ### Scope
 - screen route
 - header
 - short summary, if planned
 - main list
 - base screen states
+- i18n-ready content regions
 
 ### Activities
 - create the Current Trades route
@@ -43,9 +55,11 @@ Build the route and main structure of the Current Trades screen using the shared
 - align the blocks with the hierarchy defined by product and design
 - ensure base page responsiveness
 - prepare integration points for the list and per-trade action
+- wire the screen to the active locale so labels are not hard-coded
 
 ### Deliverables
 - functional structure of the Current Trades screen
+- i18n-aware Current Trades screen structure
 
 ### Dependencies
 - outputs from Sprints 1, 2, and 3
@@ -53,11 +67,15 @@ Build the route and main structure of the Current Trades screen using the shared
 ### Done Criteria
 - the screen exists as a functional and responsive route
 - the trade list can be integrated without structural rework
+- the screen can render English-first copy and translated labels
 
 ## Task V4.2: Integrate the open trades list
 
 ### Objective
 Display the currently open trades with the fields required for monitoring and intervention.
+
+### Priority
+P0
 
 ### Scope
 - symbol
@@ -83,11 +101,15 @@ Display the currently open trades with the fields required for monitoring and in
 
 ### Done Criteria
 - the user can understand which trades are open and their basic state
+- list labels remain locale-aware
 
 ## Task V4.3: Implement per-trade manual close action
 
 ### Objective
 Allow the user to close a specific trade without pausing the entire bot.
+
+### Priority
+P0
 
 ### Scope
 - `Close` CTA
@@ -111,11 +133,15 @@ Allow the user to close a specific trade without pausing the entire bot.
 ### Done Criteria
 - the user can close an individual trade
 - the action does not interfere with the global bot state beyond the selected trade
+- the close confirmation copy comes from the i18n layer
 
 ## Task V4.4: Synchronize updates after manual close
 
 ### Objective
 Ensure consistency across Current Trades, Dashboard, and History after closing a trade.
+
+### Priority
+P0
 
 ### Scope
 - removal from open trades list
@@ -139,17 +165,22 @@ Ensure consistency across Current Trades, Dashboard, and History after closing a
 
 ### Done Criteria
 - the application state remains consistent after the manual action
+- the resulting labels remain locale-agnostic in state and localized in UI
 
 ## Task V4.5: Implement the base structure of the History screen
 
 ### Objective
 Build the route and main structure of the History screen.
 
+### Priority
+P0
+
 ### Scope
 - screen route
 - header
 - closed trades list
 - base screen states
+- i18n-ready content regions
 
 ### Activities
 - create the History route
@@ -157,20 +188,26 @@ Build the route and main structure of the History screen.
 - align blocks with product and design
 - ensure base page responsiveness
 - prepare integration points for the list and minimal filters, if any
+- wire the screen to the active locale so labels are not hard-coded
 
 ### Deliverables
 - functional structure of the History screen
+- i18n-aware History screen structure
 
 ### Dependencies
 - outputs from Sprints 1 and 3
 
 ### Done Criteria
 - the screen exists as a functional and responsive route
+- the screen can render English-first copy and translated labels
 
 ## Task V4.6: Integrate the closed trades list
 
 ### Objective
 Display closed trades with the fields required for operational review.
+
+### Priority
+P0
 
 ### Scope
 - symbol
@@ -196,11 +233,15 @@ Display closed trades with the fields required for operational review.
 
 ### Done Criteria
 - the user can quickly review what happened in closed trades
+- list labels remain locale-aware
 
 ## Task V4.7: Display trade origin and close reason
 
 ### Objective
 Provide enough context for the user to distinguish platform trades and understand why each trade was closed.
+
+### Priority
+P0
 
 ### Scope
 - trade created by the platform
@@ -226,11 +267,15 @@ Provide enough context for the user to distinguish platform trades and understan
 
 ### Done Criteria
 - the user understands whether the trade came from the platform and how it ended
+- origin and reason copy are localized through the same i18n flow
 
 ## Task V4.8: Implement loading, empty, and error states for Sprint 4 screens
 
 ### Objective
 Avoid ambiguity when the screens do not yet have data or face failures.
+
+### Priority
+P1
 
 ### Scope
 - current trades
@@ -255,11 +300,15 @@ Avoid ambiguity when the screens do not yet have data or face failures.
 
 ### Done Criteria
 - no screen looks broken during loading, no data, or failure
+- loading and error copy use the i18n layer
 
 ## Task V4.9: Validate the full Sprint 4 flow
 
 ### Objective
 Ensure that the user can track open trades, close them manually when needed, and review the result in history.
+
+### Priority
+P1
 
 ### Scope
 - current trades loading
@@ -285,3 +334,4 @@ Ensure that the user can track open trades, close them manually when needed, and
 ### Done Criteria
 - the main sprint flow works without significant inconsistencies
 - the sprint can be demonstrated as real monitoring and intervention capability
+- English-first and translated flows behave the same way

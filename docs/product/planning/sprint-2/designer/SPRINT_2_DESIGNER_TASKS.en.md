@@ -9,6 +9,14 @@ Deliver the complete experience of choosing, comparing, reviewing, and activatin
 - selected preset review panel
 - activation block
 - desktop and mobile states of the presets screen
+- English-first copy base and i18n-ready labels
+
+## Definition of Ready
+- MVP scope lock is approved
+- MVP handoff pack is available
+- preset terminology is frozen and English-first
+- no task should expose technical JSON or editable strategy logic
+- the screen must be able to support translation without redesign
 
 ## Final Sprint Deliverables
 - complete presets desktop screen
@@ -24,12 +32,16 @@ Deliver the complete experience of choosing, comparing, reviewing, and activatin
 ### Objective
 Close the macro structure of the Presets screen for desktop and mobile.
 
+### Priority
+P0
+
 ### Scope
 - header
 - presets grid
 - comparator
 - preset review
 - activation block
+- translation-friendly content areas
 
 ### Activities
 - organize the visual hierarchy of the page
@@ -37,6 +49,7 @@ Close the macro structure of the Presets screen for desktop and mobile.
 - define block order on mobile
 - validate the relationship between comparison, review, and activation
 - confirm the screen does not feel like a technical form
+- confirm the layout can hold English-first and localized copy
 
 ### Deliverables
 - final visual architecture of the presets screen
@@ -47,11 +60,15 @@ Close the macro structure of the Presets screen for desktop and mobile.
 ### Done criteria
 - the structure clearly supports choice, review, and activation
 - block order is clear on desktop and mobile
+- the structure tolerates longer translated strings
 
 ## Task D2.2: Design final Safer preset card
 
 ### Objective
 Translate the `Safer` preset into an easy-to-understand decision card.
+
+### Priority
+P0
 
 ### Scope
 - name
@@ -76,11 +93,15 @@ Translate the `Safer` preset into an easy-to-understand decision card.
 
 ### Done criteria
 - the card communicates safety and selectivity without too much text
+- the card works with English-first and localized labels
 
 ## Task D2.3: Design final Balanced preset card
 
 ### Objective
 Translate the `Balanced` preset into a balanced card that compares well with the other two.
+
+### Priority
+P0
 
 ### Scope
 - name
@@ -105,11 +126,15 @@ Translate the `Balanced` preset into a balanced card that compares well with the
 
 ### Done criteria
 - the card communicates balance between protection and opportunity
+- the card works with English-first and localized labels
 
 ## Task D2.4: Design final More active preset card
 
 ### Objective
 Translate the `More active` preset into a card that communicates more activity without sounding aggressive or promising returns.
+
+### Priority
+P0
 
 ### Scope
 - name
@@ -133,11 +158,15 @@ Translate the `More active` preset into a card that communicates more activity w
 
 ### Done criteria
 - the card communicates more activity without ambiguous risk messaging
+- the card works with English-first and localized labels
 
 ## Task D2.5: Define summary comparator between presets
 
 ### Objective
 Allow fast comparison without requiring technical detail views.
+
+### Priority
+P0
 
 ### Scope
 - risk
@@ -163,11 +192,15 @@ Allow fast comparison without requiring technical detail views.
 
 ### Done criteria
 - the user compares all 3 presets without leaving the screen
+- the comparator remains legible in translated layouts
 
 ## Task D2.6: Design selected preset review panel
 
 ### Objective
 Define the area where the user reviews and adjusts only the allowed MVP fields.
+
+### Priority
+P0
 
 ### Scope
 - selected preset summary
@@ -193,11 +226,15 @@ Define the area where the user reviews and adjusts only the allowed MVP fields.
 
 ### Done criteria
 - the user understands what will be activated and what can be adjusted
+- the review panel supports translated labels without layout breakage
 
 ## Task D2.7: Define activation block and CTA states
 
 ### Objective
 Specify the closing decision step for preset activation.
+
+### Priority
+P0
 
 ### Scope
 - primary CTA
@@ -226,11 +263,15 @@ Specify the closing decision step for preset activation.
 
 ### Done criteria
 - the user clearly understands which preset will be activated before the final click
+- the activation block supports localized copy and summaries
 
 ## Task D2.8: Validate mobile behavior of the presets screen
 
 ### Objective
 Ensure the presets experience remains clear and usable on small screens.
+
+### Priority
+P1
 
 ### Scope
 - stacked cards
@@ -258,17 +299,22 @@ Ensure the presets experience remains clear and usable on small screens.
 
 ### Done criteria
 - the selection and activation flow works smoothly on mobile
+- the mobile layout tolerates English-first labels and translated strings
 
 ## Task D2.9: Prepare Sprint 2 handoff for Dev
 
 ### Objective
 Deliver the artifacts needed by development to implement the presets screen without open interpretation.
 
+### Priority
+P1
+
 ### Scope
 - components
 - states
 - copy
 - responsive behavior
+- i18n key guidance for presets copy
 
 ### Activities
 - name screen components
@@ -293,6 +339,7 @@ Deliver the artifacts needed by development to implement the presets screen with
 
 ### Done criteria
 - the development team can build the presets screen without guessing visual behavior
+- the development team can build the screen with English-first and translated copy
 
 ## Definition of done for the Designer sprint
 - all 3 presets are visually finalized

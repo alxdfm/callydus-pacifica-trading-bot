@@ -10,6 +10,14 @@ Fechar o fluxo completo do MVP com integracao entre telas, cobertura de estados 
 - sincronizacao entre preset ativo, bot e dados operacionais
 - correcoes de bugs e friccoes do fluxo principal
 - validacao final do MVP
+- inglês como locale padrão e copy pronta para i18n
+
+## Definition of Ready
+- o MVP Scope Lock está aprovado
+- o MVP Handoff Pack está disponível
+- as sprints anteriores definiram as telas e fluxos principais
+- a linguagem base é inglês e chaves de tradução são esperadas
+- nenhuma task deve introduzir lógica de estratégia fora do escopo travado
 
 ## Entregaveis finais da Sprint
 - fluxo funcional do onboarding ao historico
@@ -22,6 +30,9 @@ Fechar o fluxo completo do MVP com integracao entre telas, cobertura de estados 
 
 ### Objetivo
 Garantir que o usuario consiga percorrer o fluxo principal sem pontos mortos ou caminhos quebrados.
+
+### Prioridade
+P0
 
 ### Escopo
 - onboarding
@@ -37,6 +48,7 @@ Garantir que o usuario consiga percorrer o fluxo principal sem pontos mortos ou 
 - garantir que links e acoes levem para a tela correta
 - revisar estados ativos da navegacao
 - ajustar retornos e caminhos secundarios relevantes
+- manter labels de navegação localizadas
 
 ### Entregaveis
 - navegacao funcional integrada do MVP
@@ -46,11 +58,15 @@ Garantir que o usuario consiga percorrer o fluxo principal sem pontos mortos ou 
 
 ### Criterio de pronto
 - o usuario consegue navegar pelo MVP sem links quebrados ou desvios incoerentes
+- a copy de navegação permanece localizada pela mesma camada de i18n
 
 ## Task V5.2: Revisar guards e bloqueios do fluxo principal
 
 ### Objetivo
 Garantir que o produto bloqueie apenas o que precisa ser bloqueado, no momento certo.
+
+### Prioridade
+P0
 
 ### Escopo
 - bloqueio por onboarding incompleto
@@ -73,11 +89,15 @@ Garantir que o produto bloqueie apenas o que precisa ser bloqueado, no momento c
 
 ### Criterio de pronto
 - o usuario e bloqueado apenas quando necessario e com comportamento previsivel
+- mensagens de guard permanecem locale-aware
 
 ## Task V5.3: Implementar e consolidar estados vazios do MVP
 
 ### Objetivo
 Cobrir os principais cenarios sem dados para que o fluxo nao pareca incompleto ou quebrado.
+
+### Prioridade
+P0
 
 ### Escopo
 - sem trades atuais
@@ -101,11 +121,15 @@ Cobrir os principais cenarios sem dados para que o fluxo nao pareca incompleto o
 
 ### Criterio de pronto
 - ausencia de dados nao parece falha de sistema
+- a copy de estado vazio vem da camada de i18n
 
 ## Task V5.4: Implementar e consolidar estados de loading
 
 ### Objetivo
 Cobrir os principais cenarios de carregamento e processamento do fluxo principal.
+
+### Prioridade
+P0
 
 ### Escopo
 - carregamento de pagina
@@ -129,11 +153,15 @@ Cobrir os principais cenarios de carregamento e processamento do fluxo principal
 
 ### Criterio de pronto
 - o sistema sempre comunica quando esta carregando ou processando algo relevante
+- a copy de loading vem da camada de i18n
 
 ## Task V5.5: Implementar e consolidar estados de erro
 
 ### Objetivo
 Cobrir falhas principais com mensagens claras e tratamento consistente.
+
+### Prioridade
+P0
 
 ### Escopo
 - erro de credencial
@@ -158,11 +186,15 @@ Cobrir falhas principais com mensagens claras e tratamento consistente.
 
 ### Criterio de pronto
 - falhas principais sao compreensiveis e tratadas sem quebrar o fluxo
+- a copy de erro permanece traduzível
 
 ## Task V5.6: Validar consistencia entre preset ativo, bot e telas operacionais
 
 ### Objetivo
 Garantir que o estado refletido nas telas corresponda ao estado real da operacao.
+
+### Prioridade
+P0
 
 ### Escopo
 - preset ativo
@@ -189,11 +221,15 @@ Garantir que o estado refletido nas telas corresponda ao estado real da operacao
 
 ### Criterio de pronto
 - o usuario nao encontra contradicoes relevantes entre telas
+- labels de estado permanecem locale-agnostic enquanto a UI fica localizada
 
 ## Task V5.7: Corrigir bugs e friccoes do fluxo principal
 
 ### Objetivo
 Reduzir atritos que prejudiquem a demonstracao do MVP.
+
+### Prioridade
+P1
 
 ### Escopo
 - bugs funcionais
@@ -216,11 +252,15 @@ Reduzir atritos que prejudiquem a demonstracao do MVP.
 
 ### Criterio de pronto
 - o fluxo principal pode ser demonstrado sem quebras ou atritos graves
+- as correcoes preservam o comportamento em inglês primeiro e traduzido
 
 ## Task V5.8: Validar o fluxo completo do MVP para demo
 
 ### Objetivo
 Confirmar que o produto esta pronto para uma demonstracao controlada do onboarding ao historico.
+
+### Prioridade
+P1
 
 ### Escopo
 - onboarding completo
@@ -246,3 +286,4 @@ Confirmar que o produto esta pronto para uma demonstracao controlada do onboardi
 
 ### Criterio de pronto
 - o MVP esta pronto para demo controlada com risco reduzido de falha no fluxo principal
+- o fluxo de demo se comporta igual em inglês primeiro e traduzido

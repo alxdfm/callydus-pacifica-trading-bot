@@ -8,6 +8,7 @@ Sprint 5 focuses on:
 - integration
 - polish
 - end-to-end MVP readiness
+- English-first demo copy and i18n readiness
 
 ## Structure
 - [Designer tasks](./designer/SPRINT_5_DESIGNER_TASKS.en.md)

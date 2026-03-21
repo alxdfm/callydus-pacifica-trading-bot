@@ -7,6 +7,7 @@ Centralize the detailed execution plan for Sprint 4.
 Sprint 4 focuses on:
 - current trades
 - history
+- English-first trade copy and i18n readiness
 
 ## Structure
 - [Designer tasks](./designer/SPRINT_4_DESIGNER_TASKS.en.md)

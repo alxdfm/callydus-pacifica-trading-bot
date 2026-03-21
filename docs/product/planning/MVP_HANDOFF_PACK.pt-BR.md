@@ -22,9 +22,9 @@ Objetivo:
 Usar a linguagem abaixo como referência padrão do MVP.
 
 ### Terminologia dos presets
-- `Mais seguro`
-- `Equilibrado`
-- `Mais ativo`
+- `Safer`
+- `Balanced`
+- `More active`
 
 ### Labels centrais
 - `Dashboard`
@@ -144,9 +144,9 @@ Permitir comparação simples, revisão mínima e ativação explícita do prese
 
 ### Copy Final
 - título da tela: `Presets`
-- card 1: `Mais seguro`
-- card 2: `Equilibrado`
-- card 3: `Mais ativo`
+- card 1: `Safer`
+- card 2: `Balanced`
+- card 3: `More active`
 - CTA principal: `Ativar preset`
 - CTA secundário: `Cancelar`
 - aviso: `Preset é uma sugestão de estratégia, não garantia de retorno.`

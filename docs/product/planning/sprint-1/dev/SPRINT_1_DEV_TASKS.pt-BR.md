@@ -11,6 +11,14 @@ Entregar a base técnica da aplicação e o fluxo funcional de onboarding, bloqu
 - integração com wallet Solana
 - captura e validação de credenciais Pacifica
 - guarda de acesso ao dashboard
+- base de i18n com inglês como idioma padrão
+
+## Definition of Ready
+- o MVP Scope Lock está aprovado
+- o MVP Handoff Pack está disponível
+- o comportamento do onboarding está claro para wallet, credenciais e guards
+- o primeiro idioma é inglês e chaves de tradução são esperadas desde o início
+- nenhuma task deve introduzir lógica de estratégia editável fora do escopo travado
 
 ## Entregáveis finais da Sprint
 - app web navegável com layout base
@@ -24,11 +32,15 @@ Entregar a base técnica da aplicação e o fluxo funcional de onboarding, bloqu
 ### Objetivo
 Criar a base técnica que sustentará as telas do MVP.
 
+### Prioridade
+P0
+
 ### Escopo
 - estrutura de páginas
 - layout compartilhado
 - roteamento principal
 - placeholders das rotas principais
+- provider de i18n e esqueleto de carregamento das mensagens
 
 ### Atividades
 - definir estrutura de diretórios do frontend
@@ -43,11 +55,14 @@ Criar a base técnica que sustentará as telas do MVP.
   - trades atuais
   - histórico
 - garantir que o app inicia em um fluxo coerente
+- definir inglês como locale padrão da UI
+- ligar o mecanismo de tradução para que labels não fiquem hard-coded nos componentes
 
 ### Entregáveis
 - app shell funcional
 - rotas principais criadas
 - layout base reutilizável
+- app shell pronto para i18n
 
 ### Dependências
 - nenhuma
@@ -56,29 +71,36 @@ Criar a base técnica que sustentará as telas do MVP.
 - usuário consegue navegar pela estrutura básica
 - telas principais existem ao menos como placeholders
 - layout compartilhado funciona em desktop e mobile
+- o shell consegue renderizar labels em inglês e suportar strings localizadas
 
 ## Task V1.2: Implementar estado global mínimo da aplicação
 
 ### Objetivo
 Criar a camada mínima de estado necessária para Sprint 1.
 
+### Prioridade
+P0
+
 ### Escopo
 - estado do onboarding
 - estado da wallet
 - estado das credenciais
 - estado de bloqueio/liberação do produto
+- estado do locale ativo
 
 ### Atividades
 - definir modelo de estado de onboarding
 - definir modelo de estado da wallet
 - definir modelo de estado das credenciais
 - definir modelo de status geral do app
+- definir modelo de locale com inglês como default
 - implementar persistência mínima de sessão
 - expor utilitários de leitura do estado para guardas de rota
 
 ### Entregáveis
 - camada mínima de estado global
 - persistência básica da sessão
+- estado do app consciente de locale
 
 ### Dependências
 - V1.1
@@ -86,11 +108,15 @@ Criar a camada mínima de estado necessária para Sprint 1.
 ### Critério de pronto
 - o estado pode ser consumido entre onboarding e app principal
 - recarregamento não destrói o fluxo de Sprint 1 indevidamente
+- o locale atual pode ser lido por qualquer tela sem gambiarras
 
 ## Task V1.3: Implementar tela de onboarding
 
 ### Objetivo
 Construir a tela principal de onboarding de acordo com o fluxo definido em produto.
+
+### Prioridade
+P0
 
 ### Escopo
 - header
@@ -99,6 +125,7 @@ Construir a tela principal de onboarding de acordo com o fluxo definido em produ
 - card de credenciais
 - painel de estado da conta
 - CTA final
+- copy dirigida por chaves de tradução
 
 ### Atividades
 - implementar estrutura visual da tela
@@ -108,6 +135,7 @@ Construir a tela principal de onboarding de acordo com o fluxo definido em produ
 - implementar painel de estado da conta
 - implementar botão `Continue to Dashboard`
 - implementar versão responsiva
+- consumir labels e mensagens localizadas pela camada de i18n
 
 ### Entregáveis
 - tela de onboarding renderizada
@@ -121,11 +149,15 @@ Construir a tela principal de onboarding de acordo com o fluxo definido em produ
 - todos os blocos principais do onboarding existem
 - a tela funciona em desktop e mobile
 - o CTA final responde ao estado do fluxo
+- a tela não depende de copy hard-coded
 
 ## Task V1.4: Integrar conexão de wallet Solana
 
 ### Objetivo
 Permitir que o usuário conecte sua wallet Solana dentro do onboarding.
+
+### Prioridade
+P0
 
 ### Escopo
 - ação de conexão
@@ -155,11 +187,15 @@ Permitir que o usuário conecte sua wallet Solana dentro do onboarding.
 - usuário conecta wallet com sucesso
 - erro de conexão é tratado
 - estado conectado desbloqueia a próxima etapa
+- o fluxo da wallet não quebra o locale ou labels traduzidas
 
 ## Task V1.5: Implementar formulário de credenciais Pacifica
 
 ### Objetivo
 Permitir que o usuário informe as credenciais necessárias para operar o bot.
+
+### Prioridade
+P0
 
 ### Escopo
 - campos
@@ -189,11 +225,15 @@ Permitir que o usuário informe as credenciais necessárias para operar o bot.
 ### Critério de pronto
 - usuário consegue preencher e submeter credenciais
 - estados do formulário ficam visíveis corretamente
+- labels dos campos e textos de ajuda vêm da camada de i18n
 
 ## Task V1.6: Validar credenciais Pacifica
 
 ### Objetivo
 Garantir que apenas credenciais válidas liberem o acesso ao produto.
+
+### Prioridade
+P0
 
 ### Escopo
 - chamada de validação
@@ -220,11 +260,15 @@ Garantir que apenas credenciais válidas liberem o acesso ao produto.
 - credenciais válidas liberam progresso
 - credenciais inválidas bloqueiam avanço
 - mensagens de retorno aparecem corretamente
+- o feedback de validação vem de mensagens localizadas
 
 ## Task V1.7: Implementar guardas de acesso ao produto
 
 ### Objetivo
 Bloquear acesso ao dashboard e ao restante do app quando o onboarding não estiver completo.
+
+### Prioridade
+P0
 
 ### Escopo
 - guardas de rota
@@ -251,11 +295,15 @@ Bloquear acesso ao dashboard e ao restante do app quando o onboarding não estiv
 ### Critério de pronto
 - usuário não entra no produto sem onboarding válido
 - acesso manual a rotas protegidas é interceptado
+- as rotas protegidas continuam resolvendo o locale ativo corretamente
 
 ## Task V1.8: Ajustar estados de loading, vazio e erro da Sprint 1
 
 ### Objetivo
 Evitar que o onboarding pareça quebrado durante transições e falhas.
+
+### Prioridade
+P1
 
 ### Escopo
 - loading da wallet
@@ -283,11 +331,15 @@ Evitar que o onboarding pareça quebrado durante transições e falhas.
 - o usuário entende quando o sistema está processando
 - erros não deixam a tela ambígua
 - CTA final responde corretamente ao estado
+- loading e erro usam a mesma camada de i18n
 
 ## Task V1.9: Validar fluxo completo da Sprint 1
 
 ### Objetivo
 Garantir que o entregável da Sprint 1 funcione ponta a ponta.
+
+### Prioridade
+P1
 
 ### Escopo
 - fluxo completo
@@ -324,6 +376,7 @@ Garantir que o entregável da Sprint 1 funcione ponta a ponta.
 - fluxo principal da Sprint 1 funciona ponta a ponta
 - principais falhas estão cobertas
 - produto pode seguir para Sprint 2 sem bloqueio estrutural
+- a copy em inglês está visível de ponta a ponta e o fallback de i18n funciona
 
 ## Definição de pronto da Sprint do Dev
 - aplicação base está navegável

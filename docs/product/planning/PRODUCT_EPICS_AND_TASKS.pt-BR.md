@@ -60,7 +60,7 @@ Permitir que o usuário escolha um preset, revise os campos editáveis e ative o
 - ativação do preset
 
 ### Tasks do Designer
-- desenhar cards finais de `Mais seguro`, `Equilibrado` e `Mais ativo`
+- desenhar cards finais de `Safer`, `Balanced` e `More active`
 - definir visual de risco e frequência
 - definir painel de comparação curta
 - definir painel de revisão com campos editáveis

@@ -11,6 +11,14 @@ Deliver the complete Dashboard at design level, with clear visual hierarchy, fas
 - current trades block
 - recent trades block
 - alerts strip
+- English-first copy base and i18n-ready labels
+
+## Definition of Ready
+- MVP scope lock is approved
+- MVP handoff pack is available
+- dashboard content is fixed as the operational center
+- the base language is English and labels must be translation-friendly
+- the screen must not expose technical JSON or strategy logic
 
 ## Final Sprint Deliverables
 - complete desktop dashboard
@@ -27,6 +35,9 @@ Deliver the complete Dashboard at design level, with clear visual hierarchy, fas
 ### Objective
 Define the macro organization of the Dashboard screen for desktop and mobile.
 
+### Priority
+P0
+
 ### Scope
 - operational header
 - summary cards
@@ -34,6 +45,7 @@ Define the macro organization of the Dashboard screen for desktop and mobile.
 - current trades
 - recent trades
 - alerts
+- translation-friendly content areas
 
 ### Activities
 - validate block order on desktop
@@ -41,6 +53,7 @@ Define the macro organization of the Dashboard screen for desktop and mobile.
 - define main grid of the screen
 - ensure the dashboard answers the product's key questions
 - adjust balance between main and secondary blocks
+- confirm the layout can hold English-first and localized copy
 
 ### Deliverables
 - final visual structure of the Dashboard
@@ -51,11 +64,15 @@ Define the macro organization of the Dashboard screen for desktop and mobile.
 ### Done criteria
 - the screen has clear hierarchy
 - the dashboard feels like an operational center, not an analytics terminal
+- the structure tolerates longer translated strings
 
 ## Task D3.2: Design Dashboard operational header
 
 ### Objective
 Define the top block that summarizes global account and bot state.
+
+### Priority
+P0
 
 ### Scope
 - title
@@ -78,11 +95,15 @@ Define the top block that summarizes global account and bot state.
 
 ### Done criteria
 - the user quickly understands whether the system is ready and operating
+- the header works with English-first and localized labels
 
 ## Task D3.3: Design summary cards
 
 ### Objective
 Define the immediate account-reading cards.
+
+### Priority
+P0
 
 ### Scope
 - current balance
@@ -106,11 +127,15 @@ Define the immediate account-reading cards.
 ### Done criteria
 - the cards can be scanned quickly
 - PnL is clear without dominating the whole interface
+- the cards remain legible with translated labels
 
 ## Task D3.4: Design active preset block
 
 ### Objective
 Define the component that shows which automation is running now.
+
+### Priority
+P0
 
 ### Scope
 - preset name
@@ -135,11 +160,15 @@ Define the component that shows which automation is running now.
 
 ### Done criteria
 - the user quickly understands which strategy is active
+- the block supports translated preset labels and helper text
 
 ## Task D3.5: Design current trades block in the Dashboard
 
 ### Objective
 Define the summarized presentation of open trades inside the Dashboard.
+
+### Priority
+P0
 
 ### Scope
 - summarized list
@@ -162,11 +191,15 @@ Define the summarized presentation of open trades inside the Dashboard.
 ### Done criteria
 - current trades have visual priority over history
 - the main per-trade action is visible
+- the block tolerates translated trade labels without density issues
 
 ## Task D3.6: Design recent trades block
 
 ### Objective
 Define the quick recent-history context inside the Dashboard.
+
+### Priority
+P1
 
 ### Scope
 - result
@@ -187,11 +220,15 @@ Define the quick recent-history context inside the Dashboard.
 
 ### Done criteria
 - recent history appears as context, not as the main focus
+- the block remains readable in English-first and translated copy
 
 ## Task D3.7: Design alerts strip and critical states
 
 ### Objective
 Define how errors, alerts, and reconciliation appear in the Dashboard.
+
+### Priority
+P0
 
 ### Scope
 - error
@@ -213,11 +250,15 @@ Define how errors, alerts, and reconciliation appear in the Dashboard.
 
 ### Done criteria
 - problems are visible without polluting the screen
+- alert text remains compatible with i18n
 
 ## Task D3.8: Validate Dashboard mobile behavior
 
 ### Objective
 Ensure the dashboard remains useful and legible on small screens.
+
+### Priority
+P1
 
 ### Scope
 - block order
@@ -245,17 +286,22 @@ Ensure the dashboard remains useful and legible on small screens.
 
 ### Done criteria
 - the screen remains scannable and operational on mobile
+- the mobile layout tolerates longer translated strings
 
 ## Task D3.9: Prepare Sprint 3 handoff for Dev
 
 ### Objective
 Deliver the package needed for faithful Dashboard implementation.
 
+### Priority
+P1
+
 ### Scope
 - components
 - states
 - hierarchy rules
 - responsive behavior
+- i18n key guidance for dashboard copy
 
 ### Activities
 - name dashboard components
@@ -279,6 +325,7 @@ Deliver the package needed for faithful Dashboard implementation.
 
 ### Done criteria
 - the development team can implement the dashboard without guessing visual intent
+- the development team can implement the dashboard with English-first and translated copy
 
 ## Definition of done for the Designer sprint
 - desktop and mobile dashboard are finalized

@@ -11,6 +11,14 @@ Close the visual and interaction consistency of the full MVP, covering cross-scr
 - critical micro-interactions
 - full-flow responsiveness
 - final handoff review
+- English-first copy base and i18n-ready labels
+
+## Definition of Ready
+- MVP scope lock is approved
+- MVP handoff pack is available
+- the main screens are already defined and implemented at a planning level
+- the base language is English and labels must remain translation-friendly
+- no task should expose technical JSON or strategy logic
 
 ## Final Sprint Deliverables
 - consolidated visual review of the MVP
@@ -25,6 +33,9 @@ Close the visual and interaction consistency of the full MVP, covering cross-scr
 ### Objective
 Ensure that onboarding, presets, dashboard, current trades, and history share the same visual language and product hierarchy.
 
+### Priority
+P0
+
 ### Scope
 - typography
 - spacing
@@ -38,6 +49,7 @@ Ensure that onboarding, presets, dashboard, current trades, and history share th
 - validate title, subtitle, and main block patterns
 - review visual consistency of tags, badges, and status markers
 - align the visual weight of the most important CTAs
+- keep the screens compatible with English-first and localized copy
 
 ### Deliverables
 - consolidated visual consistency review
@@ -47,11 +59,15 @@ Ensure that onboarding, presets, dashboard, current trades, and history share th
 
 ### Done Criteria
 - the product feels like a single experience rather than a set of isolated screens
+- the layout system tolerates longer translated strings
 
 ## Task D5.2: Define and review MVP empty states
 
 ### Objective
 Ensure that the product remains clear and usable when there is no operational data yet.
+
+### Priority
+P0
 
 ### Scope
 - no current trades
@@ -74,11 +90,15 @@ Ensure that the product remains clear and usable when there is no operational da
 
 ### Done Criteria
 - empty states guide the user without looking like system errors
+- empty-state messages can be translated without redesign
 
 ## Task D5.3: Define and review loading states
 
 ### Objective
 Standardize how the interface communicates loading and processing across the main flow.
+
+### Priority
+P0
 
 ### Scope
 - onboarding loading
@@ -101,11 +121,15 @@ Standardize how the interface communicates loading and processing across the mai
 
 ### Done Criteria
 - the user understands when the system is loading or processing something
+- loading copy remains compatible with i18n
 
 ## Task D5.4: Define and review error states
 
 ### Objective
 Standardize the visual communication of operational and loading failures.
+
+### Priority
+P0
 
 ### Scope
 - credential error
@@ -129,11 +153,15 @@ Standardize the visual communication of operational and loading failures.
 
 ### Done Criteria
 - errors are understandable and actionable without excessive drama
+- error copy supports English-first and localized versions
 
 ## Task D5.5: Review critical MVP micro-interactions
 
 ### Objective
 Refine interactions that directly affect user trust in the product.
+
+### Priority
+P0
 
 ### Scope
 - connect wallet
@@ -159,11 +187,15 @@ Refine interactions that directly affect user trust in the product.
 
 ### Done Criteria
 - the main interactions feel reliable and intentional
+- microinteraction copy and confirmations remain translation-friendly
 
 ## Task D5.6: Validate responsiveness of the full flow
 
 ### Objective
 Ensure that the MVP can be demonstrated end-to-end on desktop and mobile.
+
+### Priority
+P1
 
 ### Scope
 - onboarding
@@ -187,11 +219,15 @@ Ensure that the MVP can be demonstrated end-to-end on desktop and mobile.
 
 ### Done Criteria
 - the main flow remains usable and coherent on desktop and mobile
+- the full flow tolerates longer translated strings on mobile
 
 ## Task D5.7: Prepare the final design handoff for demo
 
 ### Objective
 Consolidate the final material Dev needs to close the MVP without remaining ambiguity.
+
+### Priority
+P1
 
 ### Scope
 - final components
@@ -199,6 +235,7 @@ Consolidate the final material Dev needs to close the MVP without remaining ambi
 - interaction rules
 - responsive adjustments
 - final design notes
+- i18n key guidance for all demo-facing copy
 
 ### Activities
 - organize the final MVP artifacts
@@ -220,3 +257,4 @@ Consolidate the final material Dev needs to close the MVP without remaining ambi
 
 ### Done Criteria
 - Dev can close the MVP for demo without significant design doubts
+- Dev can close the MVP with English-first and translated copy intact

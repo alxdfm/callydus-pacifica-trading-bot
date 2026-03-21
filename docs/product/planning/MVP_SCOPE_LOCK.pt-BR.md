@@ -33,7 +33,7 @@ Inclui:
 Seleção e ativação de estratégia por preset.
 
 Inclui:
-- 3 presets fixos: `Mais seguro`, `Equilibrado`, `Mais ativo`
+- 3 presets fixos: `Safer`, `Balanced`, `More active`
 - comparação simples entre presets
 - revisão do preset selecionado
 - ativação explícita do preset

@@ -12,6 +12,14 @@ Deliver the functional presets screen, including selection, editable field revie
 - editing of allowed fields
 - preset activation
 - active preset persistence
+- English default locale and i18n-ready preset copy
+
+## Definition of Ready
+- MVP scope lock is approved
+- MVP handoff pack is available
+- the preset names and base labels are frozen in English-first form
+- no task should introduce technical configuration outside the allowed fields
+- translation keys are expected from day one
 
 ## Final Sprint Deliverables
 - functional presets screen
@@ -26,12 +34,16 @@ Deliver the functional presets screen, including selection, editable field revie
 ### Objective
 Build the main presets page inside the shared application layout.
 
+### Priority
+P0
+
 ### Scope
 - header
 - presets grid
 - comparator
 - review
 - activation
+- i18n-ready content regions
 
 ### Activities
 - create functional route for the presets screen
@@ -43,20 +55,26 @@ Build the main presets page inside the shared application layout.
   - review
   - final CTA
 - guarantee responsive version of the base structure
+- wire the screen to the active locale so copy can be translated
 
 ### Deliverables
 - rendered presets screen structure
+- i18n-aware presets screen structure
 
 ### Dependencies
 - Sprint 1 outputs
 
 ### Done criteria
 - the page exists and supports the main blocks defined in product
+- the page can render English-first copy and translated labels
 
 ## Task V2.2: Render the 3-preset catalog
 
 ### Objective
 Display the three official MVP presets with their main contents.
+
+### Priority
+P0
 
 ### Scope
 - `Safer`
@@ -79,11 +97,15 @@ Display the three official MVP presets with their main contents.
 ### Done criteria
 - all 3 presets appear correctly
 - content is consistent with product documentation
+- preset content is compatible with English-first and translated copy
 
 ## Task V2.3: Implement preset selection
 
 ### Objective
 Allow the user to select a preset and change the page state accordingly.
+
+### Priority
+P0
 
 ### Scope
 - selection state
@@ -105,11 +127,15 @@ Allow the user to select a preset and change the page state accordingly.
 ### Done criteria
 - the user can select a preset
 - the screen reacts consistently to selection
+- selection state does not depend on hard-coded labels
 
 ## Task V2.4: Implement summary comparator between presets
 
 ### Objective
 Display a fast comparison between the three presets without exposing technical details.
+
+### Priority
+P0
 
 ### Scope
 - risk
@@ -132,11 +158,15 @@ Display a fast comparison between the three presets without exposing technical d
 
 ### Done criteria
 - the comparator is readable and coherent with the rendered presets
+- labels remain readable in translated layouts
 
 ## Task V2.5: Implement selected preset review panel
 
 ### Objective
 Allow the user to review the preset and change only the fields allowed in the MVP.
+
+### Priority
+P0
 
 ### Scope
 - preset summary
@@ -162,11 +192,15 @@ Allow the user to review the preset and change only the fields allowed in the MV
 
 ### Done criteria
 - the user can review and edit only what is allowed
+- review labels and helper messages are sourced from i18n
 
 ## Task V2.6: Build final activation payload
 
 ### Objective
 Convert preset selection and allowed edits into the payload the bot will consume.
+
+### Priority
+P0
 
 ### Scope
 - base preset
@@ -189,11 +223,15 @@ Convert preset selection and allowed edits into the payload the bot will consume
 
 ### Done criteria
 - final payload correctly represents the selected preset with user adjustments
+- payload assembly remains independent from localized display text
 
 ## Task V2.7: Implement preset activation
 
 ### Objective
 Allow the user to activate the preset from the presets screen.
+
+### Priority
+P0
 
 ### Scope
 - primary CTA
@@ -219,11 +257,15 @@ Allow the user to activate the preset from the presets screen.
 ### Done criteria
 - the user can activate a valid preset
 - activation failures are handled
+- activation copy comes from localized messages
 
 ## Task V2.8: Persist active preset and reflect it in application state
 
 ### Objective
 Ensure the activated preset remains available to the rest of the product.
+
+### Priority
+P1
 
 ### Scope
 - persistence
@@ -245,11 +287,15 @@ Ensure the activated preset remains available to the rest of the product.
 
 ### Done criteria
 - the active preset is available outside the presets screen
+- active preset state remains locale-agnostic and reusable
 
 ## Task V2.9: Validate the complete Sprint 2 flow
 
 ### Objective
 Ensure the selection and activation flow works end to end.
+
+### Priority
+P1
 
 ### Scope
 - screen load
@@ -283,6 +329,7 @@ Ensure the selection and activation flow works end to end.
 ### Done criteria
 - the user chooses, reviews, and activates a preset without breaking flow
 - the active preset remains consistent in the application
+- the English-first and translated flows behave the same way
 
 ## Definition of done for the Dev sprint
 - the presets screen is functional

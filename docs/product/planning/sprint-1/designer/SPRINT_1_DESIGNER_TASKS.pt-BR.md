@@ -10,6 +10,14 @@ Entregar a base visual do MVP e o fluxo completo de onboarding em nível de desi
 - estados de wallet
 - estados de credenciais Pacifica
 - mensagens de erro e sucesso
+- copy base em inglês e labels preparadas para i18n
+
+## Definition of Ready
+- o MVP Scope Lock está aprovado
+- o MVP Handoff Pack está disponível
+- o onboarding é a prioridade da Sprint 1
+- o idioma base é inglês e a experiência deve aceitar tradução sem redesenho
+- nenhum layout deve expor JSON ou lógica técnica ao usuário final
 
 ## Entregáveis finais da Sprint
 - kit visual base do MVP
@@ -25,6 +33,9 @@ Entregar a base visual do MVP e o fluxo completo de onboarding em nível de desi
 ### Objetivo
 Criar a base visual mínima para que onboarding e telas seguintes não sejam desenhados de forma inconsistente.
 
+### Prioridade
+P0
+
 ### Escopo
 - cores
 - tipografia
@@ -33,6 +44,7 @@ Criar a base visual mínima para que onboarding e telas seguintes não sejam des
 - campos
 - cards
 - badges de status
+- tratamento de copy compatível com i18n
 
 ### Atividades
 - definir paleta principal da interface
@@ -61,6 +73,8 @@ Criar a base visual mínima para que onboarding e telas seguintes não sejam des
   - desabilitado
 - definir padrão de card
 - definir padrão de badge de status
+- definir base tipográfica e de espaçamento que suporte textos em inglês e traduzidos
+- definir padrão de texto para labels curtas e helper copy baseada em chave
 
 ### Entregáveis
 - tabela de cores
@@ -75,11 +89,15 @@ Criar a base visual mínima para que onboarding e telas seguintes não sejam des
 - existe uma base visual única
 - os componentes definidos são suficientes para construir onboarding
 - estados críticos e destrutivos são claramente distinguíveis
+- o sistema visual suporta inglês primeiro e futuras traduções sem quebrar layout
 
 ## Task D1.2: Desenhar estrutura desktop do onboarding
 
 ### Objetivo
 Definir a experiência principal de onboarding para desktop.
+
+### Prioridade
+P0
 
 ### Escopo
 - header da tela
@@ -119,11 +137,15 @@ Definir a experiência principal de onboarding para desktop.
 - a tela pode ser entendida visualmente sem explicação externa
 - o fluxo da esquerda para a direita ou de cima para baixo é claro
 - a ação final só ganha protagonismo quando faz sentido
+- o layout continua legível com copy em inglês e labels traduzidas
 
 ## Task D1.3: Desenhar estrutura mobile do onboarding
 
 ### Objetivo
 Garantir que o onboarding continue curto e claro em telas pequenas.
+
+### Prioridade
+P0
 
 ### Escopo
 - versão mobile completa do onboarding
@@ -150,11 +172,15 @@ Garantir que o onboarding continue curto e claro em telas pequenas.
 - a tela funciona em coluna única
 - a leitura do progresso continua clara
 - CTA e mensagens continuam legíveis sem atrito
+- o mobile tolera strings maiores sem sobreposição
 
 ## Task D1.4: Definir estados visuais da wallet
 
 ### Objetivo
 Especificar todos os estados de conexão da wallet Solana de forma inequívoca.
+
+### Prioridade
+P0
 
 ### Escopo
 - não conectada
@@ -182,11 +208,15 @@ Especificar todos os estados de conexão da wallet Solana de forma inequívoca.
 - os estados são distinguíveis em menos de alguns segundos
 - sucesso e erro não podem ser confundidos
 - loading não parece estado travado
+- os rótulos dos estados funcionam em inglês e em idiomas localizados
 
 ## Task D1.5: Definir estados visuais das credenciais Pacifica
 
 ### Objetivo
 Especificar o comportamento visual dos campos e da validação de credenciais.
+
+### Prioridade
+P0
 
 ### Escopo
 - vazia
@@ -216,11 +246,15 @@ Especificar o comportamento visual dos campos e da validação de credenciais.
 - o usuário entende quando precisa agir
 - erro fica próximo do problema
 - validação bem-sucedida é inequívoca
+- as labels e helper texts podem ser internacionalizadas
 
 ## Task D1.6: Definir mensagens de erro e sucesso do onboarding
 
 ### Objetivo
 Padronizar a microcopy principal da Sprint 1 para reduzir ambiguidade.
+
+### Prioridade
+P0
 
 ### Escopo
 - wallet
@@ -229,6 +263,7 @@ Padronizar a microcopy principal da Sprint 1 para reduzir ambiguidade.
 - bloqueio de continuação
 
 ### Atividades
+- definir a copy base em inglês para todos os estados do onboarding
 - definir mensagem para wallet não conectada
 - definir mensagem para falha de conexão da wallet
 - definir mensagem para credencial inválida
@@ -246,17 +281,22 @@ Padronizar a microcopy principal da Sprint 1 para reduzir ambiguidade.
 ### Critério de pronto
 - todas as mensagens são curtas, acionáveis e consistentes
 - não há linguagem excessivamente técnica
+- a mesma estrutura de mensagem pode ser traduzida sem mexer no layout
 
 ## Task D1.7: Preparar handoff de Sprint 1 para Dev
 
 ### Objetivo
 Garantir que o time de desenvolvimento consiga implementar Sprint 1 sem adivinhação visual.
 
+### Prioridade
+P1
+
 ### Escopo
 - organização dos artefatos
 - nomeação dos componentes
 - estados
 - observações responsivas
+- orientação de chaves de i18n para onboarding
 
 ### Atividades
 - nomear componentes principais

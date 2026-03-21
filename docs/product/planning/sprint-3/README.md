@@ -6,6 +6,7 @@ Centralize the detailed execution plan for Sprint 3.
 ## Scope
 Sprint 3 focuses on:
 - dashboard
+- English-first dashboard copy and i18n readiness
 
 ## Structure
 - [Designer tasks](./designer/SPRINT_3_DESIGNER_TASKS.en.md)

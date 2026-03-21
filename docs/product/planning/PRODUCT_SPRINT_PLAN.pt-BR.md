@@ -56,7 +56,7 @@ Permitir escolha, revisão e ativação do preset.
 
 ### Entregáveis da Sprint
 - tela de presets funcional
-- cards finais de `Mais seguro`, `Equilibrado` e `Mais ativo`
+- cards finais de `Safer`, `Balanced` e `More active`
 - comparação curta entre presets
 - painel de revisão do preset selecionado
 - ativação do preset

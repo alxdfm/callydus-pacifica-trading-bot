@@ -7,6 +7,7 @@ Centralize the detailed execution plan for Sprint 2.
 Sprint 2 focuses on:
 - presets
 - activation
+- English-first preset copy and i18n readiness
 
 ## Structure
 - [Designer tasks](./designer/SPRINT_2_DESIGNER_TASKS.en.md)

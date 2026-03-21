@@ -33,9 +33,9 @@ Cada preset deve ter pelo menos os seguintes atributos:
 
 ## Níveis de Risco
 Sugestão inicial de catálogo:
-- Mais seguro
-- Equilibrado
-- Mais ativo
+- Safer
+- Balanced
+- More active
 
 Observação:
 - o nível de risco deve ajudar o usuário a entender o perfil do preset
@@ -43,9 +43,9 @@ Observação:
 - ele precisa ser consistente com o comportamento real da estratégia
 
 ## Direção Inicial dos 3 Presets
-- Mais seguro: menor frequência, foco em proteção e seletividade
-- Equilibrado: equilíbrio entre frequência e proteção
-- Mais ativo: foco em volume de oportunidades com regras mais abertas
+- Safer: menor frequência, foco em proteção e seletividade
+- Balanced: equilíbrio entre frequência e proteção
+- More active: foco em volume de oportunidades com regras mais abertas
 
 ## Regras Gerais
 - `stop loss` e `take profit` são obrigatórios em todos os presets

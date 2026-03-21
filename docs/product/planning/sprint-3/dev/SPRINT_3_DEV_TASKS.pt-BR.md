@@ -11,6 +11,14 @@ Entregar o Dashboard funcional como centro operacional do MVP, refletindo estado
 - trades recentes no dashboard
 - alertas principais
 - ação global de pausar/retomar bot
+- inglês como locale padrão e copy pronta para i18n
+
+## Definition of Ready
+- o MVP Scope Lock está aprovado
+- o MVP Handoff Pack está disponível
+- o dashboard está fechado como centro operacional
+- a linguagem base é inglês e chaves de tradução são esperadas
+- nenhuma task deve introduzir lógica de estratégia fora do escopo travado
 
 ## Entregáveis finais da Sprint
 - dashboard funcional
@@ -26,6 +34,9 @@ Entregar o Dashboard funcional como centro operacional do MVP, refletindo estado
 ### Objetivo
 Construir a página principal do dashboard usando o layout compartilhado do app.
 
+### Prioridade
+P0
+
 ### Escopo
 - header
 - cards de resumo
@@ -33,26 +44,33 @@ Construir a página principal do dashboard usando o layout compartilhado do app.
 - trades atuais
 - trades recentes
 - alertas
+- áreas de conteúdo prontas para i18n
 
 ### Atividades
 - criar rota do dashboard
 - implementar estrutura visual principal da tela
 - organizar blocos segundo a hierarquia definida em produto
 - garantir responsividade base do dashboard
+- ligar a tela ao locale ativo para que labels não fiquem hard-coded
 
 ### Entregáveis
 - estrutura funcional do dashboard
+- estrutura do dashboard pronta para i18n
 
 ### Dependências
 - outputs das Sprint 1 e 2
 
 ### Critério de pronto
 - o dashboard existe como tela funcional e responsiva
+- o dashboard renderiza copy em inglês primeiro e labels traduzidas
 
 ## Task V3.2: Integrar saldo e PnL agregado
 
 ### Objetivo
 Exibir leitura financeira básica da conta no dashboard.
+
+### Prioridade
+P0
 
 ### Escopo
 - saldo atual
@@ -73,11 +91,15 @@ Exibir leitura financeira básica da conta no dashboard.
 
 ### Critério de pronto
 - saldo e PnL aparecem com consistência e tratamento mínimo de estado
+- saldo e PnL usam copy localizada
 
 ## Task V3.3: Integrar contadores operacionais
 
 ### Objetivo
 Exibir indicadores rápidos de operação no dashboard.
+
+### Prioridade
+P0
 
 ### Escopo
 - trades ativos
@@ -97,11 +119,15 @@ Exibir indicadores rápidos de operação no dashboard.
 
 ### Critério de pronto
 - contadores respondem ao estado atual da operação
+- labels dos contadores continuam locale-aware
 
 ## Task V3.4: Exibir preset ativo e status geral do bot
 
 ### Objetivo
 Tornar visível no dashboard qual preset está rodando e qual o estado do bot.
+
+### Prioridade
+P0
 
 ### Escopo
 - preset ativo
@@ -131,11 +157,15 @@ Tornar visível no dashboard qual preset está rodando e qual o estado do bot.
 
 ### Critério de pronto
 - usuário entende rapidamente qual automação está ativa
+- labels do preset ativo vêm de dados preparados para i18n
 
 ## Task V3.5: Renderizar trades atuais no dashboard
 
 ### Objetivo
 Mostrar os trades abertos diretamente no dashboard com prioridade operacional.
+
+### Prioridade
+P0
 
 ### Escopo
 - lista resumida
@@ -162,11 +192,15 @@ Mostrar os trades abertos diretamente no dashboard com prioridade operacional.
 ### Critério de pronto
 - trades atuais são visíveis e priorizados
 - ação principal por trade fica acessível quando disponível
+- labels e statuses permanecem localizados na UI
 
 ## Task V3.6: Renderizar trades recentes no dashboard
 
 ### Objetivo
 Mostrar contexto rápido de operação encerrada sem transformar o dashboard em tela histórica.
+
+### Prioridade
+P1
 
 ### Escopo
 - resultado
@@ -188,11 +222,15 @@ Mostrar contexto rápido de operação encerrada sem transformar o dashboard em 
 
 ### Critério de pronto
 - histórico recente aparece como apoio e não como foco principal
+- labels dos trades recentes são localizadas pela mesma camada de i18n
 
 ## Task V3.7: Implementar alertas principais e ação global do bot
 
 ### Objetivo
 Dar controle global e visibilidade para problemas principais diretamente no dashboard.
+
+### Prioridade
+P0
 
 ### Escopo
 - alertas
@@ -216,11 +254,15 @@ Dar controle global e visibilidade para problemas principais diretamente no dash
 ### Critério de pronto
 - usuário vê alertas principais
 - usuário consegue pausar ou retomar o bot a partir do dashboard
+- copy de alertas e ações vem da camada localizada
 
 ## Task V3.8: Implementar estados de loading, vazio e erro do Dashboard
 
 ### Objetivo
 Evitar ambiguidade quando os blocos do dashboard ainda não tiverem dados ou estiverem falhando.
+
+### Prioridade
+P1
 
 ### Escopo
 - resumo
@@ -248,11 +290,15 @@ Evitar ambiguidade quando os blocos do dashboard ainda não tiverem dados ou est
 
 ### Critério de pronto
 - dashboard não parece quebrado durante carregamento ou falha
+- loading e erro usam a camada de i18n
 
 ## Task V3.9: Validar fluxo completo da Sprint 3
 
 ### Objetivo
 Garantir que o dashboard funcione ponta a ponta como centro operacional.
+
+### Prioridade
+P1
 
 ### Escopo
 - carregamento
@@ -285,6 +331,7 @@ Garantir que o dashboard funcione ponta a ponta como centro operacional.
 ### Critério de pronto
 - o dashboard é demonstrável como centro operacional do MVP
 - os principais blocos funcionam com consistência
+- os fluxos em inglês primeiro e traduzidos se comportam da mesma forma
 
 ## Definição de pronto da Sprint do Dev
 - dashboard está funcional em desktop e mobile

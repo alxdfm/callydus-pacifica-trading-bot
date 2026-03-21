@@ -9,11 +9,19 @@ Entregar a experiência completa de escolha, comparação, revisão e ativação
 - painel de revisão do preset selecionado
 - bloco de ativação
 - estados desktop e mobile da tela de presets
+- copy base em inglês e labels preparados para i18n
+
+## Definition of Ready
+- o MVP Scope Lock está aprovado
+- o MVP Handoff Pack está disponível
+- a terminologia dos presets está travada e em inglês primeiro
+- nenhuma task deve expor JSON técnico ou lógica de estratégia editável
+- a tela precisa suportar tradução sem redesenho
 
 ## Entregáveis finais da Sprint
 - tela de presets desktop completa
 - tela de presets mobile completa
-- cards finais de `Mais seguro`, `Equilibrado` e `Mais ativo`
+- cards finais de `Safer`, `Balanced` e `More active`
 - comparador resumido
 - painel de revisão com campos editáveis
 - CTA final de ativação com estados
@@ -24,12 +32,16 @@ Entregar a experiência completa de escolha, comparação, revisão e ativação
 ### Objetivo
 Fechar a estrutura macro da tela de Presets para desktop e mobile.
 
+### Prioridade
+P0
+
 ### Escopo
 - header
 - grid de presets
 - comparador
 - revisão do preset
 - bloco de ativação
+- áreas preparadas para copy traduzida
 
 ### Atividades
 - organizar a hierarquia visual da página
@@ -37,6 +49,7 @@ Fechar a estrutura macro da tela de Presets para desktop e mobile.
 - definir a ordem dos blocos no mobile
 - validar a relação entre comparação, revisão e ativação
 - confirmar que a tela não parece um formulário técnico
+- confirmar que o layout suporta copy em inglês primeiro e localizada
 
 ### Entregáveis
 - arquitetura visual final da tela de presets
@@ -47,11 +60,15 @@ Fechar a estrutura macro da tela de Presets para desktop e mobile.
 ### Critério de pronto
 - a estrutura responde claramente a escolha, revisão e ativação
 - a ordem dos blocos é clara em desktop e mobile
+- a estrutura tolera strings traduzidas mais longas
 
-## Task D2.2: Desenhar card final do preset Mais seguro
+## Task D2.2: Desenhar card final do preset Safer
 
 ### Objetivo
-Traduzir o preset `Mais seguro` em um card de decisão fácil de entender.
+Traduzir o preset `Safer` em um card de decisão fácil de entender.
+
+### Prioridade
+P0
 
 ### Escopo
 - nome
@@ -69,18 +86,22 @@ Traduzir o preset `Mais seguro` em um card de decisão fácil de entender.
 - validar legibilidade do card em desktop e mobile
 
 ### Entregáveis
-- card final do preset `Mais seguro`
+- card final do preset `Safer`
 
 ### Dependências
 - D2.1
 
 ### Critério de pronto
 - o card comunica segurança e seletividade sem excesso de texto
+- o card funciona com labels em inglês primeiro e traduzidas
 
-## Task D2.3: Desenhar card final do preset Equilibrado
+## Task D2.3: Desenhar card final do preset Balanced
 
 ### Objetivo
-Traduzir o preset `Equilibrado` em um card equilibrado e comparável com os outros dois.
+Traduzir o preset `Balanced` em um card equilibrado e comparável com os outros dois.
+
+### Prioridade
+P0
 
 ### Escopo
 - nome
@@ -95,21 +116,25 @@ Traduzir o preset `Equilibrado` em um card equilibrado e comparável com os outr
 - definir frequência equilibrada
 - definir foco do comportamento
 - definir CTA de seleção
-- validar diferenciação frente ao `Mais seguro` e `Mais ativo`
+- validar diferenciação frente ao `Safer` e `More active`
 
 ### Entregáveis
-- card final do preset `Equilibrado`
+- card final do preset `Balanced`
 
 ### Dependências
 - D2.1
 
 ### Critério de pronto
 - o card comunica equilíbrio entre proteção e oportunidade
+- o card funciona com labels em inglês primeiro e traduzidas
 
-## Task D2.4: Desenhar card final do preset Mais ativo
+## Task D2.4: Desenhar card final do preset More active
 
 ### Objetivo
-Traduzir o preset `Mais ativo` em um card que comunica maior atividade sem parecer agressivo ou prometer retorno.
+Traduzir o preset `More active` em um card que comunica maior atividade sem parecer agressivo ou prometer retorno.
+
+### Prioridade
+P0
 
 ### Escopo
 - nome
@@ -126,18 +151,22 @@ Traduzir o preset `Mais ativo` em um card que comunica maior atividade sem parec
 - revisar linguagem para evitar interpretação de promessa de ganho
 
 ### Entregáveis
-- card final do preset `Mais ativo`
+- card final do preset `More active`
 
 ### Dependências
 - D2.1
 
 ### Critério de pronto
 - o card comunica mais atividade sem ambiguidade de risco
+- o card funciona com labels em inglês primeiro e traduzidas
 
 ## Task D2.5: Definir comparador resumido entre presets
 
 ### Objetivo
 Permitir comparação rápida sem exigir abertura de detalhes técnicos.
+
+### Prioridade
+P0
 
 ### Escopo
 - risco
@@ -163,11 +192,15 @@ Permitir comparação rápida sem exigir abertura de detalhes técnicos.
 
 ### Critério de pronto
 - o usuário compara os 3 presets sem sair da tela
+- o comparador continua legível em layouts traduzidos
 
 ## Task D2.6: Desenhar painel de revisão do preset selecionado
 
 ### Objetivo
 Definir a área onde o usuário revisa e ajusta apenas os campos permitidos do MVP.
+
+### Prioridade
+P0
 
 ### Escopo
 - resumo do preset selecionado
@@ -193,11 +226,15 @@ Definir a área onde o usuário revisa e ajusta apenas os campos permitidos do M
 
 ### Critério de pronto
 - o usuário entende o que será ativado e o que pode ajustar
+- o painel suporta labels traduzidas sem quebrar o layout
 
 ## Task D2.7: Definir bloco de ativação e estados do CTA
 
 ### Objetivo
 Especificar o fechamento da decisão de ativação do preset.
+
+### Prioridade
+P0
 
 ### Escopo
 - CTA primário
@@ -226,11 +263,15 @@ Especificar o fechamento da decisão de ativação do preset.
 
 ### Critério de pronto
 - o usuário entende claramente qual preset será ativado antes do clique final
+- o bloco de ativação suporta copy localizada e resumo traduzível
 
 ## Task D2.8: Validar comportamento mobile da tela de presets
 
 ### Objetivo
 Garantir que a experiência de presets continue clara e usável em telas pequenas.
+
+### Prioridade
+P1
 
 ### Escopo
 - cards empilhados
@@ -258,17 +299,22 @@ Garantir que a experiência de presets continue clara e usável em telas pequena
 
 ### Critério de pronto
 - o fluxo de escolha e ativação funciona sem atrito no mobile
+- o mobile tolera labels em inglês primeiro e strings traduzidas
 
 ## Task D2.9: Preparar handoff da Sprint 2 para Dev
 
 ### Objetivo
 Entregar ao time de desenvolvimento os artefatos necessários para implementar a tela de presets sem interpretação livre.
 
+### Prioridade
+P1
+
 ### Escopo
 - componentes
 - estados
 - textos
 - comportamento responsivo
+- orientação de chaves de i18n para a copy dos presets
 
 ### Atividades
 - nomear componentes da tela
@@ -293,6 +339,7 @@ Entregar ao time de desenvolvimento os artefatos necessários para implementar a
 
 ### Critério de pronto
 - o time de desenvolvimento consegue construir a tela de presets sem adivinhar comportamento visual
+- o time de desenvolvimento consegue construir a tela com copy em inglês primeiro e traduzida
 
 ## Definição de pronto da Sprint do Designer
 - os 3 presets estão visualmente fechados

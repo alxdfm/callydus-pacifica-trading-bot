@@ -34,9 +34,9 @@ Objetivo:
 Bloco central e mais importante da tela.
 
 Cards:
-- Mais seguro
-- Equilibrado
-- Mais ativo
+- Safer
+- Balanced
+- More active
 
 Cada card deve mostrar:
 - nome do preset
@@ -162,17 +162,17 @@ Uso:
 
 ## Sugestão de Conteúdo por Card
 
-### Mais seguro
+### Safer
 - risco: baixo
 - frequência: menor
 - foco: proteção e seletividade
 
-### Equilibrado
+### Balanced
 - risco: médio
 - frequência: equilibrada
 - foco: equilíbrio entre oportunidade e proteção
 
-### Mais ativo
+### More active
 - risco: médio
 - frequência: maior
 - foco: mais oportunidades com regras mais abertas

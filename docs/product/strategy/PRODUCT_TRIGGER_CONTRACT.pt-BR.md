@@ -185,7 +185,7 @@ Este é o formato base recomendado para o MVP.
 ### Estrutura Geral
 ```json
 {
-  "name": "Mais seguro",
+  "name": "Safer",
   "version": 1,
   "timeframe": "15m",
   "symbol": "BTC/USDC",

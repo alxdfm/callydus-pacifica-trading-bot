@@ -10,6 +10,14 @@ Deliver the visual foundation of the MVP and the complete onboarding flow at des
 - wallet states
 - Pacifica credential states
 - error and success messages
+- English-first copy base and i18n-ready labels
+
+## Definition of Ready
+- MVP scope lock is approved
+- MVP handoff pack is available
+- onboarding flow is not blocked by open product questions
+- the base language is English and the labels can be translated through i18n keys
+- no task should introduce editable strategy logic
 
 ## Final Sprint Deliverables
 - base MVP visual kit
@@ -25,6 +33,9 @@ Deliver the visual foundation of the MVP and the complete onboarding flow at des
 ### Objective
 Create the minimum visual foundation so onboarding and later screens are not designed inconsistently.
 
+### Priority
+P0
+
 ### Scope
 - colors
 - typography
@@ -33,6 +44,7 @@ Create the minimum visual foundation so onboarding and later screens are not des
 - inputs
 - cards
 - status badges
+- i18n-friendly text treatment
 
 ### Activities
 - define the main interface palette
@@ -61,6 +73,8 @@ Create the minimum visual foundation so onboarding and later screens are not des
   - disabled
 - define card pattern
 - define status badge pattern
+- define base text hierarchy for English-first and translated labels
+- define a compact pattern for key-based copy so later screens can translate without redesign
 
 ### Deliverables
 - color table
@@ -75,11 +89,15 @@ Create the minimum visual foundation so onboarding and later screens are not des
 - one visual base exists
 - defined components are enough to build onboarding
 - critical and destructive states are clearly distinguishable
+- the design system can support English and translated strings without breaking layout
 
 ## Task D1.2: Design onboarding desktop structure
 
 ### Objective
 Define the main onboarding experience for desktop.
+
+### Priority
+P0
 
 ### Scope
 - screen header
@@ -119,11 +137,15 @@ Define the main onboarding experience for desktop.
 - the screen can be understood visually without external explanation
 - the left-to-right or top-to-bottom flow is clear
 - the final action only gains emphasis when appropriate
+- the layout remains stable with English-first labels and translated fallback labels
 
 ## Task D1.3: Design onboarding mobile structure
 
 ### Objective
 Ensure onboarding stays short and clear on small screens.
+
+### Priority
+P0
 
 ### Scope
 - complete mobile onboarding version
@@ -150,11 +172,15 @@ Ensure onboarding stays short and clear on small screens.
 - the screen works in a single column
 - progress remains clear
 - CTA and messages remain readable without friction
+- mobile spacing tolerates longer translated strings without overlap
 
 ## Task D1.4: Define wallet visual states
 
 ### Objective
 Specify all Solana wallet connection states in an unambiguous way.
+
+### Priority
+P0
 
 ### Scope
 - not connected
@@ -182,11 +208,15 @@ Specify all Solana wallet connection states in an unambiguous way.
 - states are distinguishable within a few seconds
 - success and error cannot be confused
 - loading does not look like a frozen state
+- state labels remain readable in English-first UI and localized versions
 
 ## Task D1.5: Define Pacifica credential visual states
 
 ### Objective
 Specify the visual behavior of fields and credential validation.
+
+### Priority
+P0
 
 ### Scope
 - empty
@@ -216,11 +246,15 @@ Specify the visual behavior of fields and credential validation.
 - the user understands when action is needed
 - error stays close to the problem
 - successful validation is unambiguous
+- field labels and helper text are reusable through translation keys
 
 ## Task D1.6: Define onboarding error and success messages
 
 ### Objective
 Standardize the main Sprint 1 microcopy to reduce ambiguity.
+
+### Priority
+P0
 
 ### Scope
 - wallet
@@ -229,6 +263,7 @@ Standardize the main Sprint 1 microcopy to reduce ambiguity.
 - blocked continuation
 
 ### Activities
+- define English-first base copy for all onboarding states
 - define message for disconnected wallet
 - define message for wallet connection failure
 - define message for invalid credentials
@@ -246,17 +281,22 @@ Standardize the main Sprint 1 microcopy to reduce ambiguity.
 ### Done criteria
 - all messages are short, actionable, and consistent
 - there is no excessively technical language
+- the same message structure can be translated without changing layout rules
 
 ## Task D1.7: Prepare Sprint 1 handoff for Dev
 
 ### Objective
 Ensure the development team can implement Sprint 1 without visual guesswork.
 
+### Priority
+P1
+
 ### Scope
 - artifact organization
 - component naming
 - states
 - responsive notes
+- i18n key guidance for onboarding copy
 
 ### Activities
 - name main components

@@ -77,9 +77,9 @@ O trabalho de Design cobre:
 - painel de revisão do preset selecionado
 
 ### Tasks
-- desenhar card final do preset `Mais seguro`
-- desenhar card final do preset `Equilibrado`
-- desenhar card final do preset `Mais ativo`
+- desenhar card final do preset `Safer`
+- desenhar card final do preset `Balanced`
+- desenhar card final do preset `More active`
 - definir visual de risco e frequência
 - definir comparador resumido entre presets
 - desenhar painel com campos editáveis do MVP

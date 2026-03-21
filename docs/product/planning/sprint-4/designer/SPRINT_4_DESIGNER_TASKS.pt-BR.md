@@ -12,6 +12,14 @@ Entregar as telas de Trades Atuais e Historico com foco em intervencao manual se
 - tela mobile de historico
 - leitura de resultado e motivo de encerramento
 - identificacao de trades da plataforma
+- copy base em inglês e labels preparados para i18n
+
+## Definition of Ready
+- o MVP Scope Lock está aprovado
+- o MVP Handoff Pack está disponível
+- dashboard e presets já estão em produção de documentação
+- a linguagem base é inglês e a interface precisa aceitar tradução
+- nenhuma task deve expor JSON ou lógica técnica ao usuário final
 
 ## Entregaveis finais da Sprint
 - tela final de Trades Atuais desktop
@@ -29,12 +37,16 @@ Entregar as telas de Trades Atuais e Historico com foco em intervencao manual se
 ### Objetivo
 Definir a organizacao macro da tela de Trades Atuais para desktop e mobile, priorizando a intervencao por trade sem poluir a leitura.
 
+### Prioridade
+P0
+
 ### Escopo
 - header da tela
 - resumo operacional
 - lista principal de trades abertos
 - filtros ou segmentacoes minimas, se necessarios
 - area de acao por trade
+- areas preparadas para copy traduzida
 
 ### Atividades
 - definir ordem dos blocos da tela
@@ -42,6 +54,7 @@ Definir a organizacao macro da tela de Trades Atuais para desktop e mobile, prio
 - validar se a tela responde rapido a pergunta "em qual trade eu atuo agora?"
 - ajustar a densidade de informacao para nao competir com o dashboard
 - definir adaptacao da estrutura para mobile
+- confirmar que o layout suporta copy em ingles primeiro e localizada
 
 ### Entregaveis
 - estrutura visual final da tela de Trades Atuais
@@ -52,11 +65,15 @@ Definir a organizacao macro da tela de Trades Atuais para desktop e mobile, prio
 ### Criterio de pronto
 - a tela tem foco operacional claro
 - a acao por trade aparece como prioridade primaria
+- a estrutura tolera strings traduzidas mais longas
 
 ## Task D4.2: Desenhar item base de trade aberto
 
 ### Objetivo
 Definir o componente principal que representa um trade aberto na lista.
+
+### Prioridade
+P0
 
 ### Escopo
 - simbolo
@@ -84,11 +101,15 @@ Definir o componente principal que representa um trade aberto na lista.
 ### Criterio de pronto
 - cada item pode ser escaneado rapidamente
 - o usuario entende o estado do trade sem abrir detalhes
+- o item funciona com labels traduzidas e helper text
 
 ## Task D4.3: Definir sistema visual de status e direcao para trades abertos
 
 ### Objetivo
 Criar uma linguagem visual consistente para diferenciar direcao, estado operacional e origem do trade.
+
+### Prioridade
+P0
 
 ### Escopo
 - `long`
@@ -113,11 +134,15 @@ Criar uma linguagem visual consistente para diferenciar direcao, estado operacio
 ### Criterio de pronto
 - o usuario diferencia direcao e origem em poucos segundos
 - a tela nao depende apenas de texto para comunicar estado
+- os labels de estado sao compativeis com i18n
 
 ## Task D4.4: Desenhar fluxo visual de encerramento manual
 
 ### Objetivo
 Definir uma acao de encerramento manual clara e segura, evitando cliques acidentais.
+
+### Prioridade
+P0
 
 ### Escopo
 - botao `Encerrar`
@@ -142,11 +167,15 @@ Definir uma acao de encerramento manual clara e segura, evitando cliques acident
 ### Criterio de pronto
 - o encerramento manual parece seguro e intencional
 - o usuario entende que a acao nao pausa o bot inteiro
+- a confirmacao e a copy de risco podem ser traduzidas sem redesenho
 
 ## Task D4.5: Fechar arquitetura visual da tela de Historico
 
 ### Objetivo
 Definir a organizacao macro da tela de Historico para leitura rapida de resultados e revisao de encerramentos.
+
+### Prioridade
+P0
 
 ### Escopo
 - header da tela
@@ -171,11 +200,15 @@ Definir a organizacao macro da tela de Historico para leitura rapida de resultad
 ### Criterio de pronto
 - a tela responde rapidamente a pergunta "o que aconteceu?"
 - o historico tem leitura clara sem excesso de detalhes
+- a estrutura tolera copy localizada e labels mais longos
 
 ## Task D4.6: Desenhar item base de trade encerrado
 
 ### Objetivo
 Definir o componente principal que representa um trade encerrado no historico.
+
+### Prioridade
+P0
 
 ### Escopo
 - simbolo
@@ -201,11 +234,15 @@ Definir o componente principal que representa um trade encerrado no historico.
 ### Criterio de pronto
 - o item mostra resultado e motivo com clareza imediata
 - a leitura do historico continua compacta
+- o item funciona com labels traduzidas e texto de motivo
 
 ## Task D4.7: Definir sistema visual de resultados e motivos de encerramento
 
 ### Objetivo
 Padronizar como o historico comunica lucro/prejuizo e razao de saida.
+
+### Prioridade
+P0
 
 ### Escopo
 - positivo
@@ -231,11 +268,15 @@ Padronizar como o historico comunica lucro/prejuizo e razao de saida.
 ### Criterio de pronto
 - motivos de encerramento sao distintos entre si
 - lucro e prejuizo sao percebidos de forma imediata
+- os labels de motivo sao compativeis com inglês primeiro e traduzido
 
 ## Task D4.8: Validar comportamento mobile das telas de Sprint 4
 
 ### Objetivo
 Garantir que Trades Atuais e Historico mantenham utilidade operacional em telas pequenas.
+
+### Prioridade
+P1
 
 ### Escopo
 - ordem dos blocos
@@ -261,11 +302,15 @@ Garantir que Trades Atuais e Historico mantenham utilidade operacional em telas 
 
 ### Criterio de pronto
 - as duas telas continuam usaveis e escaneaveis no mobile
+- o mobile tolera strings traduzidas mais longas
 
 ## Task D4.9: Preparar handoff da Sprint 4 para Dev
 
 ### Objetivo
 Entregar o pacote de design necessario para implementacao fiel das telas e interacoes da sprint.
+
+### Prioridade
+P1
 
 ### Escopo
 - componentes
@@ -273,6 +318,7 @@ Entregar o pacote de design necessario para implementacao fiel das telas e inter
 - regras visuais
 - interacoes de encerramento
 - comportamento responsivo
+- orientação de chaves de i18n para trades e historico
 
 ### Atividades
 - organizar componentes finais da sprint
@@ -297,3 +343,4 @@ Entregar o pacote de design necessario para implementacao fiel das telas e inter
 ### Criterio de pronto
 - Dev consegue implementar as telas sem ambiguidade relevante
 - os estados principais e a interacao critica de encerramento estao documentados
+- o handoff suporta labels em inglês primeiro e localizadas

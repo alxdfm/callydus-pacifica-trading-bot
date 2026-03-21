@@ -12,6 +12,14 @@ Deliver the Current Trades and History screens at design level, with focus on sa
 - history mobile screen
 - result and close reason readability
 - platform trade identification
+- English-first copy base and i18n-ready labels
+
+## Definition of Ready
+- MVP scope lock is approved
+- MVP handoff pack is available
+- dashboard and presets are already in place
+- the base language is English and labels must be translation-friendly
+- no task should expose technical JSON or strategy logic
 
 ## Final Sprint Deliverables
 - final Current Trades desktop screen
@@ -29,12 +37,16 @@ Deliver the Current Trades and History screens at design level, with focus on sa
 ### Objective
 Define the macro organization of the Current Trades screen for desktop and mobile, prioritizing per-trade intervention without cluttering the reading flow.
 
+### Priority
+P0
+
 ### Scope
 - screen header
 - operational summary
 - main open trades list
 - minimal filters or segmentations, if needed
 - per-trade action area
+- translation-friendly content areas
 
 ### Activities
 - define the order of the screen blocks
@@ -42,6 +54,7 @@ Define the macro organization of the Current Trades screen for desktop and mobil
 - validate whether the screen answers "which trade should I act on now?"
 - adjust information density so it does not compete with the dashboard
 - define how the structure adapts to mobile
+- confirm the layout tolerates English-first and localized copy
 
 ### Deliverables
 - final visual structure of the Current Trades screen
@@ -52,11 +65,15 @@ Define the macro organization of the Current Trades screen for desktop and mobil
 ### Done Criteria
 - the screen has clear operational focus
 - the per-trade action is visible as the main priority
+- the layout supports longer translated strings
 
 ## Task D4.2: Design the base open trade item
 
 ### Objective
 Define the main component that represents an open trade in the list.
+
+### Priority
+P0
 
 ### Scope
 - symbol
@@ -84,11 +101,15 @@ Define the main component that represents an open trade in the list.
 ### Done Criteria
 - each item can be scanned quickly
 - the user understands the trade state without opening details
+- the item works with translated labels and helper text
 
 ## Task D4.3: Define the visual system for status and direction in open trades
 
 ### Objective
 Create a consistent visual language to differentiate direction, operational state, and trade origin.
+
+### Priority
+P0
 
 ### Scope
 - `long`
@@ -113,11 +134,15 @@ Create a consistent visual language to differentiate direction, operational stat
 ### Done Criteria
 - the user distinguishes direction and origin in a few seconds
 - the screen does not rely only on text to communicate state
+- the state labels are compatible with i18n
 
 ## Task D4.4: Design the manual close visual flow
 
 ### Objective
 Define a clear and safe manual close action, avoiding accidental clicks.
+
+### Priority
+P0
 
 ### Scope
 - `Close` button
@@ -142,11 +167,15 @@ Define a clear and safe manual close action, avoiding accidental clicks.
 ### Done Criteria
 - the manual close action feels safe and intentional
 - the user understands that the action does not pause the whole bot
+- the confirmation and risk copy can be translated without redesign
 
 ## Task D4.5: Lock the visual architecture of the History screen
 
 ### Objective
 Define the macro organization of the History screen for quick result reading and review of closures.
+
+### Priority
+P0
 
 ### Scope
 - screen header
@@ -171,11 +200,15 @@ Define the macro organization of the History screen for quick result reading and
 ### Done Criteria
 - the screen quickly answers "what happened?"
 - the history has clear reading without excessive detail
+- the structure tolerates localized copy and longer labels
 
 ## Task D4.6: Design the base closed trade item
 
 ### Objective
 Define the main component that represents a closed trade in history.
+
+### Priority
+P0
 
 ### Scope
 - symbol
@@ -201,11 +234,15 @@ Define the main component that represents a closed trade in history.
 ### Done Criteria
 - the item shows result and reason with immediate clarity
 - the history remains compact to read
+- the item works with translated labels and reason text
 
 ## Task D4.7: Define the visual system for results and close reasons
 
 ### Objective
 Standardize how history communicates profit/loss and exit reason.
+
+### Priority
+P0
 
 ### Scope
 - positive
@@ -231,11 +268,15 @@ Standardize how history communicates profit/loss and exit reason.
 ### Done Criteria
 - close reasons are distinguishable from each other
 - profit and loss are perceived immediately
+- the reason labels are compatible with English-first and translated copy
 
 ## Task D4.8: Validate mobile behavior for Sprint 4 screens
 
 ### Objective
 Ensure that Current Trades and History remain operationally useful on small screens.
+
+### Priority
+P1
 
 ### Scope
 - block order
@@ -261,11 +302,15 @@ Ensure that Current Trades and History remain operationally useful on small scre
 
 ### Done Criteria
 - both screens remain usable and scannable on mobile
+- mobile layout tolerates longer translated strings
 
 ## Task D4.9: Prepare the Sprint 4 handoff for Dev
 
 ### Objective
 Deliver the design package required for faithful implementation of the sprint screens and interactions.
+
+### Priority
+P1
 
 ### Scope
 - components
@@ -273,6 +318,7 @@ Deliver the design package required for faithful implementation of the sprint sc
 - visual rules
 - close interactions
 - responsive behavior
+- i18n key guidance for trade and history copy
 
 ### Activities
 - organize the final sprint components
@@ -297,3 +343,4 @@ Deliver the design package required for faithful implementation of the sprint sc
 ### Done Criteria
 - Dev can implement the screens without significant ambiguity
 - the key states and the critical close interaction are documented
+- the handoff supports English-first and localized labels

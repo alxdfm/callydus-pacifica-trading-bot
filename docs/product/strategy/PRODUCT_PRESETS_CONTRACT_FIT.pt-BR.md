@@ -6,11 +6,11 @@ Verificar se a proposta inicial de presets atende ao contrato de triggers, risco
 ## Resumo Executivo
 A proposta inicial **atende ao contrato**.
 
-O ponto de volume foi resolvido ao adotar `volumeSma` como indicador derivado no catálogo final. Isso mantém o contrato principal intacto e deixa os presets Equilibrado e Mais ativo objetivos.
+O ponto de volume foi resolvido ao adotar `volumeSma` como indicador derivado no catálogo final. Isso mantém o contrato principal intacto e deixa os presets Balanced e More active objetivos.
 
 ## Conclusão por Preset
 
-### 1. Mais seguro
+### 1. Safer
 **Status:** atende diretamente.
 
 **Por que encaixa**
@@ -27,7 +27,7 @@ O ponto de volume foi resolvido ao adotar `volumeSma` como indicador derivado no
 **Ajuste necessário**
 - nenhum ajuste estrutural
 
-### 2. Equilibrado
+### 2. Balanced
 **Status:** atende diretamente.
 
 **Por que encaixa**
@@ -45,7 +45,7 @@ O ponto de volume foi resolvido ao adotar `volumeSma` como indicador derivado no
 **Ajuste necessário**
 - nenhum ajuste estrutural
 
-### 3. Mais ativo
+### 3. More active
 **Status:** atende diretamente.
 
 **Por que encaixa**
@@ -57,17 +57,17 @@ O ponto de volume foi resolvido ao adotar `volumeSma` como indicador derivado no
 - o volume precisa entrar como gatilho explícito, não como noção genérica
 
 **Leitura de contrato**
-- mais sinais que o Mais seguro
-- menos filtragem que o Mais seguro
+- mais sinais que o Safer
+- menos filtragem que o Safer
 - mais atividade visual na interface
 
 **Ajuste necessário**
 - nenhum ajuste estrutural
 
 ## Veredito de Produto
-- **Mais seguro:** pronto
-- **Equilibrado:** pronto
-- **Mais ativo:** pronto
+- **Safer:** pronto
+- **Balanced:** pronto
+- **More active:** pronto
 
 ## Recomendação
 Manter o contrato como está e fechar `volumeSma` no catálogo final de indicadores.

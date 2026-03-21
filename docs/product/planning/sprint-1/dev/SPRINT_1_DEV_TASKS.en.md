@@ -11,6 +11,14 @@ Deliver the technical foundation of the application and the functional onboardin
 - Solana wallet integration
 - Pacifica credential capture and validation
 - dashboard access guard
+- i18n foundation with English default locale
+
+## Definition of Ready
+- MVP scope lock is approved
+- MVP handoff pack is available
+- onboarding behavior is clear on wallet, credentials, and guards
+- the first locale is English and translation keys are expected from day one
+- no task should introduce editable strategy logic outside the locked scope
 
 ## Final Sprint Deliverables
 - navigable web app with base layout
@@ -24,11 +32,15 @@ Deliver the technical foundation of the application and the functional onboardin
 ### Objective
 Create the technical foundation that will support MVP screens.
 
+### Priority
+P0
+
 ### Scope
 - page structure
 - shared layout
 - main routing
 - main route placeholders
+- i18n provider and message loading skeleton
 
 ### Activities
 - define frontend directory structure
@@ -43,11 +55,14 @@ Create the technical foundation that will support MVP screens.
   - current trades
   - history
 - ensure the app starts in a coherent flow
+- set English as the default UI locale
+- wire the translation mechanism so labels are not hard-coded in screen components
 
 ### Deliverables
 - functional app shell
 - main routes created
 - reusable base layout
+- i18n-ready application shell
 
 ### Dependencies
 - none
@@ -56,29 +71,36 @@ Create the technical foundation that will support MVP screens.
 - user can navigate through the basic structure
 - main screens exist at least as placeholders
 - shared layout works on desktop and mobile
+- the shell can render English-first labels and support localized strings
 
 ## Task V1.2: Implement minimum global application state
 
 ### Objective
 Create the minimum state layer needed for Sprint 1.
 
+### Priority
+P0
+
 ### Scope
 - onboarding state
 - wallet state
 - credentials state
 - product lock/unlock state
+- active locale state
 
 ### Activities
 - define onboarding state model
 - define wallet state model
 - define credentials state model
 - define general app status model
+- define locale model with English as the default
 - implement minimum session persistence
 - expose state readers for route guards
 
 ### Deliverables
 - minimum global state layer
 - basic session persistence
+- locale-aware app state
 
 ### Dependencies
 - V1.1
@@ -86,11 +108,15 @@ Create the minimum state layer needed for Sprint 1.
 ### Done criteria
 - the state can be consumed between onboarding and the main app
 - reload does not improperly destroy Sprint 1 flow
+- the current locale can be read by every screen without special casing
 
 ## Task V1.3: Implement onboarding screen
 
 ### Objective
 Build the main onboarding screen according to the defined product flow.
+
+### Priority
+P0
 
 ### Scope
 - header
@@ -99,6 +125,7 @@ Build the main onboarding screen according to the defined product flow.
 - credentials card
 - account status panel
 - final CTA
+- copy driven by translation keys
 
 ### Activities
 - implement screen visual structure
@@ -108,6 +135,7 @@ Build the main onboarding screen according to the defined product flow.
 - implement account status panel
 - implement `Continue to Dashboard` button
 - implement responsive version
+- consume localized labels and messages from the i18n layer
 
 ### Deliverables
 - onboarding screen rendered
@@ -121,11 +149,15 @@ Build the main onboarding screen according to the defined product flow.
 - all main onboarding blocks exist
 - screen works on desktop and mobile
 - final CTA reacts to flow state
+- the screen does not depend on hard-coded copy
 
 ## Task V1.4: Integrate Solana wallet connection
 
 ### Objective
 Allow the user to connect their Solana wallet inside onboarding.
+
+### Priority
+P0
 
 ### Scope
 - connection action
@@ -155,11 +187,15 @@ Allow the user to connect their Solana wallet inside onboarding.
 - user connects wallet successfully
 - connection error is handled
 - connected state unlocks the next step
+- the wallet flow does not break locale handling or translated labels
 
 ## Task V1.5: Implement Pacifica credentials form
 
 ### Objective
 Allow the user to provide the credentials required to operate the bot.
+
+### Priority
+P0
 
 ### Scope
 - fields
@@ -189,11 +225,15 @@ Allow the user to provide the credentials required to operate the bot.
 ### Done criteria
 - user can fill and submit credentials
 - form states display correctly
+- field labels and helper messages come from the i18n layer
 
 ## Task V1.6: Validate Pacifica credentials
 
 ### Objective
 Ensure only valid credentials unlock product access.
+
+### Priority
+P0
 
 ### Scope
 - validation request
@@ -220,11 +260,15 @@ Ensure only valid credentials unlock product access.
 - valid credentials unlock progression
 - invalid credentials block progression
 - feedback messages appear correctly
+- validation feedback is sourced from localized messages
 
 ## Task V1.7: Implement product access guards
 
 ### Objective
 Block dashboard and the rest of the app when onboarding is incomplete.
+
+### Priority
+P0
 
 ### Scope
 - route guards
@@ -251,11 +295,15 @@ Block dashboard and the rest of the app when onboarding is incomplete.
 ### Done criteria
 - user cannot enter the product without valid onboarding
 - manual access to protected routes is intercepted
+- guarded routes still resolve the active locale correctly
 
 ## Task V1.8: Adjust Sprint 1 loading, empty, and error states
 
 ### Objective
 Prevent onboarding from feeling broken during transitions and failures.
+
+### Priority
+P1
 
 ### Scope
 - wallet loading
@@ -283,11 +331,15 @@ Prevent onboarding from feeling broken during transitions and failures.
 - the user understands when the system is processing
 - errors do not leave the screen ambiguous
 - final CTA reacts correctly to state
+- loading and error copy is localized through the same i18n mechanism
 
 ## Task V1.9: Validate the complete Sprint 1 flow
 
 ### Objective
 Ensure the Sprint 1 deliverable works end to end.
+
+### Priority
+P1
 
 ### Scope
 - full flow
@@ -324,6 +376,7 @@ Ensure the Sprint 1 deliverable works end to end.
 - the main Sprint 1 flow works end to end
 - the main failures are covered
 - the product can move into Sprint 2 without structural blockers
+- English-first copy is visible end to end and the i18n fallback works
 
 ## Definition of done for the Dev sprint
 - base application is navigable

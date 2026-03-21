@@ -11,6 +11,14 @@ Entregar o Dashboard completo em nível de design, com hierarquia visual clara, 
 - bloco de trades atuais
 - bloco de trades recentes
 - faixa de alertas
+- copy base em inglês e labels preparados para i18n
+
+## Definition of Ready
+- o MVP Scope Lock está aprovado
+- o MVP Handoff Pack está disponível
+- o dashboard está fechado como centro operacional
+- a linguagem base é inglês e a tela precisa aceitar tradução
+- nenhum layout deve expor JSON ou lógica técnica ao usuário final
 
 ## Entregáveis finais da Sprint
 - dashboard desktop completo
@@ -27,6 +35,9 @@ Entregar o Dashboard completo em nível de design, com hierarquia visual clara, 
 ### Objetivo
 Definir a organização macro da tela do Dashboard para desktop e mobile.
 
+### Prioridade
+P0
+
 ### Escopo
 - header operacional
 - cards de resumo
@@ -34,6 +45,7 @@ Definir a organização macro da tela do Dashboard para desktop e mobile.
 - trades atuais
 - trades recentes
 - alertas
+- áreas preparadas para copy traduzida
 
 ### Atividades
 - validar ordem dos blocos no desktop
@@ -41,6 +53,7 @@ Definir a organização macro da tela do Dashboard para desktop e mobile.
 - definir grid principal da tela
 - garantir que o dashboard responde às perguntas centrais do produto
 - ajustar equilíbrio entre blocos principais e blocos secundários
+- confirmar que o layout suporta copy em inglês primeiro e localizada
 
 ### Entregáveis
 - estrutura visual final do Dashboard
@@ -51,11 +64,15 @@ Definir a organização macro da tela do Dashboard para desktop e mobile.
 ### Critério de pronto
 - a tela tem hierarquia clara
 - o dashboard parece um centro operacional e não um terminal analítico
+- a estrutura tolera strings traduzidas mais longas
 
 ## Task D3.2: Desenhar header operacional do Dashboard
 
 ### Objetivo
 Definir o bloco superior que resume o estado global da conta e do bot.
+
+### Prioridade
+P0
 
 ### Escopo
 - título
@@ -78,11 +95,15 @@ Definir o bloco superior que resume o estado global da conta e do bot.
 
 ### Critério de pronto
 - o usuário entende rapidamente se o sistema está pronto e operando
+- o header funciona com labels em inglês primeiro e traduzidas
 
 ## Task D3.3: Desenhar cards de resumo
 
 ### Objetivo
 Definir os cards de leitura imediata da conta.
+
+### Prioridade
+P0
 
 ### Escopo
 - saldo atual
@@ -106,11 +127,15 @@ Definir os cards de leitura imediata da conta.
 ### Critério de pronto
 - os cards podem ser escaneados rapidamente
 - o PnL tem leitura clara sem dominar toda a interface
+- os cards continuam legíveis com labels traduzidas
 
 ## Task D3.4: Desenhar bloco de preset ativo
 
 ### Objetivo
 Definir o componente que mostra qual automação está rodando no momento.
+
+### Prioridade
+P0
 
 ### Escopo
 - nome do preset
@@ -135,11 +160,15 @@ Definir o componente que mostra qual automação está rodando no momento.
 
 ### Critério de pronto
 - o usuário entende rapidamente qual estratégia está ativa
+- o bloco suporta labels de preset traduzidas e helper text
 
 ## Task D3.5: Desenhar bloco de trades atuais no Dashboard
 
 ### Objetivo
 Definir a apresentação resumida dos trades abertos dentro do Dashboard.
+
+### Prioridade
+P0
 
 ### Escopo
 - lista resumida
@@ -162,11 +191,15 @@ Definir a apresentação resumida dos trades abertos dentro do Dashboard.
 ### Critério de pronto
 - os trades atuais têm prioridade visual sobre o histórico
 - a ação principal por trade é visível
+- o bloco tolera labels traduzidas sem perder densidade
 
 ## Task D3.6: Desenhar bloco de trades recentes
 
 ### Objetivo
 Definir o contexto rápido de histórico recente dentro do Dashboard.
+
+### Prioridade
+P1
 
 ### Escopo
 - resultado
@@ -187,11 +220,15 @@ Definir o contexto rápido de histórico recente dentro do Dashboard.
 
 ### Critério de pronto
 - histórico recente aparece como contexto, não como foco principal
+- o bloco permanece legível em inglês primeiro e traduzido
 
 ## Task D3.7: Desenhar faixa de alertas e estados críticos
 
 ### Objetivo
 Definir como erros, alertas e reconciliação aparecem no Dashboard.
+
+### Prioridade
+P0
 
 ### Escopo
 - erro
@@ -213,11 +250,15 @@ Definir como erros, alertas e reconciliação aparecem no Dashboard.
 
 ### Critério de pronto
 - problemas aparecem de forma visível sem poluir a tela
+- o texto de alertas continua compatível com i18n
 
 ## Task D3.8: Validar comportamento mobile do Dashboard
 
 ### Objetivo
 Garantir que o dashboard continue útil e legível em telas pequenas.
+
+### Prioridade
+P1
 
 ### Escopo
 - ordem dos blocos
@@ -245,17 +286,22 @@ Garantir que o dashboard continue útil e legível em telas pequenas.
 
 ### Critério de pronto
 - a tela continua escaneável e operacional no mobile
+- o mobile tolera strings mais longas traduzidas
 
 ## Task D3.9: Preparar handoff da Sprint 3 para Dev
 
 ### Objetivo
 Entregar o pacote necessário para implementação fiel do Dashboard.
 
+### Prioridade
+P1
+
 ### Escopo
 - componentes
 - estados
 - regras de hierarquia
 - comportamento responsivo
+- orientação de chaves de i18n para a copy do dashboard
 
 ### Atividades
 - nomear componentes do dashboard
@@ -279,6 +325,7 @@ Entregar o pacote necessário para implementação fiel do Dashboard.
 
 ### Critério de pronto
 - o time de desenvolvimento consegue implementar o dashboard sem adivinhar intenção visual
+- o time de desenvolvimento consegue implementar o dashboard com copy em inglês primeiro e traduzida
 
 ## Definição de pronto da Sprint do Designer
 - dashboard desktop e mobile estão fechados

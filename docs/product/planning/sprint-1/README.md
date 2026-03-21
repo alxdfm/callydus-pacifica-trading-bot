@@ -7,6 +7,7 @@ Centralize the detailed execution plan for Sprint 1.
 Sprint 1 focuses on:
 - foundations
 - onboarding
+- i18n foundation
 
 ## Structure
 - [Designer tasks](./designer/SPRINT_1_DESIGNER_TASKS.en.md)

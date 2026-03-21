@@ -13,6 +13,14 @@ Entregar as telas funcionais de Trades Atuais e Historico, com capacidade de int
 - motivo de encerramento
 - identificacao de trade da plataforma
 - estados de loading, vazio e erro
+- inglês como locale padrão e copy pronta para i18n
+
+## Definition of Ready
+- o MVP Scope Lock está aprovado
+- o MVP Handoff Pack está disponível
+- o dashboard já fornece estado operacional
+- a linguagem base é inglês e chaves de tradução são esperadas
+- nenhuma task deve introduzir lógica de estratégia fora do escopo travado
 
 ## Entregaveis finais da Sprint
 - tela funcional de Trades Atuais
@@ -30,12 +38,16 @@ Entregar as telas funcionais de Trades Atuais e Historico, com capacidade de int
 ### Objetivo
 Construir a rota e a estrutura principal da tela de Trades Atuais usando o layout compartilhado da aplicacao.
 
+### Prioridade
+P0
+
 ### Escopo
 - rota da tela
 - header
 - resumo curto, se previsto
 - lista principal
 - estados base da tela
+- áreas de conteúdo prontas para i18n
 
 ### Atividades
 - criar rota de Trades Atuais
@@ -43,9 +55,11 @@ Construir a rota e a estrutura principal da tela de Trades Atuais usando o layou
 - alinhar os blocos com a hierarquia definida em produto e design
 - garantir responsividade base da pagina
 - preparar pontos de integracao para lista e acao por trade
+- ligar a tela ao locale ativo para que labels não fiquem hard-coded
 
 ### Entregaveis
 - estrutura funcional da tela de Trades Atuais
+- estrutura de Trades Atuais pronta para i18n
 
 ### Dependencias
 - outputs das Sprint 1, 2 e 3
@@ -53,11 +67,15 @@ Construir a rota e a estrutura principal da tela de Trades Atuais usando o layou
 ### Criterio de pronto
 - a tela existe como rota funcional e responsiva
 - a lista de trades pode ser integrada sem retrabalho estrutural
+- a tela renderiza copy em inglês primeiro e labels traduzidas
 
 ## Task V4.2: Integrar lista de trades abertos
 
 ### Objetivo
 Exibir os trades atualmente abertos com os campos necessarios para monitoramento e intervencao.
+
+### Prioridade
+P0
 
 ### Escopo
 - simbolo
@@ -83,11 +101,15 @@ Exibir os trades atualmente abertos com os campos necessarios para monitoramento
 
 ### Criterio de pronto
 - usuario consegue entender quais trades estao abertos e seu estado basico
+- labels da lista permanecem locale-aware
 
 ## Task V4.3: Implementar acao de encerramento manual por trade
 
 ### Objetivo
 Permitir que o usuario encerre um trade especifico sem pausar o bot inteiro.
+
+### Prioridade
+P0
 
 ### Escopo
 - CTA `Encerrar`
@@ -111,11 +133,15 @@ Permitir que o usuario encerre um trade especifico sem pausar o bot inteiro.
 ### Criterio de pronto
 - usuario consegue encerrar um trade individualmente
 - a acao nao interfere no estado global do bot alem do trade selecionado
+- a confirmacao do encerramento vem da camada de i18n
 
 ## Task V4.4: Sincronizar atualizacao apos encerramento manual
 
 ### Objetivo
 Garantir consistencia entre Trades Atuais, Dashboard e Historico apos o encerramento de um trade.
+
+### Prioridade
+P0
 
 ### Escopo
 - remocao da lista de trades abertos
@@ -139,17 +165,22 @@ Garantir consistencia entre Trades Atuais, Dashboard e Historico apos o encerram
 
 ### Criterio de pronto
 - o estado da aplicacao permanece consistente depois da acao manual
+- labels de resultado permanecem localizados na UI e agnosticos no estado
 
 ## Task V4.5: Implementar estrutura base da tela de Historico
 
 ### Objetivo
 Construir a rota e a estrutura principal da tela de Historico.
 
+### Prioridade
+P0
+
 ### Escopo
 - rota da tela
 - header
 - lista de trades encerrados
 - estados base da tela
+- áreas de conteúdo prontas para i18n
 
 ### Atividades
 - criar rota de Historico
@@ -157,20 +188,26 @@ Construir a rota e a estrutura principal da tela de Historico.
 - alinhar blocos com produto e design
 - garantir responsividade base da pagina
 - preparar pontos de integracao para lista e filtros minimos, se existirem
+- ligar a tela ao locale ativo para que labels não fiquem hard-coded
 
 ### Entregaveis
 - estrutura funcional da tela de Historico
+- estrutura de Historico pronta para i18n
 
 ### Dependencias
 - outputs das Sprint 1 e 3
 
 ### Criterio de pronto
 - a tela existe como rota funcional e responsiva
+- a tela renderiza copy em inglês primeiro e labels traduzidas
 
 ## Task V4.6: Integrar lista de trades encerrados
 
 ### Objetivo
 Exibir os trades encerrados com os campos necessarios para revisao operacional.
+
+### Prioridade
+P0
 
 ### Escopo
 - simbolo
@@ -196,11 +233,15 @@ Exibir os trades encerrados com os campos necessarios para revisao operacional.
 
 ### Criterio de pronto
 - usuario consegue revisar rapidamente o que ocorreu nos trades encerrados
+- labels da lista permanecem locale-aware
 
 ## Task V4.7: Exibir identificacao da origem do trade e motivo de encerramento
 
 ### Objetivo
 Dar contexto suficiente para o usuario distinguir trades da plataforma e entender por que cada trade foi encerrado.
+
+### Prioridade
+P0
 
 ### Escopo
 - trade criado pela plataforma
@@ -226,11 +267,15 @@ Dar contexto suficiente para o usuario distinguir trades da plataforma e entende
 
 ### Criterio de pronto
 - o usuario entende se o trade veio da plataforma e como ele terminou
+- origem e motivo usam copy localizada
 
 ## Task V4.8: Implementar estados de loading, vazio e erro das telas da Sprint 4
 
 ### Objetivo
 Evitar ambiguidade quando as telas ainda nao tiverem dados ou enfrentarem falhas.
+
+### Prioridade
+P1
 
 ### Escopo
 - trades atuais
@@ -255,11 +300,15 @@ Evitar ambiguidade quando as telas ainda nao tiverem dados ou enfrentarem falhas
 
 ### Criterio de pronto
 - nenhuma tela parece quebrada durante carregamento, ausencia de dados ou falha
+- loading e erro usam a camada de i18n
 
 ## Task V4.9: Validar fluxo completo da Sprint 4
 
 ### Objetivo
 Garantir que o usuario consiga acompanhar trades abertos, encerrar manualmente quando necessario e revisar o resultado no historico.
+
+### Prioridade
+P1
 
 ### Escopo
 - carregamento de trades atuais
@@ -285,3 +334,4 @@ Garantir que o usuario consiga acompanhar trades abertos, encerrar manualmente q
 ### Criterio de pronto
 - o fluxo principal da sprint funciona sem inconsistencias relevantes
 - a sprint pode ser demonstrada como capacidade real de monitoramento e intervencao
+- os fluxos em inglês primeiro e traduzidos se comportam da mesma forma
