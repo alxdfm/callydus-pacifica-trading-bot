@@ -15,6 +15,8 @@ Sprint 1 focuses on:
 - [Development tasks](./dev/SPRINT_1_DEV_TASKS.en.md)
 
 ## Portuguese References
+- [Agent Wallet pending PT-BR](./SPRINT_1_AGENT_WALLET_PENDING.pt-BR.md)
+- [Wallet PO decision PT-BR](./SPRINT_1_WALLET_PO_DECISION.pt-BR.md)
 - [Go/No-Go PT-BR](./SPRINT_1_GO_NO_GO.pt-BR.md)
 - [Tracker PT-BR](./TRACKER.pt-BR.md)
 - [Execution handoff PT-BR](./SPRINT_1_EXECUTION_HANDOFF.pt-BR.md)
