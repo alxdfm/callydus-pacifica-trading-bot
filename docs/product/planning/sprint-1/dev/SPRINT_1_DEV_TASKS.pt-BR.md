@@ -9,7 +9,7 @@ Entregar a base técnica da aplicação e o fluxo funcional de onboarding, bloqu
 - topbar compartilhada
 - onboarding funcional
 - integração com wallet Solana
-- captura e validação de credenciais Pacifica
+- captura e validação de credenciais Pacifica via `Agent Wallet`
 - guarda de acesso ao dashboard
 - base de i18n com inglês como idioma padrão
 
@@ -203,8 +203,8 @@ P0
 - submissão de credenciais
 
 ### Atividades
-- implementar campo de API key
-- implementar campo de secret ou credencial equivalente
+- implementar campo de `agent wallet public key`
+- implementar campo de `agent wallet private key`
 - implementar validação de preenchimento
 - implementar estados do formulário:
   - vazio
@@ -230,18 +230,18 @@ P0
 ## Task V1.6: Validar credenciais Pacifica
 
 ### Objetivo
-Garantir que apenas credenciais válidas liberem o acesso ao produto.
+Garantir que apenas um `Agent Wallet` válido para a conta conectada libere o acesso ao produto.
 
 ### Prioridade
 P0
 
 ### Escopo
-- chamada de validação
+- chamada de validação do `Agent Wallet`
 - estados de sucesso e erro
 - atualização do estado da conta
 
 ### Atividades
-- implementar ação `Validate credentials`
+- implementar ação `Validate and Continue`
 - integrar a camada técnica responsável pela validação
 - capturar retorno de sucesso
 - capturar retorno de erro
