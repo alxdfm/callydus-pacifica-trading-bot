@@ -192,7 +192,7 @@ Definir os componentes reutilizáveis que sustentam onboarding, dashboard, prese
 
 ### CTAs
 - `Connect wallet`
-- `Validate keys`
+- `Validate and Continue`
 - `Select preset`
 - `Activate preset`
 - `Pause bot`

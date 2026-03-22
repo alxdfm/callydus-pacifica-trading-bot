@@ -9,9 +9,12 @@ Referência: [preview/onboarding.html](./preview/onboarding.html)
 Prioridades:
 - fluxo em 2 etapas visível sem explicação externa
 - wallet e credenciais como únicos blocos principais
+- `mainWalletPublicKey` readonly deve parecer dado herdado da wallet conectada
+- `Agent Wallet` deve ficar semanticamente distinta da wallet principal
 - painel de status da conta separado do formulário
-- CTA final bloqueado até sucesso
+- CTA final `Validate and Continue` bloqueado até sucesso
 - estados de validação claramente distinguíveis
+- `reconnecting` pode reutilizar a linguagem visual de `connecting`, sem novo estado obrigatório
 
 ## Dashboard
 Referência: [preview/dashboard.html](./preview/dashboard.html)

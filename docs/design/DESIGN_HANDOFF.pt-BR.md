@@ -70,8 +70,20 @@ QA deve validar:
 - contraste e legibilidade no dark theme
 - consistência entre badges, botões e cards
 - visibilidade do estado do bot e da conexão
+- distinção clara entre `Main wallet` e `Agent Wallet` no onboarding
+- helper text do campo de `Agent Wallet private key` sem ambiguidade
+- CTA `Validate and Continue` bloqueado até wallet + credenciais válidas
+- `reconnecting` tratado como variação de loading sem exigir novo estado visual
 - clareza da ação `Close trade`
 - distinção visual entre `Current trades` e `History`
+
+## Regras Específicas de Onboarding
+- a etapa 2 usa o contrato de `Agent Wallet`, não `API key + secret`
+- `mainWalletPublicKey` é readonly e vem da wallet conectada
+- `agentWalletPublicKey` e `agentWalletPrivateKey` são os campos obrigatórios da validação inicial
+- `credentialAlias` é opcional e não deve competir com os campos obrigatórios
+- a private key solicitada deve ser explicitamente identificada como pertencente à `Agent Wallet`, nunca à wallet principal
+- mensagens de erro devem separar falha transitória de erro que exige edição do campo
 
 ## Escopo Deste Handoff
 Este handoff define base visual e estrutura de interface.

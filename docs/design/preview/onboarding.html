@@ -23,7 +23,7 @@
         <div class="flow-copy-block">
           <h2>Connect in two simple steps</h2>
           <p>
-            The first experience should feel calm and guided. Wallet and API credentials are the only
+            The first experience should feel calm and guided. Wallet and Agent Wallet validation are the only
             blockers before entering the operational area.
           </p>
         </div>
@@ -39,7 +39,7 @@
           <div class="step-item current">
             <span class="step-index">2</span>
             <div>
-              <strong>Validate Pacifica keys</strong>
+              <strong>Validate Agent Wallet</strong>
               <p>Unlock dashboard after success</p>
             </div>
           </div>
@@ -88,19 +88,29 @@
             <div class="row-between align-start section-gap">
               <div>
                 <p class="panel-label">Step 2</p>
-                <h3>Pacifica credentials</h3>
+                <h3>Agent Wallet access</h3>
               </div>
               <span class="badge warning">Validating</span>
             </div>
 
             <div class="form-stack">
               <label>
-                <span>API key</span>
-                <input value="pk_live_7d4a..." />
+                <span>Main wallet public key</span>
+                <input value="9xQeWvG816bUx9EPfEZtN9dS2mJj9n7K9p" readonly />
+                <p class="subtle">Filled from the connected wallet. This field cannot be edited.</p>
               </label>
               <label>
-                <span>Secret</span>
+                <span>Agent wallet public key</span>
+                <input value="Fg6PaFpoGXkYsidMpWxTWqkZ3G7xk9L2Qm" />
+              </label>
+              <label>
+                <span>Agent wallet private key</span>
                 <input value="••••••••••••••••" />
+                <p class="subtle">Use the private key from the Agent Wallet only. It is sent on first validation and not shown again.</p>
+              </label>
+              <label>
+                <span>Credential alias <small>(optional)</small></span>
+                <input value="Trading Bot Wallet" />
               </label>
             </div>
 
@@ -109,21 +119,21 @@
                 <span class="status-dot success-dot"></span>
                 <div>
                   <strong>Wallet connected</strong>
-                  <p>Ready to validate account credentials.</p>
+                  <p>Ready to validate Agent Wallet access.</p>
                 </div>
               </div>
               <div class="status-row info-row">
                 <span class="status-dot info-dot"></span>
                 <div>
-                  <strong>Checking credentials</strong>
-                  <p>Please wait while Pacifica confirms access.</p>
+                  <strong>Validating Agent Wallet</strong>
+                  <p>Please wait while Pacifica confirms this Agent Wallet.</p>
                 </div>
               </div>
             </div>
 
             <div class="action-row">
               <button class="btn secondary">Clear</button>
-              <button class="btn primary">Validate keys</button>
+              <button class="btn primary">Validate and Continue</button>
             </div>
           </section>
 
@@ -142,7 +152,7 @@
                 <strong class="up">Connected</strong>
               </div>
               <div class="account-line">
-                <span>Pacifica access</span>
+                <span>Agent Wallet</span>
                 <strong>Checking</strong>
               </div>
               <div class="account-line">
