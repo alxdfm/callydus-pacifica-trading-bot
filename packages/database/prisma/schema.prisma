@@ -1,0 +1,319 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OnboardingStatus {
+  wallet_pending
+  credentials_pending
+  credentials_validating
+  ready
+  blocked
+}
+
+enum CredentialValidationStatus {
+  pending
+  validating
+  valid
+  invalid
+  error
+}
+
+enum BotStatus {
+  inactive
+  active
+  paused
+  syncing
+  error
+}
+
+enum PacificaConnectionStatus {
+  disconnected
+  connecting
+  connected
+  degraded
+  error
+}
+
+enum SyncStatus {
+  idle
+  syncing
+  healthy
+  degraded
+  error
+}
+
+enum PresetActivationStatus {
+  pending
+  active
+  paused
+  stopped
+  failed
+}
+
+enum PositionSizeType {
+  fixed_amount
+  balance_percent
+}
+
+enum CommandType {
+  validate_credentials
+  activate_preset
+  pause_bot
+  resume_bot
+  close_trade
+}
+
+enum CommandStatus {
+  pending
+  running
+  completed
+  failed
+  cancelled
+}
+
+enum TargetType {
+  credential
+  preset_activation
+  trade
+  bot
+}
+
+enum TradeStatus {
+  open
+  close_requested
+  closing
+  sync_error
+}
+
+enum TradeSide {
+  long
+  short
+}
+
+enum CloseReason {
+  take_profit
+  stop_loss
+  manual
+  system
+  error
+}
+
+enum AlertType {
+  connection
+  runtime
+  reconciliation
+  command
+}
+
+enum AlertSeverity {
+  info
+  warning
+  error
+}
+
+model OperatorAccount {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  walletAddress      String                 @unique
+  onboardingStatus   OnboardingStatus
+  createdAt          DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @db.Timestamptz(6)
+  pacificaCredentials PacificaCredential[]
+  presetActivations  PresetActivation[]
+  botRuntimeState    BotRuntimeState?
+  botCommands        BotCommand[]
+  openTrades         OpenTrade[]
+  closedTrades       ClosedTrade[]
+  accountBalanceSnapshots AccountBalanceSnapshot[]
+  operationalAlerts  OperationalAlert[]
+}
+
+model PacificaCredential {
+  id                      String                     @id @default(uuid()) @db.Uuid
+  operatorAccountId       String                     @db.Uuid
+  credentialAlias         String?
+  publicKey               String
+  encryptedPrivateKeyRef  String
+  keyFingerprint          String
+  validationStatus        CredentialValidationStatus
+  lastValidatedAt         DateTime?                  @db.Timestamptz(6)
+  lastValidationErrorCode String?
+  createdAt               DateTime                   @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime                   @updatedAt @db.Timestamptz(6)
+  operatorAccount         OperatorAccount            @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+
+  @@index([operatorAccountId])
+}
+
+model PresetDefinition {
+  id               String             @id @default(uuid()) @db.Uuid
+  name             String
+  slug             String             @unique
+  version          Int
+  riskLabel        String
+  frequencyLabel   String
+  description      String
+  baseContractJson Json
+  isActive         Boolean
+  createdAt        DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime           @updatedAt @db.Timestamptz(6)
+  presetActivations PresetActivation[]
+}
+
+model PresetActivation {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  operatorAccountId   String                 @db.Uuid
+  presetDefinitionId  String                 @db.Uuid
+  activationStatus    PresetActivationStatus
+  symbol              String
+  positionSizeType    PositionSizeType
+  positionSizeValue   Decimal                @db.Decimal(24, 8)
+  longEnabled         Boolean
+  shortEnabled        Boolean
+  editableConfigJson  Json?
+  effectiveContractJson Json
+  activatedAt         DateTime?              @db.Timestamptz(6)
+  deactivatedAt       DateTime?              @db.Timestamptz(6)
+  createdBy           String
+  createdAt           DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime               @updatedAt @db.Timestamptz(6)
+  operatorAccount     OperatorAccount        @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  presetDefinition    PresetDefinition       @relation(fields: [presetDefinitionId], references: [id])
+  openTrades          OpenTrade[]
+  closedTrades        ClosedTrade[]
+  activeInRuntime     BotRuntimeState[]
+
+  @@index([operatorAccountId])
+  @@index([activationStatus])
+  @@index([operatorAccountId, activationStatus])
+}
+
+model BotRuntimeState {
+  id                       String                    @id @default(uuid()) @db.Uuid
+  operatorAccountId        String                    @unique @db.Uuid
+  botStatus                BotStatus
+  pacificaConnectionStatus PacificaConnectionStatus
+  syncStatus               SyncStatus
+  activePresetActivationId String?                   @db.Uuid
+  lastHeartbeatAt          DateTime?                 @db.Timestamptz(6)
+  lastErrorMessage         String?
+  createdAt                DateTime                  @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime                  @updatedAt @db.Timestamptz(6)
+  operatorAccount          OperatorAccount           @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  activePresetActivation   PresetActivation?         @relation(fields: [activePresetActivationId], references: [id])
+}
+
+model BotCommand {
+  id               String         @id @default(uuid()) @db.Uuid
+  operatorAccountId String        @db.Uuid
+  commandType      CommandType
+  targetType       TargetType?
+  targetId         String?        @db.Uuid
+  payloadJson      Json?
+  requestedBy      String
+  commandStatus    CommandStatus
+  idempotencyKey   String         @unique
+  requestedAt      DateTime       @db.Timestamptz(6)
+  startedAt        DateTime?      @db.Timestamptz(6)
+  finishedAt       DateTime?      @db.Timestamptz(6)
+  failureReason    String?
+  createdAt        DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(6)
+  operatorAccount  OperatorAccount @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  closedTrades     ClosedTrade[]
+
+  @@index([commandStatus])
+  @@index([operatorAccountId, requestedAt(sort: Desc)])
+  @@index([targetType, targetId])
+}
+
+model OpenTrade {
+  id                String          @id @default(uuid()) @db.Uuid
+  operatorAccountId String          @db.Uuid
+  pacificaTradeId   String
+  presetActivationId String?        @db.Uuid
+  symbol            String
+  side              TradeSide
+  entryPrice        Decimal         @db.Decimal(24, 8)
+  currentPrice      Decimal         @db.Decimal(24, 8)
+  quantity          Decimal         @db.Decimal(24, 8)
+  capitalAllocated  Decimal         @db.Decimal(24, 8)
+  unrealizedPnl     Decimal         @db.Decimal(24, 8)
+  tradeStatus       TradeStatus
+  openedAt          DateTime        @db.Timestamptz(6)
+  closeRequestedAt  DateTime?       @db.Timestamptz(6)
+  closeReasonPending CloseReason?
+  isPlatformTrade   Boolean
+  lastSyncedAt      DateTime        @db.Timestamptz(6)
+  createdAt         DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
+  operatorAccount   OperatorAccount @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  presetActivation  PresetActivation? @relation(fields: [presetActivationId], references: [id])
+
+  @@unique([operatorAccountId, pacificaTradeId])
+  @@index([operatorAccountId])
+  @@index([tradeStatus])
+  @@index([operatorAccountId, openedAt(sort: Desc)])
+}
+
+model ClosedTrade {
+  id                 String           @id @default(uuid()) @db.Uuid
+  operatorAccountId  String           @db.Uuid
+  pacificaTradeId    String
+  presetActivationId String?          @db.Uuid
+  symbol             String
+  side               TradeSide
+  entryPrice         Decimal          @db.Decimal(24, 8)
+  exitPrice          Decimal          @db.Decimal(24, 8)
+  quantity           Decimal          @db.Decimal(24, 8)
+  capitalAllocated   Decimal          @db.Decimal(24, 8)
+  realizedPnl        Decimal          @db.Decimal(24, 8)
+  closeReason        CloseReason
+  openedAt           DateTime         @db.Timestamptz(6)
+  closedAt           DateTime         @db.Timestamptz(6)
+  isPlatformTrade    Boolean
+  closedByCommandId  String?          @db.Uuid
+  lastSyncedAt       DateTime         @db.Timestamptz(6)
+  createdAt          DateTime         @default(now()) @db.Timestamptz(6)
+  operatorAccount    OperatorAccount  @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  presetActivation   PresetActivation? @relation(fields: [presetActivationId], references: [id])
+  closedByCommand    BotCommand?      @relation(fields: [closedByCommandId], references: [id])
+
+  @@index([operatorAccountId, closedAt(sort: Desc)])
+  @@index([presetActivationId])
+  @@index([closeReason])
+}
+
+model AccountBalanceSnapshot {
+  id               String          @id @default(uuid()) @db.Uuid
+  operatorAccountId String         @db.Uuid
+  totalBalance     Decimal         @db.Decimal(24, 8)
+  availableBalance Decimal         @db.Decimal(24, 8)
+  aggregatedPnl    Decimal         @db.Decimal(24, 8)
+  capitalInUse     Decimal         @db.Decimal(24, 8)
+  capturedAt       DateTime        @db.Timestamptz(6)
+  createdAt        DateTime        @default(now()) @db.Timestamptz(6)
+  operatorAccount  OperatorAccount @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+
+  @@index([operatorAccountId, capturedAt(sort: Desc)])
+}
+
+model OperationalAlert {
+  id               String          @id @default(uuid()) @db.Uuid
+  operatorAccountId String         @db.Uuid
+  alertType        AlertType
+  severity         AlertSeverity
+  title            String
+  message          String
+  isActive         Boolean
+  createdAt        DateTime        @default(now()) @db.Timestamptz(6)
+  resolvedAt       DateTime?       @db.Timestamptz(6)
+  operatorAccount  OperatorAccount @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+
+  @@index([operatorAccountId, isActive])
+  @@index([severity, createdAt(sort: Desc)])
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@pacifica/database",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pacifica prisma validate",
+    "prisma:format": "prisma format"
+  },
+  "devDependencies": {
+    "prisma": "^6.5.0"
+  }
+}
