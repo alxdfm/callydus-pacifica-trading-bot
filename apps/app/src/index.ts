@@ -11,3 +11,5 @@ export function createInitialAppState(): AppBootstrapState {
     dashboard: null,
   };
 }
+
+export { router } from "./router";
