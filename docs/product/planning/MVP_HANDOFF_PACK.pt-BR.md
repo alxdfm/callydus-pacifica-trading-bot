@@ -29,23 +29,23 @@ Usar a linguagem abaixo como referência padrão do MVP.
 ### Labels centrais
 - `Dashboard`
 - `Presets`
-- `Trades atuais`
-- `Histórico`
-- `Conectar wallet`
-- `Validar credenciais`
-- `Continuar para o dashboard`
-- `Pausar bot`
-- `Retomar bot`
-- `Revisar preset`
-- `Trocar preset`
-- `Ativar preset`
-- `Encerrar`
+- `Current Trades`
+- `History`
+- `Connect wallet`
+- `Validate credentials`
+- `Continue to Dashboard`
+- `Pause bot`
+- `Resume bot`
+- `Review preset`
+- `Change preset`
+- `Activate preset`
+- `Close`
 
 ### Mensagens de produto
-- `Preset é uma sugestão de estratégia, não garantia de retorno.`
-- `Stop loss e take profit são obrigatórios em todos os presets.`
-- `A conta precisa estar pronta para operar.`
-- `Sem validação, o acesso ao produto permanece bloqueado.`
+- `Preset is a strategy suggestion, not a return guarantee.`
+- `Stop loss and take profit are mandatory in all presets.`
+- `Your account must be ready to operate.`
+- `Without validation, access to the product remains blocked.`
 
 ## Regras de UX Transversais
 - destacar sempre o estado atual antes de mostrar ações secundárias
@@ -147,9 +147,9 @@ Permitir comparação simples, revisão mínima e ativação explícita do prese
 - card 1: `Safer`
 - card 2: `Balanced`
 - card 3: `More active`
-- CTA principal: `Ativar preset`
-- CTA secundário: `Cancelar`
-- aviso: `Preset é uma sugestão de estratégia, não garantia de retorno.`
+- CTA principal: `Activate preset`
+- CTA secundário: `Cancel`
+- aviso: `Preset is a strategy suggestion, not a return guarantee.`
 
 ### Regras de UX
 - a decisão vem antes da edição
@@ -192,11 +192,11 @@ Mostrar rapidamente o estado da conta, do bot e dos trades em andamento.
 
 ### Copy Final
 - título: `Dashboard`
-- estado resumido: `Conta conectada. Bot ativo.` ou `Conta conectada. Bot pausado.`
-- ação global: `Pausar bot` / `Retomar bot`
-- bloco do preset: `Preset ativo`
-- bloco de trades: `Trades atuais`
-- bloco de histórico curto: `Trades recentes`
+- estado resumido: `Account connected. Bot active.` ou `Account connected. Bot paused.`
+- ação global: `Pause bot` / `Resume bot`
+- bloco do preset: `Active preset`
+- bloco de trades: `Current Trades`
+- bloco de histórico curto: `Recent Trades`
 
 ### Regras de UX
 - saldo e PnL devem aparecer acima da dobra no desktop
@@ -213,7 +213,7 @@ Permitir monitoramento e encerramento manual de trades em aberto.
 ### Design Deve Entregar
 - lista clara de trades abertos
 - diferenciação visual por direção e status
-- botão destrutivo `Encerrar`
+- botão destrutivo `Close`
 - detalhe do trade selecionado, quando houver
 - mobile compacto e legível
 
@@ -233,8 +233,8 @@ Permitir monitoramento e encerramento manual de trades em aberto.
 - erro ao encerrar trade
 
 ### Copy Final
-- título: `Trades atuais`
-- botão de ação: `Encerrar`
+- título: `Current Trades`
+- botão de ação: `Close`
 - estado vazio: `No open trades` ou equivalente local definido no layout final
 
 ### Regras de UX
@@ -258,76 +258,3 @@ Permitir revisão simples de trades encerrados.
 - listagem de trades encerrados
 - exibição de entrada, saída, resultado e motivo
 - identificação de trade da plataforma
-- leitura cronológica simples
-
-### Estados Obrigatórios
-- sem histórico
-- histórico carregando
-- histórico disponível
-- erro ao carregar histórico
-
-### Copy Final
-- título: `Histórico`
-- rótulos principais: `Entrada`, `Saída`, `Resultado`, `Motivo`
-
-### Regras de UX
-- o histórico deve ser mais discreto que trades atuais
-- a leitura do resultado precisa ser rápida
-- filtros complexos não fazem parte do MVP
-
-## 6. Integração e Navegação
-
-### Objetivo da Camada
-Garantir que o fluxo entre telas seja previsível.
-
-### Design Deve Entregar
-- navegação lateral ou inferior consistente
-- estado ativo do item de menu
-- ordem visual coerente entre desktop e mobile
-- destaque claro da tela atual
-
-### Dev Deve Implementar
-- navegação entre Dashboard, Presets, Trades atuais e Histórico
-- bloqueio do app principal enquanto onboarding não estiver válido
-- sincronização entre preset ativo, bot e telas
-
-### Estados Obrigatórios
-- menu com item ativo
-- onboarding bloqueante
-- navegação disponível
-- navegação bloqueada por falta de pré-requisito
-
-### Regras de UX
-- não esconder navegação principal
-- não criar menus profundos
-- não duplicar ações globais em excesso
-
-## Mapa por Responsabilidade
-
-### Design
-- desenhar o layout final de cada tela
-- definir hierarquia visual
-- definir estados vazios, loading, erro e sucesso
-- garantir responsividade desktop e mobile
-- validar copy visual e clareza de ações
-
-### Dev
-- implementar layout e estados
-- conectar fluxo entre telas
-- manter consistência entre dados, status e navegação
-- garantir bloqueios corretos de onboarding
-- preservar a simplicidade definida pelo produto
-
-## Critérios de Aceite do Handoff
-- Designer consegue produzir as telas sem inferir regras abertas
-- Dev consegue implementar sem perguntar o fluxo básico de cada tela
-- estados obrigatórios estão declarados por tela
-- copy base está fixada
-- qualquer mudança nova passa por revisão de produto
-
-## Riscos Se Este Handoff Não Existir
-- retrabalho entre Design e Dev
-- inconsistência de labels e status
-- telas com excesso de informação técnica
-- fluxo bloqueado por dependências não explicadas
-- perda de foco no público não técnico
