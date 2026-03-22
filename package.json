@@ -1,0 +1,9 @@
+{
+  "name": "trading-bot-pacifica",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.11.0",
+  "scripts": {
+    "typecheck": "pnpm -r typecheck"
+  }
+}
