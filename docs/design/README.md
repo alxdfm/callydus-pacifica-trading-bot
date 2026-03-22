@@ -10,7 +10,8 @@ Centralizar a base visual e o handoff de design do MVP para que design, desenvol
 4. [Handoff de design](./DESIGN_HANDOFF.pt-BR.md)
 5. [Handoff por tela](./SCREEN_HANDOFF.pt-BR.md)
 6. [Sequência de implementação visual](./IMPLEMENTATION_SEQUENCE.pt-BR.md)
-7. [Preview visual](./preview/index.html)
+7. [Matriz de estados do onboarding](./ONBOARDING_STATE_MATRIX.pt-BR.md)
+8. [Preview visual](./preview/index.html)
 
 ## Escopo
 Este conjunto cobre:

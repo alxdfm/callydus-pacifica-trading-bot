@@ -4,7 +4,7 @@
 Resumir o que cada tela precisa preservar visualmente na implementação.
 
 ## Onboarding
-Referência: [preview/onboarding.html](./preview/onboarding.html)
+Referências: [preview/onboarding.html](./preview/onboarding.html), [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
 
 Prioridades:
 - fluxo em 2 etapas visível sem explicação externa
