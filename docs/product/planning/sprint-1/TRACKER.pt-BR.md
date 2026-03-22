@@ -46,7 +46,7 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 ## Dev
 | Task | Status | Prioridade | Owner | Dependencias | Bloqueio atual | Proximo passo |
 |------|--------|------------|-------|--------------|----------------|---------------|
-| V1.1 | TODO | P0 | - | nenhuma | nenhum | iniciar shell base e rotas |
+| V1.1 | DONE | P0 | Dev | nenhuma | nenhum | seguir para V1.2 com estado global minimo e guards |
 | V1.2 | TODO | P0 | - | V1.1 | nenhum | definir modelo minimo de estado global |
 | V1.3 | TODO | P0 | - | V1.1, V1.2 | nenhum | montar tela de onboarding com i18n |
 | V1.4 | TODO | P0 | Dev | V1.2, V1.3 | nenhum | implementar adapter interno e estados de conexao com `@solana/wallet-adapter` |
