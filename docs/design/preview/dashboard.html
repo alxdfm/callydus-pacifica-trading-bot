@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacifica Dashboard Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./theme.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="side-nav">
+        <div class="brand-mark">P</div>
+        <div>
+          <p class="eyebrow">Pacifica</p>
+          <h1 class="nav-title">Control center</h1>
+        </div>
+        <nav class="nav-list">
+          <a class="nav-item active" href="./dashboard.html">Dashboard</a>
+          <a class="nav-item" href="./presets.html">Presets</a>
+          <a class="nav-item" href="./trades.html">Current trades</a>
+          <a class="nav-item" href="./history.html">History</a>
+          <a class="nav-item" href="./onboarding.html">Onboarding</a>
+          <a class="nav-item" href="./index.html">System</a>
+        </nav>
+        <div class="nav-card">
+          <span class="badge success">Connected</span>
+          <strong>Pacifica synced</strong>
+          <p>Bot and account health are visible from every main screen.</p>
+        </div>
+      </aside>
+
+      <main class="app-main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Dashboard</p>
+            <h2>Operational overview</h2>
+            <p class="subtle">Everything critical stays above the fold: connection, bot, preset and open trades.</p>
+          </div>
+          <div class="topbar-actions">
+            <span class="badge neutral">Pacifica online</span>
+            <span class="badge warning">Bot active</span>
+            <button class="btn secondary">Review preset</button>
+            <button class="btn primary">Pause bot</button>
+          </div>
+        </header>
+
+        <section class="metric-grid">
+          <article class="stat-panel emphasis">
+            <span>Total balance</span>
+            <strong>$12,480.12</strong>
+            <p>Available for automation</p>
+          </article>
+          <article class="stat-panel">
+            <span>Account PnL</span>
+            <strong class="up">+$328.44</strong>
+            <p>+4.2% this week</p>
+          </article>
+          <article class="stat-panel">
+            <span>Open trades</span>
+            <strong>3</strong>
+            <p>2 require monitoring now</p>
+          </article>
+          <article class="stat-panel">
+            <span>Closed today</span>
+            <strong>8</strong>
+            <p>5 wins · 3 losses</p>
+          </article>
+        </section>
+
+        <section class="dashboard-grid">
+          <section class="panel hero-panel-wide">
+            <div class="row-between align-start">
+              <div>
+                <p class="panel-label">Active preset</p>
+                <h3>Balanced</h3>
+                <p class="subtle">Controlled entries with mandatory protection and medium activity.</p>
+              </div>
+              <span class="badge warning">Medium risk</span>
+            </div>
+            <div class="chip-row">
+              <span class="chip">BTC/USDT</span>
+              <span class="chip">15m</span>
+              <span class="chip">Size 12%</span>
+              <span class="chip">Long enabled</span>
+              <span class="chip muted">Short disabled</span>
+            </div>
+            <div class="action-row">
+              <button class="btn secondary">Change preset</button>
+              <button class="btn primary">Open preset review</button>
+            </div>
+          </section>
+
+          <section class="panel alert-panel">
+            <div class="row-between align-start">
+              <div>
+                <p class="panel-label">System alerts</p>
+                <h3>1 attention point</h3>
+              </div>
+              <span class="badge info">Info</span>
+            </div>
+            <p class="alert-copy">One short trade is waiting for confirmation. No action required yet.</p>
+          </section>
+
+          <section class="panel trades-panel">
+            <div class="row-between align-start section-gap">
+              <div>
+                <p class="panel-label">Open trades</p>
+                <h3>Monitor and intervene</h3>
+              </div>
+              <button class="btn secondary">View all trades</button>
+            </div>
+
+            <div class="trade-table">
+              <article class="trade-card live">
+                <div>
+                  <div class="trade-head">
+                    <strong>BTC/USDT</strong>
+                    <span class="badge info">Long</span>
+                  </div>
+                  <p>Open · Platform trade</p>
+                </div>
+                <div>
+                  <span class="trade-label">Entry</span>
+                  <strong>64,280</strong>
+                </div>
+                <div>
+                  <span class="trade-label">Current</span>
+                  <strong>64,990</strong>
+                </div>
+                <div>
+                  <span class="trade-label">PnL</span>
+                  <strong class="up">+$102</strong>
+                </div>
+                <button class="btn ghost small">Close trade</button>
+              </article>
+
+              <article class="trade-card">
+                <div>
+                  <div class="trade-head">
+                    <strong>SOL/USDT</strong>
+                    <span class="badge danger">Short</span>
+                  </div>
+                  <p>Waiting entry · Platform trade</p>
+                </div>
+                <div>
+                  <span class="trade-label">Entry</span>
+                  <strong>182.40</strong>
+                </div>
+                <div>
+                  <span class="trade-label">Current</span>
+                  <strong>183.10</strong>
+                </div>
+                <div>
+                  <span class="trade-label">PnL</span>
+                  <strong class="down">-$18</strong>
+                </div>
+                <button class="btn ghost small">Close trade</button>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel recent-panel">
+            <div class="row-between align-start section-gap">
+              <div>
+                <p class="panel-label">Recent history</p>
+                <h3>What closed recently</h3>
+              </div>
+              <a class="panel-link" href="./presets.html">Open next mock</a>
+            </div>
+
+            <div class="history-list">
+              <div class="history-row">
+                <div>
+                  <strong>ETH/USDT</strong>
+                  <p>Closed by target</p>
+                </div>
+                <strong class="up">+$74</strong>
+              </div>
+              <div class="history-row">
+                <div>
+                  <strong>ARB/USDT</strong>
+                  <p>Closed manually</p>
+                </div>
+                <strong class="down">-$21</strong>
+              </div>
+              <div class="history-row">
+                <div>
+                  <strong>BTC/USDT</strong>
+                  <p>Closed by stop</p>
+                </div>
+                <strong class="down">-$35</strong>
+              </div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

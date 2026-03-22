@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacifica History Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./theme.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="side-nav">
+        <div class="brand-mark">P</div>
+        <div>
+          <p class="eyebrow">Pacifica</p>
+          <h1 class="nav-title">History</h1>
+        </div>
+        <nav class="nav-list">
+          <a class="nav-item" href="./dashboard.html">Dashboard</a>
+          <a class="nav-item" href="./presets.html">Presets</a>
+          <a class="nav-item" href="./trades.html">Current trades</a>
+          <a class="nav-item active" href="./history.html">History</a>
+        </nav>
+        <div class="nav-card">
+          <span class="badge info">Review only</span>
+          <strong>Do not compete with live trades</strong>
+          <p>This screen is quieter, more chronological and more documentary than the active trading area.</p>
+        </div>
+      </aside>
+
+      <main class="app-main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">History</p>
+            <h2>Read outcome fast</h2>
+            <p class="subtle">Result and closing reason should be scannable without filters or dense analytics.</p>
+          </div>
+          <div class="topbar-actions">
+            <span class="badge neutral">No filters in MVP</span>
+            <button class="btn secondary">Back to dashboard</button>
+          </div>
+        </header>
+
+        <section class="history-screen-grid">
+          <section class="panel history-main-panel">
+            <div class="row-between align-start section-gap">
+              <div>
+                <p class="panel-label">Closed trades</p>
+                <h3>Chronological log</h3>
+              </div>
+              <span class="badge info">Last 8 shown</span>
+            </div>
+
+            <div class="history-stack">
+              <article class="history-card selected">
+                <div>
+                  <div class="trade-head">
+                    <strong>ETH/USDT</strong>
+                    <span class="badge info">Long</span>
+                    <span class="badge success">Closed by target</span>
+                  </div>
+                  <p>Entry 10:14 · Exit 11:02 · Platform trade</p>
+                </div>
+                <div>
+                  <span class="trade-label">Result</span>
+                  <strong class="up">+$74</strong>
+                </div>
+              </article>
+
+              <article class="history-card">
+                <div>
+                  <div class="trade-head">
+                    <strong>ARB/USDT</strong>
+                    <span class="badge danger">Short</span>
+                    <span class="badge warning">Closed manually</span>
+                  </div>
+                  <p>Entry 09:28 · Exit 09:51 · Platform trade</p>
+                </div>
+                <div>
+                  <span class="trade-label">Result</span>
+                  <strong class="down">-$21</strong>
+                </div>
+              </article>
+
+              <article class="history-card">
+                <div>
+                  <div class="trade-head">
+                    <strong>BTC/USDT</strong>
+                    <span class="badge info">Long</span>
+                    <span class="badge danger">Closed by stop</span>
+                  </div>
+                  <p>Entry 08:42 · Exit 08:57 · Platform trade</p>
+                </div>
+                <div>
+                  <span class="trade-label">Result</span>
+                  <strong class="down">-$35</strong>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <aside class="panel detail-panel">
+            <div class="row-between align-start section-gap">
+              <div>
+                <p class="panel-label">Selected record</p>
+                <h3>ETH/USDT</h3>
+              </div>
+              <span class="badge success">Positive</span>
+            </div>
+
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span>Close reason</span>
+                <strong>Target reached</strong>
+              </div>
+              <div class="detail-item">
+                <span>Direction</span>
+                <strong>Long</strong>
+              </div>
+              <div class="detail-item">
+                <span>Entry</span>
+                <strong>3,180</strong>
+              </div>
+              <div class="detail-item">
+                <span>Exit</span>
+                <strong>3,244</strong>
+              </div>
+            </div>
+
+            <div class="empty-note">
+              <strong>Simple reading</strong>
+              <p>The reason should stay in product language. No technical execution detail is needed here in the MVP.</p>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

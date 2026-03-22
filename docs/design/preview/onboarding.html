@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacifica Onboarding Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./theme.css" />
+  </head>
+  <body>
+    <div class="flow-shell">
+      <aside class="flow-side">
+        <div class="flow-brand">
+          <div class="brand-mark">P</div>
+          <div>
+            <p class="eyebrow">Pacifica</p>
+            <h1 class="flow-title">Onboarding</h1>
+          </div>
+        </div>
+
+        <div class="flow-copy-block">
+          <h2>Connect in two simple steps</h2>
+          <p>
+            The first experience should feel calm and guided. Wallet and API credentials are the only
+            blockers before entering the operational area.
+          </p>
+        </div>
+
+        <div class="step-list">
+          <div class="step-item current">
+            <span class="step-index">1</span>
+            <div>
+              <strong>Connect wallet</strong>
+              <p>Required before any main action</p>
+            </div>
+          </div>
+          <div class="step-item current">
+            <span class="step-index">2</span>
+            <div>
+              <strong>Validate Pacifica keys</strong>
+              <p>Unlock dashboard after success</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-card">
+          <span class="badge warning">Blocked until success</span>
+          <strong>Dashboard stays locked</strong>
+          <p>Use clear progress, visible validation states and short feedback messages.</p>
+        </div>
+      </aside>
+
+      <main class="flow-main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Setup flow</p>
+            <h2>Account access</h2>
+            <p class="subtle">The user should understand the sequence just by looking at the screen.</p>
+          </div>
+          <div class="topbar-actions">
+            <span class="badge info">Step 2 of 2</span>
+            <a class="nav-item" href="./dashboard.html">Dashboard mock</a>
+          </div>
+        </header>
+
+        <section class="onboarding-grid">
+          <section class="panel wallet-panel">
+            <div class="row-between align-start section-gap">
+              <div>
+                <p class="panel-label">Step 1</p>
+                <h3>Connect Solana wallet</h3>
+              </div>
+              <span class="badge success">Connected</span>
+            </div>
+
+            <div class="wallet-card connected-state">
+              <div>
+                <strong>Phantom wallet</strong>
+                <p>Address ending in `7K9p` is active and ready to continue.</p>
+              </div>
+              <button class="btn secondary">Change wallet</button>
+            </div>
+          </section>
+
+          <section class="panel keys-panel">
+            <div class="row-between align-start section-gap">
+              <div>
+                <p class="panel-label">Step 2</p>
+                <h3>Pacifica credentials</h3>
+              </div>
+              <span class="badge warning">Validating</span>
+            </div>
+
+            <div class="form-stack">
+              <label>
+                <span>API key</span>
+                <input value="pk_live_7d4a..." />
+              </label>
+              <label>
+                <span>Secret</span>
+                <input value="••••••••••••••••" />
+              </label>
+            </div>
+
+            <div class="status-stack">
+              <div class="status-row success-row">
+                <span class="status-dot success-dot"></span>
+                <div>
+                  <strong>Wallet connected</strong>
+                  <p>Ready to validate account credentials.</p>
+                </div>
+              </div>
+              <div class="status-row info-row">
+                <span class="status-dot info-dot"></span>
+                <div>
+                  <strong>Checking credentials</strong>
+                  <p>Please wait while Pacifica confirms access.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="btn secondary">Clear</button>
+              <button class="btn primary">Validate keys</button>
+            </div>
+          </section>
+
+          <section class="panel account-panel">
+            <div class="row-between align-start section-gap">
+              <div>
+                <p class="panel-label">Account status</p>
+                <h3>Ready after validation</h3>
+              </div>
+              <span class="badge neutral">Pending</span>
+            </div>
+
+            <div class="account-state">
+              <div class="account-line">
+                <span>Wallet</span>
+                <strong class="up">Connected</strong>
+              </div>
+              <div class="account-line">
+                <span>Pacifica access</span>
+                <strong>Checking</strong>
+              </div>
+              <div class="account-line">
+                <span>Dashboard access</span>
+                <strong>Locked</strong>
+              </div>
+            </div>
+
+            <div class="empty-note">
+              <strong>Continue after success</strong>
+              <p>The primary CTA should only unlock when validation finishes without blocking errors.</p>
+            </div>
+
+            <button class="btn primary wide" disabled>Continue to dashboard</button>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

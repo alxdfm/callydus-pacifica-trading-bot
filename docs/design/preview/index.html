@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacifica Design Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./theme.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero refined-hero">
+        <div>
+          <p class="eyebrow">Night Command</p>
+          <h1>Base visual dark-first do MVP Pacifica</h1>
+          <p class="hero-copy">
+            Uma direção escura, precisa e operacional para um produto de automação que precisa
+            parecer sempre ativo, confiável e sob controle.
+          </p>
+          <div class="hero-actions">
+            <a class="btn primary" href="./dashboard.html">Open dashboard</a>
+            <a class="btn secondary" href="./onboarding.html">Open onboarding</a>
+          </div>
+        </div>
+        <div class="hero-panel refined-panel">
+          <div class="metric-tile accent">
+            <span>Design direction</span>
+            <strong>Dark-first</strong>
+            <b class="badge info">Operational</b>
+          </div>
+          <div class="metric-tile">
+            <span>Core screens</span>
+            <strong>05</strong>
+            <small>Onboarding, dashboard, presets, current trades, history</small>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <aside class="rail card">
+          <h2>Foundation</h2>
+          <div class="stack">
+            <div>
+              <p class="rail-label">Theme</p>
+              <p class="rail-value">Dark by default</p>
+            </div>
+            <div>
+              <p class="rail-label">Mood</p>
+              <p class="rail-value">Focused, steady, operational</p>
+            </div>
+            <div>
+              <p class="rail-label">Accent</p>
+              <p class="rail-value">Petroleum blue glow</p>
+            </div>
+          </div>
+          <div class="swatches">
+            <span style="--swatch:#2D8CFF"></span>
+            <span style="--swatch:#27C07D"></span>
+            <span style="--swatch:#F0A63A"></span>
+            <span style="--swatch:#E56B61"></span>
+            <span style="--swatch:#0F1A2B"></span>
+          </div>
+        </aside>
+
+        <section class="content">
+          <section class="card section-block refined-block">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Components</p>
+                <h2>Peças centrais do sistema</h2>
+              </div>
+              <div class="button-row">
+                <button class="btn primary">Activate preset</button>
+                <button class="btn secondary">Review preset</button>
+                <button class="btn danger">Close trade</button>
+              </div>
+            </div>
+
+            <div class="component-grid">
+              <article class="mini-card interactive-surface">
+                <div class="mini-top">
+                  <span class="badge neutral">Connected</span>
+                  <span class="badge info">Pacifica</span>
+                </div>
+                <h3>Status badge</h3>
+                <p>Leitura rápida de conexão, bot, risco e direção.</p>
+              </article>
+
+              <article class="mini-card metric interactive-surface">
+                <span>Total balance</span>
+                <strong>$12,480.12</strong>
+                <p class="up">+4.2% this week</p>
+              </article>
+
+              <article class="mini-card interactive-surface">
+                <div class="preset-head">
+                  <h3>Balanced</h3>
+                  <span class="badge warning">Medium risk</span>
+                </div>
+                <p>Moderate activity with controlled entries and mandatory protection.</p>
+                <div class="meta-row">
+                  <span>Frequency: Medium</span>
+                  <span>Timeframe: 15m</span>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="card section-block refined-block">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Screens</p>
+                <h2>Preview hub</h2>
+              </div>
+              <span class="badge neutral">Full MVP flow</span>
+            </div>
+
+            <div class="hub-grid">
+              <a class="hub-card" href="./onboarding.html">
+                <p class="hub-label">01</p>
+                <h3>Onboarding</h3>
+                <p>Wallet connection, credential validation and locked-state progression.</p>
+              </a>
+              <a class="hub-card" href="./dashboard.html">
+                <p class="hub-label">02</p>
+                <h3>Dashboard</h3>
+                <p>Operational overview with preset, metrics, alerts and live trades.</p>
+              </a>
+              <a class="hub-card" href="./presets.html">
+                <p class="hub-label">03</p>
+                <h3>Presets</h3>
+                <p>Guided strategy selection with minimal editing before activation.</p>
+              </a>
+              <a class="hub-card" href="./trades.html">
+                <p class="hub-label">04</p>
+                <h3>Current trades</h3>
+                <p>Intervention-focused layout with clear destructive action treatment.</p>
+              </a>
+              <a class="hub-card" href="./history.html">
+                <p class="hub-label">05</p>
+                <h3>History</h3>
+                <p>Quieter review surface focused on result and close reason.</p>
+              </a>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
