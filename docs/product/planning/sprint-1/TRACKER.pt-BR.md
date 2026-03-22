@@ -20,7 +20,7 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 ## Resumo Atual
 - sprint status: `GO`
 - foco principal: foundations, onboarding e i18n
-- bloqueios principais: decisao de wallet Solana e contrato final das credenciais Pacifica
+- bloqueios principais: nenhum bloqueio aberto de contrato; foco atual e execucao das tasks de dev com refresh pontual de design para `Agent Wallet`
 
 ## Fluxo Operacional Aprovado
 - design deve fechar primeiro todo o onboarding, incluindo estados criticos, microcopy e revisao mobile
@@ -29,19 +29,19 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 - prioridade da sprint continua sendo fechar bem o onboarding sem ampliar escopo
 
 ## Owners de Fechamento Cedo
-- `PO`: owner por fechar cedo as decisoes de produto e contrato necessarias para a sprint seguir sem retrabalho
-- `Dev`: owner por propor rapidamente as opcoes tecnicas de wallet, persistencia e contrato de validacao para decisao
-- `Designer`: owner por manter onboarding, estados e handoff prontos para execucao paralela sem depender do contrato final
+- `PO`: owner por proteger o escopo do MVP, validar clareza do onboarding e arbitrar qualquer conflito novo de produto
+- `Dev`: owner por executar o contrato tecnico fechado de wallet, `Agent Wallet`, persistencia e validacao Pacifica
+- `Designer`: owner por ajustar onboarding, estados, microcopy e handoff ao contrato final aprovado
 
 ## Checkpoint Obrigatorio do Inicio da Sprint
-- [ ] fechar provider ou adapter da wallet Solana
-- [ ] fechar persistencia minima da sessao de wallet
-- [ ] fechar comportamento de erro da wallet
-- [ ] fechar campos obrigatorios das credenciais Pacifica
-- [ ] fechar acao que dispara a validacao
-- [ ] fechar payload de sucesso
-- [ ] fechar payload de erro
-- [ ] fechar regra de retry versus falha bloqueante
+- [x] fechar provider ou adapter da wallet Solana
+- [x] fechar persistencia minima da sessao de wallet
+- [x] fechar comportamento de erro da wallet
+- [x] fechar campos obrigatorios das credenciais Pacifica
+- [x] fechar acao que dispara a validacao
+- [x] fechar payload de sucesso
+- [x] fechar payload de erro
+- [x] fechar regra de retry versus falha bloqueante
 
 ## Dev
 | Task | Status | Prioridade | Owner | Dependencias | Bloqueio atual | Proximo passo |
@@ -49,9 +49,9 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 | V1.1 | TODO | P0 | - | nenhuma | nenhum | iniciar shell base e rotas |
 | V1.2 | TODO | P0 | - | V1.1 | nenhum | definir modelo minimo de estado global |
 | V1.3 | TODO | P0 | - | V1.1, V1.2 | nenhum | montar tela de onboarding com i18n |
-| V1.4 | PARTIAL | P0 | - | V1.2, V1.3 | decisao de wallet Solana | iniciar abstracao e estados de conexao |
-| V1.5 | PARTIAL | P0 | - | V1.2, V1.3 | contrato final dos campos Pacifica | montar formulario com contrato provisório |
-| V1.6 | BLOCKED | P0 | - | V1.5 | payload e regra de validacao Pacifica | fechar contrato tecnico antes da integracao real |
+| V1.4 | TODO | P0 | Dev | V1.2, V1.3 | nenhum | implementar adapter interno e estados de conexao com `@solana/wallet-adapter` |
+| V1.5 | TODO | P0 | Dev | V1.2, V1.3 | nenhum | implementar formulario oficial de `Agent Wallet` com labels via i18n |
+| V1.6 | TODO | P0 | Dev | V1.5 | nenhum | integrar validacao oficial de `Agent Wallet` contra o contrato tecnico fechado |
 
 ## Designer
 | Task | Status | Prioridade | Owner | Dependencias | Bloqueio atual | Proximo passo |
@@ -60,16 +60,19 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 | D1.2 | TODO | P0 | - | D1.1 | nenhum | desenhar onboarding desktop |
 | D1.3 | TODO | P0 | - | D1.1, D1.2 | nenhum | adaptar onboarding para mobile |
 | D1.4 | TODO | P0 | - | D1.1, D1.2 | nenhum | fechar matriz visual da wallet |
-| D1.5 | TODO | P0 | - | D1.1, D1.2 | nenhum | fechar matriz visual das credenciais |
-| D1.6 | TODO | P0 | - | D1.4, D1.5 | nenhum | padronizar microcopy do onboarding |
-| D1.7 | TODO | P1 | - | D1.1, D1.2, D1.3, D1.4, D1.5, D1.6 | nenhum | preparar pacote final de handoff |
+| D1.5 | TODO | P0 | Designer | D1.1, D1.2 | nenhum | ajustar campos e estados do formulario para `Agent Wallet` sem redesenho estrutural |
+| D1.6 | TODO | P0 | Designer | D1.4, D1.5 | nenhum | revisar microcopy de `Agent Wallet`, helper texts e mensagens de erro |
+| D1.7 | TODO | P1 | Designer | D1.1, D1.2, D1.3, D1.4, D1.5, D1.6 | nenhum | atualizar handoff e preview para refletir o contrato final |
+
+## Decisao de Produto Fechada
+- [x] `Agent Wallet` aprovado como contrato oficial de credenciais do MVP
 
 ## Decisoes Externas em Aberto
-- [ ] congelar provider ou adapter da wallet Solana
-- [ ] congelar persistencia minima da wallet
-- [ ] congelar campos obrigatorios das credenciais Pacifica
-- [ ] congelar payload de sucesso e erro da validacao Pacifica
-- [ ] congelar regra de retry e falha bloqueante da validacao Pacifica
+- [x] congelar provider ou adapter da wallet Solana
+- [x] congelar persistencia minima da wallet
+- [x] congelar campos obrigatorios das credenciais Pacifica
+- [x] congelar payload de sucesso e erro da validacao Pacifica
+- [x] congelar regra de retry e falha bloqueante da validacao Pacifica
 
 ## Regra de Controle
 Uma task so pode mudar para `DONE` quando:

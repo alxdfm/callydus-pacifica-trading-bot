@@ -6,7 +6,7 @@ Dar uma resposta operacional sobre se a Sprint 1 pode começar agora, o que já 
 ## Status Geral
 - decisão: `GO` para iniciar a Sprint 1
 - condição: iniciar foundations, shell, i18n e onboarding imediatamente
-- ressalva: fechar cedo as decisões técnicas de wallet e credenciais Pacifica para concluir a parte funcional do onboarding sem retrabalho
+- ressalva: executar cedo a implementação técnica de wallet e credenciais Pacifica agora que o contrato de dev foi congelado
 
 ## Resumo Executivo
 A Sprint 1 pode começar agora porque já existem:
@@ -25,8 +25,8 @@ Os únicos bloqueios relevantes para concluir toda a sprint não impedem o iníc
 - `OK` foco da Sprint 1 está claro: foundations, onboarding e i18n
 - `OK` comportamento de bloqueio de acesso ao dashboard está definido
 - `OK` idioma base em inglês está definido
-- `ATENCAO` contrato final da integração de wallet ainda precisa ser congelado
-- `ATENCAO` contrato final das credenciais Pacifica ainda precisa ser congelado
+- `OK` contrato técnico de wallet fechado para dev
+- `OK` contrato técnico das credenciais Pacifica fechado como fluxo de `Agent Wallet`
 
 ### Design
 - `OK` direção visual aprovada
@@ -42,8 +42,8 @@ Os únicos bloqueios relevantes para concluir toda a sprint não impedem o iníc
 - `OK` camada de i18n pode começar imediatamente
 - `OK` estado global mínimo pode começar imediatamente
 - `OK` estrutura visual do onboarding pode começar imediatamente
-- `ATENCAO` integração real da wallet depende de escolha de provider/adapter
-- `ATENCAO` validação real de credenciais depende do shape final do contrato Pacifica
+- `OK` integração da wallet já tem adapter e estratégia de sessão definidos
+- `OK` validação de credenciais já tem contrato técnico de request/response definido
 
 ## Status por Task da Sprint
 
@@ -63,27 +63,27 @@ Os únicos bloqueios relevantes para concluir toda a sprint não impedem o iníc
 - observação: pode ser construída com mocks e adapter local enquanto contratos finais não são congelados
 
 ### V1.4 Integrar conexão de wallet Solana
-- status: `PARTIAL`
-- motivo: a task pode começar pela abstração e pelos estados, mas a integração real depende da escolha do provider/adapter
-- bloqueio: decisão de wallet Solana
+- status: `READY`
+- motivo: provider, persistência mínima e estados de erro já estão fechados para dev
+- bloqueio: nenhum
 
 ### V1.5 Implementar formulário de credenciais Pacifica
-- status: `PARTIAL`
-- motivo: UI e estados básicos podem começar, mas o formulário final depende do shape exato dos campos obrigatórios
-- bloqueio: definição final de campos e semântica de validação
+- status: `READY`
+- motivo: campos e semântica de validação já estão fechados no contrato técnico de `Agent Wallet`
+- bloqueio: nenhum
 
 ### V1.6 Validar credenciais Pacifica
-- status: `BLOCKED_EARLY`
-- motivo: depende diretamente do contrato técnico da validação
-- bloqueio: payload de request, payload de sucesso, payload de erro e regra de retry
+- status: `READY`
+- motivo: payload de request, sucesso, erro e regra de retry já estão definidos para dev
+- bloqueio: nenhum
 
 ## Decisões Que Precisam Ser Fechadas Cedo
 
 ### 1. Wallet Solana
-Precisa ser decidido:
-- provider/adapter escolhido
-- persistência mínima da sessão
-- tratamento de erro esperado
+Fechado para dev:
+- provider/adapter: adapter interno com implementacao inicial via `@solana/wallet-adapter`
+- persistência mínima: estado local de UX com tentativa de `autoConnect`
+- tratamento de erro: codigos fechados para ausencia de provider, rejeicao, falha e perda de sessao
 
 Impacta:
 - V1.4
@@ -91,12 +91,12 @@ Impacta:
 - parte do estado global de V1.2
 
 ### 2. Credenciais Pacifica
-Precisa ser decidido:
-- campos obrigatórios exatos
-- ação que dispara a validação
-- payload de sucesso
-- payload de erro
-- diferença entre falha bloqueante e falha com retry
+Fechado para dev:
+- campos obrigatórios: `agentWalletPublicKey` e `agentWalletPrivateKey`
+- ação de validação: CTA explicito `Validate and Continue`
+- payload de sucesso: contrato com `credentialId`, `keyFingerprint`, `validationStatus` e `canProceed`
+- payload de erro: contrato com `code`, `message`, `retryable`, `field` e `canProceed`
+- regra de retry: apenas erros transitórios podem repetir sem editar campos
 
 Impacta:
 - V1.5
@@ -112,24 +112,24 @@ Impacta:
 4. estrutura de V1.4 com adapter abstrato
 5. estrutura de V1.5 com contrato provisório local
 
-### Deve ser fechado antes de concluir a sprint
-1. decisão de wallet Solana
-2. contrato das credenciais Pacifica
+### Deve ser executado cedo para concluir a sprint
+1. implementar a integracao da wallet no adapter interno escolhido
+2. implementar a validacao Pacifica contra o contrato tecnico fechado
 
 ## Critério de Go
 A Sprint 1 deve ser considerada oficialmente liberada para início porque:
 - não há bloqueio para foundations
 - não há bloqueio para shell, i18n e navegação
 - não há bloqueio para a UI do onboarding
-- os bloqueios remanescentes afetam integração funcional específica, não o começo da sprint
+- o checkpoint tecnico de dev ja foi fechado e o risco principal passa a ser de execucao, nao de definicao
 
 ## Critério de Atenção
 Se wallet e contrato Pacifica não forem fechados cedo, o risco principal é:
-- onboarding visual pronto, mas onboarding funcional incompleto
-- retrabalho de estado e formulário
-- atraso no fechamento das tasks P0 finais
+- atraso de implementacao nas tasks P0 finais
+- integracao parcial sem cobertura adequada de estados de erro
+- divergencia se algum time reabrir contrato ja congelado
 
 ## Conclusão
 A resposta prática é:
 - `sim, a Sprint 1 já pode começar`
-- `não, ainda não está 100% pronta para fechar todas as tasks sem congelar wallet e Pacifica`
+- `sim, o checkpoint tecnico de dev ja esta fechado para concluir as tasks sem ambiguidade de contrato`

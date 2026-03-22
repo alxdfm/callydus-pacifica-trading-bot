@@ -35,7 +35,7 @@ Garantir que a Sprint 1 siga em execucao sem ambiguidade de ownership, sem drift
 ### Dev
 - owner por iniciar imediatamente foundations, shell, i18n, estado global minimo e estrutura do onboarding
 - owner por implementar com mocks e adapters locais enquanto os contratos finais nao estiverem congelados
-- owner por propor rapidamente as opcoes tecnicas que o PO precisa decidir
+- owner por aplicar o contrato tecnico fechado para wallet e Pacifica sem reabrir escopo do MVP
 - owner por nao fechar como concluida a integracao funcional de wallet ou Pacifica antes do checkpoint de contrato
 - owner por sinalizar cedo qualquer risco de retrabalho ou incompatibilidade tecnica
 
@@ -48,16 +48,23 @@ Garantir que a Sprint 1 siga em execucao sem ambiguidade de ownership, sem drift
 Este checkpoint deve acontecer cedo. A sprint pode andar antes dele, mas nao pode fechar onboarding funcional sem ele.
 
 ### Wallet Solana
-- [ ] provider ou adapter escolhido
-- [ ] persistencia minima da sessao definida
-- [ ] comportamento de erro definido
+- [x] provider ou adapter escolhido
+- [x] persistencia minima da sessao definida
+- [x] comportamento de erro definido
 
 ### Credenciais Pacifica
-- [ ] campos obrigatorios exatos definidos
-- [ ] acao que dispara a validacao definida
-- [ ] payload de sucesso definido
-- [ ] payload de erro definido
-- [ ] regra de retry versus falha bloqueante definida
+- [x] campos obrigatorios exatos definidos
+- [x] acao que dispara a validacao definida
+- [x] payload de sucesso definido
+- [x] payload de erro definido
+- [x] regra de retry versus falha bloqueante definida
+
+
+## Contrato Tecnico Congelado por Dev
+- referencia obrigatoria: [SPRINT_1_ONBOARDING_TECH_CONTRACT.pt-BR.md](../../../dev/SPRINT_1_ONBOARDING_TECH_CONTRACT.pt-BR.md)
+- wallet Solana fechada com adapter interno e implementacao inicial via `@solana/wallet-adapter`
+- persistencia minima fechada como estado local de UX, sem confiar apenas em cache para liberar produto
+- credenciais Pacifica fechadas como fluxo de `Agent Wallet`, nao `API key + secret`
 
 ## Regra de Paralelismo
 - design nao precisa esperar contrato final para concluir onboarding visual
