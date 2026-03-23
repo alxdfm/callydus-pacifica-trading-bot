@@ -1,11 +1,17 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "./ui/layout/AppLayout";
 import { DashboardPage } from "./ui/pages/DashboardPage";
 import { HistoryPage } from "./ui/pages/HistoryPage";
-import { OnboardingPage } from "./ui/pages/OnboardingPage";
 import { PresetsPage } from "./ui/pages/PresetsPage";
 import { TradesPage } from "./ui/pages/TradesPage";
 import { ProductRouteGuard } from "./ui/router/ProductRouteGuard";
+
+const OnboardingRoute = lazy(() =>
+  import("./ui/pages/OnboardingRoute").then((module) => ({
+    default: module.OnboardingRoute,
+  })),
+);
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +23,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/onboarding",
-        element: <OnboardingPage />,
+        element: (
+          <Suspense fallback={<div className="page-stack">Loading onboarding...</div>}>
+            <OnboardingRoute />
+          </Suspense>
+        ),
       },
       {
         element: <ProductRouteGuard />,
