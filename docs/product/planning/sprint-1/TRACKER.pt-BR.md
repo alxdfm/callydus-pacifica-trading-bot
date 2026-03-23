@@ -19,8 +19,8 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 
 ## Resumo Atual
 - sprint status: `GO`
-- foco principal: foundations, onboarding e i18n
-- bloqueios principais: nenhum bloqueio aberto de contrato; foco atual e validacao da implementacao real contra os artefatos consolidados de design para `Agent Wallet`
+- foco principal: onboarding funcional, aderencia ao handoff visual e validacao manual
+- bloqueios principais: nenhum bloqueio aberto de contrato; foco atual e reconciliacao do app com `docs/design/preview` e validacao funcional real
 
 ## Fluxo Operacional Aprovado
 - design deve fechar primeiro todo o onboarding, incluindo estados criticos, microcopy e revisao mobile
@@ -50,9 +50,9 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 | V1.1 | DONE | P0 | Dev | nenhuma | nenhum | seguir para V1.2 com estado global minimo e guards |
 | V1.2 | DONE | P0 | Dev | V1.1 | nenhum | seguir para V1.3 com a UI de onboarding consumindo a store global |
 | V1.3 | DONE | P0 | Dev | V1.1, V1.2 | nenhum | seguir para V1.4 integrando o adapter de wallet na UI ja estruturada |
-| V1.4 | IN_REVIEW | P0 | Dev | V1.2, V1.3 | nenhum | executar teste funcional manual com Phantom no onboarding |
-| V1.5 | IN_REVIEW | P0 | Dev | V1.2, V1.3 | nenhum | executar teste funcional manual do formulario de `Agent Wallet` |
-| V1.6 | IN_REVIEW | P0 | Dev | V1.5 | nenhum | executar teste funcional completo de validacao e liberacao do dashboard |
+| V1.4 | IN_REVIEW | P0 | Dev | V1.2, V1.3 | nenhum | executar teste funcional manual com Phantom no onboarding ja alinhado ao preview |
+| V1.5 | IN_REVIEW | P0 | Dev | V1.2, V1.3 | nenhum | executar teste funcional manual do formulario de `Agent Wallet` no layout final da sprint |
+| V1.6 | IN_REVIEW | P0 | Dev | V1.5 | nenhum | executar teste funcional completo de validacao e liberacao do dashboard no fluxo final de onboarding |
 
 ## Designer
 | Task | Status | Prioridade | Owner | Dependencias | Bloqueio atual | Proximo passo |
