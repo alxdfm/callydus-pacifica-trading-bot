@@ -89,7 +89,7 @@ A Sprint 1 nao deve usar `API key + secret` como contrato de onboarding.
 O contrato funcional de dev fica alinhado ao fluxo de `Agent Wallet`:
 - `mainWalletPublicKey`: vem da wallet conectada e e readonly no formulario
 - `agentWalletPublicKey`: informado ou derivado do fluxo de Agent Wallet
-- `agentWalletPrivateKey`: segredo operacional enviado apenas no submit inicial para validacao e armazenamento criptografado
+- `agentWalletPrivateKey`: segredo operacional em `base58`, no mesmo formato exposto pela Pacifica, enviado apenas no submit inicial para validacao e armazenamento criptografado
 - `credentialAlias`: opcional, apenas para identificacao amigavel futura
 
 ### Regra de seguranca
@@ -117,7 +117,7 @@ Pre-condicoes:
 {
   "mainWalletPublicKey": "<solana-public-key>",
   "agentWalletPublicKey": "<solana-public-key>",
-  "agentWalletPrivateKey": "<agent-wallet-secret>",
+  "agentWalletPrivateKey": "<agent-wallet-secret-base58>",
   "credentialAlias": "Trading Bot Wallet"
 }
 ```
