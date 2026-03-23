@@ -20,7 +20,7 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 ## Resumo Atual
 - sprint status: `GO`
 - foco principal: foundations, onboarding e i18n
-- bloqueios principais: nenhum bloqueio aberto de contrato; foco atual e execucao das tasks de dev com refresh pontual de design para `Agent Wallet`
+- bloqueios principais: nenhum bloqueio aberto de contrato; foco atual e validacao da implementacao real contra os artefatos consolidados de design para `Agent Wallet`
 
 ## Fluxo Operacional Aprovado
 - design deve fechar primeiro todo o onboarding, incluindo estados criticos, microcopy e revisao mobile
@@ -32,6 +32,7 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 - `PO`: owner por proteger o escopo do MVP, validar clareza do onboarding e arbitrar qualquer conflito novo de produto
 - `Dev`: owner por executar o contrato tecnico fechado de wallet, `Agent Wallet`, persistencia e validacao Pacifica
 - `Designer`: owner por ajustar onboarding, estados, microcopy e handoff ao contrato final aprovado
+- `QA`: owner por validar usabilidade, regras de negocio, estados criticos e evidencias acionaveis da Sprint 1
 
 ## Checkpoint Obrigatorio do Inicio da Sprint
 - [x] fechar provider ou adapter da wallet Solana
@@ -47,22 +48,30 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 | Task | Status | Prioridade | Owner | Dependencias | Bloqueio atual | Proximo passo |
 |------|--------|------------|-------|--------------|----------------|---------------|
 | V1.1 | DONE | P0 | Dev | nenhuma | nenhum | seguir para V1.2 com estado global minimo e guards |
-| V1.2 | TODO | P0 | - | V1.1 | nenhum | definir modelo minimo de estado global |
-| V1.3 | TODO | P0 | - | V1.1, V1.2 | nenhum | montar tela de onboarding com i18n |
-| V1.4 | TODO | P0 | Dev | V1.2, V1.3 | nenhum | implementar adapter interno e estados de conexao com `@solana/wallet-adapter` |
-| V1.5 | TODO | P0 | Dev | V1.2, V1.3 | nenhum | implementar formulario oficial de `Agent Wallet` com labels via i18n |
-| V1.6 | TODO | P0 | Dev | V1.5 | nenhum | integrar validacao oficial de `Agent Wallet` contra o contrato tecnico fechado |
+| V1.2 | DONE | P0 | Dev | V1.1 | nenhum | seguir para V1.3 com a UI de onboarding consumindo a store global |
+| V1.3 | DONE | P0 | Dev | V1.1, V1.2 | nenhum | seguir para V1.4 integrando o adapter de wallet na UI ja estruturada |
+| V1.4 | IN_REVIEW | P0 | Dev | V1.2, V1.3 | nenhum | executar teste funcional manual com Phantom no onboarding |
+| V1.5 | IN_REVIEW | P0 | Dev | V1.2, V1.3 | nenhum | executar teste funcional manual do formulario de `Agent Wallet` |
+| V1.6 | IN_REVIEW | P0 | Dev | V1.5 | nenhum | executar teste funcional completo de validacao e liberacao do dashboard |
 
 ## Designer
 | Task | Status | Prioridade | Owner | Dependencias | Bloqueio atual | Proximo passo |
 |------|--------|------------|-------|--------------|----------------|---------------|
-| D1.1 | TODO | P0 | - | nenhuma | nenhum | fechar mini sistema visual |
-| D1.2 | TODO | P0 | - | D1.1 | nenhum | desenhar onboarding desktop |
-| D1.3 | TODO | P0 | - | D1.1, D1.2 | nenhum | adaptar onboarding para mobile |
-| D1.4 | TODO | P0 | - | D1.1, D1.2 | nenhum | fechar matriz visual da wallet |
-| D1.5 | TODO | P0 | Designer | D1.1, D1.2 | nenhum | ajustar campos e estados do formulario para `Agent Wallet` sem redesenho estrutural |
-| D1.6 | TODO | P0 | Designer | D1.4, D1.5 | nenhum | revisar microcopy de `Agent Wallet`, helper texts e mensagens de erro |
-| D1.7 | TODO | P1 | Designer | D1.1, D1.2, D1.3, D1.4, D1.5, D1.6 | nenhum | atualizar handoff e preview para refletir o contrato final |
+| D1.1 | DONE | P0 | Designer | nenhuma | nenhum | usar o sistema visual como base de implementacao e QA |
+| D1.2 | DONE | P0 | Designer | D1.1 | nenhum | usar o onboarding desktop consolidado como base de implementacao |
+| D1.3 | DONE | P0 | Designer | D1.1, D1.2 | nenhum | acompanhar aderencia mobile na implementacao real |
+| D1.4 | DONE | P0 | Designer | D1.1, D1.2 | nenhum | usar matriz de estados da wallet como referencia de implementacao e QA |
+| D1.5 | DONE | P0 | Designer | D1.1, D1.2 | nenhum | usar estados e campos de `Agent Wallet` como referencia operacional |
+| D1.6 | DONE | P0 | Designer | D1.4, D1.5 | nenhum | usar microcopy consolidada como base de i18n do onboarding |
+| D1.7 | DONE | P1 | Designer | D1.1, D1.2, D1.3, D1.4, D1.5, D1.6 | nenhum | manter handoff como fonte de verdade para dev e QA |
+
+## QA
+| Task | Status | Prioridade | Owner | Dependencias | Bloqueio atual | Proximo passo |
+|------|--------|------------|-------|--------------|----------------|---------------|
+| Q1.1 | TODO | P0 | QA | D1.5, D1.6, V1.3, V1.5 | nenhum | validar usabilidade e confianca do onboarding |
+| Q1.2 | TODO | P0 | QA | V1.4, V1.5, V1.6 | nenhum | validar regras de bloqueio e liberacao do produto |
+| Q1.3 | TODO | P0 | QA | D1.4, D1.5, D1.6, V1.4, V1.5, V1.6 | nenhum | validar estados, mensagens e recuperacao |
+| Q1.4 | TODO | P1 | QA | Q1.1, Q1.2, Q1.3 | nenhum | consolidar relatorio de QA da Sprint 1 |
 
 ## Decisao de Produto Fechada
 - [x] `Agent Wallet` aprovado como contrato oficial de credenciais do MVP
@@ -98,3 +107,9 @@ Uma task so pode mudar para `DONE` quando:
 - [D1.5 Card](./cards/designer/D1.5_CARD.pt-BR.md)
 - [D1.6 Card](./cards/designer/D1.6_CARD.pt-BR.md)
 - [D1.7 Card](./cards/designer/D1.7_CARD.pt-BR.md)
+
+### QA
+- [Q1.1 Card](./cards/qa/Q1.1_CARD.pt-BR.md)
+- [Q1.2 Card](./cards/qa/Q1.2_CARD.pt-BR.md)
+- [Q1.3 Card](./cards/qa/Q1.3_CARD.pt-BR.md)
+- [Q1.4 Card](./cards/qa/Q1.4_CARD.pt-BR.md)
