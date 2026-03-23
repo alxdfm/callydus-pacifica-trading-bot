@@ -68,10 +68,10 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 ## QA
 | Task | Status | Prioridade | Owner | Dependencias | Bloqueio atual | Proximo passo |
 |------|--------|------------|-------|--------------|----------------|---------------|
-| Q1.1 | TODO | P0 | QA | D1.5, D1.6, V1.3, V1.5 | nenhum | validar usabilidade e confianca do onboarding |
-| Q1.2 | TODO | P0 | QA | V1.4, V1.5, V1.6 | nenhum | validar regras de bloqueio e liberacao do produto |
-| Q1.3 | TODO | P0 | QA | D1.4, D1.5, D1.6, V1.4, V1.5, V1.6 | nenhum | validar estados, mensagens e recuperacao |
-| Q1.4 | TODO | P1 | QA | Q1.1, Q1.2, Q1.3 | nenhum | consolidar relatorio de QA da Sprint 1 |
+| Q1.1 | DONE | P0 | QA | D1.5, D1.6, V1.3, V1.5 | nenhum | consolidado no relatorio final de QA |
+| Q1.2 | DONE | P0 | QA | V1.4, V1.5, V1.6 | nenhum | consolidado no relatorio final de QA |
+| Q1.3 | DONE | P0 | QA | D1.4, D1.5, D1.6, V1.4, V1.5, V1.6 | nenhum | consolidado no relatorio final de QA |
+| Q1.4 | DONE | P1 | QA | Q1.1, Q1.2, Q1.3 | nenhum | alinhar backlog priorizado com design e dev |
 
 ## Decisao de Produto Fechada
 - [x] `Agent Wallet` aprovado como contrato oficial de credenciais do MVP
