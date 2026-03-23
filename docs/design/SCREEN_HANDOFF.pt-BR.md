@@ -16,6 +16,18 @@ Prioridades:
 - estados de validação claramente distinguíveis
 - `reconnecting` pode reutilizar a linguagem visual de `connecting`, sem novo estado obrigatório
 
+Comportamento Mobile:
+- abaixo de `1240px`, `flow-shell` e `onboarding-grid` colapsam para uma coluna
+- a ordem vertical deve preservar: contexto da tela, wallet, `Agent Wallet`, status da conta
+- `flow-side` deixa de ser sticky no mobile e vira bloco introdutório acima do conteúdo
+- CTA e ações principais devem continuar visíveis sem overflow horizontal
+- labels, helper texts e mensagens devem tolerar strings maiores sem sobreposição
+
+Orientação de i18n:
+- usar os grupos definidos em [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md) como base de chave para onboarding
+- manter distinção explícita entre textos de `wallet` e `Agent Wallet`
+- helper texts e mensagens de bloqueio não devem depender de concatenar fragmentos dinâmicos longos
+
 ## Dashboard
 Referência: [preview/dashboard.html](./preview/dashboard.html)
 

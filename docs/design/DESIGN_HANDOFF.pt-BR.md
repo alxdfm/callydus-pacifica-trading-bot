@@ -21,8 +21,9 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
 1. [VISUAL_DIRECTION.pt-BR.md](./VISUAL_DIRECTION.pt-BR.md)
 2. [DESIGN_SYSTEM_FOUNDATION.pt-BR.md](./DESIGN_SYSTEM_FOUNDATION.pt-BR.md)
 3. [MVP_COMPONENT_SYSTEM.pt-BR.md](./MVP_COMPONENT_SYSTEM.pt-BR.md)
-4. [preview/index.html](./preview/index.html)
-5. [preview/theme.css](./preview/theme.css)
+4. [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
+5. [preview/index.html](./preview/index.html)
+6. [preview/theme.css](./preview/theme.css)
 
 ## Tokens Prioritários Para Codificar
 - cores de superfície
@@ -84,6 +85,14 @@ QA deve validar:
 - `credentialAlias` é opcional e não deve competir com os campos obrigatórios
 - a private key solicitada deve ser explicitamente identificada como pertencente à `Agent Wallet`, nunca à wallet principal
 - mensagens de erro devem separar falha transitória de erro que exige edição do campo
+- estados e microcopy principal do onboarding devem seguir [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
+
+## Orientação de i18n Para Onboarding
+- usar os grupos de mensagem da seção `Microcopy Principal` em [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md) como referência inicial de chave
+- preservar frases curtas e auto-contidas para evitar quebras no layout mobile
+- não esconder distinção semântica entre `wallet` e `Agent Wallet` por reaproveitamento excessivo de chave
+- tratar mensagens de bloqueio, loading, sucesso e erro como grupos separados na camada de i18n
+- helper texts devem permanecer independentes dos labels para facilitar tradução e revisão futura
 
 ## Escopo Deste Handoff
 Este handoff define base visual e estrutura de interface.
