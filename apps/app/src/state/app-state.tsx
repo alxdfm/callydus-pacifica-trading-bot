@@ -10,6 +10,7 @@ import {
 import {
   createContext,
   type PropsWithChildren,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -19,11 +20,14 @@ import { defaultLocale, type AppLocale } from "../shared/i18n/messages";
 
 type CredentialState = {
   agentWalletPublicKey: string | null;
+  agentWalletPrivateKey: string | null;
+  credentialAlias: string | null;
   credentialId: string | null;
   keyFingerprint: string | null;
   validationStatus: CredentialValidationStatus;
   lastValidatedAt: string | null;
   lastErrorCode: PacificaValidationErrorCode | null;
+  lastValidationMessage: string | null;
   retryable: boolean;
 };
 
@@ -62,11 +66,14 @@ export function createInitialAppSessionState(): AppSessionState {
     },
     credentials: {
       agentWalletPublicKey: null,
+      agentWalletPrivateKey: null,
+      credentialAlias: null,
       credentialId: null,
       keyFingerprint: null,
       validationStatus: "pending",
       lastValidatedAt: null,
       lastErrorCode: null,
+      lastValidationMessage: null,
       retryable: false,
     },
     onboarding: {
@@ -134,6 +141,17 @@ function deriveCanAccessProduct(state: AppSessionState) {
   );
 }
 
+function areObjectsShallowEqual<T extends Record<string, unknown>>(left: T, right: T) {
+  const leftKeys = Object.keys(left) as Array<keyof T>;
+  const rightKeys = Object.keys(right) as Array<keyof T>;
+
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+
+  return leftKeys.every((key) => left[key] === right[key]);
+}
+
 export function AppStateProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AppSessionState>(() => {
     if (typeof window === "undefined") {
@@ -147,51 +165,107 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     window.localStorage.setItem(storageKey, JSON.stringify(state));
   }, [state]);
 
+  const setLocale = useCallback((locale: AppLocale) => {
+    setState((currentState) => {
+      if (currentState.locale === locale) {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        locale,
+      };
+    });
+  }, []);
+
+  const setWalletSession = useCallback((nextWallet: Partial<WalletSession>) => {
+    setState((currentState) => {
+      const wallet = {
+        ...currentState.wallet,
+        ...nextWallet,
+      };
+
+      if (areObjectsShallowEqual(currentState.wallet, wallet)) {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        wallet,
+      };
+    });
+  }, []);
+
+  const setCredentialState = useCallback((nextCredentials: Partial<CredentialState>) => {
+    setState((currentState) => {
+      const credentials = {
+        ...currentState.credentials,
+        ...nextCredentials,
+      };
+
+      if (areObjectsShallowEqual(currentState.credentials, credentials)) {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        credentials,
+      };
+    });
+  }, []);
+
+  const setOnboardingState = useCallback(
+    (nextOnboarding: Partial<AppSessionState["onboarding"]>) => {
+      setState((currentState) => {
+        const onboarding = {
+          ...currentState.onboarding,
+          ...nextOnboarding,
+        };
+
+        if (areObjectsShallowEqual(currentState.onboarding, onboarding)) {
+          return currentState;
+        }
+
+        return {
+          ...currentState,
+          onboarding,
+        };
+      });
+    },
+    [],
+  );
+
+  const resetOnboardingState = useCallback(() => {
+    setState((currentState) => {
+      const nextState = {
+        ...createInitialAppSessionState(),
+        locale: currentState.locale,
+      };
+
+      return JSON.stringify(currentState) === JSON.stringify(nextState)
+        ? currentState
+        : nextState;
+    });
+  }, []);
+
   const value = useMemo<AppStateContextValue>(
     () => ({
       state,
       canAccessProduct: deriveCanAccessProduct(state),
-      setLocale: (locale) => {
-        setState((currentState) => ({
-          ...currentState,
-          locale,
-        }));
-      },
-      setWalletSession: (nextWallet) => {
-        setState((currentState) => ({
-          ...currentState,
-          wallet: {
-            ...currentState.wallet,
-            ...nextWallet,
-          },
-        }));
-      },
-      setCredentialState: (nextCredentials) => {
-        setState((currentState) => ({
-          ...currentState,
-          credentials: {
-            ...currentState.credentials,
-            ...nextCredentials,
-          },
-        }));
-      },
-      setOnboardingState: (nextOnboarding) => {
-        setState((currentState) => ({
-          ...currentState,
-          onboarding: {
-            ...currentState.onboarding,
-            ...nextOnboarding,
-          },
-        }));
-      },
-      resetOnboardingState: () => {
-        setState((currentState) => ({
-          ...createInitialAppSessionState(),
-          locale: currentState.locale,
-        }));
-      },
+      setLocale,
+      setWalletSession,
+      setCredentialState,
+      setOnboardingState,
+      resetOnboardingState,
     }),
-    [state],
+    [
+      resetOnboardingState,
+      setCredentialState,
+      setLocale,
+      setOnboardingState,
+      setWalletSession,
+      state,
+    ],
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

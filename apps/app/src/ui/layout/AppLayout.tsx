@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { navigationItems } from "./navigation";
@@ -24,8 +24,10 @@ function NavigationLinks() {
 }
 
 export function AppLayout() {
+  const location = useLocation();
   const { canAccessProduct, setLocale, state } = useAppState();
   const { isReady, t } = useI18n();
+  const isOnboardingRoute = location.pathname === "/onboarding";
 
   if (!isReady) {
     return <div className="shell-loading">Loading messages...</div>;
@@ -50,38 +52,36 @@ export function AppLayout() {
       </aside>
 
       <div className="shell-body">
-        <header className="shell-topbar">
-          <div>
-            <span className="shell-topbar__status">{t("topbarStatus")}</span>
-            <h2>{t("shellFoundationTitle")}</h2>
-          </div>
+        {!isOnboardingRoute ? (
+          <header className="shell-topbar">
+            <div>
+              <span className="shell-topbar__status">{t("topbarStatus")}</span>
+              <h2>{t("shellFoundationTitle")}</h2>
+            </div>
 
-          <div className="shell-topbar__controls">
-            <span className="shell-badge">
-              {canAccessProduct ? t("shellReadyBadge") : t("shellBlockedBadge")}
-            </span>
-            <label className="shell-locale" htmlFor="locale-select">
-              <span>{t("localeLabel")}</span>
-              <select
-                id="locale-select"
-                value={state.locale}
-                onChange={(event) => setLocale(event.target.value as typeof state.locale)}
-              >
-                <option value="en">{t("localeName")}</option>
-              </select>
-            </label>
-          </div>
-        </header>
+            <div className="shell-topbar__controls">
+              <span className="shell-badge">
+                {canAccessProduct ? t("shellReadyBadge") : t("shellBlockedBadge")}
+              </span>
+              <label className="shell-locale" htmlFor="locale-select">
+                <span>{t("localeLabel")}</span>
+                <select
+                  id="locale-select"
+                  value={state.locale}
+                  onChange={(event) => setLocale(event.target.value as typeof state.locale)}
+                >
+                  <option value="en">{t("localeName")}</option>
+                </select>
+              </label>
+            </div>
+          </header>
+        ) : null}
 
         <nav aria-label={t("mobileMenuLabel")} className="shell-nav shell-nav--mobile">
           <NavigationLinks />
         </nav>
 
         <main className="shell-content">
-          <section className="shell-foundation-card">
-            <p>{t("shellFoundationDescription")}</p>
-            <p>{t("shellOnboardingHint")}</p>
-          </section>
           <Outlet />
         </main>
       </div>
