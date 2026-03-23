@@ -1,3 +1,4 @@
+import bs58 from "bs58";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   pacificaCredentialSubmissionSchema,
@@ -15,17 +16,13 @@ function isValidPublicKey(value: string) {
   }
 }
 
-function isValidSecretByteArray(value: string) {
+function isValidBase58SecretKey(value: string) {
   try {
-    const parsed = JSON.parse(value) as unknown;
+    const bytes = bs58.decode(value.trim());
 
-    if (!Array.isArray(parsed) || parsed.length === 0) {
+    if (bytes.length === 0) {
       return false;
     }
-
-    const bytes = Uint8Array.from(
-      parsed.map((item) => (typeof item === "number" ? item : Number.NaN)),
-    );
 
     Keypair.fromSecretKey(bytes);
     return true;
@@ -84,12 +81,12 @@ export async function validateAgentWalletLocally(
     });
   }
 
-  if (!isValidSecretByteArray(submission.agentWalletPrivateKey)) {
+  if (!isValidBase58SecretKey(submission.agentWalletPrivateKey)) {
     return buildErrorResponse({
       status: "invalid",
       code: "invalid_agent_wallet_secret",
       message:
-        "Enter the Agent Wallet private key as a valid JSON byte array generated for that wallet.",
+        "Enter the Agent Wallet private key as a valid base58 secret key generated for that wallet.",
       retryable: false,
       field: "agentWalletPrivateKey",
       canProceed: false,

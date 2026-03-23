@@ -83,7 +83,7 @@ export const messages = {
     onboardingValueNoProvider: "No provider selected",
     onboardingValueNoError: "No wallet errors",
     onboardingValueAwaitingPublicKey: "Enter the Agent Wallet public key",
-    onboardingValueAwaitingPrivateKey: "Paste the Agent Wallet private key JSON array",
+    onboardingValueAwaitingPrivateKey: "Paste the Agent Wallet private key in base58 format",
     onboardingValueAwaitingAlias: "Optional label for future identification",
     onboardingValueAwaitingValidation: "Validation response will appear here",
     onboardingValueValidationSuccess: "Agent Wallet validated successfully.",
@@ -92,7 +92,7 @@ export const messages = {
     onboardingHelperAgentWalletPublic:
       "Use the public key from the Agent Wallet only.",
     onboardingHelperAgentWalletPrivate:
-      "Use the private key from the Agent Wallet only. It is sent on first validation and not shown again.",
+      "Use the private key from the Agent Wallet only, in the same base58 format provided by Pacifica. It is sent on first validation and not shown again.",
     onboardingHelperCredentialAlias:
       "Optional label to help identify the credential later.",
     onboardingFormHint:
@@ -118,6 +118,16 @@ export const messages = {
     onboardingWalletMicrocopyConnecting: "Connecting to Phantom...",
     onboardingWalletMicrocopyConnected: "Wallet connected and ready.",
     onboardingWalletMicrocopyError: "Could not connect wallet.",
+    onboardingWalletErrorProviderMissing:
+      "Phantom is not installed in this browser. Install the extension and try again.",
+    onboardingWalletErrorRejected:
+      "The wallet connection request was rejected. Open Phantom and approve the connection.",
+    onboardingWalletErrorFailed:
+      "Could not connect to Phantom right now. Try again in a moment.",
+    onboardingWalletErrorSessionLost:
+      "The wallet session was lost. Connect the wallet again to continue.",
+    onboardingWalletErrorUnsupported:
+      "This wallet is outside the Sprint 1 scope. Use Phantom to continue.",
     onboardingCredentialMicrocopyEmpty: "Enter your Agent Wallet details.",
     onboardingCredentialMicrocopyFilled: "Ready to validate Agent Wallet.",
     onboardingCredentialMicrocopyValidating: "Validating Agent Wallet...",

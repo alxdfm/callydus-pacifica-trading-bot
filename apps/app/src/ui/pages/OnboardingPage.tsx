@@ -146,6 +146,25 @@ function mapWalletMicrocopy(status: WalletSession["sessionStatus"]): MessageKey 
   }
 }
 
+function mapWalletErrorCodeToMessageKey(
+  errorCode: WalletSession["errorCode"],
+): MessageKey | null {
+  switch (errorCode) {
+    case "wallet_provider_missing":
+      return "onboardingWalletErrorProviderMissing";
+    case "wallet_connection_rejected":
+      return "onboardingWalletErrorRejected";
+    case "wallet_connection_failed":
+      return "onboardingWalletErrorFailed";
+    case "wallet_session_lost":
+      return "onboardingWalletErrorSessionLost";
+    case "wallet_unsupported":
+      return "onboardingWalletErrorUnsupported";
+    default:
+      return null;
+  }
+}
+
 function mapCredentialMicrocopy(
   status: CredentialValidationStatus,
   isFilled: boolean,
@@ -250,6 +269,8 @@ export function OnboardingPage() {
     mapCredentialFormState(state.credentials.validationStatus, isCredentialFormFilled),
   );
   const walletMicrocopy = t(mapWalletMicrocopy(state.wallet.sessionStatus));
+  const walletErrorMessageKey = mapWalletErrorCodeToMessageKey(state.wallet.errorCode);
+  const walletErrorMessage = walletErrorMessageKey ? t(walletErrorMessageKey) : null;
   const credentialMicrocopy = t(
     mapCredentialMicrocopy(
       state.credentials.validationStatus,
@@ -531,7 +552,7 @@ export function OnboardingPage() {
                 <span className="status-dot status-dot--danger"></span>
                 <div>
                   <strong>{t("onboardingWalletErrorLabel")}</strong>
-                  <p>{state.wallet.errorCode}</p>
+                  <p>{walletErrorMessage ?? state.wallet.errorCode}</p>
                 </div>
               </div>
             ) : null}
