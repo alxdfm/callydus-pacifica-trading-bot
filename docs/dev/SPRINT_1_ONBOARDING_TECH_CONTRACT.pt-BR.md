@@ -25,6 +25,11 @@ Escolha operacional do MVP:
 - permite manter o app desacoplado do provider concreto por meio do port interno
 - preserva espaco para trocar modal ou carteira depois sem retrabalho estrutural
 
+### Regra de carregamento
+- a stack Solana nao deve subir no bootstrap global do app
+- `SolanaWalletEnvironment` e `SolanaWalletStateBridge` devem carregar apenas no fluxo de onboarding
+- o contrato interno `SolanaWalletPort` continua sendo a borda estavel para permitir novas wallets depois
+
 ### Contrato interno minimo
 O app deve trabalhar com estes estados:
 - `disconnected`
