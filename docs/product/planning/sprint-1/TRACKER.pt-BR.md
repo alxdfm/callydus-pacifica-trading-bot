@@ -18,9 +18,9 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 - `DONE`: task concluida e validada
 
 ## Resumo Atual
-- sprint status: `GO`
-- foco principal: onboarding funcional, aderencia ao handoff visual e validacao manual
-- bloqueios principais: nenhum bloqueio aberto de contrato; foco atual e reconciliacao do app com `docs/design/preview` e validacao funcional real
+- sprint status: `DONE`
+- foco principal: sprint encerrada; carry-over apenas de backlog residual de UX/copy para o proximo slice
+- bloqueios principais: nenhum bloqueio aberto na Sprint 1
 
 ## Fluxo Operacional Aprovado
 - design deve fechar primeiro todo o onboarding, incluindo estados criticos, microcopy e revisao mobile
@@ -50,9 +50,9 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 | V1.1 | DONE | P0 | Dev | nenhuma | nenhum | seguir para V1.2 com estado global minimo e guards |
 | V1.2 | DONE | P0 | Dev | V1.1 | nenhum | seguir para V1.3 com a UI de onboarding consumindo a store global |
 | V1.3 | DONE | P0 | Dev | V1.1, V1.2 | nenhum | seguir para V1.4 integrando o adapter de wallet na UI ja estruturada |
-| V1.4 | IN_REVIEW | P0 | Dev | V1.2, V1.3 | nenhum | executar teste funcional manual com Phantom no onboarding ja alinhado ao preview |
-| V1.5 | IN_REVIEW | P0 | Dev | V1.2, V1.3 | nenhum | executar teste funcional manual do formulario de `Agent Wallet` no layout final da sprint |
-| V1.6 | IN_REVIEW | P0 | Dev | V1.5 | nenhum | executar teste funcional completo de validacao e liberacao do dashboard no fluxo final de onboarding |
+| V1.4 | DONE | P0 | Dev | V1.2, V1.3 | nenhum | task validada manualmente |
+| V1.5 | DONE | P0 | Dev | V1.2, V1.3 | nenhum | task validada manualmente |
+| V1.6 | DONE | P0 | Dev | V1.5 | nenhum | task validada manualmente |
 
 ## Designer
 | Task | Status | Prioridade | Owner | Dependencias | Bloqueio atual | Proximo passo |
@@ -76,6 +76,10 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 ## Decisao de Produto Fechada
 - [x] `Agent Wallet` aprovado como contrato oficial de credenciais do MVP
 
+## Backlog Residual da Sprint 1
+- `media` Ajuste de UX: avaliar desabilitar as demais opcoes do produto enquanto o onboarding nao estiver validado, reforcando previsibilidade do bloqueio.
+- `baixa` Melhoria: revisar se o estado bloqueado do dashboard comunica "etapa pendente" com mais forca do que "erro".
+
 ## Decisoes Externas em Aberto
 - [x] congelar provider ou adapter da wallet Solana
 - [x] congelar persistencia minima da wallet
@@ -85,10 +89,10 @@ Centralizar o acompanhamento operacional da Sprint 1 no nivel de task individual
 
 ## Regra de Controle
 Uma task so pode mudar para `DONE` quando:
-- [ ] o card da task estiver com checklist de entrega real concluido
-- [ ] os bloqueios estiverem resolvidos ou explicitamente descartados
-- [ ] os criterios de aceite da task estiverem marcados
-- [ ] nao houver expansao indevida de escopo do MVP
+- [x] o card da task estiver com checklist de entrega real concluido
+- [x] os bloqueios estiverem resolvidos ou explicitamente descartados
+- [x] os criterios de aceite da task estiverem marcados
+- [x] nao houver expansao indevida de escopo do MVP
 
 ## Cards Individuais
 ### Dev
