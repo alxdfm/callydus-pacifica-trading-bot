@@ -29,7 +29,7 @@ Orientação de i18n:
 - helper texts e mensagens de bloqueio não devem depender de concatenar fragmentos dinâmicos longos
 
 ## Dashboard
-Referência: [preview/dashboard.html](./preview/dashboard.html)
+Referências: [preview/dashboard.html](./preview/dashboard.html), [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
 
 Prioridades:
 - status global acima da dobra
@@ -37,6 +37,14 @@ Prioridades:
 - preset ativo com destaque médio
 - trades abertos com prioridade sobre histórico recente
 - ação global do bot visível no topo
+
+Comportamento Mobile:
+- cards de métrica colapsam para coluna única
+- preset ativo permanece acima do histórico recente
+- alertas e trades atuais não podem perder prioridade visual
+
+Orientação de i18n:
+- header, métricas, alertas e preset ativo devem seguir [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
 
 ## Presets
 Referências: [preview/presets.html](./preview/presets.html), [PRESETS_STRUCTURE.pt-BR.md](./PRESETS_STRUCTURE.pt-BR.md), [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
@@ -58,7 +66,7 @@ Orientação de i18n:
 - estados e textos principais de revisão e ativação devem seguir [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
 
 ## Current Trades
-Referência: [preview/trades.html](./preview/trades.html)
+Referências: [preview/trades.html](./preview/trades.html), [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
 
 Prioridades:
 - ação `Close trade` sempre visível
@@ -66,14 +74,28 @@ Prioridades:
 - painel de detalhe não compete com a lista principal
 - visual mais operacional que analítico
 
+Comportamento Mobile:
+- lista e detalhe colapsam em leitura vertical
+- `Close trade` continua visível sem scroll lateral
+
+Orientação de i18n:
+- labels de direção, status e encerramento seguem [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
+
 ## History
-Referência: [preview/history.html](./preview/history.html)
+Referências: [preview/history.html](./preview/history.html), [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
 
 Prioridades:
 - leitura cronológica simples
 - resultado e motivo de encerramento escaneáveis
 - ausência de filtros no MVP
 - visual mais discreto que `Current trades`
+
+Comportamento Mobile:
+- histórico colapsa para cartões ou linhas compactas em coluna única
+- resultado e motivo continuam legíveis sem densidade excessiva
+
+Orientação de i18n:
+- motivos de encerramento e resultado seguem [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
 
 ## Navegação
 Referência: [preview/index.html](./preview/index.html)

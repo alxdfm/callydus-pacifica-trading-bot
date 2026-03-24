@@ -24,8 +24,11 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
 4. [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
 5. [PRESETS_STRUCTURE.pt-BR.md](./PRESETS_STRUCTURE.pt-BR.md)
 6. [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
-7. [preview/index.html](./preview/index.html)
-8. [preview/theme.css](./preview/theme.css)
+7. [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
+8. [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
+9. [MVP_FINALIZATION_REFERENCE.pt-BR.md](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
+10. [preview/index.html](./preview/index.html)
+11. [preview/theme.css](./preview/theme.css)
 
 ## Tokens Prioritários Para Codificar
 - cores de superfície
@@ -68,6 +71,9 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
   - `Balanced`
   - `More active`
 - comparacao, revisao e ativacao de presets devem seguir [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
+- dashboard deve seguir [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
+- trades atuais e histórico devem seguir [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
+- consistência final, estados vazios, loading e erro devem seguir [MVP_FINALIZATION_REFERENCE.pt-BR.md](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
 
 ## Observações de QA
 QA deve validar:
