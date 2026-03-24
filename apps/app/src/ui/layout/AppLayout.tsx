@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
@@ -25,10 +25,8 @@ function NavigationLinks() {
 }
 
 export function AppLayout() {
-  const location = useLocation();
-  const { canAccessProduct, setLocale, state } = useAppState();
+  const { setLocale, state } = useAppState();
   const { isReady, t } = useI18n();
-  const isOnboardingRoute = location.pathname === "/onboarding";
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
   );
@@ -66,34 +64,19 @@ export function AppLayout() {
               : t("presetSidebarHint")}
           </p>
         </div>
+        <label className="shell-locale shell-side-controls" htmlFor="locale-select">
+          <span>{t("localeLabel")}</span>
+          <select
+            id="locale-select"
+            value={state.locale}
+            onChange={(event) => setLocale(event.target.value as typeof state.locale)}
+          >
+            <option value="en">{t("localeName")}</option>
+          </select>
+        </label>
       </aside>
 
       <div className="shell-body">
-        {!isOnboardingRoute ? (
-          <header className="shell-topbar">
-            <div>
-              <span className="shell-topbar__status">{t("topbarStatus")}</span>
-              <h2>{t("shellFoundationTitle")}</h2>
-            </div>
-
-            <div className="shell-topbar__controls">
-              <span className="shell-badge">
-                {canAccessProduct ? t("shellReadyBadge") : t("shellBlockedBadge")}
-              </span>
-              <label className="shell-locale" htmlFor="locale-select">
-                <span>{t("localeLabel")}</span>
-                <select
-                  id="locale-select"
-                  value={state.locale}
-                  onChange={(event) => setLocale(event.target.value as typeof state.locale)}
-                >
-                  <option value="en">{t("localeName")}</option>
-                </select>
-              </label>
-            </div>
-          </header>
-        ) : null}
-
         <nav aria-label={t("mobileMenuLabel")} className="shell-nav shell-nav--mobile">
           <NavigationLinks />
         </nav>

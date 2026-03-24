@@ -6,12 +6,13 @@ import {
   getPresetCatalog,
   getPresetCatalogItemByDefinitionId,
 } from "../../features/presets/preset-catalog";
+import { createRuntimeFromPresetActivation } from "../../features/runtime/demo-runtime";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
 export function PresetsPage() {
   const { t } = useI18n();
-  const { setPresetState, state } = useAppState();
+  const { setPresetState, setRuntimeState, state } = useAppState();
   const presets = getPresetCatalog();
   const selectedPreset = getPresetCatalogItemByDefinitionId(
     state.presets.selectedPresetDefinitionId,
@@ -84,6 +85,10 @@ export function PresetsPage() {
         activationStatus: "loading",
         activationMessage: t("presetActivationLoading"),
       });
+      setRuntimeState({
+        screenStatus: "loading",
+        lastRuntimeMessage: t("runtimeStatusLoading"),
+      });
 
       const request = presetActivationRequestSchema.parse({
         presetDefinitionId: selectedPreset.definition.id,
@@ -99,10 +104,15 @@ export function PresetsPage() {
         activationStatus: "success",
         activationMessage: t("presetActivationSuccess"),
       });
+      setRuntimeState(createRuntimeFromPresetActivation(result.activation));
     } catch {
       setPresetState({
         activationStatus: "error",
         activationMessage: t("presetActivationErrorGeneric"),
+      });
+      setRuntimeState({
+        screenStatus: "error",
+        lastRuntimeMessage: t("presetActivationErrorGeneric"),
       });
     }
   }

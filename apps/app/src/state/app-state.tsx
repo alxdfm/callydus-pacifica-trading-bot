@@ -1,15 +1,27 @@
 import {
+  balanceSnapshotSchema,
+  botStatusSchema,
   credentialValidationStatusSchema,
+  operationalAlertSchema,
   onboardingStatusSchema,
+  openTradeSchema,
   presetActivationSchema,
   presetEditableConfigSchema,
+  syncStatusSchema,
   walletSessionStatusSchema,
+  closedTradeSchema,
+  type BalanceSnapshot,
+  type BotStatus,
   type CredentialValidationStatus,
   type OnboardingStatus,
+  type OperationalAlert,
   type PacificaValidationErrorCode,
+  type OpenTrade,
   type PresetActivation,
   type PresetEditableConfig,
+  type SyncStatus,
   type WalletSession,
+  type ClosedTrade,
 } from "@pacifica/contracts";
 import {
   createContext,
@@ -20,6 +32,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { createEmptyRuntimeState, type RuntimeState } from "../features/runtime/demo-runtime";
 import { defaultLocale, type AppLocale } from "../shared/i18n/messages";
 
 type CredentialState = {
@@ -50,6 +63,7 @@ export type AppSessionState = {
     status: OnboardingStatus;
     accountReady: boolean;
   };
+  runtime: RuntimeState;
 };
 
 type AppStateContextValue = {
@@ -59,6 +73,7 @@ type AppStateContextValue = {
   setWalletSession: (nextWallet: Partial<WalletSession>) => void;
   setCredentialState: (nextCredentials: Partial<CredentialState>) => void;
   setPresetState: (nextPresets: Partial<AppSessionState["presets"]>) => void;
+  setRuntimeState: (nextRuntime: Partial<RuntimeState>) => void;
   setOnboardingState: (nextOnboarding: Partial<AppSessionState["onboarding"]>) => void;
   resetOnboardingState: () => void;
 };
@@ -99,6 +114,7 @@ export function createInitialAppSessionState(): AppSessionState {
       status: "wallet_pending",
       accountReady: false,
     },
+    runtime: createEmptyRuntimeState(),
   };
 }
 
@@ -129,6 +145,17 @@ function parseStoredState(rawValue: string | null): AppSessionState {
         activePreset: presetActivationValue(parsed.presets?.activePreset),
         draftEditableConfig: presetEditableConfigValue(parsed.presets?.draftEditableConfig),
         activationStatus: presetActivationUiStatus(parsed.presets?.activationStatus),
+      },
+      runtime: {
+        ...baseState.runtime,
+        ...parsed.runtime,
+        balance: balanceSnapshotValue(parsed.runtime?.balance),
+        botStatus: botStatusValue(parsed.runtime?.botStatus),
+        syncStatus: syncStatusValue(parsed.runtime?.syncStatus),
+        currentTrades: openTradesValue(parsed.runtime?.currentTrades),
+        closedTrades: closedTradesValue(parsed.runtime?.closedTrades),
+        alerts: operationalAlertsValue(parsed.runtime?.alerts),
+        screenStatus: runtimeScreenStatus(parsed.runtime?.screenStatus),
       },
       onboarding: {
         ...baseState.onboarding,
@@ -178,6 +205,62 @@ function presetEditableConfigValue(value: unknown): PresetEditableConfig | null 
 
 function presetActivationUiStatus(value: unknown): AppSessionState["presets"]["activationStatus"] {
   return value === "loading" || value === "success" || value === "error" ? value : "idle";
+}
+
+function balanceSnapshotValue(value: unknown): BalanceSnapshot | null {
+  if (!value) {
+    return null;
+  }
+
+  const result = balanceSnapshotSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
+
+function botStatusValue(value: unknown): BotStatus {
+  const result = botStatusSchema.safeParse(value);
+  return result.success ? result.data : "inactive";
+}
+
+function syncStatusValue(value: unknown): SyncStatus {
+  const result = syncStatusSchema.safeParse(value);
+  return result.success ? result.data : "idle";
+}
+
+function openTradesValue(value: unknown): OpenTrade[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    const result = openTradeSchema.safeParse(item);
+    return result.success ? [result.data] : [];
+  });
+}
+
+function closedTradesValue(value: unknown): ClosedTrade[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    const result = closedTradeSchema.safeParse(item);
+    return result.success ? [result.data] : [];
+  });
+}
+
+function operationalAlertsValue(value: unknown): OperationalAlert[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    const result = operationalAlertSchema.safeParse(item);
+    return result.success ? [result.data] : [];
+  });
+}
+
+function runtimeScreenStatus(value: unknown): RuntimeState["screenStatus"] {
+  return value === "loading" || value === "ready" || value === "error" ? value : "idle";
 }
 
 function deriveCanAccessProduct(state: AppSessionState) {
@@ -280,6 +363,24 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     });
   }, []);
 
+  const setRuntimeState = useCallback((nextRuntime: Partial<RuntimeState>) => {
+    setState((currentState) => {
+      const runtime = {
+        ...currentState.runtime,
+        ...nextRuntime,
+      };
+
+      if (areObjectsShallowEqual(currentState.runtime, runtime)) {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        runtime,
+      };
+    });
+  }, []);
+
   const setOnboardingState = useCallback(
     (nextOnboarding: Partial<AppSessionState["onboarding"]>) => {
       setState((currentState) => {
@@ -322,6 +423,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setWalletSession,
       setCredentialState,
       setPresetState,
+      setRuntimeState,
       setOnboardingState,
       resetOnboardingState,
     }),
@@ -331,6 +433,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setLocale,
       setOnboardingState,
       setPresetState,
+      setRuntimeState,
       setWalletSession,
       state,
     ],
