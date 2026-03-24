@@ -64,6 +64,7 @@ Execution planning, epics, and role-based task breakdowns.
 - [Sprint 3 detailed plan](./planning/sprint-3/README.md)
 - [Sprint 4 detailed plan](./planning/sprint-4/README.md)
 - [Sprint 5 detailed plan](./planning/sprint-5/README.md)
+- [Post-MVP backlog](./planning/post-mvp/README.md)
 
 ## Decisions Already Locked
 - trading bot focused on ease of use
