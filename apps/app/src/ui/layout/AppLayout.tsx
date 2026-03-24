@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { navigationItems } from "./navigation";
@@ -28,6 +29,9 @@ export function AppLayout() {
   const { canAccessProduct, setLocale, state } = useAppState();
   const { isReady, t } = useI18n();
   const isOnboardingRoute = location.pathname === "/onboarding";
+  const activePresetItem = getPresetCatalogItemByDefinitionId(
+    state.presets.activePreset?.presetDefinitionId,
+  );
 
   if (!isReady) {
     return <div className="shell-loading">Loading messages...</div>;
@@ -49,6 +53,19 @@ export function AppLayout() {
         <nav className="shell-nav shell-nav--desktop">
           <NavigationLinks />
         </nav>
+        <div className="nav-card shell-side-card">
+          <span className={`badge badge--${activePresetItem ? "warning" : "neutral"}`}>
+            {activePresetItem ? t("presetSidebarActive") : t("presetSidebarEmpty")}
+          </span>
+          <strong>
+            {activePresetItem ? activePresetItem.definition.name : t("presetSidebarTitle")}
+          </strong>
+          <p>
+            {activePresetItem
+              ? `${activePresetItem.definition.riskLabel} · ${state.presets.activePreset?.editableConfig.symbol ?? activePresetItem.defaultEditableConfig.symbol}`
+              : t("presetSidebarHint")}
+          </p>
+        </div>
       </aside>
 
       <div className="shell-body">

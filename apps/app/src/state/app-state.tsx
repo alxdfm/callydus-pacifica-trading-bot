@@ -1,10 +1,14 @@
 import {
   credentialValidationStatusSchema,
   onboardingStatusSchema,
+  presetActivationSchema,
+  presetEditableConfigSchema,
   walletSessionStatusSchema,
   type CredentialValidationStatus,
   type OnboardingStatus,
   type PacificaValidationErrorCode,
+  type PresetActivation,
+  type PresetEditableConfig,
   type WalletSession,
 } from "@pacifica/contracts";
 import {
@@ -35,6 +39,13 @@ export type AppSessionState = {
   locale: AppLocale;
   wallet: WalletSession;
   credentials: CredentialState;
+  presets: {
+    activePreset: PresetActivation | null;
+    selectedPresetDefinitionId: string | null;
+    draftEditableConfig: PresetEditableConfig | null;
+    activationStatus: "idle" | "loading" | "success" | "error";
+    activationMessage: string | null;
+  };
   onboarding: {
     status: OnboardingStatus;
     accountReady: boolean;
@@ -47,6 +58,7 @@ type AppStateContextValue = {
   setLocale: (locale: AppLocale) => void;
   setWalletSession: (nextWallet: Partial<WalletSession>) => void;
   setCredentialState: (nextCredentials: Partial<CredentialState>) => void;
+  setPresetState: (nextPresets: Partial<AppSessionState["presets"]>) => void;
   setOnboardingState: (nextOnboarding: Partial<AppSessionState["onboarding"]>) => void;
   resetOnboardingState: () => void;
 };
@@ -76,6 +88,13 @@ export function createInitialAppSessionState(): AppSessionState {
       lastValidationMessage: null,
       retryable: false,
     },
+    presets: {
+      activePreset: null,
+      selectedPresetDefinitionId: null,
+      draftEditableConfig: null,
+      activationStatus: "idle",
+      activationMessage: null,
+    },
     onboarding: {
       status: "wallet_pending",
       accountReady: false,
@@ -104,6 +123,13 @@ function parseStoredState(rawValue: string | null): AppSessionState {
         ...parsed.credentials,
         validationStatus: credentialValidationStatus(parsed.credentials?.validationStatus),
       },
+      presets: {
+        ...baseState.presets,
+        ...parsed.presets,
+        activePreset: presetActivationValue(parsed.presets?.activePreset),
+        draftEditableConfig: presetEditableConfigValue(parsed.presets?.draftEditableConfig),
+        activationStatus: presetActivationUiStatus(parsed.presets?.activationStatus),
+      },
       onboarding: {
         ...baseState.onboarding,
         ...parsed.onboarding,
@@ -130,6 +156,28 @@ function credentialValidationStatus(value: unknown): CredentialValidationStatus 
 function onboardingStatus(value: unknown): OnboardingStatus {
   const result = onboardingStatusSchema.safeParse(value);
   return result.success ? result.data : "wallet_pending";
+}
+
+function presetActivationValue(value: unknown): PresetActivation | null {
+  if (!value) {
+    return null;
+  }
+
+  const result = presetActivationSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
+
+function presetEditableConfigValue(value: unknown): PresetEditableConfig | null {
+  if (!value) {
+    return null;
+  }
+
+  const result = presetEditableConfigSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
+
+function presetActivationUiStatus(value: unknown): AppSessionState["presets"]["activationStatus"] {
+  return value === "loading" || value === "success" || value === "error" ? value : "idle";
 }
 
 function deriveCanAccessProduct(state: AppSessionState) {
@@ -214,6 +262,24 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     });
   }, []);
 
+  const setPresetState = useCallback((nextPresets: Partial<AppSessionState["presets"]>) => {
+    setState((currentState) => {
+      const presets = {
+        ...currentState.presets,
+        ...nextPresets,
+      };
+
+      if (areObjectsShallowEqual(currentState.presets, presets)) {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        presets,
+      };
+    });
+  }, []);
+
   const setOnboardingState = useCallback(
     (nextOnboarding: Partial<AppSessionState["onboarding"]>) => {
       setState((currentState) => {
@@ -255,6 +321,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setLocale,
       setWalletSession,
       setCredentialState,
+      setPresetState,
       setOnboardingState,
       resetOnboardingState,
     }),
@@ -263,6 +330,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setCredentialState,
       setLocale,
       setOnboardingState,
+      setPresetState,
       setWalletSession,
       state,
     ],
