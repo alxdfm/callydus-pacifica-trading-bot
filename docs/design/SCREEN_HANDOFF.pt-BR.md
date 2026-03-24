@@ -39,13 +39,23 @@ Prioridades:
 - ação global do bot visível no topo
 
 ## Presets
-Referência: [preview/presets.html](./preview/presets.html)
+Referências: [preview/presets.html](./preview/presets.html), [PRESETS_STRUCTURE.pt-BR.md](./PRESETS_STRUCTURE.pt-BR.md), [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
 
 Prioridades:
 - comparação vem antes da edição
 - preset selecionado tem destaque inequívoco
 - revisão e ativação ficam separadas da grade de escolha
 - risco permanece visível até o clique final
+
+Comportamento Mobile:
+- abaixo de `860px`, presets e comparador colapsam para uma coluna
+- a ordem vertical deve preservar: cards, comparador, revisão, ativação
+- a tela não pode depender de scroll lateral para comparação
+
+Orientação de i18n:
+- nomes oficiais dos presets permanecem `Safer`, `Balanced` e `More active`
+- labels e resumos devem ser curtos e tolerar tradução sem redesenho
+- estados e textos principais de revisão e ativação devem seguir [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
 
 ## Current Trades
 Referência: [preview/trades.html](./preview/trades.html)

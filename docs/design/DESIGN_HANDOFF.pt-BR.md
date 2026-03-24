@@ -22,8 +22,10 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
 2. [DESIGN_SYSTEM_FOUNDATION.pt-BR.md](./DESIGN_SYSTEM_FOUNDATION.pt-BR.md)
 3. [MVP_COMPONENT_SYSTEM.pt-BR.md](./MVP_COMPONENT_SYSTEM.pt-BR.md)
 4. [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
-5. [preview/index.html](./preview/index.html)
-6. [preview/theme.css](./preview/theme.css)
+5. [PRESETS_STRUCTURE.pt-BR.md](./PRESETS_STRUCTURE.pt-BR.md)
+6. [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
+7. [preview/index.html](./preview/index.html)
+8. [preview/theme.css](./preview/theme.css)
 
 ## Tokens Prioritários Para Codificar
 - cores de superfície
@@ -65,6 +67,7 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
   - `Safer`
   - `Balanced`
   - `More active`
+- comparacao, revisao e ativacao de presets devem seguir [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
 
 ## Observações de QA
 QA deve validar:
