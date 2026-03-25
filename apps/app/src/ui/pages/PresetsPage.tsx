@@ -15,10 +15,11 @@ import { useAppState } from "../../state/app-state";
 export function PresetsPage() {
   const { t } = useI18n();
   const { setPresetState, setRuntimeState, state } = useAppState();
-  const presets = getPresetCatalog();
+  const presets = getPresetCatalog(t);
   const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
   const selectedPreset = getPresetCatalogItemByDefinitionId(
     state.presets.selectedPresetDefinitionId,
+    t,
   );
 
   const draftConfig = useMemo(() => {
@@ -247,51 +248,6 @@ export function PresetsPage() {
                   </button>
                 </article>
               );
-            })}
-          </div>
-        </section>
-
-        <section className="panel compare-panel">
-          <div className="row-between align-start section-gap">
-            <div>
-              <p className="panel-label">{t("presetCompareEyebrow")}</p>
-              <h3>{t("presetCompareTitle")}</h3>
-              <p className="panel-copy">{t("presetCompareDescription")}</p>
-            </div>
-          </div>
-
-          <div className="compare-grid">
-            <div className="compare-cell head">{t("presetCompareHeaderPreset")}</div>
-            <div className="compare-cell head">{t("presetCompareHeaderRisk")}</div>
-            <div className="compare-cell head">{t("presetCompareHeaderFrequency")}</div>
-            <div className="compare-cell head">{t("presetCompareHeaderStyle")}</div>
-            <div className="compare-cell head">{t("presetCompareHeaderStop")}</div>
-            <div className="compare-cell head">{t("presetCompareHeaderTakeProfit")}</div>
-
-            {presets.flatMap((preset) => {
-              const isSelected = state.presets.selectedPresetDefinitionId === preset.definition.id;
-              const cellClassName = isSelected ? "compare-cell active" : "compare-cell";
-
-              return [
-                <div key={`${preset.definition.id}-name`} className={cellClassName}>
-                  {preset.definition.name}
-                </div>,
-                <div key={`${preset.definition.id}-risk`} className={cellClassName}>
-                  {preset.comparison.risk}
-                </div>,
-                <div key={`${preset.definition.id}-frequency`} className={cellClassName}>
-                  {preset.comparison.frequency}
-                </div>,
-                <div key={`${preset.definition.id}-style`} className={cellClassName}>
-                  {preset.comparison.style}
-                </div>,
-                <div key={`${preset.definition.id}-stop`} className={cellClassName}>
-                  {preset.comparison.stop}
-                </div>,
-                <div key={`${preset.definition.id}-tp`} className={cellClassName}>
-                  {preset.comparison.takeProfit}
-                </div>,
-              ];
             })}
           </div>
         </section>

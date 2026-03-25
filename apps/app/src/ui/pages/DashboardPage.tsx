@@ -10,6 +10,7 @@ export function DashboardPage() {
   const { t } = useI18n();
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
+    t,
   );
   const currentTrades = state.runtime.currentTrades.slice(0, 2);
   const recentClosedTrades = state.runtime.closedTrades.slice(0, 3);

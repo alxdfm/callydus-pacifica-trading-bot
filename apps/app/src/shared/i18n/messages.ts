@@ -160,21 +160,60 @@ export const messages = {
     presetPageDescription:
       "Presets come with ready logic. Stop loss and take profit are mandatory in all presets.",
     presetPageBadge: "SL/TP always on",
+    presetSaferRiskLabel: "Low risk",
+    presetSaferFrequencyLabel: "Low frequency",
+    presetSaferDescription: "Lower activity and stronger protection.",
+    presetSaferPriorityOne: "Selective entries",
+    presetSaferPriorityTwo: "Stronger protection",
+    presetSaferReviewSummary: "EMA 12/24 with RSI extremes and ATR protection on 15m.",
+    presetSaferActivationSummary:
+      "Safer on {symbol} with size {size}, {longState} and {shortState}.",
+    presetSaferTriggerBuy:
+      "Buys when emaFast crosses above emaSlow and RSI is below 30.",
+    presetSaferTriggerSell:
+      "Sells short when emaFast crosses below emaSlow and RSI is above 70.",
+    presetSaferTriggerStopLoss: "Uses ATR(14) with multiplier 1.5.",
+    presetSaferTriggerTakeProfit: "Uses risk-reward multiple 2.0.",
+    presetBalancedRiskLabel: "Medium risk",
+    presetBalancedFrequencyLabel: "Medium frequency",
+    presetBalancedDescription: "Best default for the MVP with controlled exposure.",
+    presetBalancedPriorityOne: "Moderate activity",
+    presetBalancedPriorityTwo: "Controlled entries",
+    presetBalancedReviewSummary:
+      "EMA 8/21 with RSI 50 and volume above volumeSma on 15m.",
+    presetBalancedActivationSummary:
+      "Balanced on {symbol} with size {size}, {longState} and {shortState}.",
+    presetBalancedTriggerBuy:
+      "Buys when emaFast crosses above emaSlow, RSI is at or above 50 and volume crosses above volumeSma.",
+    presetBalancedTriggerSell:
+      "Sells short when emaFast crosses below emaSlow, RSI is at or below 50 and volume crosses above volumeSma.",
+    presetBalancedTriggerStopLoss: "Uses static stop loss of 1.2%.",
+    presetBalancedTriggerTakeProfit: "Uses risk-reward multiple 2.0.",
+    presetMoreActiveRiskLabel: "Higher activity",
+    presetMoreActiveFrequencyLabel: "Higher frequency",
+    presetMoreActiveDescription: "More opportunities with looser selection rules.",
+    presetMoreActivePriorityOne: "Looser filters",
+    presetMoreActivePriorityTwo: "Higher recurrence",
+    presetMoreActiveReviewSummary:
+      "EMA 9/18 with volume above volumeSma and RSI thresholds on 5m.",
+    presetMoreActiveActivationSummary:
+      "More active on {symbol} with size {size}, {longState} and {shortState}.",
+    presetMoreActiveTriggerBuy:
+      "Buys when volume crosses above volumeSma, emaFast crosses above emaSlow and RSI is at or above 45.",
+    presetMoreActiveTriggerSell:
+      "Sells short when volume crosses above volumeSma, emaFast crosses below emaSlow and RSI is at or below 55.",
+    presetMoreActiveTriggerStopLoss: "Uses static stop loss of 1.0%.",
+    presetMoreActiveTriggerTakeProfit: "Uses risk-reward multiple 1.6.",
+    presetLongEnabled: "long enabled",
+    presetLongDisabled: "long disabled",
+    presetShortEnabled: "short enabled",
+    presetShortDisabled: "short disabled",
     presetChoiceEyebrow: "Preset choice",
     presetChoiceTitle: "Compare before editing",
     presetChoiceDescription: "The choice comes first, editing comes second, activation comes last.",
     presetChoiceBadge: "3 presets",
     presetSelectAction: "Select",
     presetSelectSelected: "Selected",
-    presetCompareEyebrow: "Quick comparison",
-    presetCompareTitle: "Simple language only",
-    presetCompareDescription: "Compare the three presets without opening technical details.",
-    presetCompareHeaderPreset: "Preset",
-    presetCompareHeaderRisk: "Risk",
-    presetCompareHeaderFrequency: "Frequency",
-    presetCompareHeaderStyle: "Style",
-    presetCompareHeaderStop: "Stop",
-    presetCompareHeaderTakeProfit: "Take profit",
     presetReviewEyebrow: "Review selected preset",
     presetReviewEmptyTitle: "Select a preset first",
     presetReviewEmptyDescription:

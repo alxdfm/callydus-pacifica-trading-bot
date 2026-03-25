@@ -259,6 +259,8 @@ a {
   color: var(--text);
   font-size: 0.82rem;
   font-weight: 700;
+  white-space: nowrap;
+  margin-right: 40px;
 }
 
 .badge--neutral {

@@ -3,13 +3,74 @@ import type {
   PresetDefinition,
   PresetEditableConfig,
 } from "@pacifica/contracts";
+import type { MessageKey } from "../../shared/i18n/messages";
 
 export type PresetRiskTone = "success" | "warning" | "danger";
+
+type TranslationFn = (key: MessageKey) => string;
+
+type PresetTechnicalContract = {
+  timeframe: string;
+  symbol: string;
+  indicators: Record<string, Record<string, number | string>>;
+  entry: {
+    long: {
+      enabled: boolean;
+      trigger: {
+        type: "all";
+        rules: Array<Record<string, number | string>>;
+      };
+    };
+    short: {
+      enabled: boolean;
+      trigger: {
+        type: "all";
+        rules: Array<Record<string, number | string>>;
+      };
+    };
+  };
+  risk: {
+    stopLoss: Record<string, number | string>;
+    takeProfit: Record<string, number | string>;
+  };
+  execution: {
+    positionSize: {
+      type: "fixedPercent";
+      value: number;
+    };
+    onePositionPerSymbol: boolean;
+    manualCloseAllowed: boolean;
+    closeOppositePositionOnSignal: boolean;
+  };
+};
+
+type PresetCatalogRawItem = {
+  definition: {
+    id: string;
+    name: PresetDefinition["name"];
+    slug: PresetDefinition["slug"];
+    version: number;
+    isActive: boolean;
+    riskLabelKey: MessageKey;
+    frequencyLabelKey: MessageKey;
+    descriptionKey: MessageKey;
+  };
+  prioritiesKeys: [MessageKey, MessageKey];
+  triggerDetailsKeys: {
+    buy: MessageKey;
+    sell: MessageKey;
+    stopLoss: MessageKey;
+    takeProfit: MessageKey;
+  };
+  reviewSummaryKey: MessageKey;
+  activationSummaryKey: MessageKey;
+  riskTone: PresetRiskTone;
+  technicalContract: PresetTechnicalContract;
+};
 
 export type PresetCatalogItem = {
   definition: PresetDefinition;
   timeframeLabel: string;
-  focusLabel: string;
   priorities: string[];
   triggerDetails: {
     buy: string;
@@ -17,57 +78,102 @@ export type PresetCatalogItem = {
     stopLoss: string;
     takeProfit: string;
   };
-  comparison: {
-    risk: string;
-    frequency: string;
-    style: string;
-    stop: string;
-    takeProfit: string;
-  };
   reviewSummary: string;
   activationSummary: (config: PresetEditableConfig) => string;
   riskTone: PresetRiskTone;
   defaultEditableConfig: PresetEditableConfig;
+  technicalContract: PresetTechnicalContract;
 };
 
-const presetCatalog: PresetCatalogItem[] = [
+const presetCatalogRaw: PresetCatalogRawItem[] = [
   {
     definition: {
       id: "2d5a5641-c7ad-4ff0-9f75-4fbcb58a4d01",
       name: "Safer",
       slug: "safer",
       version: 1,
-      riskLabel: "Low risk",
-      frequencyLabel: "Low frequency",
-      description: "Lower activity and stronger protection.",
       isActive: true,
+      riskLabelKey: "presetSaferRiskLabel",
+      frequencyLabelKey: "presetSaferFrequencyLabel",
+      descriptionKey: "presetSaferDescription",
     },
-    timeframeLabel: "15m",
-    focusLabel: "Protection and selectivity",
-    priorities: ["Selective entries", "Stronger protection"],
-    triggerDetails: {
-      buy: "Buys after stronger confirmation and fewer entry signals.",
-      sell: "Sells only when the same confirmation weakens or reverses.",
-      stopLoss: "Uses an ATR-based stop to adapt to volatility.",
-      takeProfit: "Targets a 2.0 risk-reward ratio before closing.",
+    prioritiesKeys: ["presetSaferPriorityOne", "presetSaferPriorityTwo"],
+    triggerDetailsKeys: {
+      buy: "presetSaferTriggerBuy",
+      sell: "presetSaferTriggerSell",
+      stopLoss: "presetSaferTriggerStopLoss",
+      takeProfit: "presetSaferTriggerTakeProfit",
     },
-    comparison: {
-      risk: "Lower",
-      frequency: "Smaller",
-      style: "Selective",
-      stop: "ATR-based",
-      takeProfit: "RR 2.0",
-    },
-    reviewSummary: "A more selective operating mode with fewer entries and stronger protection.",
-    activationSummary: (config) =>
-      `Safer on ${config.symbol} with size ${formatPositionSize(config.positionSizeValue)}, ${formatDirection(config.longEnabled, "long")} and ${formatDirection(config.shortEnabled, "short")}.`,
+    reviewSummaryKey: "presetSaferReviewSummary",
+    activationSummaryKey: "presetSaferActivationSummary",
     riskTone: "success",
-    defaultEditableConfig: {
+    technicalContract: {
+      timeframe: "15m",
       symbol: "BTC/USDC",
-      positionSizeType: "balance_percent",
-      positionSizeValue: 3,
-      longEnabled: true,
-      shortEnabled: true,
+      indicators: {
+        emaFast: { type: "ema", period: 12 },
+        emaSlow: { type: "ema", period: 24 },
+        rsi: { type: "rsi", period: 14 },
+        atr: { type: "atr", period: 14 },
+        volume: { type: "volume" },
+        volumeSma: { type: "sma", source: "volume", period: 20 },
+      },
+      entry: {
+        long: {
+          enabled: true,
+          trigger: {
+            type: "all",
+            rules: [
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "emaFast",
+                operator: "crossesAbove",
+                ref: "emaSlow",
+              },
+              {
+                scope: "currentCandle",
+                type: "threshold",
+                indicator: "rsi",
+                operator: "below",
+                value: 30,
+              },
+            ],
+          },
+        },
+        short: {
+          enabled: true,
+          trigger: {
+            type: "all",
+            rules: [
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "emaFast",
+                operator: "crossesBelow",
+                ref: "emaSlow",
+              },
+              {
+                scope: "currentCandle",
+                type: "threshold",
+                indicator: "rsi",
+                operator: "above",
+                value: 70,
+              },
+            ],
+          },
+        },
+      },
+      risk: {
+        stopLoss: { mode: "atr", period: 14, multiplier: 1.5 },
+        takeProfit: { mode: "rr", multiple: 2 },
+      },
+      execution: {
+        positionSize: { type: "fixedPercent", value: 3 },
+        onePositionPerSymbol: true,
+        manualCloseAllowed: true,
+        closeOppositePositionOnSignal: false,
+      },
     },
   },
   {
@@ -76,37 +182,102 @@ const presetCatalog: PresetCatalogItem[] = [
       name: "Balanced",
       slug: "balanced",
       version: 1,
-      riskLabel: "Medium risk",
-      frequencyLabel: "Medium frequency",
-      description: "Best default for the MVP with controlled exposure.",
       isActive: true,
+      riskLabelKey: "presetBalancedRiskLabel",
+      frequencyLabelKey: "presetBalancedFrequencyLabel",
+      descriptionKey: "presetBalancedDescription",
     },
-    timeframeLabel: "15m",
-    focusLabel: "Controlled opportunity",
-    priorities: ["Moderate activity", "Controlled entries"],
-    triggerDetails: {
-      buy: "Buys after balanced confirmation from the default entry filters.",
-      sell: "Sells when momentum fades or the setup invalidates.",
-      stopLoss: "Uses a static 1.2% stop for consistent protection.",
-      takeProfit: "Targets a 2.0 risk-reward ratio before closing.",
+    prioritiesKeys: ["presetBalancedPriorityOne", "presetBalancedPriorityTwo"],
+    triggerDetailsKeys: {
+      buy: "presetBalancedTriggerBuy",
+      sell: "presetBalancedTriggerSell",
+      stopLoss: "presetBalancedTriggerStopLoss",
+      takeProfit: "presetBalancedTriggerTakeProfit",
     },
-    comparison: {
-      risk: "Medium",
-      frequency: "Moderate",
-      style: "Controlled",
-      stop: "Static 1.2%",
-      takeProfit: "RR 2.0",
-    },
-    reviewSummary: "A balanced operating mode with moderate activity and controlled entries.",
-    activationSummary: (config) =>
-      `Balanced on ${config.symbol} with size ${formatPositionSize(config.positionSizeValue)}, ${formatDirection(config.longEnabled, "long")} and ${formatDirection(config.shortEnabled, "short")}.`,
+    reviewSummaryKey: "presetBalancedReviewSummary",
+    activationSummaryKey: "presetBalancedActivationSummary",
     riskTone: "warning",
-    defaultEditableConfig: {
+    technicalContract: {
+      timeframe: "15m",
       symbol: "BTC/USDC",
-      positionSizeType: "balance_percent",
-      positionSizeValue: 5,
-      longEnabled: true,
-      shortEnabled: false,
+      indicators: {
+        emaFast: { type: "ema", period: 8 },
+        emaSlow: { type: "ema", period: 21 },
+        rsi: { type: "rsi", period: 14 },
+        atr: { type: "atr", period: 14 },
+        volume: { type: "volume" },
+        volumeSma: { type: "sma", source: "volume", period: 20 },
+      },
+      entry: {
+        long: {
+          enabled: true,
+          trigger: {
+            type: "all",
+            rules: [
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "emaFast",
+                operator: "crossesAbove",
+                ref: "emaSlow",
+              },
+              {
+                scope: "currentCandle",
+                type: "threshold",
+                indicator: "rsi",
+                operator: "atOrAbove",
+                value: 50,
+              },
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "volume",
+                operator: "crossesAbove",
+                ref: "volumeSma",
+              },
+            ],
+          },
+        },
+        short: {
+          enabled: true,
+          trigger: {
+            type: "all",
+            rules: [
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "emaFast",
+                operator: "crossesBelow",
+                ref: "emaSlow",
+              },
+              {
+                scope: "currentCandle",
+                type: "threshold",
+                indicator: "rsi",
+                operator: "atOrBelow",
+                value: 50,
+              },
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "volume",
+                operator: "crossesAbove",
+                ref: "volumeSma",
+              },
+            ],
+          },
+        },
+      },
+      risk: {
+        stopLoss: { mode: "static", value: 1.2, unit: "percent" },
+        takeProfit: { mode: "rr", multiple: 2 },
+      },
+      execution: {
+        positionSize: { type: "fixedPercent", value: 5 },
+        onePositionPerSymbol: true,
+        manualCloseAllowed: true,
+        closeOppositePositionOnSignal: false,
+      },
     },
   },
   {
@@ -115,66 +286,200 @@ const presetCatalog: PresetCatalogItem[] = [
       name: "More active",
       slug: "more-active",
       version: 1,
-      riskLabel: "Higher activity",
-      frequencyLabel: "Higher frequency",
-      description: "More opportunities with looser selection rules.",
       isActive: true,
+      riskLabelKey: "presetMoreActiveRiskLabel",
+      frequencyLabelKey: "presetMoreActiveFrequencyLabel",
+      descriptionKey: "presetMoreActiveDescription",
     },
-    timeframeLabel: "5m",
-    focusLabel: "More opportunities",
-    priorities: ["Looser filters", "Higher recurrence"],
-    triggerDetails: {
-      buy: "Buys on looser confirmation to capture more opportunities.",
-      sell: "Sells faster when short-term momentum weakens.",
-      stopLoss: "Uses a tighter static 1.0% stop to keep risk bounded.",
-      takeProfit: "Targets a 1.6 risk-reward ratio for faster exits.",
+    prioritiesKeys: ["presetMoreActivePriorityOne", "presetMoreActivePriorityTwo"],
+    triggerDetailsKeys: {
+      buy: "presetMoreActiveTriggerBuy",
+      sell: "presetMoreActiveTriggerSell",
+      stopLoss: "presetMoreActiveTriggerStopLoss",
+      takeProfit: "presetMoreActiveTriggerTakeProfit",
     },
-    comparison: {
-      risk: "Medium",
-      frequency: "Higher",
-      style: "Opportunistic",
-      stop: "Static 1.0%",
-      takeProfit: "RR 1.6",
-    },
-    reviewSummary: "A more active operating mode with looser rules and more opportunities.",
-    activationSummary: (config) =>
-      `More active on ${config.symbol} with size ${formatPositionSize(config.positionSizeValue)}, ${formatDirection(config.longEnabled, "long")} and ${formatDirection(config.shortEnabled, "short")}.`,
+    reviewSummaryKey: "presetMoreActiveReviewSummary",
+    activationSummaryKey: "presetMoreActiveActivationSummary",
     riskTone: "danger",
-    defaultEditableConfig: {
+    technicalContract: {
+      timeframe: "5m",
       symbol: "BTC/USDC",
-      positionSizeType: "balance_percent",
-      positionSizeValue: 5,
-      longEnabled: true,
-      shortEnabled: true,
+      indicators: {
+        emaFast: { type: "ema", period: 9 },
+        emaSlow: { type: "ema", period: 18 },
+        rsi: { type: "rsi", period: 14 },
+        atr: { type: "atr", period: 14 },
+        volume: { type: "volume" },
+        volumeSma: { type: "sma", source: "volume", period: 20 },
+      },
+      entry: {
+        long: {
+          enabled: true,
+          trigger: {
+            type: "all",
+            rules: [
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "volume",
+                operator: "crossesAbove",
+                ref: "volumeSma",
+              },
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "emaFast",
+                operator: "crossesAbove",
+                ref: "emaSlow",
+              },
+              {
+                scope: "currentCandle",
+                type: "threshold",
+                indicator: "rsi",
+                operator: "atOrAbove",
+                value: 45,
+              },
+            ],
+          },
+        },
+        short: {
+          enabled: true,
+          trigger: {
+            type: "all",
+            rules: [
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "volume",
+                operator: "crossesAbove",
+                ref: "volumeSma",
+              },
+              {
+                scope: "currentCandle",
+                type: "cross",
+                indicator: "emaFast",
+                operator: "crossesBelow",
+                ref: "emaSlow",
+              },
+              {
+                scope: "currentCandle",
+                type: "threshold",
+                indicator: "rsi",
+                operator: "atOrBelow",
+                value: 55,
+              },
+            ],
+          },
+        },
+      },
+      risk: {
+        stopLoss: { mode: "static", value: 1.0, unit: "percent" },
+        takeProfit: { mode: "rr", multiple: 1.6 },
+      },
+      execution: {
+        positionSize: { type: "fixedPercent", value: 5 },
+        onePositionPerSymbol: true,
+        manualCloseAllowed: true,
+        closeOppositePositionOnSignal: false,
+      },
     },
   },
 ];
+
+function interpolate(template: string, variables: Record<string, string>) {
+  return Object.entries(variables).reduce(
+    (current, [key, value]) => current.replaceAll(`{${key}}`, value),
+    template,
+  );
+}
 
 function formatPositionSize(value: number) {
   return `${value}%`;
 }
 
-function formatDirection(enabled: boolean, label: string) {
-  return enabled ? `${label} enabled` : `${label} disabled`;
+function formatDirection(
+  enabled: boolean,
+  label: "long" | "short",
+  t: TranslationFn,
+) {
+  if (label === "long") {
+    return enabled ? t("presetLongEnabled") : t("presetLongDisabled");
+  }
+
+  return enabled ? t("presetShortEnabled") : t("presetShortDisabled");
 }
 
-export function getPresetCatalog() {
-  return presetCatalog;
+function translatePreset(
+  item: PresetCatalogRawItem,
+  t: TranslationFn,
+): PresetCatalogItem {
+  return {
+    definition: {
+      id: item.definition.id,
+      name: item.definition.name,
+      slug: item.definition.slug,
+      version: item.definition.version,
+      riskLabel: t(item.definition.riskLabelKey),
+      frequencyLabel: t(item.definition.frequencyLabelKey),
+      description: t(item.definition.descriptionKey),
+      isActive: item.definition.isActive,
+    },
+    timeframeLabel: item.technicalContract.timeframe,
+    priorities: item.prioritiesKeys.map((key) => t(key)),
+    triggerDetails: {
+      buy: t(item.triggerDetailsKeys.buy),
+      sell: t(item.triggerDetailsKeys.sell),
+      stopLoss: t(item.triggerDetailsKeys.stopLoss),
+      takeProfit: t(item.triggerDetailsKeys.takeProfit),
+    },
+    reviewSummary: t(item.reviewSummaryKey),
+    activationSummary: (config) =>
+      interpolate(t(item.activationSummaryKey), {
+        symbol: config.symbol,
+        size: formatPositionSize(config.positionSizeValue),
+        longState: formatDirection(config.longEnabled, "long", t),
+        shortState: formatDirection(config.shortEnabled, "short", t),
+      }),
+    riskTone: item.riskTone,
+    defaultEditableConfig: {
+      symbol: item.technicalContract.symbol,
+      positionSizeType: "balance_percent",
+      positionSizeValue: item.technicalContract.execution.positionSize.value,
+      longEnabled: item.technicalContract.entry.long.enabled,
+      shortEnabled: item.technicalContract.entry.short.enabled,
+    } satisfies PresetEditableConfig,
+    technicalContract: item.technicalContract,
+  };
 }
 
-export function getPresetCatalogItemByDefinitionId(presetDefinitionId: string | null | undefined) {
+function getPresetCatalogRawItemByDefinitionId(
+  presetDefinitionId: string | null | undefined,
+) {
   if (!presetDefinitionId) {
     return null;
   }
 
-  return presetCatalog.find((item) => item.definition.id === presetDefinitionId) ?? null;
+  return presetCatalogRaw.find((item) => item.definition.id === presetDefinitionId) ?? null;
+}
+
+export function getPresetCatalog(t: TranslationFn) {
+  return presetCatalogRaw.map((item) => translatePreset(item, t));
+}
+
+export function getPresetCatalogItemByDefinitionId(
+  presetDefinitionId: string | null | undefined,
+  t: TranslationFn,
+) {
+  const rawItem = getPresetCatalogRawItemByDefinitionId(presetDefinitionId);
+
+  return rawItem ? translatePreset(rawItem, t) : null;
 }
 
 export function getEditableConfigForPreset(
   presetDefinitionId: string,
   activePreset: PresetActivation | null,
 ) {
-  const preset = getPresetCatalogItemByDefinitionId(presetDefinitionId);
+  const preset = getPresetCatalogRawItemByDefinitionId(presetDefinitionId);
 
   if (!preset) {
     return null;
@@ -184,7 +489,19 @@ export function getEditableConfigForPreset(
     return activePreset.editableConfig;
   }
 
-  return preset.defaultEditableConfig;
+  return {
+    symbol: preset.technicalContract.symbol,
+    positionSizeType: "balance_percent",
+    positionSizeValue: preset.technicalContract.execution.positionSize.value,
+    longEnabled: preset.technicalContract.entry.long.enabled,
+    shortEnabled: preset.technicalContract.entry.short.enabled,
+  } satisfies PresetEditableConfig;
+}
+
+export function getPresetTechnicalContractByDefinitionId(
+  presetDefinitionId: string | null | undefined,
+) {
+  return getPresetCatalogRawItemByDefinitionId(presetDefinitionId)?.technicalContract ?? null;
 }
 
 export const allowedPresetSymbols = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "ARB/USDC"] as const;

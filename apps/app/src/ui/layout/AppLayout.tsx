@@ -32,6 +32,7 @@ export function AppLayout() {
   const showOnboarding = !state.onboarding.accountReady;
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
+    t,
   );
 
   if (!isReady) {
