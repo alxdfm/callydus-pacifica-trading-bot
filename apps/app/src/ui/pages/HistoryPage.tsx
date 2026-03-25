@@ -112,7 +112,7 @@ export function HistoryPage() {
           )}
         </section>
 
-        <aside className="panel detail-panel">
+        <aside className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}>
           <div className="row-between align-start section-gap">
             <div>
               <p className="panel-label">{t("historyDetailEyebrow")}</p>

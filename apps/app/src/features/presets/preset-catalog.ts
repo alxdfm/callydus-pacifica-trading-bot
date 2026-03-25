@@ -11,6 +11,12 @@ export type PresetCatalogItem = {
   timeframeLabel: string;
   focusLabel: string;
   priorities: string[];
+  triggerDetails: {
+    buy: string;
+    sell: string;
+    stopLoss: string;
+    takeProfit: string;
+  };
   comparison: {
     risk: string;
     frequency: string;
@@ -39,6 +45,12 @@ const presetCatalog: PresetCatalogItem[] = [
     timeframeLabel: "15m",
     focusLabel: "Protection and selectivity",
     priorities: ["Selective entries", "Stronger protection"],
+    triggerDetails: {
+      buy: "Buys after stronger confirmation and fewer entry signals.",
+      sell: "Sells only when the same confirmation weakens or reverses.",
+      stopLoss: "Uses an ATR-based stop to adapt to volatility.",
+      takeProfit: "Targets a 2.0 risk-reward ratio before closing.",
+    },
     comparison: {
       risk: "Lower",
       frequency: "Smaller",
@@ -72,6 +84,12 @@ const presetCatalog: PresetCatalogItem[] = [
     timeframeLabel: "15m",
     focusLabel: "Controlled opportunity",
     priorities: ["Moderate activity", "Controlled entries"],
+    triggerDetails: {
+      buy: "Buys after balanced confirmation from the default entry filters.",
+      sell: "Sells when momentum fades or the setup invalidates.",
+      stopLoss: "Uses a static 1.2% stop for consistent protection.",
+      takeProfit: "Targets a 2.0 risk-reward ratio before closing.",
+    },
     comparison: {
       risk: "Medium",
       frequency: "Moderate",
@@ -105,6 +123,12 @@ const presetCatalog: PresetCatalogItem[] = [
     timeframeLabel: "5m",
     focusLabel: "More opportunities",
     priorities: ["Looser filters", "Higher recurrence"],
+    triggerDetails: {
+      buy: "Buys on looser confirmation to capture more opportunities.",
+      sell: "Sells faster when short-term momentum weakens.",
+      stopLoss: "Uses a tighter static 1.0% stop to keep risk bounded.",
+      takeProfit: "Targets a 1.6 risk-reward ratio for faster exits.",
+    },
     comparison: {
       risk: "Medium",
       frequency: "Higher",
@@ -162,3 +186,5 @@ export function getEditableConfigForPreset(
 
   return preset.defaultEditableConfig;
 }
+
+export const allowedPresetSymbols = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "ARB/USDC"] as const;

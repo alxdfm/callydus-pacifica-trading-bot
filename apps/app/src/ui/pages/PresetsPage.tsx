@@ -1,12 +1,14 @@
 import { presetActivationRequestSchema } from "@pacifica/contracts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { activatePresetLocally } from "../../features/presets/preset-activation";
 import {
+  allowedPresetSymbols,
   getEditableConfigForPreset,
   getPresetCatalog,
   getPresetCatalogItemByDefinitionId,
 } from "../../features/presets/preset-catalog";
 import { createRuntimeFromPresetActivation } from "../../features/runtime/demo-runtime";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
@@ -14,6 +16,7 @@ export function PresetsPage() {
   const { t } = useI18n();
   const { setPresetState, setRuntimeState, state } = useAppState();
   const presets = getPresetCatalog();
+  const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
   const selectedPreset = getPresetCatalogItemByDefinitionId(
     state.presets.selectedPresetDefinitionId,
   );
@@ -126,8 +129,35 @@ export function PresetsPage() {
     });
   }
 
+  function handleActivationRequest() {
+    if (!selectedPreset || !draftConfig) {
+      void handleActivatePreset();
+      return;
+    }
+
+    setIsActivationModalOpen(true);
+  }
+
   return (
     <div className="page-stack">
+      <ConfirmationModal
+        cancelLabel={t("modalCancelAction")}
+        confirmLabel={t("presetActivationAction")}
+        description={
+          selectedPreset && draftConfig
+            ? t("presetActivationConfirmDescription")
+              .replace("{preset}", selectedPreset.definition.name)
+              .replace("{symbol}", draftConfig.symbol)
+            : t("presetActivationSummaryEmpty")
+        }
+        isOpen={isActivationModalOpen}
+        onCancel={() => setIsActivationModalOpen(false)}
+        onConfirm={() => {
+          setIsActivationModalOpen(false);
+          void handleActivatePreset();
+        }}
+        title={t("presetActivationConfirmTitle")}
+      />
       <section className="page-card">
         <header className="page-card__header">
           <div>
@@ -159,6 +189,34 @@ export function PresetsPage() {
                   key={preset.definition.id}
                   className={`preset-card-lite ${isSelected ? "featured" : ""}`}
                 >
+                  <div className="preset-disclosure">
+                    <button
+                      aria-label={t("presetDisclosureInfoAction")}
+                      className="preset-disclosure__trigger"
+                      type="button"
+                    >
+                      i
+                    </button>
+                    <div className="preset-disclosure__panel">
+                      <div className="detail-item">
+                        <span>{t("presetDisclosureBuyLabel")}</span>
+                        <strong>{preset.triggerDetails.buy}</strong>
+                      </div>
+                      <div className="detail-item">
+                        <span>{t("presetDisclosureSellLabel")}</span>
+                        <strong>{preset.triggerDetails.sell}</strong>
+                      </div>
+                      <div className="detail-item">
+                        <span>{t("presetDisclosureStopLabel")}</span>
+                        <strong>{preset.triggerDetails.stopLoss}</strong>
+                      </div>
+                      <div className="detail-item">
+                        <span>{t("presetDisclosureTakeProfitLabel")}</span>
+                        <strong>{preset.triggerDetails.takeProfit}</strong>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="row-between align-start">
                     <div>
                       <h4>{preset.definition.name}</h4>
@@ -257,11 +315,18 @@ export function PresetsPage() {
               <div className="form-stack">
                 <label className="onboarding-form__field">
                   <span>{t("presetReviewSymbolLabel")}</span>
-                  <input
+                  <select
                     className="onboarding-form__input"
                     onChange={(event) => updateDraftConfig("symbol", event.target.value)}
                     value={draftConfig.symbol}
-                  />
+                  >
+                    {allowedPresetSymbols.map((symbol) => (
+                      <option key={symbol} value={symbol}>
+                        {symbol}
+                      </option>
+                    ))}
+                  </select>
+                  <small>{t("presetReviewSymbolHint")}</small>
                 </label>
 
                 <label className="onboarding-form__field">
@@ -370,7 +435,7 @@ export function PresetsPage() {
             <button
               className="btn primary"
               disabled={!selectedPreset || !draftConfig || state.presets.activationStatus === "loading"}
-              onClick={() => void handleActivatePreset()}
+              onClick={handleActivationRequest}
               type="button"
             >
               {t("presetActivationAction")}

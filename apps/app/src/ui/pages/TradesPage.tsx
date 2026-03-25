@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { closeTradeInRuntime } from "../../features/runtime/demo-runtime";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 
 export function TradesPage() {
   const { setRuntimeState, state } = useAppState();
@@ -10,6 +11,7 @@ export function TradesPage() {
     state.runtime.currentTrades[0]?.id ?? null,
   );
   const [closingTradeId, setClosingTradeId] = useState<string | null>(null);
+  const [pendingCloseTradeId, setPendingCloseTradeId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!state.runtime.currentTrades.find((trade) => trade.id === selectedTradeId)) {
@@ -32,14 +34,6 @@ export function TradesPage() {
     const trade = state.runtime.currentTrades.find((candidate) => candidate.id === tradeId);
 
     if (!trade) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `${t("tradeCloseConfirmPrefix")} ${trade.symbol}?`,
-    );
-
-    if (!confirmed) {
       return;
     }
 
@@ -66,8 +60,32 @@ export function TradesPage() {
     setClosingTradeId(null);
   }
 
+  const pendingTrade =
+    state.runtime.currentTrades.find((trade) => trade.id === pendingCloseTradeId) ?? null;
+
   return (
     <div className="page-stack">
+      <ConfirmationModal
+        cancelLabel={t("modalCancelAction")}
+        confirmLabel={t("tradeCloseAction")}
+        description={
+          pendingTrade
+            ? t("tradeCloseConfirmDescription").replace("{symbol}", pendingTrade.symbol)
+            : t("tradeCloseConfirmFallback")
+        }
+        isOpen={Boolean(pendingTrade)}
+        onCancel={() => setPendingCloseTradeId(null)}
+        onConfirm={() => {
+          if (!pendingCloseTradeId) {
+            return;
+          }
+
+          setPendingCloseTradeId(null);
+          void handleCloseTrade(pendingCloseTradeId);
+        }}
+        title={t("tradeCloseConfirmTitle")}
+        tone="danger"
+      />
       <section className="topbar">
         <div>
           <p className="page-card__eyebrow">{t("pageTradesTitle")}</p>
@@ -157,7 +175,7 @@ export function TradesPage() {
                     disabled={closingTradeId === trade.id}
                     onClick={(event) => {
                       event.stopPropagation();
-                      void handleCloseTrade(trade.id);
+                      setPendingCloseTradeId(trade.id);
                     }}
                     type="button"
                   >
@@ -174,7 +192,7 @@ export function TradesPage() {
           )}
         </section>
 
-        <aside className="panel detail-panel">
+        <aside className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}>
           <div className="row-between align-start section-gap">
             <div>
               <p className="panel-label">{t("tradesDetailEyebrow")}</p>
@@ -214,7 +232,7 @@ export function TradesPage() {
               <button
                 className="btn danger wide"
                 disabled={closingTradeId === selectedTrade.id}
-                onClick={() => void handleCloseTrade(selectedTrade.id)}
+                onClick={() => setPendingCloseTradeId(selectedTrade.id)}
                 type="button"
               >
                 {t("tradeCloseSelectedAction")}

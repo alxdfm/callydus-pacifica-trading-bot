@@ -1,11 +1,13 @@
 import { NavLink, Outlet } from "react-router-dom";
+import logoUrl from "../../shared/assets/logo.svg";
 import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
-import { navigationItems } from "./navigation";
+import { getNavigationItems } from "./navigation";
 
-function NavigationLinks() {
+function NavigationLinks({ showOnboarding }: { showOnboarding: boolean }) {
   const { t } = useI18n();
+  const navigationItems = getNavigationItems(showOnboarding);
 
   return (
     <>
@@ -27,6 +29,7 @@ function NavigationLinks() {
 export function AppLayout() {
   const { setLocale, state } = useAppState();
   const { isReady, t } = useI18n();
+  const showOnboarding = !state.onboarding.accountReady;
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
   );
@@ -38,18 +41,15 @@ export function AppLayout() {
   return (
     <div className="shell">
       <aside className="shell-sidebar">
-        <div>
-          <p className="shell-sidebar__eyebrow">{t("navSection")}</p>
-          <div className="shell-brand">
-            <span className="shell-brand__mark">P</span>
-            <div>
-              <h1>{t("appName")}</h1>
-              <p>{t("appTagline")}</p>
-            </div>
+        <div className="shell-brand">
+          <img alt={`${t("appName")} logo`} className="shell-brand__logo" src={logoUrl} />
+          <div className="shell-brand__copy">
+            <p className="shell-sidebar__eyebrow">{t("appName")}</p>
+            <h1>{t("appTagline")}</h1>
           </div>
         </div>
         <nav className="shell-nav shell-nav--desktop">
-          <NavigationLinks />
+          <NavigationLinks showOnboarding={showOnboarding} />
         </nav>
         <div className="nav-card shell-side-card">
           <span className={`badge badge--${activePresetItem ? "warning" : "neutral"}`}>
@@ -78,7 +78,7 @@ export function AppLayout() {
 
       <div className="shell-body">
         <nav aria-label={t("mobileMenuLabel")} className="shell-nav shell-nav--mobile">
-          <NavigationLinks />
+          <NavigationLinks showOnboarding={showOnboarding} />
         </nav>
 
         <main className="shell-content">

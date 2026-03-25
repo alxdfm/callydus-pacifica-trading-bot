@@ -5,11 +5,18 @@ import { DashboardPage } from "./ui/pages/DashboardPage";
 import { HistoryPage } from "./ui/pages/HistoryPage";
 import { PresetsPage } from "./ui/pages/PresetsPage";
 import { TradesPage } from "./ui/pages/TradesPage";
+import { ProfileRouteGuard } from "./ui/router/ProfileRouteGuard";
 import { ProductRouteGuard } from "./ui/router/ProductRouteGuard";
 
 const OnboardingRoute = lazy(() =>
   import("./ui/pages/OnboardingRoute").then((module) => ({
     default: module.OnboardingRoute,
+  })),
+);
+
+const ProfileRoute = lazy(() =>
+  import("./ui/pages/ProfileRoute").then((module) => ({
+    default: module.ProfileRoute,
   })),
 );
 
@@ -47,6 +54,19 @@ export const router = createBrowserRouter([
           {
             path: "/history",
             element: <HistoryPage />,
+          },
+        ],
+      },
+      {
+        element: <ProfileRouteGuard />,
+        children: [
+          {
+            path: "/profile",
+            element: (
+              <Suspense fallback={<div className="page-stack">Loading profile...</div>}>
+                <ProfileRoute />
+              </Suspense>
+            ),
           },
         ],
       },

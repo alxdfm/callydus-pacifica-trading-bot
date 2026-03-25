@@ -38,6 +38,7 @@ body {
     radial-gradient(circle at 85% 20%, rgba(39, 192, 125, 0.08), transparent 18%),
     linear-gradient(180deg, #08101a 0%, #09111d 100%);
   color: var(--text);
+  cursor: default;
 }
 
 a {
@@ -76,9 +77,10 @@ a {
 }
 
 .shell {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .shell-sidebar {
@@ -91,6 +93,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  overflow-y: auto;
 }
 
 .shell-side-controls {
@@ -116,6 +119,11 @@ a {
   grid-template-columns: auto 1fr;
   gap: 16px;
   align-items: center;
+}
+
+.shell-brand__copy {
+  display: grid;
+  gap: 2px;
 }
 
 .shell-brand h1,
@@ -146,10 +154,20 @@ a {
   line-height: 1.6;
 }
 
+.shell-brand__logo,
 .shell-brand__mark,
 .onboarding-brand__mark {
   width: 48px;
   height: 48px;
+}
+
+.shell-brand__logo {
+  display: block;
+  object-fit: contain;
+}
+
+.shell-brand__mark,
+.onboarding-brand__mark {
   display: grid;
   place-items: center;
   border-radius: 16px;
@@ -207,6 +225,7 @@ a {
 
 .shell-body {
   padding: 24px;
+  overflow-y: auto;
 }
 
 .shell-topbar {
@@ -578,6 +597,24 @@ a {
 .trade-card.selected {
   border-color: rgba(45, 140, 255, 0.34);
   box-shadow: 0 16px 36px rgba(8, 17, 29, 0.28);
+  background: linear-gradient(180deg, rgba(22, 44, 72, 0.92), rgba(20, 34, 56, 0.84));
+}
+
+.history-card.selected,
+.trade-card.selected,
+.detail-panel--linked {
+  position: relative;
+}
+
+.history-card.selected::before,
+.trade-card.selected::before,
+.detail-panel--linked::before {
+  content: "";
+  position: absolute;
+  inset: 10px auto 10px 0;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #67a8ff 0%, #2d8cff 100%);
 }
 
 .trade-head {
@@ -605,6 +642,98 @@ a {
 
 .detail-item strong {
   font-size: 1.05rem;
+}
+
+.preset-disclosure {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+}
+
+.preset-disclosure__panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(360px, 72vw);
+  display: none;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 20px;
+  background: rgba(10, 19, 32, 0.98);
+  border: 1px solid rgba(53, 80, 111, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.preset-disclosure:hover .preset-disclosure__panel,
+.preset-disclosure:focus-within .preset-disclosure__panel {
+  display: grid;
+}
+
+.preset-disclosure__trigger {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(53, 80, 111, 0.72);
+  border-radius: 999px;
+  background: rgba(20, 34, 56, 0.9);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.preset-disclosure__trigger:hover,
+.preset-disclosure__trigger:focus-visible {
+  background: rgba(45, 140, 255, 0.12);
+  border-color: rgba(45, 140, 255, 0.28);
+  outline: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 10, 18, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.modal-card {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 28px;
+  background: rgba(10, 19, 32, 0.98);
+  border: 1px solid rgba(53, 80, 111, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.modal-card--danger {
+  border-color: rgba(229, 107, 97, 0.28);
+}
+
+.modal-copy {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-copy h3,
+.modal-copy p {
+  margin: 0;
+}
+
+.modal-copy p {
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.modal-actions {
+  margin-top: 0;
 }
 
 .empty-state {
@@ -905,6 +1034,7 @@ a {
 }
 
 .preset-card-lite {
+  position: relative;
   display: grid;
   gap: 16px;
   padding: 20px;
@@ -912,6 +1042,14 @@ a {
   background: rgba(20, 34, 56, 0.74);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-soft);
+}
+
+.preset-card-lite > .row-between:first-of-type {
+  padding-right: 48px;
+}
+
+.preset-card-lite > .row-between:first-of-type .badge {
+  margin-right: 48px;
 }
 
 .preset-card-lite h4 {
@@ -1074,7 +1212,9 @@ a {
 
 @media (max-width: 1240px) {
   .shell {
+    height: auto;
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .shell-sidebar {
@@ -1082,6 +1222,7 @@ a {
     min-height: auto;
     border-right: 0;
     border-bottom: 1px solid rgba(53, 80, 111, 0.9);
+    overflow: visible;
   }
 
   .shell-nav--desktop {
@@ -1110,6 +1251,10 @@ a {
 
   .trade-card {
     grid-template-columns: 1fr;
+  }
+
+  .shell-body {
+    overflow: visible;
   }
 }
 
