@@ -97,6 +97,24 @@ Comportamento Mobile:
 Orientação de i18n:
 - motivos de encerramento e resultado seguem [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
 
+## Profile
+Referências: [preview/profile.html](./preview/profile.html), [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
+
+Prioridades:
+- deixar claro que `Profile` é manutenção recorrente, não reabertura do onboarding
+- resumo de status da conta acima dos blocos editáveis
+- `Main wallet` distinta de `Agent Wallet`
+- mudanças sensíveis mostram impacto antes do CTA
+- `credentialAlias` não compete com campos críticos
+
+Comportamento Mobile:
+- tela colapsa para coluna única
+- resumo de status permanece acima dos formulários
+- CTAs de revalidação continuam visíveis sem scroll lateral
+
+Orientação de i18n:
+- textos de `Profile`, `Main wallet` e `Agent Wallet` seguem [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
+
 ## Navegação
 Referência: [preview/index.html](./preview/index.html)
 

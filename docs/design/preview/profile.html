@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacifica Profile Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./theme.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="side-nav">
+        <div class="brand-lockup">
+          <img class="brand-mark" src="../../../apps/app/src/shared/assets/logo.svg" alt="callydus logo" />
+          <div class="brand-copy">
+          <p class="brand-name">callydus</p>
+          <h1 class="nav-title">Control center</h1>
+          </div>
+        </div>
+        <nav class="nav-list">
+          <a class="nav-item" href="./dashboard.html">Dashboard</a>
+          <a class="nav-item" href="./presets.html">Presets</a>
+          <a class="nav-item" href="./trades.html">Current trades</a>
+          <a class="nav-item" href="./history.html">History</a>
+          <a class="nav-item active" href="./profile.html">Profile</a>
+          <a class="nav-item" href="./index.html">System</a>
+        </nav>
+        <div class="nav-card">
+          <span class="badge success">Account ready</span>
+          <strong>Maintenance area</strong>
+          <p>Profile replaces recurring access to onboarding after setup is complete.</p>
+        </div>
+      </aside>
+
+      <main class="app-main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Profile</p>
+            <h2>Account maintenance</h2>
+            <p class="subtle">Update connected credentials without re-entering the full onboarding flow.</p>
+          </div>
+          <div class="topbar-actions">
+            <span class="badge success">Ready</span>
+            <button class="btn secondary">View onboarding rules</button>
+          </div>
+        </header>
+
+        <section class="metric-grid">
+          <article class="stat-panel emphasis">
+            <span>Account status</span>
+            <strong>Ready</strong>
+            <p>Operational areas unlocked</p>
+          </article>
+          <article class="stat-panel">
+            <span>Main wallet</span>
+            <strong>Connected</strong>
+            <p>Phantom ending in 7K9p</p>
+          </article>
+          <article class="stat-panel">
+            <span>Agent Wallet</span>
+            <strong>Validated</strong>
+            <p>Alias: Trading Bot Wallet</p>
+          </article>
+          <article class="stat-panel">
+            <span>Last validation</span>
+            <strong>Today</strong>
+            <p>10:42 AM</p>
+          </article>
+        </section>
+
+        <section class="dashboard-grid">
+          <section class="panel hero-panel-wide">
+            <div class="row-between align-start">
+              <div>
+                <p class="panel-label">Main wallet</p>
+                <h3>Identity wallet</h3>
+                <p class="subtle">This wallet identifies the account and is not edited like a regular form field.</p>
+              </div>
+              <span class="badge neutral">Read only</span>
+            </div>
+
+            <div class="form-stack">
+              <label>
+                <span>Wallet provider</span>
+                <input value="Phantom" readonly />
+              </label>
+              <label>
+                <span>Main wallet public key</span>
+                <input value="9xQeWvG816bUx9EPfEZtN9dS2mJj9n7K9p" readonly />
+                <p class="subtle">Changing the main wallet may change the account identity and requires confirmation.</p>
+              </label>
+            </div>
+
+            <div class="action-row">
+              <button class="btn secondary">Reconnect wallet</button>
+            </div>
+          </section>
+
+          <section class="panel trades-panel">
+            <div class="row-between align-start section-gap">
+              <div>
+                <p class="panel-label">Agent Wallet</p>
+                <h3>Update and revalidate</h3>
+                <p class="subtle">Use this area to replace the operational Agent Wallet without reopening onboarding.</p>
+              </div>
+              <span class="badge warning">Editing</span>
+            </div>
+
+            <div class="form-stack">
+              <label>
+                <span>Agent wallet public key</span>
+                <input value="Fg6PaFpoGXkYsidMpWxTWqkZ3G7xk9L2Qm" />
+              </label>
+              <label>
+                <span>Agent wallet private key</span>
+                <input value="" placeholder="Paste a new Agent Wallet private key" />
+                <p class="subtle">Use the private key from the Agent Wallet only. It is required again when changing wallet access.</p>
+              </label>
+              <label>
+                <span>Credential alias <small>(optional)</small></span>
+                <input value="Trading Bot Wallet" />
+              </label>
+            </div>
+
+            <div class="status-stack">
+              <div class="status-row info-row">
+                <span class="status-dot info-dot"></span>
+                <div>
+                  <strong>Revalidation required</strong>
+                  <p>Changes to Agent Wallet fields require validation before the account is fully unlocked again.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="btn secondary">Clear changes</button>
+              <button class="btn primary">Save and revalidate</button>
+            </div>
+          </section>
+
+          <section class="panel recent-panel">
+            <div class="row-between align-start section-gap">
+              <div>
+                <p class="panel-label">Security notes</p>
+                <h3>Visible impact before save</h3>
+              </div>
+              <span class="badge info">Important</span>
+            </div>
+
+            <div class="history-list">
+              <div class="history-row">
+                <div>
+                  <strong>Main wallet</strong>
+                  <p>Changing it may affect account identity.</p>
+                </div>
+                <strong class="down">Sensitive</strong>
+              </div>
+              <div class="history-row">
+                <div>
+                  <strong>Agent Wallet</strong>
+                  <p>Changing keys requires a new validation.</p>
+                </div>
+                <strong>Review</strong>
+              </div>
+              <div class="history-row">
+                <div>
+                  <strong>Alias only</strong>
+                  <p>Display-only update with lower risk.</p>
+                </div>
+                <strong class="up">Light</strong>
+              </div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

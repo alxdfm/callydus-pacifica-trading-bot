@@ -26,9 +26,10 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
 6. [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
 7. [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
 8. [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
-9. [MVP_FINALIZATION_REFERENCE.pt-BR.md](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
-10. [preview/index.html](./preview/index.html)
-11. [preview/theme.css](./preview/theme.css)
+9. [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
+10. [MVP_FINALIZATION_REFERENCE.pt-BR.md](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
+11. [preview/index.html](./preview/index.html)
+12. [preview/theme.css](./preview/theme.css)
 
 ## Tokens Prioritários Para Codificar
 - cores de superfície
@@ -73,6 +74,7 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
 - comparacao, revisao e ativacao de presets devem seguir [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
 - dashboard deve seguir [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
 - trades atuais e histórico devem seguir [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
+- `Profile` deve seguir [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
 - consistência final, estados vazios, loading e erro devem seguir [MVP_FINALIZATION_REFERENCE.pt-BR.md](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
 
 ## Observações de QA
@@ -86,6 +88,7 @@ QA deve validar:
 - `reconnecting` tratado como variação de loading sem exigir novo estado visual
 - clareza da ação `Close trade`
 - distinção visual entre `Current trades` e `History`
+- separação clara entre manutenção de conta em `Profile` e setup inicial em `Onboarding`
 
 ## Regras Específicas de Onboarding
 - a etapa 2 usa o contrato de `Agent Wallet`, não `API key + secret`
@@ -95,6 +98,13 @@ QA deve validar:
 - a private key solicitada deve ser explicitamente identificada como pertencente à `Agent Wallet`, nunca à wallet principal
 - mensagens de erro devem separar falha transitória de erro que exige edição do campo
 - estados e microcopy principal do onboarding devem seguir [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
+
+## Regras Específicas de Profile
+- `Profile` existe para manutenção recorrente da conta após setup inicial
+- `mainWalletPublicKey` permanece somente leitura e não deve parecer campo comum editável
+- mudanças de `Agent Wallet` exigem revalidação explícita
+- mudança apenas de `credentialAlias` não deve carregar o mesmo peso visual de uma troca de chave
+- avisos de segurança precisam mostrar impacto sem linguagem alarmista
 
 ## Orientação de i18n Para Onboarding
 - usar os grupos de mensagem da seção `Microcopy Principal` em [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md) como referência inicial de chave

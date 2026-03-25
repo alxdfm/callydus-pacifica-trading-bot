@@ -15,8 +15,9 @@ Centralizar a base visual e o handoff de design do MVP para que design, desenvol
 9. [Referência de presets](./PRESETS_REFERENCE.pt-BR.md)
 10. [Referência de dashboard](./DASHBOARD_REFERENCE.pt-BR.md)
 11. [Referência de trades e histórico](./OPERATIONS_REFERENCE.pt-BR.md)
-12. [Referência de finalização do MVP](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
-13. [Preview visual](./preview/index.html)
+12. [Referência de profile](./PROFILE_REFERENCE.pt-BR.md)
+13. [Referência de finalização do MVP](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
+14. [Preview visual](./preview/index.html)
 
 ## Escopo
 Este conjunto cobre:
