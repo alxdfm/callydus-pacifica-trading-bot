@@ -1,7 +1,7 @@
 # BG-009 Card
 
 ## Status
-- status: `TODO`
+- status: `IN_REVIEW`
 - tipo: `ajuste de UX`
 - prioridade: `P0`
 - owner: `PO`
@@ -37,4 +37,4 @@ Substituir `alert` nativo do navegador por modal de confirmacao nas acoes que ex
 - o padrao e reaproveitavel em mais de uma tela
 
 ## Proximo Passo Recomendado
-Mapear todas as acoes sensiveis que ainda dependem de `alert` e consolidar um unico contrato de modal.
+Validar manualmente a implementacao e decidir se o item pode sair do backlog pos-MVP.

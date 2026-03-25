@@ -1,7 +1,7 @@
 # BG-001 Card
 
 ## Status
-- status: `TODO`
+- status: `IN_REVIEW`
 - tipo: `ajuste de UX`
 - prioridade: `P1`
 - owner: `PO`
@@ -38,4 +38,4 @@ Hoje a shell nao reforca o modelo de leitura `navegacao fixa + area operacional 
 - a navegacao continua clara e estatica em todas as telas operacionais
 
 ## Proximo Passo Recomendado
-Validar com design e dev o ajuste no layout compartilhado antes de entrar em implementacao.
+Validar manualmente a implementacao e decidir se o item pode sair do backlog pos-MVP.

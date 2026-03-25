@@ -1,7 +1,7 @@
 # BG-006 Card
 
 ## Status
-- status: `TODO`
+- status: `IN_REVIEW`
 - tipo: `melhoria`
 - prioridade: `P2`
 - owner: `PO`
@@ -33,4 +33,4 @@ O comportamento atual pode transmitir affordance errada em partes da UI que sao 
 - apenas elementos realmente interativos sugerem clique ou acao
 
 ## Proximo Passo Recomendado
-Levar como regra transversal de UI para o proximo lote de polimento.
+Validar manualmente a implementacao e decidir se o item pode sair do backlog pos-MVP.

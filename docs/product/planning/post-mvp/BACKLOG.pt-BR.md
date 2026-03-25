@@ -12,15 +12,15 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 ## Itens Abertos
 | ID | Status | Tipo | Prioridade | Area | Resumo | Proximo passo |
 |----|--------|------|------------|------|--------|---------------|
-| BG-001 | TODO | ajuste de UX | P1 | shell | fixar a lateral esquerda e deixar o scroll apenas no conteudo principal | validar impacto com design e dev no layout compartilhado |
-| BG-002 | TODO | melhoria | P1 | branding | trocar bloco textual da lateral por logo + nome `callydus` | alinhar asset e regra final de branding com design |
-| BG-003 | TODO | ajuste de UX | P1 | navegacao | remover `Onboarding` da navegacao depois da conclusao do setup | definir regra de exibicao por estado da conta |
-| BG-004 | TODO | mudanca de escopo | P1 | conta | criar pagina `Profile` para edicao posterior de dados da conta | refinar escopo minimo da pagina e quais dados podem ser editados |
-| BG-005 | TODO | ajuste de UX | P1 | presets | aumentar transparencia das estrategias com gatilhos detalhados via tooltip informativo | consolidar contrato de copy e nivel de detalhe por preset |
-| BG-006 | TODO | melhoria | P2 | design system | aplicar cursor default em todos os textos nao interativos | validar como regra transversal de UI |
-| BG-007 | TODO | ajuste de UX | P1 | presets | trocar `Symbol` de campo livre para `select` com symbols predefinidos | fechar lista inicial de symbols permitidos |
-| BG-008 | TODO | ajuste de UX | P1 | trades/history | reforcar estado visual de item selecionado e vinculo com painel lateral | definir padrao visual unico para listas mestre-detalhe |
-| BG-009 | TODO | ajuste de UX | P0 | interacoes | substituir `alert` do navegador por modal de confirmacao nas acoes | consolidar contrato de confirmacao para acoes sensiveis |
+| BG-001 | IN_REVIEW | ajuste de UX | P1 | shell | fixar a lateral esquerda e deixar o scroll apenas no conteudo principal | validar comportamento manualmente nas telas principais |
+| BG-002 | IN_REVIEW | melhoria | P1 | branding | trocar bloco textual da lateral por logo + nome `callydus` | validar lockup final da marca implementado na shell |
+| BG-003 | IN_REVIEW | ajuste de UX | P1 | navegacao | remover `Onboarding` da navegacao depois da conclusao do setup | validar regra de exibicao por estado da conta |
+| BG-004 | IN_REVIEW | mudanca de escopo | P1 | conta | criar pagina `Profile` para edicao posterior de dados da conta | validar manualmente a nova rota e o recorte minimo de manutencao |
+| BG-005 | IN_REVIEW | ajuste de UX | P1 | presets | aumentar transparencia das estrategias com gatilhos detalhados via disclosure informativo | validar copy atual e decidir se precisa refinamento com design |
+| BG-006 | IN_REVIEW | melhoria | P2 | design system | aplicar cursor default em todos os textos nao interativos | validar como regra transversal de UI |
+| BG-007 | IN_REVIEW | ajuste de UX | P1 | presets | trocar `Symbol` de campo livre para `select` com symbols predefinidos | validar lista inicial de symbols usada no MVP |
+| BG-008 | IN_REVIEW | ajuste de UX | P1 | trades/history | reforcar estado visual de item selecionado e vinculo com painel lateral | validar feedback mestre-detalhe em trades e history |
+| BG-009 | IN_REVIEW | ajuste de UX | P0 | interacoes | substituir `alert` do navegador por modal de confirmacao nas acoes | validar modal de confirmacao nas acoes sensiveis |
 
 ## Cards
 - [BG-001 Card](./cards/BG-001_CARD.pt-BR.md)

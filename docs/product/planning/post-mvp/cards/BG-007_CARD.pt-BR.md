@@ -1,7 +1,7 @@
 # BG-007 Card
 
 ## Status
-- status: `TODO`
+- status: `IN_REVIEW`
 - tipo: `ajuste de UX`
 - prioridade: `P1`
 - owner: `PO`
@@ -38,4 +38,4 @@ Campo aberto aumenta risco de erro, reduz previsibilidade e vai contra a propost
 - a troca nao aumenta friccao desnecessaria no fluxo de ativacao
 
 ## Proximo Passo Recomendado
-Congelar a lista inicial de symbols e tratar o campo como seletor guiado.
+Validar manualmente a implementacao e decidir se o item pode sair do backlog pos-MVP.

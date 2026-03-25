@@ -1,7 +1,7 @@
 # BG-004 Card
 
 ## Status
-- status: `TODO`
+- status: `IN_REVIEW`
 - tipo: `mudanca de escopo`
 - prioridade: `P1`
 - owner: `PO`
@@ -39,4 +39,24 @@ Ao remover `Onboarding` da navegacao recorrente, o produto precisa de um destino
 - os campos editaveis sao explicitamente definidos por produto
 
 ## Proximo Passo Recomendado
-Refinar escopo minimo da pagina `Profile` antes de priorizar implementacao.
+Validar com PO se o recorte minimo de `Profile` fechado em design vira a base oficial para dev.
+
+## Refinamento de Design
+- `Profile` passa a ser a area recorrente de manutencao de conta apos setup concluido
+- `Onboarding` permanece restrito a destravar acesso inicial
+- `Main wallet` continua visivel como identidade da conta, mas sem edicao inline livre
+- `Agent Wallet` ganha area propria de atualizacao com `Save and revalidate`
+- `credentialAlias` permanece opcional e de baixo peso visual
+
+## Campos Minimos Pos-Onboarding
+- `mainWalletPublicKey`: readonly
+- `agentWalletPublicKey`: editavel
+- `agentWalletPrivateKey`: exigido novamente ao trocar `Agent Wallet`
+- `credentialAlias`: opcional
+
+## Evidencia de Design
+- [PROFILE_REFERENCE.pt-BR.md](../../../../design/PROFILE_REFERENCE.pt-BR.md)
+- [profile.html](../../../../design/preview/profile.html)
+
+## Log de Implementacao
+- `2026-03-24`: rota `Profile` implementada com resumo de status da conta, bloco readonly de `Main wallet`, manutencao de `Agent Wallet`, confirmacao de reconnect e separacao clara entre setup inicial e manutencao recorrente; aguardando validacao manual.

@@ -1,7 +1,7 @@
 # BG-002 Card
 
 ## Status
-- status: `TODO`
+- status: `IN_REVIEW`
 - tipo: `melhoria`
 - prioridade: `P1`
 - owner: `PO`
@@ -36,4 +36,21 @@ O texto atual da shell e provisório e nao representa a identidade final desejad
 - o bloco nao polui a navegacao nem disputa atencao com o menu
 
 ## Proximo Passo Recomendado
-Receber o logo final e congelar a regra visual do bloco de marca com design.
+Validar o lockup final com logo + `callydus` nas shells e congelar a regra para implementação.
+
+## Refinamento de Design
+- o bloco de marca da lateral usa logo oficial e nome `callydus`
+- o nome da marca nao disputa com a navegacao
+- o titulo da area atual continua abaixo do nome da marca
+- o logo substitui o placeholder tipografico anterior
+
+## Evidencia de Design
+- [dashboard.html](../../../../design/preview/dashboard.html)
+- [presets.html](../../../../design/preview/presets.html)
+- [trades.html](../../../../design/preview/trades.html)
+- [history.html](../../../../design/preview/history.html)
+- [profile.html](../../../../design/preview/profile.html)
+- [theme.css](../../../../design/preview/theme.css)
+
+## Log de Implementacao
+- `2026-03-24`: lockup com `logo.svg` oficial e nome `callydus` implementado na shell compartilhada do app; aguardando validacao manual.

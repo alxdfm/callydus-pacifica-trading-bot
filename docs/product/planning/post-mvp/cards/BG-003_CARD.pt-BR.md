@@ -1,7 +1,7 @@
 # BG-003 Card
 
 ## Status
-- status: `TODO`
+- status: `IN_REVIEW`
 - tipo: `ajuste de UX`
 - prioridade: `P1`
 - owner: `PO`
@@ -37,4 +37,4 @@ Manter `Onboarding` sempre visivel na lateral passa a mensagem errada de pagina 
 - a mudanca nao compromete recuperacao de conta ou edicao futura de dados
 
 ## Proximo Passo Recomendado
-Fechar a regra de exibicao do item de menu com base no estado de onboarding.
+Validar manualmente a implementacao e decidir se o item pode sair do backlog pos-MVP.

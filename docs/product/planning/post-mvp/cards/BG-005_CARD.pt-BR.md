@@ -1,7 +1,7 @@
 # BG-005 Card
 
 ## Status
-- status: `TODO`
+- status: `IN_REVIEW`
 - tipo: `ajuste de UX`
 - prioridade: `P1`
 - owner: `PO`
@@ -38,4 +38,4 @@ Hoje o nivel de explicacao do preset nao atende a expectativa de transparencia m
 - a mesma informacao permanece acessivel em desktop e mobile
 
 ## Proximo Passo Recomendado
-Consolidar com design o nivel exato de detalhe e o componente de disclosure mais adequado.
+Validar manualmente a implementacao e decidir se o item pode sair do backlog pos-MVP.

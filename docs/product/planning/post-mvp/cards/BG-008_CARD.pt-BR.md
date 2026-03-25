@@ -1,7 +1,7 @@
 # BG-008 Card
 
 ## Status
-- status: `TODO`
+- status: `IN_REVIEW`
 - tipo: `ajuste de UX`
 - prioridade: `P1`
 - owner: `PO`
@@ -37,4 +37,4 @@ Hoje a relacao mestre-detalhe nao tem contraste suficiente para indicar selecao 
 - a mesma logica visual se repete em trades e history
 
 ## Proximo Passo Recomendado
-Definir um padrao visual unico de selecao para as telas de lista + detalhe.
+Validar manualmente a implementacao e decidir se o item pode sair do backlog pos-MVP.
