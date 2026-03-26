@@ -22,32 +22,38 @@ export const messages = {
     shellFoundationDescription:
       "Shared layout and navigation stay aligned with the dark-first preview while functional modules are implemented.",
     shellOnboardingHint:
-      "Onboarding remains the gated entry point until wallet connection and Agent Wallet validation succeed.",
+      "Onboarding remains the gated entry point until wallet connection, builder approval and Agent Wallet validation succeed.",
     mobileMenuLabel: "Primary navigation",
     pageStatusLabel: "Status",
     pageStatusPlaceholder: "Placeholder",
     pageActionLabel: "Next implementation focus",
     pageOnboardingTitle: "Onboarding",
     pageOnboardingDescription:
-      "Connect the main wallet, validate the Agent Wallet and unlock access to the operational area.",
-    pageOnboardingAction: "Complete wallet connection and Agent Wallet validation before opening protected routes.",
+      "Connect the main wallet, approve the builder code, validate the Agent Wallet and unlock access to the operational area.",
+    pageOnboardingAction: "Complete wallet connection, builder approval and Agent Wallet validation before opening protected routes.",
     onboardingEyebrow: "Guided setup",
-    onboardingHeroTitle: "Connect in two simple steps",
+    onboardingHeroTitle: "Connect in three simple steps",
     onboardingHeroDescription:
-      "Wallet and Agent Wallet validation are the only blockers before entering the operational area.",
-    onboardingProgressLabel: "Step 2 of 2",
+      "Wallet connection, builder approval and Agent Wallet validation are the only blockers before entering the operational area.",
+    onboardingProgressLabel: "Step 3 of 3",
     onboardingStepWalletTitle: "Connect wallet",
     onboardingStepWalletDescription: "Required before any main action.",
+    onboardingStepBuilderTitle: "Approve builder code",
+    onboardingStepBuilderDescription: "One-time wallet signature for account authorization.",
     onboardingStepCredentialsTitle: "Validate Agent Wallet",
     onboardingStepCredentialsDescription: "Unlock dashboard after success.",
     onboardingCardWalletEyebrow: "Step 1",
     onboardingCardWalletTitle: "Connect Solana wallet",
     onboardingCardWalletDescription:
       "This wallet identifies the account and never exposes its private key in the product.",
-    onboardingCardCredentialsEyebrow: "Step 2",
+    onboardingBuilderApprovalTitle: "Approve builder code",
+    onboardingBuilderApprovalDescription:
+      "This is a one-time account authorization signed with the connected wallet. It is not a transfer and does not expose the wallet private key.",
+    onboardingBuilderApprovalAction: "Approve builder code",
+    onboardingCardCredentialsEyebrow: "Step 3",
     onboardingCardCredentialsTitle: "Agent Wallet access",
     onboardingCardCredentialsDescription:
-      "Use the dedicated Agent Wallet for automation. It is validated once and then treated as protected backend material.",
+      "Use the dedicated Agent Wallet for automation after the account builder approval is completed.",
     onboardingPanelEyebrow: "Account status",
     onboardingPanelTitle: "Ready after validation",
     onboardingPanelDescription:
@@ -70,6 +76,11 @@ export const messages = {
     onboardingStateCredentialValid: "Valid",
     onboardingStateCredentialInvalid: "Invalid",
     onboardingStateCredentialError: "Invalid",
+    onboardingStateBuilderPending: "Pending",
+    onboardingStateBuilderApproving: "Approving",
+    onboardingStateBuilderApproved: "Approved",
+    onboardingStateBuilderRejected: "Rejected",
+    onboardingStateBuilderError: "Error",
     onboardingStateAccessReady: "Account ready",
     onboardingStateAccessBlocked: "Blocked until success",
     onboardingStatusWalletPending: "Waiting for wallet",
@@ -119,6 +130,15 @@ export const messages = {
     onboardingWalletMicrocopyConnecting: "Connecting to Phantom...",
     onboardingWalletMicrocopyConnected: "Wallet connected and ready.",
     onboardingWalletMicrocopyError: "Could not connect wallet.",
+    onboardingBuilderMicrocopyPending: "Approve the builder code with the connected wallet.",
+    onboardingBuilderMicrocopyApproving: "Waiting for wallet signature and Pacifica confirmation.",
+    onboardingBuilderMicrocopyApproved: "Builder code approved for this account.",
+    onboardingBuilderMicrocopyRejected: "Review the wallet approval and try again.",
+    onboardingBuilderMicrocopyRetry: "Approval is temporarily unavailable. Try again.",
+    onboardingBuilderApprovalAwaiting:
+      "The account still needs the one-time builder approval before Agent Wallet validation can continue.",
+    onboardingBuilderApprovalSuccess:
+      "Builder code approved successfully.",
     onboardingWalletErrorProviderMissing:
       "Phantom is not installed in this browser. Install the extension and try again.",
     onboardingWalletErrorRejected:
@@ -143,7 +163,7 @@ export const messages = {
     onboardingCredentialAction: "Validate and Continue",
     onboardingClearAction: "Clear",
     onboardingCredentialActionHint:
-      "Fill in the Agent Wallet fields and validate them against the Sprint 1 contract.",
+      "Fill in the Agent Wallet fields after builder approval and validate them against the backend contract.",
     onboardingFinalCta: "Continue to Dashboard",
     onboardingFinalCtaHintBlocked:
       "The primary CTA unlocks only after validation finishes without blocking errors.",
@@ -463,6 +483,7 @@ export const messages = {
     pageHistoryAction: "Use this placeholder to validate desktop and mobile shell behavior.",
     statePanelTitle: "Session state preview",
     stateWalletStatus: "Wallet session",
+    stateBuilderStatus: "Builder approval",
     stateCredentialStatus: "Credential validation",
     stateOnboardingStatus: "Onboarding status",
     stateAccessStatus: "Product access",

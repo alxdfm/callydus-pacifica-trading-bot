@@ -1,14 +1,20 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type {
+  BuilderApprovalStatus,
   PacificaValidationErrorCode,
   CredentialValidationStatus,
   OnboardingStatus,
+  PacificaBuilderApprovalResponse,
   PacificaCredentialSubmission,
   PacificaCredentialValidationResponse,
   WalletSession,
 } from "@pacifica/contracts";
-import { validateAgentWalletLocally } from "../../features/onboarding/agent-wallet-validation";
+import { approveBuilderCodeViaBackend } from "../../features/onboarding/backend-builder-approval";
+import { validateAgentWalletViaBackend } from "../../features/onboarding/backend-credential-validation";
+import {
+  createSignedBuilderApprovalSubmission,
+} from "../../features/onboarding/pacifica-builder-approval";
 import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEnvironment";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import type { MessageKey } from "../../shared/i18n/messages";
@@ -43,7 +49,10 @@ function shortenPublicKey(value: string | null) {
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
 }
 
-function mapCredentialFormState(status: CredentialValidationStatus, isFilled: boolean): MessageKey {
+function mapCredentialFormState(
+  status: CredentialValidationStatus,
+  isFilled: boolean,
+): MessageKey {
   switch (status) {
     case "validating":
       return "onboardingCredentialFormStateValidating";
@@ -91,6 +100,23 @@ function mapCredentialStatusToMessageKey(
   }
 }
 
+function mapBuilderApprovalStatusToMessageKey(
+  status: BuilderApprovalStatus,
+): MessageKey {
+  switch (status) {
+    case "approving":
+      return "onboardingStateBuilderApproving";
+    case "approved":
+      return "onboardingStateBuilderApproved";
+    case "rejected":
+      return "onboardingStateBuilderRejected";
+    case "error":
+      return "onboardingStateBuilderError";
+    default:
+      return "onboardingStateBuilderPending";
+  }
+}
+
 function mapOnboardingStatusToMessageKey(status: OnboardingStatus): MessageKey {
   switch (status) {
     case "credentials_pending":
@@ -133,7 +159,23 @@ function mapCredentialBadgeTone(status: CredentialValidationStatus): BadgeTone {
   }
 }
 
-function mapWalletMicrocopy(status: WalletSession["sessionStatus"]): MessageKey {
+function mapBuilderBadgeTone(status: BuilderApprovalStatus): BadgeTone {
+  switch (status) {
+    case "approved":
+      return "success";
+    case "approving":
+      return "warning";
+    case "rejected":
+    case "error":
+      return "danger";
+    default:
+      return "neutral";
+  }
+}
+
+function mapWalletMicrocopy(
+  status: WalletSession["sessionStatus"],
+): MessageKey {
   switch (status) {
     case "connected":
       return "onboardingWalletMicrocopyConnected";
@@ -187,7 +229,29 @@ function mapCredentialMicrocopy(
   }
 }
 
-function mapAccountBadgeTone(canAccessProduct: boolean, status: OnboardingStatus): BadgeTone {
+function mapBuilderMicrocopy(
+  status: BuilderApprovalStatus,
+  retryable: boolean,
+): MessageKey {
+  switch (status) {
+    case "approved":
+      return "onboardingBuilderMicrocopyApproved";
+    case "approving":
+      return "onboardingBuilderMicrocopyApproving";
+    case "rejected":
+    case "error":
+      return retryable
+        ? "onboardingBuilderMicrocopyRetry"
+        : "onboardingBuilderMicrocopyRejected";
+    default:
+      return "onboardingBuilderMicrocopyPending";
+  }
+}
+
+function mapAccountBadgeTone(
+  canAccessProduct: boolean,
+  status: OnboardingStatus,
+): BadgeTone {
   if (canAccessProduct) {
     return "success";
   }
@@ -204,7 +268,10 @@ function mapValidationCodeField(code: PacificaValidationErrorCode | null) {
     return null;
   }
 
-  if (code === "invalid_agent_wallet_format" || code === "agent_wallet_mismatch") {
+  if (
+    code === "invalid_agent_wallet_format" ||
+    code === "agent_wallet_mismatch"
+  ) {
     return "agentWalletPublicKey";
   }
 
@@ -217,13 +284,12 @@ function mapValidationCodeField(code: PacificaValidationErrorCode | null) {
 
 function buildProgressSteps(
   walletStatus: WalletSession["sessionStatus"],
+  builderStatus: BuilderApprovalStatus,
   credentialStatus: CredentialValidationStatus,
-  labels: Pick<
-    ReturnType<typeof useI18n>,
-    "t"
-  >["t"],
+  labels: Pick<ReturnType<typeof useI18n>, "t">["t"],
 ): ProgressStep[] {
   const walletComplete = walletStatus === "connected";
+  const builderComplete = builderStatus === "approved";
   const credentialComplete = credentialStatus === "valid";
 
   return [
@@ -233,44 +299,98 @@ function buildProgressSteps(
       status: walletComplete ? "complete" : "current",
     },
     {
+      title: labels("onboardingStepBuilderTitle"),
+      description: labels("onboardingStepBuilderDescription"),
+      status: builderComplete
+        ? "complete"
+        : walletComplete
+          ? "current"
+          : "pending",
+    },
+    {
       title: labels("onboardingStepCredentialsTitle"),
       description: labels("onboardingStepCredentialsDescription"),
-      status: credentialComplete ? "complete" : walletComplete ? "current" : "pending",
+      status: credentialComplete
+        ? "complete"
+        : builderComplete
+          ? "current"
+          : "pending",
     },
   ];
 }
 
 export function OnboardingPage() {
   const navigate = useNavigate();
-  const { canAccessProduct, setCredentialState, setOnboardingState, state } = useAppState();
-  const { connectWallet, disconnectWallet } = useSolanaWalletPort();
+  const {
+    canAccessProduct,
+    setBuilderApprovalState,
+    setCredentialState,
+    setOnboardingState,
+    state,
+  } = useAppState();
+  const {
+    canSignMessages,
+    connectWallet,
+    disconnectWallet,
+    signWalletMessage,
+  } = useSolanaWalletPort();
   const { t } = useI18n();
   const [fieldErrors, setFieldErrors] = useState<FormFieldErrors>({});
 
-  const walletStatusLabel = t(mapWalletStatusToMessageKey(state.wallet.sessionStatus));
+  const walletStatusLabel = t(
+    mapWalletStatusToMessageKey(state.wallet.sessionStatus),
+  );
+  const builderStatusLabel = t(
+    mapBuilderApprovalStatusToMessageKey(state.builderApproval.approvalStatus),
+  );
   const credentialStatusLabel = t(
     mapCredentialStatusToMessageKey(state.credentials.validationStatus),
   );
-  const onboardingStatusLabel = t(mapOnboardingStatusToMessageKey(state.onboarding.status));
+  const onboardingStatusLabel = t(
+    mapOnboardingStatusToMessageKey(state.onboarding.status),
+  );
   const walletBadgeTone = mapWalletBadgeTone(state.wallet.sessionStatus);
-  const credentialBadgeTone = mapCredentialBadgeTone(state.credentials.validationStatus);
-  const accountBadgeTone = mapAccountBadgeTone(canAccessProduct, state.onboarding.status);
+  const builderBadgeTone = mapBuilderBadgeTone(
+    state.builderApproval.approvalStatus,
+  );
+  const credentialBadgeTone = mapCredentialBadgeTone(
+    state.credentials.validationStatus,
+  );
+  const accountBadgeTone = mapAccountBadgeTone(
+    canAccessProduct,
+    state.onboarding.status,
+  );
   const progressSteps = buildProgressSteps(
     state.wallet.sessionStatus,
+    state.builderApproval.approvalStatus,
     state.credentials.validationStatus,
     t,
   );
   const walletConnected = state.wallet.sessionStatus === "connected";
+  const builderApproved = state.builderApproval.approvalStatus === "approved";
   const isCredentialFormFilled = Boolean(
     state.credentials.agentWalletPublicKey?.trim() &&
-      state.credentials.agentWalletPrivateKey?.trim(),
+    state.credentials.agentWalletPrivateKey?.trim(),
   );
   const credentialFormStateLabel = t(
-    mapCredentialFormState(state.credentials.validationStatus, isCredentialFormFilled),
+    mapCredentialFormState(
+      state.credentials.validationStatus,
+      isCredentialFormFilled,
+    ),
   );
   const walletMicrocopy = t(mapWalletMicrocopy(state.wallet.sessionStatus));
-  const walletErrorMessageKey = mapWalletErrorCodeToMessageKey(state.wallet.errorCode);
-  const walletErrorMessage = walletErrorMessageKey ? t(walletErrorMessageKey) : null;
+  const walletErrorMessageKey = mapWalletErrorCodeToMessageKey(
+    state.wallet.errorCode,
+  );
+  const walletErrorMessage = walletErrorMessageKey
+    ? t(walletErrorMessageKey)
+    : null;
+  const builderMicrocopy = t(
+    mapBuilderMicrocopy(
+      state.builderApproval.approvalStatus,
+      state.builderApproval.retryable,
+    ),
+  );
   const credentialMicrocopy = t(
     mapCredentialMicrocopy(
       state.credentials.validationStatus,
@@ -283,6 +403,11 @@ export function OnboardingPage() {
     : state.credentials.validationStatus === "valid"
       ? t("onboardingValueValidationSuccess")
       : t("onboardingValueAwaitingValidation");
+  const builderApprovalMessage =
+    state.builderApproval.lastMessage ??
+    (builderApproved
+      ? t("onboardingBuilderApprovalSuccess")
+      : t("onboardingBuilderApprovalAwaiting"));
 
   const credentialBanner = useMemo(() => {
     if (state.credentials.validationStatus === "valid") {
@@ -329,6 +454,70 @@ export function OnboardingPage() {
     });
   }
 
+  async function handleApproveBuilderCode() {
+    if (!walletConnected || !state.wallet.mainWalletPublicKey) {
+      setBuilderApprovalState({
+        approvalStatus: "error",
+        lastErrorCode: "wallet_not_connected",
+        lastMessage: "Connect the main wallet before approving the builder code.",
+        retryable: false,
+      });
+      return;
+    }
+
+    if (!canSignMessages) {
+      setBuilderApprovalState({
+        approvalStatus: "error",
+        lastErrorCode: "wallet_signature_unavailable",
+        lastMessage:
+          "This wallet does not support message signing for builder approval.",
+        retryable: false,
+      });
+      return;
+    }
+
+    setBuilderApprovalState({
+      approvalStatus: "approving",
+      lastErrorCode: null,
+      lastMessage: "Requesting wallet signature for builder approval.",
+      retryable: false,
+    });
+
+    try {
+      const submission = await createSignedBuilderApprovalSubmission({
+        mainWalletPublicKey: state.wallet.mainWalletPublicKey,
+        signMessage: signWalletMessage,
+      });
+      const response = await approveBuilderCodeViaBackend(submission);
+      applyBuilderApprovalResponse(response);
+    } catch (error) {
+      console.error("[builder-approval-signing]", error);
+      const message =
+        error instanceof Error ? error.message : "Could not sign the builder approval payload.";
+      const normalizedMessage = message.toLowerCase();
+      const rejected =
+        normalizedMessage.includes("reject") ||
+        normalizedMessage.includes("declin") ||
+        normalizedMessage.includes("cancel");
+      const unavailable =
+        normalizedMessage.includes("unavailable") ||
+        normalizedMessage.includes("not supported");
+
+      setBuilderApprovalState({
+        approvalStatus: rejected ? "rejected" : "error",
+        lastErrorCode: rejected
+          ? "wallet_signature_rejected"
+          : unavailable
+            ? "wallet_signature_unavailable"
+            : "internal_error",
+        lastMessage: rejected
+          ? "The wallet signature request was rejected."
+          : message,
+        retryable: !unavailable,
+      });
+    }
+  }
+
   function validateRequiredFields() {
     const nextErrors: FormFieldErrors = {};
 
@@ -337,7 +526,8 @@ export function OnboardingPage() {
     }
 
     if (!state.credentials.agentWalletPrivateKey?.trim()) {
-      nextErrors.agentWalletPrivateKey = "Agent Wallet private key is required.";
+      nextErrors.agentWalletPrivateKey =
+        "Agent Wallet private key is required.";
     }
 
     setFieldErrors(nextErrors);
@@ -350,7 +540,8 @@ export function OnboardingPage() {
       setCredentialState({
         validationStatus: "error",
         lastErrorCode: "wallet_not_connected",
-        lastValidationMessage: "Connect the main wallet before validating the Agent Wallet.",
+        lastValidationMessage:
+          "Connect the main wallet before validating the Agent Wallet.",
         retryable: false,
       });
       setOnboardingState({
@@ -360,11 +551,27 @@ export function OnboardingPage() {
       return;
     }
 
+    if (!builderApproved) {
+      setCredentialState({
+        validationStatus: "invalid",
+        lastErrorCode: "builder_approval_rejected",
+        lastValidationMessage:
+          "Approve the builder code before validating the Agent Wallet.",
+        retryable: false,
+      });
+      setOnboardingState({
+        status: "credentials_pending",
+        accountReady: false,
+      });
+      return;
+    }
+
     if (!validateRequiredFields()) {
       setCredentialState({
         validationStatus: "invalid",
         lastErrorCode: null,
-        lastValidationMessage: "Complete the required Agent Wallet fields before validating.",
+        lastValidationMessage:
+          "Complete the required Agent Wallet fields before validating.",
         retryable: false,
       });
       setOnboardingState({
@@ -378,7 +585,8 @@ export function OnboardingPage() {
     setCredentialState({
       validationStatus: "validating",
       lastErrorCode: null,
-      lastValidationMessage: "Validating Agent Wallet against the Sprint 1 contract.",
+      lastValidationMessage:
+        "Validating Agent Wallet via backend and Pacifica.",
       retryable: false,
     });
     setOnboardingState({
@@ -386,7 +594,7 @@ export function OnboardingPage() {
       accountReady: false,
     });
 
-    const response = await validateAgentWalletLocally({
+    const response = await validateAgentWalletViaBackend({
       mainWalletPublicKey: state.wallet.mainWalletPublicKey,
       agentWalletPublicKey: state.credentials.agentWalletPublicKey ?? "",
       agentWalletPrivateKey: state.credentials.agentWalletPrivateKey ?? "",
@@ -396,7 +604,9 @@ export function OnboardingPage() {
     applyValidationResponse(response);
   }
 
-  function applyValidationResponse(response: PacificaCredentialValidationResponse) {
+  function applyValidationResponse(
+    response: PacificaCredentialValidationResponse,
+  ) {
     if (response.canProceed) {
       setFieldErrors({});
       setCredentialState({
@@ -405,7 +615,8 @@ export function OnboardingPage() {
         validationStatus: "valid",
         lastValidatedAt: response.validatedAt,
         lastErrorCode: null,
-        lastValidationMessage: "Agent Wallet validated successfully.",
+        lastValidationMessage:
+          "Agent Wallet validated through backend checks.",
         retryable: false,
       });
       setOnboardingState({
@@ -458,6 +669,41 @@ export function OnboardingPage() {
     });
   }
 
+  function applyBuilderApprovalResponse(
+    response: PacificaBuilderApprovalResponse,
+  ) {
+    if (response.canProceed) {
+      setBuilderApprovalState({
+        approvalStatus: "approved",
+        builderCode: response.builderCode,
+        approvedAt: response.approvedAt,
+        lastErrorCode: null,
+        lastMessage: "Builder code approved for this account.",
+        retryable: false,
+      });
+      setOnboardingState({
+        status:
+          state.credentials.validationStatus === "valid"
+            ? "ready"
+            : "credentials_pending",
+        accountReady: state.credentials.validationStatus === "valid",
+      });
+      return;
+    }
+
+    setBuilderApprovalState({
+      approvalStatus: response.status === "rejected" ? "rejected" : "error",
+      approvedAt: null,
+      lastErrorCode: response.code,
+      lastMessage: response.message,
+      retryable: response.retryable,
+    });
+    setOnboardingState({
+      status: "credentials_pending",
+      accountReady: false,
+    });
+  }
+
   return (
     <div className="onboarding-flow">
       <aside className="onboarding-side">
@@ -488,7 +734,9 @@ export function OnboardingPage() {
 
         <div className="nav-card">
           <span className={`badge badge--${accountBadgeTone}`}>
-            {canAccessProduct ? t("onboardingStateAccessReady") : t("onboardingStateAccessBlocked")}
+            {canAccessProduct
+              ? t("onboardingStateAccessReady")
+              : t("onboardingStateAccessBlocked")}
           </span>
           <strong>{t("onboardingPanelTitle")}</strong>
           <p>{t("onboardingPanelDescription")}</p>
@@ -503,8 +751,12 @@ export function OnboardingPage() {
             <p className="subtle">{t("onboardingProgressLabel")}</p>
           </div>
           <div className="topbar-actions">
-            <span className={`badge badge--${accountBadgeTone}`}>{onboardingStatusLabel}</span>
-            <span className="nav-item">{t("onboardingStepCredentialsTitle")}</span>
+            <span className={`badge badge--${accountBadgeTone}`}>
+              {onboardingStatusLabel}
+            </span>
+            <span className="nav-item">
+              {t("onboardingStepCredentialsTitle")}
+            </span>
           </div>
         </header>
 
@@ -512,14 +764,22 @@ export function OnboardingPage() {
           <section className="panel wallet-panel">
             <div className="row-between align-start section-gap">
               <div>
-                <p className="panel-label">{t("onboardingCardWalletEyebrow")}</p>
+                <p className="panel-label">
+                  {t("onboardingCardWalletEyebrow")}
+                </p>
                 <h3>{t("onboardingCardWalletTitle")}</h3>
-                <p className="panel-copy">{t("onboardingCardWalletDescription")}</p>
+                <p className="panel-copy">
+                  {t("onboardingCardWalletDescription")}
+                </p>
               </div>
-              <span className={`badge badge--${walletBadgeTone}`}>{walletStatusLabel}</span>
+              <span className={`badge badge--${walletBadgeTone}`}>
+                {walletStatusLabel}
+              </span>
             </div>
 
-            <div className={`wallet-card ${walletConnected ? "wallet-card--connected" : ""}`}>
+            <div
+              className={`wallet-card ${walletConnected ? "wallet-card--connected" : ""}`}
+            >
               <div>
                 <strong>
                   {walletConnected
@@ -538,7 +798,9 @@ export function OnboardingPage() {
               </div>
               <button
                 className="btn secondary"
-                onClick={() => void (walletConnected ? disconnectWallet() : connectWallet())}
+                onClick={() =>
+                  void (walletConnected ? disconnectWallet() : connectWallet())
+                }
                 type="button"
               >
                 {walletConnected
@@ -556,16 +818,50 @@ export function OnboardingPage() {
                 </div>
               </div>
             ) : null}
+
+            <div className="empty-note">
+              <div className="row-between align-start section-gap">
+                <div>
+                  <strong>{t("onboardingBuilderApprovalTitle")}</strong>
+                  <p>{t("onboardingBuilderApprovalDescription")}</p>
+                </div>
+                <span className={`badge badge--${builderBadgeTone}`}>
+                  {builderStatusLabel}
+                </span>
+              </div>
+              <p>{builderMicrocopy}</p>
+              <small>{builderApprovalMessage}</small>
+              <div className="action-row">
+                <button
+                  className="btn secondary"
+                  disabled={
+                    !walletConnected ||
+                    !canSignMessages ||
+                    state.builderApproval.approvalStatus === "approving"
+                  }
+                  onClick={() => void handleApproveBuilderCode()}
+                  type="button"
+                >
+                  {t("onboardingBuilderApprovalAction")}
+                </button>
+              </div>
+            </div>
           </section>
 
           <section className="panel keys-panel">
             <div className="row-between align-start section-gap">
               <div>
-                <p className="panel-label">{t("onboardingCardCredentialsEyebrow")}</p>
+                <p className="panel-label">
+                  {t("onboardingCardCredentialsEyebrow")}
+                </p>
                 <h3>{t("onboardingCardCredentialsTitle")}</h3>
-                <p className="panel-copy">{t("onboardingCardCredentialsDescription")}</p>
+                <p className="panel-copy">
+                  {t("onboardingCardCredentialsDescription")}
+                </p>
               </div>
-              <span className={`badge badge--${credentialBadgeTone}`}>{credentialStatusLabel}</span>
+              <span className={`badge badge--${credentialBadgeTone}`}>
+                {credentialStatusLabel}
+              </span>
             </div>
 
             <div className="onboarding-form">
@@ -587,14 +883,18 @@ export function OnboardingPage() {
                 <input
                   className="onboarding-form__input"
                   onChange={(event) =>
-                    updateCredentialField("agentWalletPublicKey", event.target.value)
+                    updateCredentialField(
+                      "agentWalletPublicKey",
+                      event.target.value,
+                    )
                   }
                   placeholder={t("onboardingValueAwaitingPublicKey")}
                   value={state.credentials.agentWalletPublicKey ?? ""}
                 />
                 {fieldErrors.agentWalletPublicKey ? (
                   <em className="onboarding-form__error">
-                    {t("onboardingFieldErrorPrefix")}: {fieldErrors.agentWalletPublicKey}
+                    {t("onboardingFieldErrorPrefix")}:{" "}
+                    {fieldErrors.agentWalletPublicKey}
                   </em>
                 ) : (
                   <small>{t("onboardingHelperAgentWalletPublic")}</small>
@@ -606,14 +906,18 @@ export function OnboardingPage() {
                 <textarea
                   className="onboarding-form__input onboarding-form__input--multiline"
                   onChange={(event) =>
-                    updateCredentialField("agentWalletPrivateKey", event.target.value)
+                    updateCredentialField(
+                      "agentWalletPrivateKey",
+                      event.target.value,
+                    )
                   }
                   placeholder={t("onboardingValueAwaitingPrivateKey")}
                   value={state.credentials.agentWalletPrivateKey ?? ""}
                 />
                 {fieldErrors.agentWalletPrivateKey ? (
                   <em className="onboarding-form__error">
-                    {t("onboardingFieldErrorPrefix")}: {fieldErrors.agentWalletPrivateKey}
+                    {t("onboardingFieldErrorPrefix")}:{" "}
+                    {fieldErrors.agentWalletPrivateKey}
                   </em>
                 ) : (
                   <small>{t("onboardingHelperAgentWalletPrivate")}</small>
@@ -637,17 +941,51 @@ export function OnboardingPage() {
             <div className="status-stack">
               <div
                 className={`status-row ${
-                  walletConnected ? "status-row--success" : "status-row--neutral"
+                  walletConnected
+                    ? "status-row--success"
+                    : "status-row--neutral"
                 }`}
               >
                 <span
                   className={`status-dot ${
-                    walletConnected ? "status-dot--success" : "status-dot--neutral"
+                    walletConnected
+                      ? "status-dot--success"
+                      : "status-dot--neutral"
                   }`}
                 ></span>
                 <div>
                   <strong>{walletStatusLabel}</strong>
                   <p>{walletMicrocopy}</p>
+                </div>
+              </div>
+
+              <div
+                className={`status-row ${
+                  state.builderApproval.approvalStatus === "approved"
+                    ? "status-row--success"
+                    : state.builderApproval.approvalStatus === "approving"
+                      ? "status-row--info"
+                      : state.builderApproval.approvalStatus === "rejected" ||
+                          state.builderApproval.approvalStatus === "error"
+                        ? "status-row--danger"
+                        : "status-row--neutral"
+                }`}
+              >
+                <span
+                  className={`status-dot ${
+                    state.builderApproval.approvalStatus === "approved"
+                      ? "status-dot--success"
+                      : state.builderApproval.approvalStatus === "approving"
+                        ? "status-dot--info"
+                        : state.builderApproval.approvalStatus === "rejected" ||
+                            state.builderApproval.approvalStatus === "error"
+                          ? "status-dot--danger"
+                          : "status-dot--neutral"
+                  }`}
+                ></span>
+                <div>
+                  <strong>{builderStatusLabel}</strong>
+                  <p>{builderMicrocopy}</p>
                 </div>
               </div>
 
@@ -689,12 +1027,20 @@ export function OnboardingPage() {
             </div>
 
             <div className="action-row">
-              <button className="btn secondary" onClick={clearCredentialForm} type="button">
+              <button
+                className="btn secondary"
+                onClick={clearCredentialForm}
+                type="button"
+              >
                 {t("onboardingClearAction")}
               </button>
               <button
                 className="btn primary"
-                disabled={!walletConnected || state.credentials.validationStatus === "validating"}
+                disabled={
+                  !walletConnected ||
+                  !builderApproved ||
+                  state.credentials.validationStatus === "validating"
+                }
                 onClick={() => void handleValidateCredentials()}
                 type="button"
               >
@@ -711,7 +1057,9 @@ export function OnboardingPage() {
                 <p className="panel-copy">{t("onboardingPanelDescription")}</p>
               </div>
               <span className={`badge badge--${accountBadgeTone}`}>
-                {canAccessProduct ? t("onboardingStateAccessReady") : t("onboardingStateAccessBlocked")}
+                {canAccessProduct
+                  ? t("onboardingStateAccessReady")
+                  : t("onboardingStateAccessBlocked")}
               </span>
             </div>
 
@@ -721,12 +1069,20 @@ export function OnboardingPage() {
                 <strong>{walletStatusLabel}</strong>
               </div>
               <div className="account-line">
+                <span>{t("stateBuilderStatus")}</span>
+                <strong>{builderStatusLabel}</strong>
+              </div>
+              <div className="account-line">
                 <span>{t("stateCredentialStatus")}</span>
                 <strong>{credentialStatusLabel}</strong>
               </div>
               <div className="account-line">
                 <span>{t("stateAccessStatus")}</span>
-                <strong>{canAccessProduct ? t("stateAccessGranted") : t("stateAccessBlocked")}</strong>
+                <strong>
+                  {canAccessProduct
+                    ? t("stateAccessGranted")
+                    : t("stateAccessBlocked")}
+                </strong>
               </div>
             </div>
 

@@ -11,12 +11,42 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     wallet,
   } = useWallet();
   const { lastErrorCode, selectedProviderName } = useSolanaWalletPort();
-  const { setOnboardingState, setWalletSession, state } = useAppState();
+  const {
+    setBuilderApprovalState,
+    setCredentialState,
+    setOnboardingState,
+    setWalletSession,
+    state,
+  } = useAppState();
 
   useEffect(() => {
     const mainWalletPublicKey = publicKey?.toBase58() ?? null;
     const providerName = selectedProviderName ?? wallet?.adapter.name ?? null;
     const provider = providerName === "Phantom" ? "phantom" : null;
+    const walletChanged =
+      Boolean(mainWalletPublicKey) &&
+      Boolean(state.wallet.mainWalletPublicKey) &&
+      state.wallet.mainWalletPublicKey !== mainWalletPublicKey;
+
+    if (walletChanged) {
+      setBuilderApprovalState({
+        approvalStatus: "pending",
+        builderCode: null,
+        approvedAt: null,
+        lastErrorCode: null,
+        lastMessage: null,
+        retryable: false,
+      });
+      setCredentialState({
+        credentialId: null,
+        keyFingerprint: null,
+        validationStatus: "pending",
+        lastValidatedAt: null,
+        lastErrorCode: null,
+        lastValidationMessage: null,
+        retryable: false,
+      });
+    }
 
     if (connected && mainWalletPublicKey) {
       setWalletSession({
@@ -71,6 +101,23 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
       sessionStatus: lastErrorCode ? "error" : "disconnected",
       errorCode: lastErrorCode,
     });
+    setBuilderApprovalState({
+      approvalStatus: "pending",
+      builderCode: null,
+      approvedAt: null,
+      lastErrorCode: null,
+      lastMessage: null,
+      retryable: false,
+    });
+    setCredentialState({
+      credentialId: null,
+      keyFingerprint: null,
+      validationStatus: "pending",
+      lastValidatedAt: null,
+      lastErrorCode: null,
+      lastValidationMessage: null,
+      retryable: false,
+    });
     setOnboardingState({
       status: "wallet_pending",
       accountReady: false,
@@ -81,8 +128,11 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     lastErrorCode,
     publicKey,
     selectedProviderName,
+    setBuilderApprovalState,
+    setCredentialState,
     setOnboardingState,
     setWalletSession,
+    state.builderApproval.approvalStatus,
     state.credentials.validationStatus,
     state.wallet.lastConnectedAt,
     state.wallet.mainWalletPublicKey,

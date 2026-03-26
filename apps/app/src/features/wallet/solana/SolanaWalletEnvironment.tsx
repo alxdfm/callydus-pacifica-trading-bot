@@ -18,6 +18,8 @@ export type SolanaWalletPort = {
   lastErrorCode: WalletErrorCode | null;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => Promise<void>;
+  canSignMessages: boolean;
+  signWalletMessage: (message: Uint8Array) => Promise<Uint8Array>;
 };
 
 const phantomWalletName = "Phantom";
@@ -44,7 +46,13 @@ function mapWalletError(error: unknown): WalletErrorCode {
 }
 
 function SolanaWalletPortProvider({ children }: PropsWithChildren) {
-  const { connect, disconnect, select, wallet, wallets: availableWallets } = useWallet();
+  const {
+    connect,
+    disconnect,
+    select,
+    wallet,
+    wallets: availableWallets,
+  } = useWallet();
   const [lastErrorCode, setLastErrorCode] = useState<WalletErrorCode | null>(null);
 
   const connectWallet = useCallback(async () => {
@@ -88,14 +96,37 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
     }
   }, [disconnect]);
 
+  const signWalletMessage = useCallback(
+    async (message: Uint8Array) => {
+      const adapter = wallet?.adapter;
+      const adapterSignMessage =
+        adapter && "signMessage" in adapter
+          ? adapter.signMessage
+          : undefined;
+
+      if (typeof adapterSignMessage !== "function") {
+        throw new Error("Wallet message signing is unavailable.");
+      }
+
+      return adapterSignMessage.call(adapter, message);
+    },
+    [wallet],
+  );
+
   const value = useMemo<SolanaWalletPort>(
     () => ({
       selectedProviderName: wallet?.adapter.name ?? null,
       lastErrorCode,
       connectWallet,
       disconnectWallet,
+      canSignMessages: Boolean(
+        wallet?.adapter &&
+          "signMessage" in wallet.adapter &&
+          typeof wallet.adapter.signMessage === "function",
+      ),
+      signWalletMessage,
     }),
-    [connectWallet, disconnectWallet, lastErrorCode, wallet],
+    [connectWallet, disconnectWallet, lastErrorCode, signWalletMessage, wallet],
   );
 
   return (

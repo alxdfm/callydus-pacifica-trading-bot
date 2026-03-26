@@ -1,6 +1,7 @@
 import {
   balanceSnapshotSchema,
   botStatusSchema,
+  builderApprovalStatusSchema,
   credentialValidationStatusSchema,
   operationalAlertSchema,
   onboardingStatusSchema,
@@ -12,6 +13,7 @@ import {
   closedTradeSchema,
   type BalanceSnapshot,
   type BotStatus,
+  type BuilderApprovalStatus,
   type CredentialValidationStatus,
   type OnboardingStatus,
   type OperationalAlert,
@@ -48,9 +50,19 @@ type CredentialState = {
   retryable: boolean;
 };
 
+type BuilderApprovalState = {
+  approvalStatus: BuilderApprovalStatus;
+  builderCode: string | null;
+  approvedAt: string | null;
+  lastErrorCode: string | null;
+  lastMessage: string | null;
+  retryable: boolean;
+};
+
 export type AppSessionState = {
   locale: AppLocale;
   wallet: WalletSession;
+  builderApproval: BuilderApprovalState;
   credentials: CredentialState;
   presets: {
     activePreset: PresetActivation | null;
@@ -71,6 +83,7 @@ type AppStateContextValue = {
   canAccessProduct: boolean;
   setLocale: (locale: AppLocale) => void;
   setWalletSession: (nextWallet: Partial<WalletSession>) => void;
+  setBuilderApprovalState: (nextBuilderApproval: Partial<BuilderApprovalState>) => void;
   setCredentialState: (nextCredentials: Partial<CredentialState>) => void;
   setPresetState: (nextPresets: Partial<AppSessionState["presets"]>) => void;
   setRuntimeState: (nextRuntime: Partial<RuntimeState>) => void;
@@ -90,6 +103,14 @@ export function createInitialAppSessionState(): AppSessionState {
       sessionStatus: "disconnected",
       lastConnectedAt: null,
       errorCode: null,
+    },
+    builderApproval: {
+      approvalStatus: "pending",
+      builderCode: null,
+      approvedAt: null,
+      lastErrorCode: null,
+      lastMessage: null,
+      retryable: false,
     },
     credentials: {
       agentWalletPublicKey: null,
@@ -134,6 +155,11 @@ function parseStoredState(rawValue: string | null): AppSessionState {
         ...parsed.wallet,
         sessionStatus: walletSessionStatus(parsed.wallet?.sessionStatus),
       },
+      builderApproval: {
+        ...baseState.builderApproval,
+        ...parsed.builderApproval,
+        approvalStatus: builderApprovalStatus(parsed.builderApproval?.approvalStatus),
+      },
       credentials: {
         ...baseState.credentials,
         ...parsed.credentials,
@@ -177,6 +203,11 @@ function walletSessionStatus(value: unknown): WalletSession["sessionStatus"] {
 
 function credentialValidationStatus(value: unknown): CredentialValidationStatus {
   const result = credentialValidationStatusSchema.safeParse(value);
+  return result.success ? result.data : "pending";
+}
+
+function builderApprovalStatus(value: unknown): BuilderApprovalStatus {
+  const result = builderApprovalStatusSchema.safeParse(value);
   return result.success ? result.data : "pending";
 }
 
@@ -266,6 +297,7 @@ function runtimeScreenStatus(value: unknown): RuntimeState["screenStatus"] {
 function deriveCanAccessProduct(state: AppSessionState) {
   return (
     state.wallet.sessionStatus === "connected" &&
+    state.builderApproval.approvalStatus === "approved" &&
     state.credentials.validationStatus === "valid" &&
     state.onboarding.status === "ready" &&
     state.onboarding.accountReady
@@ -341,6 +373,24 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       return {
         ...currentState,
         credentials,
+      };
+    });
+  }, []);
+
+  const setBuilderApprovalState = useCallback((nextBuilderApproval: Partial<BuilderApprovalState>) => {
+    setState((currentState) => {
+      const builderApproval = {
+        ...currentState.builderApproval,
+        ...nextBuilderApproval,
+      };
+
+      if (areObjectsShallowEqual(currentState.builderApproval, builderApproval)) {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        builderApproval,
       };
     });
   }, []);
@@ -421,6 +471,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       canAccessProduct: deriveCanAccessProduct(state),
       setLocale,
       setWalletSession,
+      setBuilderApprovalState,
       setCredentialState,
       setPresetState,
       setRuntimeState,
@@ -429,6 +480,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     }),
     [
       resetOnboardingState,
+      setBuilderApprovalState,
       setCredentialState,
       setLocale,
       setOnboardingState,
