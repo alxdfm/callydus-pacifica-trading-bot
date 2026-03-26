@@ -16,6 +16,14 @@ export const credentialValidationStatusSchema = z.enum([
   "error",
 ]);
 
+export const builderApprovalStatusSchema = z.enum([
+  "pending",
+  "approving",
+  "approved",
+  "rejected",
+  "error",
+]);
+
 export const walletSessionStatusSchema = z.enum([
   "disconnected",
   "reconnecting",
@@ -39,7 +47,19 @@ export const pacificaValidationErrorCodeSchema = z.enum([
   "invalid_agent_wallet_secret",
   "account_not_found",
   "agent_wallet_mismatch",
+  "builder_approval_rejected",
+  "builder_fee_limit_too_low",
   "validation_rejected",
+  "provider_unavailable",
+  "rate_limited",
+  "internal_error",
+]);
+
+export const pacificaBuilderApprovalErrorCodeSchema = z.enum([
+  "wallet_not_connected",
+  "wallet_signature_unavailable",
+  "wallet_signature_rejected",
+  "builder_approval_rejected",
   "provider_unavailable",
   "rate_limited",
   "internal_error",
@@ -238,6 +258,36 @@ export const pacificaCredentialValidationSuccessSchema = z.object({
   canProceed: z.literal(true),
 });
 
+export const pacificaBuilderApprovalSubmissionSchema = z.object({
+  mainWalletPublicKey: z.string().min(1),
+  builderCode: z.string().trim().min(1),
+  maxFeeRate: z.string().trim().min(1),
+  timestamp: z.number().int().positive(),
+  expiryWindow: z.number().int().positive(),
+  signature: z.string().trim().min(1),
+});
+
+export const pacificaBuilderApprovalSuccessSchema = z.object({
+  status: z.literal("approved"),
+  mainWalletPublicKey: z.string().min(1),
+  builderCode: z.string().min(1),
+  approvedAt: z.string().datetime(),
+  canProceed: z.literal(true),
+});
+
+export const pacificaBuilderApprovalErrorSchema = z.object({
+  status: z.enum(["rejected", "error"]),
+  code: pacificaBuilderApprovalErrorCodeSchema,
+  message: z.string().min(1),
+  retryable: z.boolean(),
+  canProceed: z.literal(false),
+});
+
+export const pacificaBuilderApprovalResponseSchema = z.union([
+  pacificaBuilderApprovalSuccessSchema,
+  pacificaBuilderApprovalErrorSchema,
+]);
+
 export const pacificaCredentialValidationErrorSchema = z.object({
   status: z.enum(["invalid", "error"]),
   code: pacificaValidationErrorCodeSchema,
@@ -314,10 +364,12 @@ export const botCommandContractSchema = z.object({
 
 export type OnboardingStatus = z.infer<typeof onboardingStatusSchema>;
 export type CredentialValidationStatus = z.infer<typeof credentialValidationStatusSchema>;
+export type BuilderApprovalStatus = z.infer<typeof builderApprovalStatusSchema>;
 export type WalletSessionStatus = z.infer<typeof walletSessionStatusSchema>;
 export type WalletProvider = z.infer<typeof walletProviderSchema>;
 export type WalletErrorCode = z.infer<typeof walletErrorCodeSchema>;
 export type PacificaValidationErrorCode = z.infer<typeof pacificaValidationErrorCodeSchema>;
+export type PacificaBuilderApprovalErrorCode = z.infer<typeof pacificaBuilderApprovalErrorCodeSchema>;
 export type BotStatus = z.infer<typeof botStatusSchema>;
 export type SyncStatus = z.infer<typeof syncStatusSchema>;
 export type PacificaConnectionStatus = z.infer<typeof pacificaConnectionStatusSchema>;
@@ -343,6 +395,10 @@ export type PacificaCredentialSubmission = z.infer<typeof pacificaCredentialSubm
 export type PacificaCredentialValidationSuccess = z.infer<typeof pacificaCredentialValidationSuccessSchema>;
 export type PacificaCredentialValidationError = z.infer<typeof pacificaCredentialValidationErrorSchema>;
 export type PacificaCredentialValidationResponse = z.infer<typeof pacificaCredentialValidationResponseSchema>;
+export type PacificaBuilderApprovalSubmission = z.infer<typeof pacificaBuilderApprovalSubmissionSchema>;
+export type PacificaBuilderApprovalSuccess = z.infer<typeof pacificaBuilderApprovalSuccessSchema>;
+export type PacificaBuilderApprovalError = z.infer<typeof pacificaBuilderApprovalErrorSchema>;
+export type PacificaBuilderApprovalResponse = z.infer<typeof pacificaBuilderApprovalResponseSchema>;
 export type BotRuntimeState = z.infer<typeof botRuntimeStateSchema>;
 export type OnboardingContract = z.infer<typeof onboardingContractSchema>;
 export type DashboardContract = z.infer<typeof dashboardContractSchema>;

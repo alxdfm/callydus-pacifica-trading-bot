@@ -1,0 +1,102 @@
+import { createServer } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { PrismaClient } from "@prisma/client";
+import { createApiModule } from "./createApiModule";
+
+const prisma = new PrismaClient();
+const api = createApiModule({
+  environment: {
+    pacificaRestBaseUrl:
+      process.env.PACIFICA_REST_BASE_URL ?? "https://api.pacifica.fi",
+    pacificaSignatureExpiryWindowMs: Number(
+      process.env.PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS ?? "30000",
+    ),
+    pacificaBuilderCode: process.env.PACIFICA_BUILDER_CODE ?? "",
+    pacificaBuilderMaxFeeRate:
+      process.env.PACIFICA_BUILDER_MAX_FEE_RATE ?? "",
+    pacificaAccountPrivateKey:
+      process.env.PACIFICA_ACCOUNT_PRIVATE_KEY ?? "",
+    credentialEncryptionKey: process.env.CREDENTIAL_ENCRYPTION_KEY ?? "",
+    credentialEncryptionKeyId:
+      process.env.CREDENTIAL_ENCRYPTION_KEY_ID ?? "local-dev-v1",
+  },
+  prisma,
+});
+
+const port = Number(process.env.PORT ?? "3000");
+const allowedOrigin =
+  process.env.APP_ORIGIN ??
+  process.env.VITE_APP_API_BASE_URL?.replace(/:\d+$/, ":5173") ??
+  "http://localhost:5173";
+
+const server = createServer(async (request: IncomingMessage, response: ServerResponse) => {
+  applyCorsHeaders(response);
+
+  if (request.method === "OPTIONS") {
+    response.writeHead(204);
+    response.end();
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/onboarding/builder/approve"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.approvePacificaBuilder({
+      body: body as never,
+    });
+
+    response.writeHead(result.canProceed ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/onboarding/credentials/validate"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.validatePacificaCredentials({
+      body: body as never,
+    });
+
+    response.writeHead(result.canProceed ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  response.writeHead(404, { "Content-Type": "application/json" });
+  response.end(JSON.stringify({ message: "Not found" }));
+});
+
+server.listen(port, () => {
+  console.log(`Pacifica API listening on http://localhost:${port}`);
+});
+
+function applyCorsHeaders(response: ServerResponse) {
+  response.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  response.setHeader("Vary", "Origin");
+  response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
+async function readJsonBody(
+  request: IncomingMessage,
+): Promise<unknown> {
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of request) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  if (chunks.length === 0) {
+    return {};
+  }
+
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+}
