@@ -43,6 +43,10 @@ Pode acessar segredos necessários para integração contínua com Pacifica.
 - nunca commitar `.env`
 - manter `.env.example` quando fizer sentido para onboarding técnico
 
+No estado atual do projeto:
+- existe um `.env.example` na raiz do monorepo com as variaveis minimas para banco local, integracao Pacifica e criptografia de credenciais
+- para a trilha funcional com Builder Program, o ambiente tambem deve prever `PACIFICA_BUILDER_CODE` e `PACIFICA_BUILDER_MAX_FEE_RATE`
+
 ## Próxima Regra Operacional
 Antes do deploy real, definir:
 - onde os segredos ficarão em `dev`

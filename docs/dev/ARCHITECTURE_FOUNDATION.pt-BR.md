@@ -64,6 +64,12 @@ packages/
 - lê e grava estado operacional persistido
 - delega execução contínua ao worker
 
+Implementacao recomendada:
+- separar em `domain`, `application`, `infrastructure` e `ui/http`
+- manter handlers HTTP finos
+- isolar Pacifica e persistencia em adapters de infraestrutura
+- evitar que casos de uso conhecam detalhes de Lambda, fetch, Prisma ou SDK externo
+
 ### `apps/worker`
 - executa polling de status e sincronização de dados
 - integra com Pacifica

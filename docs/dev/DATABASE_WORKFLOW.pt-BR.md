@@ -23,8 +23,28 @@ A fonte de verdade estrutural do banco é:
 
 ## Validação Local
 Comandos base:
+- `pnpm db:up`
+- `pnpm --filter @pacifica/database db:push`
 - `pnpm --filter @pacifica/database typecheck`
 - `pnpm --filter @pacifica/database prisma:format`
+
+## Ambiente Local
+O PostgreSQL local do projeto deve subir por `docker compose`, a partir da raiz do monorepo.
+
+Comandos base:
+- `pnpm db:up`
+- `pnpm db:logs`
+- `pnpm db:down`
+
+Configuracao atual:
+- arquivo: `docker-compose.yml`
+- servico: `postgres`
+- porta host padrao: `55432`
+- porta interna do container: `5432`
+- database: `pacifica`
+- usuario: `postgres`
+- senha: `postgres`
+- `DATABASE_URL` padrao local: `postgresql://postgres:postgres@localhost:55432/pacifica`
 
 ## Migrations
 Quando a camada de banco for aberta de vez, o fluxo deve incluir:
