@@ -288,6 +288,48 @@ export const pacificaBuilderApprovalResponseSchema = z.union([
   pacificaBuilderApprovalErrorSchema,
 ]);
 
+export const pacificaBuilderApprovalOperationType = "approve_builder_code";
+
+export function createPacificaBuilderApprovalSigningPayload(input: {
+  builderCode: string;
+  maxFeeRate: string;
+  timestamp: number;
+  expiryWindow: number;
+}) {
+  return {
+    timestamp: input.timestamp,
+    expiry_window: input.expiryWindow,
+    type: pacificaBuilderApprovalOperationType,
+    data: {
+      builder_code: input.builderCode,
+      max_fee_rate: input.maxFeeRate,
+    },
+  };
+}
+
+export function serializePacificaSigningPayload(payload: unknown): string {
+  return JSON.stringify(sortKeysDeep(payload));
+}
+
+function sortKeysDeep(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => sortKeysDeep(item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.keys(value as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((accumulator, key) => {
+        accumulator[key] = sortKeysDeep(
+          (value as Record<string, unknown>)[key],
+        );
+        return accumulator;
+      }, {});
+  }
+
+  return value;
+}
+
 export const pacificaCredentialValidationErrorSchema = z.object({
   status: z.enum(["invalid", "error"]),
   code: pacificaValidationErrorCodeSchema,

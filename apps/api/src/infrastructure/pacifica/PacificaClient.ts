@@ -1,3 +1,4 @@
+import { serializePacificaSigningPayload } from "@pacifica/contracts";
 import {
   createPrivateKey,
   createPublicKey,
@@ -350,28 +351,9 @@ function derivePublicKeyBase58(signingKey: KeyObject): string {
 }
 
 function signPayload(signingKey: KeyObject, payload: unknown): string {
-  const compactPayload = JSON.stringify(sortKeysDeep(payload));
+  const compactPayload = serializePacificaSigningPayload(payload);
   const signature = sign(null, Buffer.from(compactPayload, "utf8"), signingKey);
   return encodeBase58(signature);
-}
-
-function sortKeysDeep(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(sortKeysDeep);
-  }
-
-  if (value && typeof value === "object") {
-    return Object.keys(value)
-      .sort()
-      .reduce<Record<string, unknown>>((accumulator, key) => {
-        accumulator[key] = sortKeysDeep(
-          (value as Record<string, unknown>)[key],
-        );
-        return accumulator;
-      }, {});
-  }
-
-  return value;
 }
 
 async function parseResponseBody(response: Response) {

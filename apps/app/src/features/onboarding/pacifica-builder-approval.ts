@@ -1,11 +1,16 @@
 import bs58 from "bs58";
-import type { PacificaBuilderApprovalSubmission } from "@pacifica/contracts";
+import {
+  createPacificaBuilderApprovalSigningPayload,
+  pacificaBuilderApprovalSubmissionSchema,
+  serializePacificaSigningPayload,
+  type PacificaBuilderApprovalSubmission,
+} from "@pacifica/contracts";
 
 const builderCode = import.meta.env.VITE_PACIFICA_BUILDER_CODE?.trim() ?? "";
 const maxFeeRate =
   import.meta.env.VITE_PACIFICA_BUILDER_MAX_FEE_RATE?.trim() ?? "";
-const defaultExpiryWindow = Number(
-  import.meta.env.VITE_PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS?.trim() || "30000",
+const defaultExpiryWindow = parseExpiryWindow(
+  import.meta.env.VITE_PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS,
 );
 
 export function getBuilderApprovalConfig() {
@@ -27,43 +32,35 @@ export async function createSignedBuilderApprovalSubmission(input: {
   }
 
   const timestamp = Date.now();
-  const payloadToSign = {
+  const payloadToSign = createPacificaBuilderApprovalSigningPayload({
+    builderCode,
+    maxFeeRate,
     timestamp,
-    expiry_window: defaultExpiryWindow,
-    type: "approve_builder_code",
-    data: {
-      builder_code: builderCode,
-      max_fee_rate: maxFeeRate,
-    },
-  };
-  const compactMessage = JSON.stringify(sortKeysDeep(payloadToSign));
+    expiryWindow: defaultExpiryWindow,
+  });
+  const compactMessage = serializePacificaSigningPayload(payloadToSign);
   const messageBytes = new TextEncoder().encode(compactMessage);
   const signatureBytes = await input.signMessage(messageBytes);
 
-  return {
+  return pacificaBuilderApprovalSubmissionSchema.parse({
     mainWalletPublicKey: input.mainWalletPublicKey.trim(),
     builderCode,
     maxFeeRate,
     timestamp,
     expiryWindow: defaultExpiryWindow,
     signature: bs58.encode(signatureBytes),
-  };
+  });
 }
 
-function sortKeysDeep(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => sortKeysDeep(item));
-  }
+function parseExpiryWindow(rawValue: string | undefined) {
+  const normalizedValue = rawValue?.trim() || "30000";
+  const parsedValue = Number(normalizedValue);
 
-  if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).sort(
-      ([leftKey], [rightKey]) => leftKey.localeCompare(rightKey),
-    );
-
-    return Object.fromEntries(
-      entries.map(([key, itemValue]) => [key, sortKeysDeep(itemValue)]),
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    throw new Error(
+      "VITE_PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS must be a positive integer.",
     );
   }
 
-  return value;
+  return parsedValue;
 }
