@@ -15,15 +15,41 @@ Na raiz do projeto:
 pnpm install
 ```
 
+Crie seu arquivo local de ambiente a partir do exemplo:
+
+```bash
+cp .env.example .env
+```
+
 ## Como rodar
 
 Hoje, o fluxo útil para desenvolvimento está no frontend `app`.
+
+Subir o PostgreSQL local via `docker compose`:
+
+```bash
+pnpm db:up
+```
+
+Aplicar o schema atual no banco local:
+
+```bash
+pnpm --filter @pacifica/database db:push
+```
+
+Subir a API local do Functional MVP:
+
+```bash
+pnpm --filter @pacifica/api dev
+```
 
 Subir o app em modo dev:
 
 ```bash
 pnpm --filter @pacifica/app dev
 ```
+
+O `app`, a `api` e o `database` carregam o `.env` da raiz automaticamente.
 
 O Vite deve abrir em algo como:
 
@@ -51,15 +77,28 @@ Rodar typecheck do workspace:
 pnpm typecheck
 ```
 
+Ver logs do banco:
+
+```bash
+pnpm db:logs
+```
+
+Derrubar o banco local:
+
+```bash
+pnpm db:down
+```
+
 ## Teste manual do onboarding
 
 1. Rode `pnpm --filter @pacifica/app dev`
 2. Abra `http://localhost:5173`
 3. Tenha a extensão `Phantom` instalada no navegador
 4. Clique em `Connect wallet`
-5. Preencha `Agent Wallet public key` e `Agent Wallet private key`
-6. Use a private key no mesmo formato `base58` entregue pela Pacifica
-7. Clique em `Validate and Continue`
+5. Clique em `Approve builder code` e aprove a assinatura na wallet principal
+6. Preencha `Agent Wallet public key` e `Agent Wallet private key`
+7. Use a private key no mesmo formato `base58` entregue pela Pacifica
+8. Clique em `Validate and Continue`
 
 ## Estrutura
 
@@ -68,3 +107,18 @@ pnpm typecheck
 - `apps/worker`: base do worker
 - `packages/contracts`: contratos compartilhados
 - `packages/database`: schema Prisma e base de dados
+- `docker-compose.yml`: PostgreSQL local para desenvolvimento
+
+## Banco local
+
+O PostgreSQL do projeto sobe por `docker compose` na porta local `55432` por padrao, para evitar conflito com instalacoes locais ja rodando em portas mais comuns.
+
+## Validacao de credenciais
+
+Para o fluxo do `FM-002`, o app espera:
+- `VITE_APP_API_BASE_URL=http://localhost:3000`
+- `APP_ORIGIN=http://localhost:5173`
+- `VITE_PACIFICA_BUILDER_CODE` e `VITE_PACIFICA_BUILDER_MAX_FEE_RATE` iguais aos valores configurados na API
+- API local em execucao
+- banco local aplicado
+- `PACIFICA_REST_BASE_URL`, `PACIFICA_BUILDER_CODE`, `PACIFICA_BUILDER_MAX_FEE_RATE`, `CREDENTIAL_ENCRYPTION_KEY` e `CREDENTIAL_ENCRYPTION_KEY_ID` preenchidos no ambiente da API

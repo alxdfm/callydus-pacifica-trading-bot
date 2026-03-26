@@ -4,6 +4,12 @@
   "version": "0.1.0",
   "packageManager": "pnpm@10.11.0",
   "scripts": {
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
     "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^8.0.0"
   }
 }
