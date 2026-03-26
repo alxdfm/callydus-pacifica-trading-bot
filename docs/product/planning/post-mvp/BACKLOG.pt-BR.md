@@ -21,6 +21,8 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 | BG-007 | IN_REVIEW | ajuste de UX | P1 | presets | trocar `Symbol` de campo livre para `select` com symbols predefinidos | validar lista inicial de symbols usada no MVP |
 | BG-008 | IN_REVIEW | ajuste de UX | P1 | trades/history | reforcar estado visual de item selecionado e vinculo com painel lateral | validar feedback mestre-detalhe em trades e history |
 | BG-009 | IN_REVIEW | ajuste de UX | P0 | interacoes | substituir `alert` do navegador por modal de confirmacao nas acoes | validar modal de confirmacao nas acoes sensiveis |
+| BG-010 | TODO | mudanca de escopo | P1 | integracao pacifica | refinar e fechar o formato canonico de assinatura dos endpoints assinados da Pacifica | PO decidir com dev se o fallback atual vira regra temporaria, definitiva ou se exige alinhamento externo com a Pacifica |
+| BG-011 | TODO | mudanca de escopo | P0 | integracao pacifica | refinar estrategia de `operational verification` da `Agent Wallet` antes de liberar o bot | PO decidir se o produto aceita probe com side effect controlado e em que momento isso acontece |
 
 ## Cards
 - [BG-001 Card](./cards/BG-001_CARD.pt-BR.md)
@@ -32,3 +34,5 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 - [BG-007 Card](./cards/BG-007_CARD.pt-BR.md)
 - [BG-008 Card](./cards/BG-008_CARD.pt-BR.md)
 - [BG-009 Card](./cards/BG-009_CARD.pt-BR.md)
+- [BG-010 Card](./cards/BG-010_CARD.pt-BR.md)
+- [BG-011 Card](./cards/BG-011_CARD.pt-BR.md)
