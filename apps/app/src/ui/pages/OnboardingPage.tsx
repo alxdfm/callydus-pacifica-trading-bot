@@ -5,13 +5,16 @@ import type {
   PacificaValidationErrorCode,
   CredentialValidationStatus,
   OnboardingStatus,
+  OperationalVerificationStatus,
   PacificaBuilderApprovalResponse,
   PacificaCredentialSubmission,
   PacificaCredentialValidationResponse,
+  PacificaOperationalVerificationResponse,
   WalletSession,
 } from "@pacifica/contracts";
 import { approveBuilderCodeViaBackend } from "../../features/onboarding/backend-builder-approval";
 import { validateAgentWalletViaBackend } from "../../features/onboarding/backend-credential-validation";
+import { verifyAgentWalletOperationallyViaBackend } from "../../features/onboarding/backend-operational-verification";
 import {
   createSignedBuilderApprovalSubmission,
 } from "../../features/onboarding/pacifica-builder-approval";
@@ -117,18 +120,20 @@ function mapBuilderApprovalStatusToMessageKey(
   }
 }
 
-function mapOnboardingStatusToMessageKey(status: OnboardingStatus): MessageKey {
+function mapOperationalStatusToMessageKey(
+  status: OperationalVerificationStatus,
+): MessageKey {
   switch (status) {
-    case "credentials_pending":
-      return "onboardingStatusCredentialsPending";
-    case "credentials_validating":
-      return "onboardingStatusCredentialsValidating";
-    case "ready":
-      return "onboardingStatusReady";
+    case "verifying":
+      return "onboardingStateOperationalRunning";
+    case "verified":
+      return "onboardingStateOperationalVerified";
     case "blocked":
-      return "onboardingStatusBlocked";
+      return "onboardingStateOperationalBlocked";
+    case "error":
+      return "onboardingStateOperationalError";
     default:
-      return "onboardingStatusWalletPending";
+      return "onboardingStateOperationalPending";
   }
 }
 
@@ -251,12 +256,13 @@ function mapBuilderMicrocopy(
 function mapAccountBadgeTone(
   canAccessProduct: boolean,
   status: OnboardingStatus,
+  operationalStatus: OperationalVerificationStatus,
 ): BadgeTone {
   if (canAccessProduct) {
     return "success";
   }
 
-  if (status === "credentials_validating") {
+  if (status === "credentials_validating" || operationalStatus === "verifying") {
     return "warning";
   }
 
@@ -286,11 +292,13 @@ function buildProgressSteps(
   walletStatus: WalletSession["sessionStatus"],
   builderStatus: BuilderApprovalStatus,
   credentialStatus: CredentialValidationStatus,
+  operationalStatus: OperationalVerificationStatus,
   labels: Pick<ReturnType<typeof useI18n>, "t">["t"],
 ): ProgressStep[] {
   const walletComplete = walletStatus === "connected";
   const builderComplete = builderStatus === "approved";
   const credentialComplete = credentialStatus === "valid";
+  const operationalComplete = operationalStatus === "verified";
 
   return [
     {
@@ -316,7 +324,89 @@ function buildProgressSteps(
           ? "current"
           : "pending",
     },
+    {
+      title: labels("onboardingStepOperationalTitle"),
+      description: labels("onboardingStepOperationalDescription"),
+      status: operationalComplete
+        ? "complete"
+        : credentialComplete
+          ? "current"
+          : "pending",
+    },
   ];
+}
+
+function mapOperationalBadgeTone(
+  status: OperationalVerificationStatus,
+): BadgeTone {
+  switch (status) {
+    case "verified":
+      return "success";
+    case "verifying":
+      return "warning";
+    case "blocked":
+    case "error":
+      return "danger";
+    default:
+      return "neutral";
+  }
+}
+
+function mapOperationalMicrocopy(
+  status: OperationalVerificationStatus,
+  retryable: boolean,
+): MessageKey {
+  switch (status) {
+    case "verifying":
+      return "onboardingOperationalMicrocopyRunning";
+    case "verified":
+      return "onboardingOperationalMicrocopyVerified";
+    case "blocked":
+    case "error":
+      return retryable
+        ? "onboardingOperationalMicrocopyRetry"
+        : "onboardingOperationalMicrocopyBlocked";
+    default:
+      return "onboardingOperationalMicrocopyPending";
+  }
+}
+
+function deriveVisibleOnboardingStatusKey(input: {
+  walletStatus: WalletSession["sessionStatus"];
+  builderStatus: BuilderApprovalStatus;
+  credentialStatus: CredentialValidationStatus;
+  operationalStatus: OperationalVerificationStatus;
+  canAccessProduct: boolean;
+}): MessageKey {
+  if (input.canAccessProduct) {
+    return "onboardingStatusReady";
+  }
+
+  if (input.walletStatus !== "connected") {
+    return "onboardingStatusWalletPending";
+  }
+
+  if (input.builderStatus !== "approved") {
+    return "onboardingStatusBuilderPending";
+  }
+
+  if (input.credentialStatus === "validating") {
+    return "onboardingStatusCredentialsValidating";
+  }
+
+  if (input.credentialStatus !== "valid") {
+    return "onboardingStatusCredentialsPending";
+  }
+
+  if (input.operationalStatus === "verifying") {
+    return "onboardingStatusOperationalRunning";
+  }
+
+  if (input.operationalStatus !== "verified") {
+    return "onboardingStatusOperationalPending";
+  }
+
+  return "onboardingStatusBlocked";
 }
 
 export function OnboardingPage() {
@@ -325,6 +415,7 @@ export function OnboardingPage() {
     canAccessProduct,
     setBuilderApprovalState,
     setCredentialState,
+    setOperationalState,
     setOnboardingState,
     state,
   } = useAppState();
@@ -347,7 +438,13 @@ export function OnboardingPage() {
     mapCredentialStatusToMessageKey(state.credentials.validationStatus),
   );
   const onboardingStatusLabel = t(
-    mapOnboardingStatusToMessageKey(state.onboarding.status),
+    deriveVisibleOnboardingStatusKey({
+      walletStatus: state.wallet.sessionStatus,
+      builderStatus: state.builderApproval.approvalStatus,
+      credentialStatus: state.credentials.validationStatus,
+      operationalStatus: state.operational.status,
+      canAccessProduct,
+    }),
   );
   const walletBadgeTone = mapWalletBadgeTone(state.wallet.sessionStatus);
   const builderBadgeTone = mapBuilderBadgeTone(
@@ -359,15 +456,18 @@ export function OnboardingPage() {
   const accountBadgeTone = mapAccountBadgeTone(
     canAccessProduct,
     state.onboarding.status,
+    state.operational.status,
   );
   const progressSteps = buildProgressSteps(
     state.wallet.sessionStatus,
     state.builderApproval.approvalStatus,
     state.credentials.validationStatus,
+    state.operational.status,
     t,
   );
   const walletConnected = state.wallet.sessionStatus === "connected";
   const builderApproved = state.builderApproval.approvalStatus === "approved";
+  const operationalVerified = state.operational.status === "verified";
   const isCredentialFormFilled = Boolean(
     state.credentials.agentWalletPublicKey?.trim() &&
     state.credentials.agentWalletPrivateKey?.trim(),
@@ -391,6 +491,13 @@ export function OnboardingPage() {
       state.builderApproval.retryable,
     ),
   );
+  const operationalStatusLabel = t(
+    mapOperationalStatusToMessageKey(state.operational.status),
+  );
+  const operationalBadgeTone = mapOperationalBadgeTone(state.operational.status);
+  const operationalMicrocopy = t(
+    mapOperationalMicrocopy(state.operational.status, state.operational.retryable),
+  );
   const credentialMicrocopy = t(
     mapCredentialMicrocopy(
       state.credentials.validationStatus,
@@ -408,6 +515,11 @@ export function OnboardingPage() {
     (builderApproved
       ? t("onboardingBuilderApprovalSuccess")
       : t("onboardingBuilderApprovalAwaiting"));
+  const operationalMessage =
+    state.operational.lastMessage ??
+    (state.operational.status === "verified"
+      ? t("onboardingOperationalVerifiedMessage")
+      : t("onboardingOperationalAwaiting"));
 
   const credentialBanner = useMemo(() => {
     if (state.credentials.validationStatus === "valid") {
@@ -439,6 +551,15 @@ export function OnboardingPage() {
     field: "agentWalletPublicKey" | "agentWalletPrivateKey" | "credentialAlias",
     value: string,
   ) {
+    setOperationalState({
+      status: "pending",
+      lastVerifiedAt: null,
+      lastErrorCode: null,
+      lastMessage: null,
+      retryable: false,
+      probeSymbol: null,
+      probeClientOrderId: null,
+    });
     setCredentialState({
       [field]: value || null,
       validationStatus:
@@ -604,6 +725,41 @@ export function OnboardingPage() {
     applyValidationResponse(response);
   }
 
+  async function handleRunOperationalCheck() {
+    if (!state.credentials.credentialId) {
+      setOperationalState({
+        status: "blocked",
+        lastVerifiedAt: null,
+        lastErrorCode: "internal_error",
+        lastMessage: "Validate the Agent Wallet before running the readiness check.",
+        retryable: false,
+        probeSymbol: null,
+        probeClientOrderId: null,
+      });
+      setOnboardingState({
+        status: "blocked",
+        accountReady: false,
+      });
+      return;
+    }
+
+    setOperationalState({
+      status: "verifying",
+      lastErrorCode: null,
+      lastMessage: "Running a controlled order check through Pacifica.",
+      retryable: false,
+    });
+    setOnboardingState({
+      status: "credentials_validating",
+      accountReady: false,
+    });
+
+    const response = await verifyAgentWalletOperationallyViaBackend({
+      credentialId: state.credentials.credentialId,
+    });
+    applyOperationalVerificationResponse(response);
+  }
+
   function applyValidationResponse(
     response: PacificaCredentialValidationResponse,
   ) {
@@ -619,9 +775,18 @@ export function OnboardingPage() {
           "Agent Wallet validated through backend checks.",
         retryable: false,
       });
+      setOperationalState({
+        status: "pending",
+        lastVerifiedAt: null,
+        lastErrorCode: null,
+        lastMessage: "Run the readiness check to unlock the product.",
+        retryable: false,
+        probeSymbol: null,
+        probeClientOrderId: null,
+      });
       setOnboardingState({
-        status: "ready",
-        accountReady: true,
+        status: "credentials_pending",
+        accountReady: false,
       });
       return;
     }
@@ -643,6 +808,15 @@ export function OnboardingPage() {
       lastValidationMessage: response.message,
       retryable: response.retryable,
     });
+    setOperationalState({
+      status: "pending",
+      lastVerifiedAt: null,
+      lastErrorCode: null,
+      lastMessage: null,
+      retryable: false,
+      probeSymbol: null,
+      probeClientOrderId: null,
+    });
     setOnboardingState({
       status: "blocked",
       accountReady: false,
@@ -662,6 +836,15 @@ export function OnboardingPage() {
       lastErrorCode: null,
       lastValidationMessage: null,
       retryable: false,
+    });
+    setOperationalState({
+      status: "pending",
+      lastVerifiedAt: null,
+      lastErrorCode: null,
+      lastMessage: null,
+      retryable: false,
+      probeSymbol: null,
+      probeClientOrderId: null,
     });
     setOnboardingState({
       status: walletConnected ? "credentials_pending" : "wallet_pending",
@@ -683,10 +866,13 @@ export function OnboardingPage() {
       });
       setOnboardingState({
         status:
-          state.credentials.validationStatus === "valid"
+          state.credentials.validationStatus === "valid" &&
+          state.operational.status === "verified"
             ? "ready"
             : "credentials_pending",
-        accountReady: state.credentials.validationStatus === "valid",
+        accountReady:
+          state.credentials.validationStatus === "valid" &&
+          state.operational.status === "verified",
       });
       return;
     }
@@ -700,6 +886,41 @@ export function OnboardingPage() {
     });
     setOnboardingState({
       status: "credentials_pending",
+      accountReady: false,
+    });
+  }
+
+  function applyOperationalVerificationResponse(
+    response: PacificaOperationalVerificationResponse,
+  ) {
+    if (response.canProceed) {
+      setOperationalState({
+        status: "verified",
+        lastVerifiedAt: response.verifiedAt,
+        lastErrorCode: null,
+        lastMessage: "Account verified and ready to operate.",
+        retryable: false,
+        probeSymbol: response.probeSymbol,
+        probeClientOrderId: response.probeClientOrderId,
+      });
+      setOnboardingState({
+        status: "ready",
+        accountReady: true,
+      });
+      return;
+    }
+
+    setOperationalState({
+      status: response.status,
+      lastVerifiedAt: null,
+      lastErrorCode: response.code,
+      lastMessage: response.message,
+      retryable: response.retryable,
+      probeSymbol: null,
+      probeClientOrderId: null,
+    });
+    setOnboardingState({
+      status: "blocked",
       accountReady: false,
     });
   }
@@ -755,7 +976,7 @@ export function OnboardingPage() {
               {onboardingStatusLabel}
             </span>
             <span className="nav-item">
-              {t("onboardingStepCredentialsTitle")}
+              {t("onboardingStepOperationalTitle")}
             </span>
           </div>
         </header>
@@ -1052,15 +1273,39 @@ export function OnboardingPage() {
           <section className="panel account-panel">
             <div className="row-between align-start section-gap">
               <div>
-                <p className="panel-label">{t("onboardingPanelEyebrow")}</p>
-                <h3>{t("onboardingPanelTitle")}</h3>
-                <p className="panel-copy">{t("onboardingPanelDescription")}</p>
+                <p className="panel-label">
+                  {t("onboardingCardOperationalEyebrow")}
+                </p>
+                <h3>{t("onboardingCardOperationalTitle")}</h3>
+                <p className="panel-copy">
+                  {t("onboardingCardOperationalDescription")}
+                </p>
               </div>
-              <span className={`badge badge--${accountBadgeTone}`}>
-                {canAccessProduct
-                  ? t("onboardingStateAccessReady")
-                  : t("onboardingStateAccessBlocked")}
+              <span className={`badge badge--${operationalBadgeTone}`}>
+                {operationalStatusLabel}
               </span>
+            </div>
+
+            <div className="empty-note">
+              <strong>{t("onboardingOperationalDisclosureTitle")}</strong>
+              <p>{t("onboardingOperationalDisclosureDescription")}</p>
+              <small>{t("onboardingOperationalDisclosureNote")}</small>
+            </div>
+
+            <div className="action-row">
+              <button
+                className="btn secondary"
+                disabled={
+                  state.credentials.validationStatus !== "valid" ||
+                  !state.credentials.credentialId ||
+                  state.operational.status === "verifying" ||
+                  state.operational.status === "verified"
+                }
+                onClick={() => void handleRunOperationalCheck()}
+                type="button"
+              >
+                {t("onboardingOperationalAction")}
+              </button>
             </div>
 
             <div className="account-state">
@@ -1077,12 +1322,46 @@ export function OnboardingPage() {
                 <strong>{credentialStatusLabel}</strong>
               </div>
               <div className="account-line">
+                <span>{t("stateOperationalStatus")}</span>
+                <strong>{operationalStatusLabel}</strong>
+              </div>
+              <div className="account-line">
                 <span>{t("stateAccessStatus")}</span>
                 <strong>
                   {canAccessProduct
                     ? t("stateAccessGranted")
                     : t("stateAccessBlocked")}
                 </strong>
+              </div>
+            </div>
+
+            <div
+              className={`status-row ${
+                operationalVerified
+                  ? "status-row--success"
+                  : state.operational.status === "verifying"
+                    ? "status-row--info"
+                    : state.operational.status === "blocked" ||
+                        state.operational.status === "error"
+                      ? "status-row--danger"
+                      : "status-row--neutral"
+              }`}
+            >
+              <span
+                className={`status-dot ${
+                  operationalVerified
+                    ? "status-dot--success"
+                    : state.operational.status === "verifying"
+                      ? "status-dot--info"
+                      : state.operational.status === "blocked" ||
+                          state.operational.status === "error"
+                        ? "status-dot--danger"
+                        : "status-dot--neutral"
+                }`}
+              ></span>
+              <div>
+                <strong>{operationalStatusLabel}</strong>
+                <p>{operationalMicrocopy}</p>
               </div>
             </div>
 
@@ -1093,6 +1372,7 @@ export function OnboardingPage() {
                   ? t("onboardingFinalCtaHintReady")
                   : t("onboardingFinalCtaHintBlocked")}
               </p>
+              <small>{operationalMessage}</small>
             </div>
 
             <button

@@ -4,6 +4,7 @@ import {
   builderApprovalStatusSchema,
   credentialValidationStatusSchema,
   operationalAlertSchema,
+  operationalVerificationStatusSchema,
   onboardingStatusSchema,
   openTradeSchema,
   presetActivationSchema,
@@ -17,6 +18,8 @@ import {
   type CredentialValidationStatus,
   type OnboardingStatus,
   type OperationalAlert,
+  type OperationalVerificationStatus,
+  type PacificaOperationalVerificationErrorCode,
   type PacificaValidationErrorCode,
   type OpenTrade,
   type PresetActivation,
@@ -59,11 +62,22 @@ type BuilderApprovalState = {
   retryable: boolean;
 };
 
+type OperationalVerificationState = {
+  status: OperationalVerificationStatus;
+  lastVerifiedAt: string | null;
+  lastErrorCode: PacificaOperationalVerificationErrorCode | null;
+  lastMessage: string | null;
+  retryable: boolean;
+  probeSymbol: string | null;
+  probeClientOrderId: string | null;
+};
+
 export type AppSessionState = {
   locale: AppLocale;
   wallet: WalletSession;
   builderApproval: BuilderApprovalState;
   credentials: CredentialState;
+  operational: OperationalVerificationState;
   presets: {
     activePreset: PresetActivation | null;
     selectedPresetDefinitionId: string | null;
@@ -85,6 +99,9 @@ type AppStateContextValue = {
   setWalletSession: (nextWallet: Partial<WalletSession>) => void;
   setBuilderApprovalState: (nextBuilderApproval: Partial<BuilderApprovalState>) => void;
   setCredentialState: (nextCredentials: Partial<CredentialState>) => void;
+  setOperationalState: (
+    nextOperational: Partial<OperationalVerificationState>,
+  ) => void;
   setPresetState: (nextPresets: Partial<AppSessionState["presets"]>) => void;
   setRuntimeState: (nextRuntime: Partial<RuntimeState>) => void;
   setOnboardingState: (nextOnboarding: Partial<AppSessionState["onboarding"]>) => void;
@@ -123,6 +140,15 @@ export function createInitialAppSessionState(): AppSessionState {
       lastErrorCode: null,
       lastValidationMessage: null,
       retryable: false,
+    },
+    operational: {
+      status: "pending",
+      lastVerifiedAt: null,
+      lastErrorCode: null,
+      lastMessage: null,
+      retryable: false,
+      probeSymbol: null,
+      probeClientOrderId: null,
     },
     presets: {
       activePreset: null,
@@ -164,6 +190,11 @@ function parseStoredState(rawValue: string | null): AppSessionState {
         ...baseState.credentials,
         ...parsed.credentials,
         validationStatus: credentialValidationStatus(parsed.credentials?.validationStatus),
+      },
+      operational: {
+        ...baseState.operational,
+        ...parsed.operational,
+        status: operationalVerificationStatus(parsed.operational?.status),
       },
       presets: {
         ...baseState.presets,
@@ -214,6 +245,13 @@ function builderApprovalStatus(value: unknown): BuilderApprovalStatus {
 function onboardingStatus(value: unknown): OnboardingStatus {
   const result = onboardingStatusSchema.safeParse(value);
   return result.success ? result.data : "wallet_pending";
+}
+
+function operationalVerificationStatus(
+  value: unknown,
+): OperationalVerificationStatus {
+  const result = operationalVerificationStatusSchema.safeParse(value);
+  return result.success ? result.data : "pending";
 }
 
 function presetActivationValue(value: unknown): PresetActivation | null {
@@ -299,6 +337,7 @@ function deriveCanAccessProduct(state: AppSessionState) {
     state.wallet.sessionStatus === "connected" &&
     state.builderApproval.approvalStatus === "approved" &&
     state.credentials.validationStatus === "valid" &&
+    state.operational.status === "verified" &&
     state.onboarding.status === "ready" &&
     state.onboarding.accountReady
   );
@@ -395,6 +434,27 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     });
   }, []);
 
+  const setOperationalState = useCallback(
+    (nextOperational: Partial<OperationalVerificationState>) => {
+      setState((currentState) => {
+        const operational = {
+          ...currentState.operational,
+          ...nextOperational,
+        };
+
+        if (areObjectsShallowEqual(currentState.operational, operational)) {
+          return currentState;
+        }
+
+        return {
+          ...currentState,
+          operational,
+        };
+      });
+    },
+    [],
+  );
+
   const setPresetState = useCallback((nextPresets: Partial<AppSessionState["presets"]>) => {
     setState((currentState) => {
       const presets = {
@@ -473,6 +533,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setWalletSession,
       setBuilderApprovalState,
       setCredentialState,
+      setOperationalState,
       setPresetState,
       setRuntimeState,
       setOnboardingState,
@@ -482,6 +543,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       resetOnboardingState,
       setBuilderApprovalState,
       setCredentialState,
+      setOperationalState,
       setLocale,
       setOnboardingState,
       setPresetState,

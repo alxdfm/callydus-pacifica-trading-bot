@@ -12,6 +12,7 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   } = useWallet();
   const { lastErrorCode, selectedProviderName } = useSolanaWalletPort();
   const {
+    setOperationalState,
     setBuilderApprovalState,
     setCredentialState,
     setOnboardingState,
@@ -46,6 +47,15 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
         lastValidationMessage: null,
         retryable: false,
       });
+      setOperationalState({
+        status: "pending",
+        lastVerifiedAt: null,
+        lastErrorCode: null,
+        lastMessage: null,
+        retryable: false,
+        probeSymbol: null,
+        probeClientOrderId: null,
+      });
     }
 
     if (connected && mainWalletPublicKey) {
@@ -61,7 +71,10 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
         errorCode: null,
       });
 
-      if (state.credentials.validationStatus === "valid") {
+      if (
+        state.credentials.validationStatus === "valid" &&
+        state.operational.status === "verified"
+      ) {
         setOnboardingState({
           status: "ready",
           accountReady: true,
@@ -118,6 +131,15 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
       lastValidationMessage: null,
       retryable: false,
     });
+    setOperationalState({
+      status: "pending",
+      lastVerifiedAt: null,
+      lastErrorCode: null,
+      lastMessage: null,
+      retryable: false,
+      probeSymbol: null,
+      probeClientOrderId: null,
+    });
     setOnboardingState({
       status: "wallet_pending",
       accountReady: false,
@@ -130,10 +152,12 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     selectedProviderName,
     setBuilderApprovalState,
     setCredentialState,
+    setOperationalState,
     setOnboardingState,
     setWalletSession,
     state.builderApproval.approvalStatus,
     state.credentials.validationStatus,
+    state.operational.status,
     state.wallet.lastConnectedAt,
     state.wallet.mainWalletPublicKey,
     state.wallet.sessionStatus,

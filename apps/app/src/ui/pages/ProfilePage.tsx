@@ -33,7 +33,13 @@ function formatRelativeValidation(value: string | null, fallback: string) {
 export function ProfilePage() {
   const navigate = useNavigate();
   const { connectWallet, disconnectWallet } = useSolanaWalletPort();
-  const { canAccessProduct, setCredentialState, setOnboardingState, state } = useAppState();
+  const {
+    canAccessProduct,
+    setCredentialState,
+    setOnboardingState,
+    setOperationalState,
+    state,
+  } = useAppState();
   const { t } = useI18n();
   const [isReconnectModalOpen, setIsReconnectModalOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -126,6 +132,15 @@ export function ProfilePage() {
       lastValidationMessage: t("profileRevalidationRequiredDescription"),
       retryable: false,
     });
+    setOperationalState({
+      status: "pending",
+      lastVerifiedAt: null,
+      lastErrorCode: null,
+      lastMessage: null,
+      retryable: false,
+      probeSymbol: null,
+      probeClientOrderId: null,
+    });
     setOnboardingState({
       status: "credentials_validating",
       accountReady: false,
@@ -165,9 +180,18 @@ export function ProfilePage() {
         lastValidationMessage: t("profileAgentWalletValidated"),
         retryable: false,
       });
+      setOperationalState({
+        status: "pending",
+        lastVerifiedAt: null,
+        lastErrorCode: null,
+        lastMessage: null,
+        retryable: false,
+        probeSymbol: null,
+        probeClientOrderId: null,
+      });
       setOnboardingState({
-        status: "ready",
-        accountReady: true,
+        status: "credentials_pending",
+        accountReady: false,
       });
       setDraftPrivateKey("");
       setFieldErrors({});

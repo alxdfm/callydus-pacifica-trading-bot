@@ -29,19 +29,21 @@ export const messages = {
     pageActionLabel: "Next implementation focus",
     pageOnboardingTitle: "Onboarding",
     pageOnboardingDescription:
-      "Connect the main wallet, approve the builder code, validate the Agent Wallet and unlock access to the operational area.",
+      "Connect the main wallet, approve the builder code, validate the Agent Wallet and complete the readiness check before unlocking access.",
     pageOnboardingAction: "Complete wallet connection, builder approval and Agent Wallet validation before opening protected routes.",
     onboardingEyebrow: "Guided setup",
-    onboardingHeroTitle: "Connect in three simple steps",
+    onboardingHeroTitle: "Connect in four simple steps",
     onboardingHeroDescription:
-      "Wallet connection, builder approval and Agent Wallet validation are the only blockers before entering the operational area.",
-    onboardingProgressLabel: "Step 3 of 3",
+      "Wallet connection, builder approval and Agent Wallet validation still happen first, and a final readiness check confirms the account can operate before entry.",
+    onboardingProgressLabel: "Step 4 of 4",
     onboardingStepWalletTitle: "Connect wallet",
     onboardingStepWalletDescription: "Required before any main action.",
     onboardingStepBuilderTitle: "Approve builder code",
     onboardingStepBuilderDescription: "One-time wallet signature for account authorization.",
     onboardingStepCredentialsTitle: "Validate Agent Wallet",
-    onboardingStepCredentialsDescription: "Unlock dashboard after success.",
+    onboardingStepCredentialsDescription: "Verify the Agent Wallet before the final account check.",
+    onboardingStepOperationalTitle: "Run readiness check",
+    onboardingStepOperationalDescription: "Controlled order check before product access.",
     onboardingCardWalletEyebrow: "Step 1",
     onboardingCardWalletTitle: "Connect Solana wallet",
     onboardingCardWalletDescription:
@@ -54,10 +56,14 @@ export const messages = {
     onboardingCardCredentialsTitle: "Agent Wallet access",
     onboardingCardCredentialsDescription:
       "Use the dedicated Agent Wallet for automation after the account builder approval is completed.",
+    onboardingCardOperationalEyebrow: "Step 4",
+    onboardingCardOperationalTitle: "Run readiness check",
+    onboardingCardOperationalDescription:
+      "Run a controlled operational check before unlocking the product.",
     onboardingPanelEyebrow: "Account status",
-    onboardingPanelTitle: "Ready after validation",
+    onboardingPanelTitle: "Ready after operational verification",
     onboardingPanelDescription:
-      "The dashboard stays locked until wallet connection and Agent Wallet validation are both complete.",
+      "The dashboard stays locked until wallet connection, builder approval, Agent Wallet validation and the readiness check are complete.",
     onboardingReadonlyFieldLabel: "Readonly",
     onboardingEditableFieldLabel: "Expected input",
     onboardingProviderLabel: "Provider",
@@ -81,11 +87,19 @@ export const messages = {
     onboardingStateBuilderApproved: "Approved",
     onboardingStateBuilderRejected: "Rejected",
     onboardingStateBuilderError: "Error",
+    onboardingStateOperationalPending: "Pending",
+    onboardingStateOperationalRunning: "Running",
+    onboardingStateOperationalVerified: "Verified",
+    onboardingStateOperationalBlocked: "Blocked",
+    onboardingStateOperationalError: "Error",
     onboardingStateAccessReady: "Account ready",
     onboardingStateAccessBlocked: "Blocked until success",
     onboardingStatusWalletPending: "Waiting for wallet",
+    onboardingStatusBuilderPending: "Waiting for builder approval",
     onboardingStatusCredentialsPending: "Waiting for Agent Wallet",
     onboardingStatusCredentialsValidating: "Agent Wallet validation in progress",
+    onboardingStatusOperationalPending: "Waiting for readiness check",
+    onboardingStatusOperationalRunning: "Readiness check in progress",
     onboardingStatusReady: "Onboarding complete",
     onboardingStatusBlocked: "Blocked by validation state",
     onboardingProgressPending: "Pending",
@@ -139,6 +153,26 @@ export const messages = {
       "The account still needs the one-time builder approval before Agent Wallet validation can continue.",
     onboardingBuilderApprovalSuccess:
       "Builder code approved successfully.",
+    onboardingOperationalAction: "Run readiness check",
+    onboardingOperationalDisclosureTitle: "Controlled operational check",
+    onboardingOperationalDisclosureDescription:
+      "We place and immediately cancel a technical order to confirm this account can operate before unlocking the product.",
+    onboardingOperationalDisclosureNote:
+      "This is a controlled readiness check. It is not a normal trade and exists only to verify operational access.",
+    onboardingOperationalMicrocopyPending:
+      "Run the operational check to unlock the product.",
+    onboardingOperationalMicrocopyRunning:
+      "Running a controlled order check...",
+    onboardingOperationalMicrocopyVerified:
+      "Account verified and ready to operate.",
+    onboardingOperationalMicrocopyRetry:
+      "The operational check is temporarily unavailable. Try again.",
+    onboardingOperationalMicrocopyBlocked:
+      "The account is not ready to operate yet.",
+    onboardingOperationalAwaiting:
+      "The account still needs the controlled readiness check before product access can be unlocked.",
+    onboardingOperationalVerifiedMessage:
+      "The controlled order check succeeded and the account is ready to operate.",
     onboardingWalletErrorProviderMissing:
       "Phantom is not installed in this browser. Install the extension and try again.",
     onboardingWalletErrorRejected:
@@ -166,7 +200,7 @@ export const messages = {
       "Fill in the Agent Wallet fields after builder approval and validate them against the backend contract.",
     onboardingFinalCta: "Continue to Dashboard",
     onboardingFinalCtaHintBlocked:
-      "The primary CTA unlocks only after validation finishes without blocking errors.",
+      "The primary CTA unlocks only after wallet, builder approval, Agent Wallet validation and the readiness check succeed.",
     onboardingFinalCtaHintReady: "Account ready. You can continue.",
     pageDashboardTitle: "Dashboard",
     pageDashboardDescription:
@@ -485,6 +519,7 @@ export const messages = {
     stateWalletStatus: "Wallet session",
     stateBuilderStatus: "Builder approval",
     stateCredentialStatus: "Credential validation",
+    stateOperationalStatus: "Operational check",
     stateOnboardingStatus: "Onboarding status",
     stateAccessStatus: "Product access",
     stateAccessBlocked: "Blocked",
