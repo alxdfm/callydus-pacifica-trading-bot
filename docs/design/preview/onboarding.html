@@ -28,41 +28,49 @@
           </p>
         </div>
 
-        <div class="step-list">
-          <div class="step-item current">
-            <span class="step-index">1</span>
-            <div>
-              <strong>Connect wallet</strong>
-              <p>Required before any main action</p>
-            </div>
+        <div class="flow-progress">
+          <div class="flow-progress__meta">
+            <strong>Progress</strong>
+            <span>2 of 4 steps completed</span>
           </div>
-          <div class="step-item current">
-            <span class="step-index">2</span>
-            <div>
-              <strong>Approve builder code</strong>
-              <p>One-time wallet signature for account authorization</p>
-            </div>
-          </div>
-          <div class="step-item current">
-            <span class="step-index">3</span>
-            <div>
-              <strong>Validate Agent Wallet</strong>
-              <p>Unlock dashboard after success</p>
-            </div>
-          </div>
-          <div class="step-item current">
-            <span class="step-index">4</span>
-            <div>
-              <strong>Run readiness check</strong>
-              <p>Controlled order check before product access</p>
-            </div>
+          <div class="flow-progress__track">
+            <span class="flow-progress__fill"></span>
           </div>
         </div>
 
-        <div class="nav-card">
-          <span class="badge warning">Blocked until success</span>
-          <strong>Dashboard stays locked</strong>
-          <p>Use clear progress, visible validation states and short feedback messages.</p>
+        <div class="step-list onboarding-side__steps">
+          <button class="step-item step-item--button done" type="button">
+            <span class="step-index">1</span>
+            <div class="step-copy">
+              <strong>Connect wallet</strong>
+              <p>Required before any main action</p>
+              <span class="step-meta done">Done</span>
+            </div>
+          </button>
+          <button class="step-item step-item--button done" type="button">
+            <span class="step-index">2</span>
+            <div class="step-copy">
+              <strong>Approve builder code</strong>
+              <p>One-time wallet signature for account authorization</p>
+              <span class="step-meta done">Done</span>
+            </div>
+          </button>
+          <button class="step-item step-item--button current step-item--selected" type="button">
+            <span class="step-index">3</span>
+            <div class="step-copy">
+              <strong>Validate Agent Wallet</strong>
+              <p>Unlock dashboard after success</p>
+              <span class="step-meta current">Current</span>
+            </div>
+          </button>
+          <button class="step-item step-item--button locked" type="button">
+            <span class="step-index">4</span>
+            <div class="step-copy">
+              <strong>Run readiness check</strong>
+              <p>Available after Agent Wallet validation</p>
+              <span class="step-meta locked">Locked</span>
+            </div>
+          </button>
         </div>
       </aside>
 
@@ -71,53 +79,22 @@
           <div>
             <p class="eyebrow">Setup flow</p>
             <h2>Account access</h2>
-            <p class="subtle">The user should understand the sequence just by looking at the screen.</p>
-          </div>
-          <div class="topbar-actions">
-            <span class="badge info">Step 4 of 4</span>
-            <a class="nav-item" href="./dashboard.html">Dashboard mock</a>
+            <p class="subtle">
+              Wallet connection, builder approval and Agent Wallet validation still happen first,
+              and a final readiness check confirms the account can operate before entry.
+            </p>
           </div>
         </header>
 
         <section class="onboarding-grid">
-          <section class="panel wallet-panel">
-            <div class="row-between align-start section-gap">
-              <div>
-                <p class="panel-label">Step 1</p>
-                <h3>Connect Solana wallet</h3>
-              </div>
-              <span class="badge success">Connected</span>
-            </div>
-
-            <div class="wallet-card connected-state">
-              <div>
-                <strong>Phantom wallet</strong>
-                <p>Address ending in `7K9p` is active and ready to continue.</p>
-              </div>
-              <button class="btn secondary">Change wallet</button>
-            </div>
-
-            <div class="empty-note">
-              <div class="row-between align-start section-gap">
-                <div>
-                  <strong>Approve builder code</strong>
-                  <p>This is a one-time account authorization signed with the connected wallet. It is not a transfer.</p>
-                </div>
-                <span class="badge warning">Approving</span>
-              </div>
-              <p>Waiting for wallet signature and Pacifica confirmation.</p>
-              <small>The account still needs this approval before Agent Wallet validation can continue.</small>
-              <div class="action-row">
-                <button class="btn secondary">Approve builder code</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel keys-panel">
+          <section class="panel keys-panel panel-step current panel-step--selected">
             <div class="row-between align-start section-gap">
               <div>
                 <p class="panel-label">Step 3</p>
                 <h3>Agent Wallet access</h3>
+                <p class="panel-copy">
+                  Use the dedicated Agent Wallet for automation after the account builder approval is completed.
+                </p>
               </div>
               <span class="badge warning">Validating</span>
             </div>
@@ -171,66 +148,6 @@
               <button class="btn secondary">Clear</button>
               <button class="btn primary">Validate and Continue</button>
             </div>
-          </section>
-
-          <section class="panel account-panel">
-            <div class="row-between align-start section-gap">
-              <div>
-                <p class="panel-label">Step 4</p>
-                <h3>Run readiness check</h3>
-              </div>
-              <span class="badge warning">Running</span>
-            </div>
-
-            <div class="empty-note">
-              <strong>Controlled operational check</strong>
-              <p>We place and immediately cancel a technical order to confirm this account can operate before unlocking the product.</p>
-              <small>This is a controlled readiness check. It is not a normal trade and exists only to verify operational access.</small>
-            </div>
-
-            <div class="action-row">
-              <button class="btn secondary">Run readiness check</button>
-            </div>
-
-            <div class="account-state">
-              <div class="account-line">
-                <span>Wallet</span>
-                <strong class="up">Connected</strong>
-              </div>
-              <div class="account-line">
-                <span>Builder approval</span>
-                <strong class="up">Approved</strong>
-              </div>
-              <div class="account-line">
-                <span>Agent Wallet</span>
-                <strong class="up">Verified</strong>
-              </div>
-              <div class="account-line">
-                <span>Operational check</span>
-                <strong>Running</strong>
-              </div>
-              <div class="account-line">
-                <span>Dashboard access</span>
-                <strong>Locked</strong>
-              </div>
-            </div>
-
-            <div class="status-stack">
-              <div class="status-row info-row">
-                <span class="status-dot info-dot"></span>
-                <div>
-                  <strong>Running readiness check</strong>
-                  <p>Creating and cancelling a controlled order through Pacifica.</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="empty-note">
-              <strong>Continue after operational verification</strong>
-              <p>The primary CTA should only unlock after wallet, builder approval, Agent Wallet validation and the readiness check succeed.</p>
-            </div>
-
-            <button class="btn primary wide" disabled>Continue to dashboard</button>
           </section>
         </section>
       </main>

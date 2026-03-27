@@ -1037,6 +1037,45 @@ input {
   margin-bottom: 22px;
 }
 
+.flow-progress {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 22px;
+}
+
+.flow-progress__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.flow-progress__meta strong {
+  font-size: 0.95rem;
+}
+
+.flow-progress__meta span {
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.flow-progress__track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  border: 1px solid rgba(53, 80, 111, 0.38);
+}
+
+.flow-progress__fill {
+  display: block;
+  height: 100%;
+  width: 50%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(39, 192, 125, 0.9), rgba(45, 140, 255, 0.9));
+}
+
 .step-item {
   display: flex;
   gap: 14px;
@@ -1047,9 +1086,29 @@ input {
   border: 1px solid rgba(53, 80, 111, 0.5);
 }
 
+.step-item--button {
+  width: 100%;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .step-item.current {
   background: rgba(45, 140, 255, 0.08);
   border-color: rgba(45, 140, 255, 0.2);
+}
+
+.step-item.done {
+  background: rgba(39, 192, 125, 0.08);
+  border-color: rgba(39, 192, 125, 0.24);
+}
+
+.step-item.locked {
+  opacity: 0.64;
+}
+
+.step-item--selected {
+  box-shadow: inset 0 0 0 1px rgba(45, 140, 255, 0.28), 0 12px 24px rgba(0, 0, 0, 0.14);
 }
 
 .step-index {
@@ -1064,6 +1123,57 @@ input {
   flex: none;
 }
 
+.step-item.done .step-index {
+  background: rgba(39, 192, 125, 0.2);
+  color: #9be4bd;
+}
+
+.step-item.current .step-index {
+  background: rgba(45, 140, 255, 0.18);
+}
+
+.step-item.locked .step-index {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-soft);
+}
+
+.step-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.step-copy strong,
+.step-copy p {
+  margin: 0;
+}
+
+.step-meta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.step-meta.done {
+  background: rgba(39, 192, 125, 0.14);
+  color: #8ce0b3;
+}
+
+.step-meta.current {
+  background: rgba(45, 140, 255, 0.14);
+  color: #9cc6ff;
+}
+
+.step-meta.locked {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-soft);
+}
+
 .flow-main {
   display: grid;
   gap: 22px;
@@ -1071,7 +1181,7 @@ input {
 
 .onboarding-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) 340px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -1090,6 +1200,56 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.panel-step {
+  box-shadow: inset 0 0 0 1px rgba(39, 192, 125, 0.12);
+}
+
+.panel-step.current {
+  box-shadow: inset 0 0 0 1px rgba(45, 140, 255, 0.24);
+}
+
+.panel-step.locked {
+  opacity: 0.68;
+}
+
+.panel-step.done {
+  box-shadow: inset 0 0 0 1px rgba(39, 192, 125, 0.18);
+}
+
+.panel-step__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-step__header .btn {
+  flex: none;
+}
+
+.panel-step__summary {
+  margin: 0;
+  flex: 1;
+}
+
+.done-note {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(39, 192, 125, 0.08);
+  border: 1px solid rgba(39, 192, 125, 0.18);
+}
+
+.done-note strong,
+.done-note p {
+  margin: 0;
+}
+
+.done-note p {
+  margin-top: 6px;
+  color: var(--text-soft);
 }
 
 .connected-state {
@@ -1125,6 +1285,11 @@ input {
 .info-dot {
   background: var(--accent);
   box-shadow: 0 0 0 6px rgba(45, 140, 255, 0.12);
+}
+
+.neutral-dot {
+  background: rgba(159, 176, 196, 0.9);
+  box-shadow: 0 0 0 6px rgba(159, 176, 196, 0.12);
 }
 
 .account-state {

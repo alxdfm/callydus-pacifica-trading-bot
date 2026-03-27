@@ -22,14 +22,15 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
 2. [DESIGN_SYSTEM_FOUNDATION.pt-BR.md](./DESIGN_SYSTEM_FOUNDATION.pt-BR.md)
 3. [MVP_COMPONENT_SYSTEM.pt-BR.md](./MVP_COMPONENT_SYSTEM.pt-BR.md)
 4. [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
-5. [PRESETS_STRUCTURE.pt-BR.md](./PRESETS_STRUCTURE.pt-BR.md)
-6. [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
-7. [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
-8. [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
-9. [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
-10. [MVP_FINALIZATION_REFERENCE.pt-BR.md](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
-11. [preview/index.html](./preview/index.html)
-12. [preview/theme.css](./preview/theme.css)
+5. [ONBOARDING_PROGRESS_REFERENCE.pt-BR.md](./ONBOARDING_PROGRESS_REFERENCE.pt-BR.md)
+6. [PRESETS_STRUCTURE.pt-BR.md](./PRESETS_STRUCTURE.pt-BR.md)
+7. [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
+8. [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
+9. [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
+10. [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
+11. [MVP_FINALIZATION_REFERENCE.pt-BR.md](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
+12. [preview/index.html](./preview/index.html)
+13. [preview/theme.css](./preview/theme.css)
 
 ## Tokens Prioritários Para Codificar
 - cores de superfície
@@ -75,6 +76,7 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
 - dashboard deve seguir [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
 - trades atuais e histórico devem seguir [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
 - `Profile` deve seguir [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
+- progressão, bloqueio e reabertura de steps do onboarding devem seguir [ONBOARDING_PROGRESS_REFERENCE.pt-BR.md](./ONBOARDING_PROGRESS_REFERENCE.pt-BR.md)
 - consistência final, estados vazios, loading e erro devem seguir [MVP_FINALIZATION_REFERENCE.pt-BR.md](./MVP_FINALIZATION_REFERENCE.pt-BR.md)
 
 ## Observações de QA
@@ -85,6 +87,7 @@ QA deve validar:
 - distinção clara entre `Main wallet` e `Agent Wallet` no onboarding
 - `builder approval` claramente percebido como etapa separada e obrigatória da conta
 - `operational verification` claramente percebida como check operacional controlado
+- progressão do onboarding claramente percebida com steps `done`, `current` e `locked`
 - helper text do campo de `Agent Wallet private key` sem ambiguidade
 - CTA final bloqueado até wallet + `builder approval` + `Agent Wallet` + `operationally_verified`
 - `reconnecting` tratado como variação de loading sem exigir novo estado visual
@@ -106,6 +109,9 @@ QA deve validar:
 - `operational verification` deve explicar que uma ordem técnica controlada será criada e cancelada em seguida
 - a UX não deve chamar esse passo de `trade`
 - falha transitória e bloqueio real de conta devem ter mensagens distintas nesse check
+- steps futuros ficam visíveis, porém bloqueados, até a conclusão do step anterior
+- steps concluídos ficam congelados e reabrem apenas via ação explícita de `Edit`
+- editar um step concluído invalida visualmente os steps dependentes conforme [ONBOARDING_PROGRESS_REFERENCE.pt-BR.md](./ONBOARDING_PROGRESS_REFERENCE.pt-BR.md)
 - mensagens de erro devem separar falha transitória de erro que exige edição do campo
 - estados e microcopy principal do onboarding devem seguir [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
 

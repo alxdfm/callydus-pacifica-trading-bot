@@ -4,11 +4,16 @@
 Resumir o que cada tela precisa preservar visualmente na implementação.
 
 ## Onboarding
-Referências: [preview/onboarding.html](./preview/onboarding.html), [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
+Referências: [preview/onboarding.html](./preview/onboarding.html), [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md), [ONBOARDING_PROGRESS_REFERENCE.pt-BR.md](./ONBOARDING_PROGRESS_REFERENCE.pt-BR.md)
 
 Prioridades:
 - fluxo em 4 etapas visível sem explicação externa
 - wallet, `builder approval`, `Agent Wallet` e `operational verification` como blocos semânticos distintos
+- hierarquia `done/current/locked` inequívoca
+- barra de progresso acima da área principal
+- não agrupar `Step 1` e `Step 2` no mesmo card principal
+- priorizar leitura sequencial direta `1 > 2 > 3 > 4` no grid principal
+- no fluxo implementado, a lateral atua como seletor e a área principal mostra um único step ativo
 - `mainWalletPublicKey` readonly deve parecer dado herdado da wallet conectada
 - `builder approval` deve parecer autorização única da conta, não transferência
 - `Agent Wallet` deve ficar semanticamente distinta da wallet principal
@@ -29,6 +34,7 @@ Orientação de i18n:
 - usar os grupos definidos em [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md) como base de chave para onboarding
 - manter distinção explícita entre textos de `wallet`, `builder approval`, `Agent Wallet` e `operational verification`
 - helper texts e mensagens de bloqueio não devem depender de concatenar fragmentos dinâmicos longos
+- labels de progresso e ações `Edit` devem seguir [ONBOARDING_PROGRESS_REFERENCE.pt-BR.md](./ONBOARDING_PROGRESS_REFERENCE.pt-BR.md)
 
 ## Dashboard
 Referências: [preview/dashboard.html](./preview/dashboard.html), [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
