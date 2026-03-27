@@ -105,7 +105,7 @@ export function HistoryPage() {
               ))}
             </div>
           ) : (
-            <div className="empty-note">
+            <div className="info-note">
               <strong>{t("historyEmptyTitle")}</strong>
               <p>{t("historyEmptyDescription")}</p>
             </div>
@@ -152,13 +152,13 @@ export function HistoryPage() {
                 </div>
               </div>
 
-              <div className="empty-note">
+              <div className="info-note">
                 <strong>{t("historyDetailReadingTitle")}</strong>
                 <p>{t("historyDetailReadingDescription")}</p>
               </div>
             </>
           ) : (
-            <div className="empty-note">
+            <div className="info-note">
               <strong>{t("historyDetailEmptyTitle")}</strong>
               <p>{t("historyDetailEmptyDescription")}</p>
             </div>

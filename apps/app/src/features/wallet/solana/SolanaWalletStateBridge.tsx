@@ -1,7 +1,9 @@
 import { useEffect, type PropsWithChildren } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAppState } from "../../../state/app-state";
 import { useSolanaWalletPort } from "./SolanaWalletEnvironment";
+import { lookupOperationalAccountViaBackend } from "../../onboarding/backend-operational-account-lookup";
 
 export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   const {
@@ -10,6 +12,8 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     publicKey,
     wallet,
   } = useWallet();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { lastErrorCode, selectedProviderName } = useSolanaWalletPort();
   const {
     setOperationalState,
@@ -56,6 +60,11 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
         probeSymbol: null,
         probeClientOrderId: null,
       });
+      setOnboardingState({
+        accountLookupStatus: "idle",
+        discoveredWalletAddress: null,
+        showCompletionModal: false,
+      });
     }
 
     if (connected && mainWalletPublicKey) {
@@ -78,6 +87,10 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
         setOnboardingState({
           status: "ready",
           accountReady: true,
+          accountLookupStatus:
+            state.onboarding.accountLookupStatus === "existing_account"
+              ? "existing_account"
+              : state.onboarding.accountLookupStatus,
         });
       } else if (state.credentials.validationStatus === "validating") {
         setOnboardingState({
@@ -143,6 +156,9 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     setOnboardingState({
       status: "wallet_pending",
       accountReady: false,
+      accountLookupStatus: "idle",
+      discoveredWalletAddress: null,
+      showCompletionModal: false,
     });
   }, [
     connected,
@@ -157,12 +173,118 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     setWalletSession,
     state.builderApproval.approvalStatus,
     state.credentials.validationStatus,
+    state.onboarding.accountLookupStatus,
     state.operational.status,
     state.wallet.lastConnectedAt,
     state.wallet.mainWalletPublicKey,
     state.wallet.sessionStatus,
     state.wallet.provider,
     wallet,
+  ]);
+
+  useEffect(() => {
+    const mainWalletPublicKey = publicKey?.toBase58() ?? null;
+
+    if (!connected || !mainWalletPublicKey) {
+      return;
+    }
+
+    if (
+      state.onboarding.accountLookupStatus === "checking" ||
+      state.onboarding.discoveredWalletAddress === mainWalletPublicKey
+    ) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    setOnboardingState({
+      accountLookupStatus: "checking",
+      discoveredWalletAddress: mainWalletPublicKey,
+      showCompletionModal: false,
+    });
+
+    void lookupOperationalAccountViaBackend({
+      walletAddress: mainWalletPublicKey,
+    }).then((result) => {
+      if (isCancelled) {
+        return;
+      }
+
+      if (result.status === "found") {
+        setBuilderApprovalState({
+          approvalStatus: "approved",
+          lastErrorCode: null,
+          lastMessage: "Existing operational account found for this wallet.",
+          retryable: false,
+        });
+        setCredentialState({
+          credentialId: result.credentialId,
+          agentWalletPublicKey: result.agentWalletPublicKey,
+          credentialAlias: result.credentialAlias,
+          keyFingerprint: result.keyFingerprint,
+          validationStatus: "valid",
+          lastValidatedAt: null,
+          lastErrorCode: null,
+          lastValidationMessage: "Existing operational account found.",
+          retryable: false,
+        });
+        setOperationalState({
+          status: "verified",
+          lastVerifiedAt: null,
+          lastErrorCode: null,
+          lastMessage: "Existing operational account found.",
+          retryable: false,
+          probeSymbol: null,
+          probeClientOrderId: null,
+        });
+        setOnboardingState({
+          status: "ready",
+          accountReady: true,
+          accountLookupStatus: "existing_account",
+          discoveredWalletAddress: mainWalletPublicKey,
+          showCompletionModal: false,
+        });
+        if (location.pathname === "/onboarding") {
+          window.setTimeout(() => {
+            navigate("/dashboard", { replace: true });
+          }, 0);
+        }
+        return;
+      }
+
+      if (result.status === "not_found") {
+        setOnboardingState({
+          status: "credentials_pending",
+          accountReady: false,
+          accountLookupStatus: "new_account",
+          discoveredWalletAddress: mainWalletPublicKey,
+          showCompletionModal: false,
+        });
+        return;
+      }
+
+      setOnboardingState({
+        status: "wallet_pending",
+        accountReady: false,
+        accountLookupStatus: "error",
+        discoveredWalletAddress: mainWalletPublicKey,
+        showCompletionModal: false,
+      });
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    connected,
+    publicKey,
+    setBuilderApprovalState,
+    setCredentialState,
+    setOnboardingState,
+    setOperationalState,
+    location.pathname,
+    navigate,
   ]);
 
   return children;

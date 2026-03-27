@@ -185,7 +185,7 @@ export function TradesPage() {
               ))}
             </div>
           ) : (
-            <div className="empty-note">
+            <div className="info-note">
               <strong>{t("tradesEmptyTitle")}</strong>
               <p>{t("tradesEmptyDescription")}</p>
             </div>
@@ -224,7 +224,7 @@ export function TradesPage() {
                 </div>
               </div>
 
-              <div className="empty-note">
+              <div className="info-note">
                 <strong>{t("tradesDetailInterventionTitle")}</strong>
                 <p>{t("tradesDetailInterventionDescription")}</p>
               </div>
@@ -239,7 +239,7 @@ export function TradesPage() {
               </button>
             </>
           ) : (
-            <div className="empty-note">
+            <div className="info-note">
               <strong>{t("tradesDetailEmptyTitle")}</strong>
               <p>{t("tradesDetailEmptyDescription")}</p>
             </div>

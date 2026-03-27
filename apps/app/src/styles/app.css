@@ -143,7 +143,7 @@ a {
 .panel-copy,
 .subtle,
 .nav-card p,
-.empty-note p,
+.info-note p,
 .wallet-card p,
 .step-item p,
 .status-row p,
@@ -226,6 +226,10 @@ a {
 .shell-body {
   padding: 24px;
   overflow-y: auto;
+}
+
+.onboarding-shell {
+  min-height: 100vh;
 }
 
 .shell-topbar {
@@ -318,7 +322,7 @@ a {
 .page-card,
 .panel,
 .nav-card,
-.empty-note,
+.info-note,
 .status-row,
 .wallet-card {
   background: var(--bg-surface);
@@ -353,37 +357,57 @@ a {
 }
 
 .onboarding-flow {
+  width: min(1480px, calc(100% - 32px));
+  margin: 20px auto 40px;
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 24px;
+  align-items: start;
 }
 
 .onboarding-side {
   display: grid;
-  gap: 24px;
-  align-content: start;
-  padding: 28px;
-  background: var(--bg-hero);
-  border: 1px solid rgba(62, 92, 128, 0.5);
-  border-radius: 32px;
-  box-shadow: var(--shadow);
+  grid-template-rows: auto auto auto 1fr auto;
+  gap: 18px;
+  align-content: stretch;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(10, 18, 31, 0.98), rgba(12, 23, 40, 0.98));
+  border: 1px solid rgba(53, 80, 111, 0.9);
+  border-radius: 28px;
+  box-shadow: var(--shadow-soft);
+  position: sticky;
+  top: 24px;
+  height: calc(100dvh - 48px);
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
 }
 
 .onboarding-brand {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 16px;
+  display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.onboarding-brand__logo {
+  width: 48px;
+  height: 48px;
+  display: block;
+  object-fit: contain;
+}
+
+.onboarding-brand__copy {
+  display: grid;
+  gap: 2px;
 }
 
 .onboarding-side__copy {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .onboarding-side__copy h2 {
-  font-size: clamp(1.8rem, 3vw, 2.6rem);
-  line-height: 0.98;
+  font-size: clamp(1.55rem, 2.3vw, 2.1rem);
+  line-height: 1.02;
 }
 
 .onboarding-side__steps,
@@ -393,15 +417,68 @@ a {
   gap: 14px;
 }
 
-.step-item {
+.onboarding-side__steps {
+  height: fit-content;
+  align-content: start;
+  align-self: start;
+}
+
+.flow-progress {
   display: grid;
-  grid-template-columns: auto 1fr;
+  gap: 10px;
+  margin: 0;
+}
+
+.flow-progress__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.flow-progress__meta strong,
+.step-copy strong {
+  display: block;
+}
+
+.flow-progress__meta span {
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.flow-progress__track {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(53, 80, 111, 0.38);
+}
+
+.flow-progress__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(39, 192, 125, 0.9), rgba(45, 140, 255, 0.9));
+  transition: width 180ms ease;
+}
+
+.step-item {
+  display: flex;
   gap: 14px;
   align-items: start;
-  padding: 16px;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(148, 176, 207, 0.12);
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(53, 80, 111, 0.5);
+  height: fit-content;
+}
+
+.step-item--button {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
 }
 
 .step-item strong {
@@ -409,29 +486,88 @@ a {
   margin-bottom: 4px;
 }
 
+.step-copy {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+}
+
+.step-copy p {
+  line-height: 1.45;
+}
+
 .step-index {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
   font-weight: 800;
+  flex: none;
 }
 
-.step-item.complete {
+.step-item.done {
   border-color: rgba(39, 192, 125, 0.24);
-  background: rgba(16, 45, 35, 0.72);
+  background: rgba(39, 192, 125, 0.08);
 }
 
 .step-item.current {
-  border-color: rgba(103, 168, 255, 0.24);
-  background: rgba(22, 44, 72, 0.72);
+  border-color: rgba(45, 140, 255, 0.2);
+  background: rgba(45, 140, 255, 0.08);
+}
+
+.step-item.locked {
+  opacity: 0.64;
+}
+
+.step-item--selected {
+  box-shadow: inset 0 0 0 1px rgba(45, 140, 255, 0.28), 0 12px 24px rgba(0, 0, 0, 0.14);
+}
+
+.step-item.done .step-index {
+  background: rgba(39, 192, 125, 0.2);
+  color: #9be4bd;
+}
+
+.step-item.current .step-index {
+  background: rgba(45, 140, 255, 0.18);
+}
+
+.step-item.locked .step-index {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-soft);
+}
+
+.step-meta {
+  width: fit-content;
+  margin-top: 2px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.step-meta.done {
+  background: rgba(39, 192, 125, 0.14);
+  color: #b7f0d5;
+}
+
+.step-meta.current {
+  background: rgba(103, 168, 255, 0.14);
+  color: #cfe2ff;
+}
+
+.step-meta.locked {
+  background: rgba(159, 176, 196, 0.12);
+  color: var(--text-soft);
 }
 
 .nav-card,
-.empty-note {
+.info-note {
   display: grid;
   gap: 10px;
   border-radius: var(--radius-sm);
@@ -440,7 +576,7 @@ a {
 
 .onboarding-main {
   display: grid;
-  gap: 24px;
+  gap: 22px;
   align-content: start;
 }
 
@@ -713,6 +849,10 @@ a {
   background: rgba(10, 19, 32, 0.98);
   border: 1px solid rgba(53, 80, 111, 0.9);
   box-shadow: var(--shadow);
+
+  span {
+    width: 100%;
+  }
 }
 
 .modal-card--danger {
@@ -753,8 +893,8 @@ a {
 
 .onboarding-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr) minmax(300px, 0.85fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
   align-items: start;
 }
 
@@ -774,10 +914,46 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   padding: 18px;
-  border-radius: var(--radius-sm);
-  background: rgba(20, 34, 56, 0.74);
+  border-radius: 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+
+.panel-step {
+  display: grid;
+  gap: 18px;
+  box-shadow: inset 0 0 0 1px rgba(39, 192, 125, 0.12);
+}
+
+.panel-step.done {
+  box-shadow: inset 0 0 0 1px rgba(39, 192, 125, 0.18);
+}
+
+.panel-step.current {
+  box-shadow: inset 0 0 0 1px rgba(45, 140, 255, 0.24);
+}
+
+.panel-step--selected {
+  box-shadow:
+    inset 0 0 0 1px rgba(45, 140, 255, 0.3),
+    0 18px 34px rgba(8, 17, 29, 0.24);
+}
+
+.panel-step.locked {
+  opacity: 0.68;
+}
+
+.panel-step__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.panel-step__summary {
+  flex: 1;
 }
 
 .wallet-card strong {
@@ -786,7 +962,7 @@ a {
 }
 
 .wallet-card small,
-.empty-note small {
+.info-note small {
   color: var(--text-soft);
   line-height: 1.5;
 }
@@ -794,6 +970,36 @@ a {
 .wallet-card--connected {
   border-color: rgba(39, 192, 125, 0.24);
   background: linear-gradient(180deg, rgba(16, 45, 35, 0.92), rgba(20, 34, 56, 0.84));
+}
+
+.done-note {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(39, 192, 125, 0.18);
+  background: rgba(39, 192, 125, 0.08);
+}
+
+.done-note p,
+.done-note small {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+.done-note strong {
+  display: block;
+}
+
+.done-note p {
+  margin-top: 6px;
+}
+
+.done-note--action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 0;
 }
 
 .onboarding-form__field {
@@ -817,6 +1023,11 @@ a {
 
 .onboarding-form__input::placeholder {
   color: rgba(159, 176, 196, 0.72);
+}
+
+.onboarding-form__input:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .onboarding-form__input:focus,
@@ -846,7 +1057,8 @@ a {
   gap: 12px;
   align-items: start;
   padding: 16px;
-  border-radius: var(--radius-sm);
+  border-radius: 18px;
+  border: 1px solid var(--border);
 }
 
 .status-row strong {
@@ -855,7 +1067,7 @@ a {
 }
 
 .status-row--neutral {
-  background: rgba(20, 34, 56, 0.74);
+  background: var(--bg-elevated);
 }
 
 .status-row--info {
@@ -972,7 +1184,10 @@ a {
 .account-state {
   display: grid;
   gap: 12px;
-  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
 }
 
 .account-line {
@@ -994,6 +1209,12 @@ a {
 
 .shell-side-card {
   margin-top: auto;
+}
+
+.info-note {
+  border-radius: 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
 }
 
 .state-grid {
@@ -1258,6 +1479,33 @@ a {
   .shell-body {
     overflow: visible;
   }
+
+  .onboarding-flow {
+    width: min(100% - 32px, 960px);
+    gap: 18px;
+  }
+
+  .onboarding-side {
+    position: static;
+    top: auto;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    grid-template-rows: auto;
+  }
+
+  .onboarding-main {
+    gap: 18px;
+  }
+
+  .flow-progress__meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .onboarding-side__steps {
+    gap: 12px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1285,14 +1533,86 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .btn.wide,
-  .btn.primary,
-  .btn.secondary {
-    width: 100%;
-  }
-
   .topbar-actions,
   .action-row {
     width: 100%;
+  }
+
+  .onboarding-flow {
+    width: min(100% - 24px, 100%);
+    margin: 12px auto 24px;
+    gap: 14px;
+  }
+
+  .onboarding-side,
+  .topbar,
+  .panel {
+    border-radius: 22px;
+  }
+
+  .onboarding-side,
+  .topbar {
+    padding: 18px;
+  }
+
+  .onboarding-main {
+    gap: 14px;
+  }
+
+  .onboarding-brand {
+    gap: 12px;
+  }
+
+  .onboarding-brand__logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .onboarding-side__copy h2 {
+    font-size: 1.4rem;
+    line-height: 1.08;
+  }
+
+  .flow-progress {
+    gap: 8px;
+  }
+
+  .flow-progress__track {
+    height: 8px;
+  }
+
+  .step-item {
+    gap: 12px;
+    padding: 10px 12px;
+  }
+
+  .step-copy p {
+    font-size: 0.92rem;
+  }
+
+  .step-meta {
+    white-space: nowrap;
+  }
+
+  .onboarding-grid {
+    gap: 14px;
+  }
+
+  .onboarding-form {
+    gap: 12px;
+  }
+
+  .onboarding-form__field {
+    gap: 6px;
+  }
+
+  .onboarding-form__input,
+  .onboarding-form__input--multiline {
+    width: 100%;
+  }
+
+  .modal-card {
+    width: min(100% - 24px, 520px);
+    padding: 20px;
   }
 }

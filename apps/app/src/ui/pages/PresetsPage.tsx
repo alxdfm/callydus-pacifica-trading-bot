@@ -332,7 +332,7 @@ export function PresetsPage() {
               </div>
             </div>
           ) : (
-            <div className="empty-note">
+            <div className="info-note">
               <strong>{t("presetReviewBlockedTitle")}</strong>
               <p>{t("presetReviewBlockedDescription")}</p>
             </div>

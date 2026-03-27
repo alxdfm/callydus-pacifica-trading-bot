@@ -1,13 +1,17 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { toggleBotState } from "../../features/runtime/demo-runtime";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 
 export function DashboardPage() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { setRuntimeState, state } = useAppState();
+  const { setOnboardingState, setRuntimeState, state } = useAppState();
   const { t } = useI18n();
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
     t,
@@ -57,8 +61,59 @@ export function DashboardPage() {
         ? t("runtimeStatusLoading")
         : state.runtime.lastRuntimeMessage;
 
+  useEffect(() => {
+    const onboardingFlashFromState =
+      location.state &&
+      typeof location.state === "object" &&
+      "dashboardToast" in location.state &&
+      location.state.dashboardToast === "onboarding_ready";
+    const onboardingFlashFromStorage =
+      typeof window !== "undefined" &&
+      window.sessionStorage.getItem("pacifica.dashboard-flash") === "onboarding_ready";
+
+    if (onboardingFlashFromState || onboardingFlashFromStorage) {
+      setShowWelcomeModal(true);
+    }
+
+    if (
+      location.state &&
+      typeof location.state === "object" &&
+      "dashboardToast" in location.state
+    ) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
+
+  function dismissWelcomeModal() {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem("pacifica.dashboard-flash");
+    }
+
+    setOnboardingState({
+      showCompletionModal: false,
+    });
+    setShowWelcomeModal(false);
+  }
+
+  function handleWelcomeConfirm() {
+    dismissWelcomeModal();
+    navigate("/presets");
+  }
+
   return (
     <div className="page-stack dashboard-page">
+      <ConfirmationModal
+        cancelLabel={t("modalCloseAction")}
+        confirmLabel={t("dashboardWelcomeModalConfirm")}
+        description={t("dashboardWelcomeModalDescription")}
+        isOpen={showWelcomeModal}
+        onCancel={dismissWelcomeModal}
+        onConfirm={handleWelcomeConfirm}
+        showBadge={false}
+        title={t("dashboardWelcomeModalTitle")}
+        tone="info"
+      />
+
       <section className="topbar">
         <div>
           <p className="page-card__eyebrow">{t("pageDashboardTitle")}</p>
@@ -185,7 +240,7 @@ export function DashboardPage() {
               </div>
             </>
           ) : (
-            <div className="empty-note">
+            <div className="info-note">
               <strong>{t("dashboardNoPresetTitle")}</strong>
               <p>{t("dashboardNoPresetDescription")}</p>
             </div>
@@ -264,7 +319,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="empty-note">
+            <div className="info-note">
               <strong>{t("dashboardTradesEmptyTitle")}</strong>
               <p>{t("dashboardTradesEmptyDescription")}</p>
             </div>
@@ -297,7 +352,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="empty-note">
+            <div className="info-note">
               <strong>{t("dashboardRecentEmptyTitle")}</strong>
               <p>{t("dashboardRecentEmptyDescription")}</p>
             </div>

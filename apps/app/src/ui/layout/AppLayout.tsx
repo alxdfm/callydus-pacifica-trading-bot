@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import logoUrl from "../../shared/assets/logo.svg";
 import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { useAppState } from "../../state/app-state";
@@ -27,9 +27,11 @@ function NavigationLinks({ showOnboarding }: { showOnboarding: boolean }) {
 }
 
 export function AppLayout() {
+  const location = useLocation();
   const { setLocale, state } = useAppState();
   const { isReady, t } = useI18n();
   const showOnboarding = !state.onboarding.accountReady;
+  const isOnboardingRoute = location.pathname === "/onboarding";
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
     t,
@@ -37,6 +39,14 @@ export function AppLayout() {
 
   if (!isReady) {
     return <div className="shell-loading">Loading messages...</div>;
+  }
+
+  if (isOnboardingRoute) {
+    return (
+      <main className="onboarding-shell">
+        <Outlet />
+      </main>
+    );
   }
 
   return (

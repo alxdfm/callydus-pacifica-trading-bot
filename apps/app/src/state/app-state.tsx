@@ -88,6 +88,14 @@ export type AppSessionState = {
   onboarding: {
     status: OnboardingStatus;
     accountReady: boolean;
+    accountLookupStatus:
+      | "idle"
+      | "checking"
+      | "new_account"
+      | "existing_account"
+      | "error";
+    discoveredWalletAddress: string | null;
+    showCompletionModal: boolean;
   };
   runtime: RuntimeState;
 };
@@ -160,6 +168,9 @@ export function createInitialAppSessionState(): AppSessionState {
     onboarding: {
       status: "wallet_pending",
       accountReady: false,
+      accountLookupStatus: "idle",
+      discoveredWalletAddress: null,
+      showCompletionModal: false,
     },
     runtime: createEmptyRuntimeState(),
   };
@@ -218,6 +229,9 @@ function parseStoredState(rawValue: string | null): AppSessionState {
         ...baseState.onboarding,
         ...parsed.onboarding,
         status: onboardingStatus(parsed.onboarding?.status),
+        accountLookupStatus: onboardingLookupStatus(
+          parsed.onboarding?.accountLookupStatus,
+        ),
       },
     };
 
@@ -252,6 +266,17 @@ function operationalVerificationStatus(
 ): OperationalVerificationStatus {
   const result = operationalVerificationStatusSchema.safeParse(value);
   return result.success ? result.data : "pending";
+}
+
+function onboardingLookupStatus(
+  value: unknown,
+): AppSessionState["onboarding"]["accountLookupStatus"] {
+  return value === "checking" ||
+    value === "new_account" ||
+    value === "existing_account" ||
+    value === "error"
+    ? value
+    : "idle";
 }
 
 function presetActivationValue(value: unknown): PresetActivation | null {

@@ -4,6 +4,7 @@ import { useI18n } from "../../shared/i18n/I18nProvider";
 type ConfirmationModalProps = {
   isOpen: boolean;
   tone?: "danger" | "info";
+  showBadge?: boolean;
   title: string;
   description: string;
   confirmLabel: string;
@@ -15,6 +16,7 @@ type ConfirmationModalProps = {
 export function ConfirmationModal({
   isOpen,
   tone = "info",
+  showBadge = true,
   title,
   description,
   confirmLabel,
@@ -54,9 +56,11 @@ export function ConfirmationModal({
         role="dialog"
       >
         <div className="modal-copy">
-          <span className={`badge badge--${tone === "danger" ? "danger" : "info"}`}>
-            {tone === "danger" ? t("modalSensitiveBadge") : t("modalConfirmBadge")}
-          </span>
+          {showBadge ? (
+            <span className={`badge badge--${tone === "danger" ? "danger" : "info"}`}>
+              {tone === "danger" ? t("modalSensitiveBadge") : t("modalConfirmBadge")}
+            </span>
+          ) : null}
           <h3>{title}</h3>
           <p>{description}</p>
         </div>

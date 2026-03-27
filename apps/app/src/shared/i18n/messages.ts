@@ -32,10 +32,18 @@ export const messages = {
       "Connect the main wallet, approve the builder code, validate the Agent Wallet and complete the readiness check before unlocking access.",
     pageOnboardingAction: "Complete wallet connection, builder approval and Agent Wallet validation before opening protected routes.",
     onboardingEyebrow: "Guided setup",
-    onboardingHeroTitle: "Connect in four simple steps",
+    onboardingHeroTitle: "Connect in simple steps",
     onboardingHeroDescription:
       "Wallet connection, builder approval and Agent Wallet validation still happen first, and a final readiness check confirms the account can operate before entry.",
+    onboardingTopbarEyebrow: "Setup flow",
+    onboardingTopbarTitle: "Account access",
+    onboardingTopbarDescription:
+      "Wallet connection, builder approval and Agent Wallet validation still happen first, and a final readiness check confirms the account can operate before entry.",
     onboardingProgressLabel: "Step 4 of 4",
+    onboardingProgressTitle: "Progress",
+    onboardingProgressOf: "of",
+    onboardingProgressStepsCompleted: "steps completed",
+    onboardingCurrentStepLabel: "Step",
     onboardingStepWalletTitle: "Connect wallet",
     onboardingStepWalletDescription: "Required before any main action.",
     onboardingStepBuilderTitle: "Approve builder code",
@@ -48,9 +56,10 @@ export const messages = {
     onboardingCardWalletTitle: "Connect Solana wallet",
     onboardingCardWalletDescription:
       "This wallet identifies the account and never exposes its private key in the product.",
+    onboardingCardBuilderEyebrow: "Step 2",
     onboardingBuilderApprovalTitle: "Approve builder code",
     onboardingBuilderApprovalDescription:
-      "This is a one-time account authorization signed with the connected wallet. It is not a transfer and does not expose the wallet private key.",
+      "The builder code identifies callydus as the authorized automation layer for this Pacifica account. This one-time approval is required before the bot can operate, is signed with the connected wallet, is not a transfer and does not expose the wallet private key.",
     onboardingBuilderApprovalAction: "Approve builder code",
     onboardingCardCredentialsEyebrow: "Step 3",
     onboardingCardCredentialsTitle: "Agent Wallet access",
@@ -105,6 +114,22 @@ export const messages = {
     onboardingProgressPending: "Pending",
     onboardingProgressCurrent: "Current",
     onboardingProgressComplete: "Complete",
+    onboardingProgressDone: "Done",
+    onboardingProgressLocked: "Locked",
+    onboardingEditAction: "Edit",
+    onboardingStepCompletedTitle: "Step completed",
+    onboardingLockedStepTitle: "Waiting for previous step",
+    onboardingWalletDoneNote:
+      "Editing this step reopens the flow from wallet connection and invalidates all dependent steps.",
+    onboardingBuilderDoneNote:
+      "Editing this step reopens builder approval and invalidates Agent Wallet validation plus the readiness check.",
+    onboardingBuilderLockedNote:
+      "This step becomes available only after the wallet connection is complete.",
+    onboardingOperationalLockedNote:
+      "This step becomes available only after Agent Wallet validation succeeds.",
+    onboardingOperationalWaitingTitle: "Waiting for Step 3",
+    onboardingOperationalWaitingDescription:
+      "Finish Agent Wallet validation to unlock the readiness check.",
     onboardingValueNotConnected: "Not connected yet",
     onboardingValueNoProvider: "No provider selected",
     onboardingValueNoError: "No wallet errors",
@@ -202,6 +227,14 @@ export const messages = {
     onboardingFinalCtaHintBlocked:
       "The primary CTA unlocks only after wallet, builder approval, Agent Wallet validation and the readiness check succeed.",
     onboardingFinalCtaHintReady: "Account ready. You can continue.",
+    onboardingReadyToastTitle: "Onboarding completed",
+    onboardingReadyToastDescription:
+      "Your account is ready. You can now activate a bot.",
+    dashboardWelcomeModalTitle: "Account ready",
+    dashboardWelcomeModalDescription:
+      "Everything is set up correctly. Welcome to callydus. Your account is ready and you can now activate a bot.",
+    dashboardWelcomeModalConfirm: "Review presets",
+    modalCloseAction: "Close",
     pageDashboardTitle: "Dashboard",
     pageDashboardDescription:
       "Dashboard metrics and live account data will plug into this route after onboarding is valid.",
