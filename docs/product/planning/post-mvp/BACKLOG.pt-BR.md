@@ -25,6 +25,10 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 | BG-011 | DONE | decisao em aberto | P0 | integracao pacifica | expor `operationally_verified` no onboarding como gate visivel de prontidao operacional | decisao fechada: onboarding usa probe controlado e gate final unico de readiness |
 | BG-012 | DONE | implementacao | P0 | onboarding | implementar `operational verification` da Agent Wallet no onboarding com gate `operationally_verified` | concluido e validado manualmente no fluxo completo |
 | BG-013 | DONE | ajuste de UX | P0 | onboarding | revisar UX, copy e estados do onboarding para o gate `operationally_verified` | handoff aplicado e validado no onboarding real |
+| BG-014 | DONE | ajuste de UX | P0 | onboarding | melhorar a condução sequencial do onboarding com barra de progresso, steps bloqueados e revalidacao ao editar | concluido com refinamento final do fluxo focado por step, navegacao lateral e fechamento de UX do onboarding |
+| BG-015 | DONE | ajuste de UX | P0 | onboarding | ramificar o step 1 por `walletAddress`: conta existente vai direto ao dashboard; conta nova revela os proximos steps | decisao absorvida no onboarding real com bifurcacao logo apos conectar a wallet |
+| BG-016 | DONE | implementacao | P0 | onboarding | implementar lookup de `OperationalAccount` por `walletAddress` e redirecionamento condicional apos conectar a wallet | concluido com lookup backend, bifurcacao do step 1 e supressao do modal para conta existente |
+| BG-017 | DONE | ajuste de UX | P0 | onboarding | revisar o onboarding para mostrar apenas o step 1 inicialmente e revelar os proximos apenas para conta nova | concluido com menu lateral progressivo e ausencia de boas-vindas para conta existente |
 
 ## Cards
 - [BG-001 Card](./cards/BG-001_CARD.pt-BR.md)
@@ -40,3 +44,7 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 - [BG-011 Card](./cards/BG-011_CARD.pt-BR.md)
 - [BG-012 Card](./cards/BG-012_CARD.pt-BR.md)
 - [BG-013 Card](./cards/BG-013_CARD.pt-BR.md)
+- [BG-014 Card](./cards/BG-014_CARD.pt-BR.md)
+- [BG-015 Card](./cards/BG-015_CARD.pt-BR.md)
+- [BG-016 Card](./cards/BG-016_CARD.pt-BR.md)
+- [BG-017 Card](./cards/BG-017_CARD.pt-BR.md)
