@@ -83,19 +83,29 @@ QA deve validar:
 - consistência entre badges, botões e cards
 - visibilidade do estado do bot e da conexão
 - distinção clara entre `Main wallet` e `Agent Wallet` no onboarding
+- `builder approval` claramente percebido como etapa separada e obrigatória da conta
+- `operational verification` claramente percebida como check operacional controlado
 - helper text do campo de `Agent Wallet private key` sem ambiguidade
-- CTA `Validate and Continue` bloqueado até wallet + credenciais válidas
+- CTA final bloqueado até wallet + `builder approval` + `Agent Wallet` + `operationally_verified`
 - `reconnecting` tratado como variação de loading sem exigir novo estado visual
 - clareza da ação `Close trade`
 - distinção visual entre `Current trades` e `History`
 - separação clara entre manutenção de conta em `Profile` e setup inicial em `Onboarding`
 
 ## Regras Específicas de Onboarding
-- a etapa 2 usa o contrato de `Agent Wallet`, não `API key + secret`
+- o onboarding tem 4 etapas: wallet, `builder approval`, `Agent Wallet` e `operational verification`
+- o `builder approval` acontece entre a conexão da wallet e a validação da `Agent Wallet`
+- `builder approval` é uma autorização única da conta assinada com a wallet principal conectada
+- o `builder approval` não deve ser descrito como transferência nem como validação da `Agent Wallet`
 - `mainWalletPublicKey` é readonly e vem da wallet conectada
 - `agentWalletPublicKey` e `agentWalletPrivateKey` são os campos obrigatórios da validação inicial
 - `credentialAlias` é opcional e não deve competir com os campos obrigatórios
 - a private key solicitada deve ser explicitamente identificada como pertencente à `Agent Wallet`, nunca à wallet principal
+- rejeição ou erro em `builder approval` devem oferecer retry claro quando aplicável
+- `operational verification` acontece depois da validação da `Agent Wallet` e antes da liberação final
+- `operational verification` deve explicar que uma ordem técnica controlada será criada e cancelada em seguida
+- a UX não deve chamar esse passo de `trade`
+- falha transitória e bloqueio real de conta devem ter mensagens distintas nesse check
 - mensagens de erro devem separar falha transitória de erro que exige edição do campo
 - estados e microcopy principal do onboarding devem seguir [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
 
@@ -109,7 +119,7 @@ QA deve validar:
 ## Orientação de i18n Para Onboarding
 - usar os grupos de mensagem da seção `Microcopy Principal` em [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md) como referência inicial de chave
 - preservar frases curtas e auto-contidas para evitar quebras no layout mobile
-- não esconder distinção semântica entre `wallet` e `Agent Wallet` por reaproveitamento excessivo de chave
+- não esconder distinção semântica entre `wallet`, `builder approval`, `Agent Wallet` e `operational verification` por reaproveitamento excessivo de chave
 - tratar mensagens de bloqueio, loading, sucesso e erro como grupos separados na camada de i18n
 - helper texts devem permanecer independentes dos labels para facilitar tradução e revisão futura
 

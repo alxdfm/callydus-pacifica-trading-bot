@@ -116,6 +116,13 @@ Problemas:
 - pode consumir margem, fees, rate limit ou gerar efeito de mercado
 - piora muito a UX e aumenta risco operacional
 
+Detalhe relevante da doc:
+- `GET /api/v1/info` expoe `tick_size`, `lot_size` e `min_order_size`
+- `min_order_size` e em USD
+- para `BTC`, a doc mostra `tick_size = 1`, `lot_size = 0.00001`, `min_order_size = 10`
+
+Isso significa que um probe tipo `BTC @ 1 USD` precisa respeitar notional minimo de `10 USD`, o que levaria a `amount = 10`
+
 ### Opcao E: tratar a primeira acao real assinada pela Agent Wallet como prova operacional
 Conclusao:
 - e a opcao mais pragmatica com a doc atual
@@ -134,31 +141,53 @@ Vantagens:
 Desvantagem:
 - o onboarding nao garante 100% de operabilidade antes do primeiro comando real
 
+### Observacao adicional sobre erros de conta
+Se um `POST` real assinado com `agent_wallet` falhar por regra de negocio da conta, isso ainda e um sinal relevante.
+
+Exemplos:
+- saldo insuficiente
+- margem insuficiente
+- ordem abaixo do minimo
+- parametro invalido de mercado
+
+Inferencia recomendada:
+- se a Pacifica responde erro de negocio apos processar o request assinado, a camada de assinatura da `Agent Wallet` provavelmente foi aceita
+- isso nao equivale a `operationally_verified`
+- mas equivale a evidencia forte de `signature_verified`
+
+Isso sugere um modelo mais util de estados:
+- `validated`
+- `signature_verified`
+- `operationally_verified`
+
 ## Recomendacao
 
 ### Recomendacao Principal
-Adotar dois niveis de validade para a `Agent Wallet`:
+Para arquitetura interna, ainda faz sentido distinguir estados como:
+- `validated`
+- `signature_verified`
+- `operationally_verified`
 
-1. `validated`
-- parse valido
-- keypair coerente
-- segredo cifrado e persistido
+Mas, para produto, a recomendacao preferencial passa a ser expor um unico gate visivel:
+- `operationally_verified`
 
-2. `operationally_verified`
-- primeiro `POST` real aceito pela Pacifica com `agent_wallet`
-
-Essa recomendacao e a mais segura e honesta com o que a doc da Pacifica realmente oferece hoje.
+Isso alinha o onboarding com a readiness real do bot e evita liberar a aplicacao para contas que ainda nao conseguem operar de fato.
 
 ### Recomendacao Secundaria
 Se o produto exigir prova operacional antes do primeiro trade, a unica direcao documentada hoje e escolher um `POST` real de menor impacto e usa-lo como probe. Mas isso deve ser tratado como decisao de produto/risco, nao como comportamento neutro documentado pela Pacifica.
 
+### Atualizacao de recomendacao
+Com base no risco de o bot falhar apenas na primeira oportunidade real, a recomendacao preferencial passa a ser:
+- `limit order` extremamente fora do mercado
+- seguida de cancelamento imediato
+- como `operational verification` pre-run
+
 ## Decisao Tecnica Recomendada
 - nao tratar `GET /account`, `GET /positions` ou saldo como prova da `Agent Wallet`
 - nao fingir que existe endpoint oficial de `check` quando a doc nao oferece isso
-- manter o onboarding com:
-  - `builder approval`
-  - `Agent Wallet validation` criptografica/backend
-- adicionar no backend um conceito posterior de `operational verification` baseado no primeiro `POST` real aceito
+- manter `builder approval` como gate separado de conta
+- tratar `operational verification` como gate visivel para saida do onboarding
+- manter estados tecnicos intermediarios apenas como suporte interno de diagnostico e auditoria
 
 ## Impacto no Projeto
 - o `/validate` atual pode continuar como gate de credencial
@@ -166,6 +195,6 @@ Se o produto exigir prova operacional antes do primeiro trade, a unica direcao d
 - o runtime/trading backend deve passar a marcar a credencial como `operationally_verified` quando a Pacifica aceitar a primeira acao assinada pela `Agent Wallet`
 
 ## Gaps Ainda Abertos
-- precisamos decidir se o MVP aceita essa validacao em dois niveis
+- precisamos decidir se o produto quer expor ou nao estados tecnicos intermediarios para suporte
 - se o PO exigir prova operacional pre-trade, sera necessario escolher conscientemente um `POST` com side effect como probe
 - vale validar depois se a Pacifica adiciona algum endpoint de teste/health check para Agent Wallet

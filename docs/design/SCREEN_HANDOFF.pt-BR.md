@@ -7,25 +7,27 @@ Resumir o que cada tela precisa preservar visualmente na implementação.
 Referências: [preview/onboarding.html](./preview/onboarding.html), [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md)
 
 Prioridades:
-- fluxo em 2 etapas visível sem explicação externa
-- wallet e credenciais como únicos blocos principais
+- fluxo em 4 etapas visível sem explicação externa
+- wallet, `builder approval`, `Agent Wallet` e `operational verification` como blocos semânticos distintos
 - `mainWalletPublicKey` readonly deve parecer dado herdado da wallet conectada
+- `builder approval` deve parecer autorização única da conta, não transferência
 - `Agent Wallet` deve ficar semanticamente distinta da wallet principal
+- `operational verification` deve parecer check operacional controlado, não trade espontâneo
 - painel de status da conta separado do formulário
-- CTA final `Validate and Continue` bloqueado até sucesso
+- CTA final `Continue to dashboard` bloqueado até wallet + `builder approval` + `Agent Wallet` + `operationally_verified`
 - estados de validação claramente distinguíveis
 - `reconnecting` pode reutilizar a linguagem visual de `connecting`, sem novo estado obrigatório
 
 Comportamento Mobile:
 - abaixo de `1240px`, `flow-shell` e `onboarding-grid` colapsam para uma coluna
-- a ordem vertical deve preservar: contexto da tela, wallet, `Agent Wallet`, status da conta
+- a ordem vertical deve preservar: contexto da tela, wallet, `builder approval`, `Agent Wallet`, `operational verification`, status da conta
 - `flow-side` deixa de ser sticky no mobile e vira bloco introdutório acima do conteúdo
 - CTA e ações principais devem continuar visíveis sem overflow horizontal
 - labels, helper texts e mensagens devem tolerar strings maiores sem sobreposição
 
 Orientação de i18n:
 - usar os grupos definidos em [ONBOARDING_STATE_MATRIX.pt-BR.md](./ONBOARDING_STATE_MATRIX.pt-BR.md) como base de chave para onboarding
-- manter distinção explícita entre textos de `wallet` e `Agent Wallet`
+- manter distinção explícita entre textos de `wallet`, `builder approval`, `Agent Wallet` e `operational verification`
 - helper texts e mensagens de bloqueio não devem depender de concatenar fragmentos dinâmicos longos
 
 ## Dashboard
