@@ -1,7 +1,7 @@
 # BG-006 Card
 
 ## Status
-- status: `IN_REVIEW`
+- status: `DONE`
 - tipo: `melhoria`
 - prioridade: `P2`
 - owner: `PO`

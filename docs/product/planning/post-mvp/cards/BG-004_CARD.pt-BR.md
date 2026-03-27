@@ -1,7 +1,7 @@
 # BG-004 Card
 
 ## Status
-- status: `IN_REVIEW`
+- status: `DONE`
 - tipo: `mudanca de escopo`
 - prioridade: `P1`
 - owner: `PO`

@@ -1,7 +1,7 @@
 # FM-002 Card
 
 ## Status
-- status: `IN_REVIEW`
+- status: `DONE`
 - tipo: `implementacao`
 - prioridade: `P0`
 - owner: `Dev`
@@ -26,20 +26,20 @@ Substituir a validacao local da Agent Wallet por uma validacao real mediada pelo
 ## Checklist de Entrega Real
 - [x] frontend nao valida credencial apenas por formato
 - [x] o resultado de validacao vem de integracao real ou adapter backend alinhado com contrato oficial
-- [ ] fluxo de `builder approval` separado e redesenhado para assinatura com wallet principal no frontend
-- [ ] criterio backend definitivo de validacao da `Agent Wallet` fechado sem depender de `approve_builder_code`
+- [x] fluxo de `builder approval` separado e redesenhado para assinatura com wallet principal no frontend
+- [x] criterio backend definitivo de validacao da `Agent Wallet` fechado sem depender de `approve_builder_code`
 
 ## Dependencias
-- [ ] FM-001 concluida
+- [x] FM-001 concluida
 
 ## Critérios de Aceite da Task
-- [ ] frontend nao valida credencial apenas por formato
-- [ ] o resultado de validacao vem de integracao real ou adapter backend alinhado com contrato oficial
-- [ ] `builder approval` nao e tratado como validacao da `Agent Wallet`
-- [ ] a mudanca de direcao esta refletida nas docs e no desenho tecnico do onboarding funcional
+- [x] frontend nao valida credencial apenas por formato
+- [x] o resultado de validacao vem de integracao real ou adapter backend alinhado com contrato oficial
+- [x] `builder approval` nao e tratado como validacao da `Agent Wallet`
+- [x] a mudanca de direcao esta refletida nas docs e no desenho tecnico do onboarding funcional
 
 ## Proximo Passo Recomendado
-Executar a implementacao com base no design tecnico em `docs/dev/FM_002_CREDENTIAL_VALIDATION_TECH_DESIGN.pt-BR.md`.
+Usar o onboarding funcional validado como base para os proximos fluxos backend do Functional MVP.
 
 ## Log de Acompanhamento
 - `2026-03-25`: card criado a partir do diagnostico de PO sobre a transicao para MVP funcional real.
@@ -53,3 +53,4 @@ Executar a implementacao com base no design tecnico em `docs/dev/FM_002_CREDENTI
 - `2026-03-25`: a partir desta evidencia, o `builder approval` passa a ser tratado como passo separado de onboarding via wallet principal no frontend, enquanto a validacao da `Agent Wallet` permanece como responsabilidade backend ainda em refinamento tecnico.
 - `2026-03-25`: onboarding ajustado em codigo para o novo fluxo: assinatura do `builder approval` pela wallet principal no frontend, envio via API para a Pacifica e bloqueio da validacao da `Agent Wallet` ate esse gate ser aprovado.
 - `2026-03-25`: estudo documental consolidado em `docs/dev/PACIFICA_AGENT_WALLET_OPERATIONAL_VALIDATION_STUDY.pt-BR.md` mostrou que a Pacifica nao expoe endpoint neutro de `check` para `Agent Wallet`; saldo/conta nao servem como prova e `POST`s disponiveis tem side effect operacional.
+- `2026-03-26`: a task foi fechada com a implementacao do onboarding funcional completo, incluindo `builder approval` no frontend, validacao backend da `Agent Wallet`, `operational verification` via probe controlado e walkthrough manual bem-sucedido de ponta a ponta.

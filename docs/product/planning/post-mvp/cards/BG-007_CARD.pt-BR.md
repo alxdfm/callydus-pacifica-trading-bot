@@ -1,7 +1,7 @@
 # BG-007 Card
 
 ## Status
-- status: `IN_REVIEW`
+- status: `DONE`
 - tipo: `ajuste de UX`
 - prioridade: `P1`
 - owner: `PO`

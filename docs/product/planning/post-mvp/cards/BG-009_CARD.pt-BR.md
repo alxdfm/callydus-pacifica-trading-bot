@@ -1,7 +1,7 @@
 # BG-009 Card
 
 ## Status
-- status: `IN_REVIEW`
+- status: `DONE`
 - tipo: `ajuste de UX`
 - prioridade: `P0`
 - owner: `PO`

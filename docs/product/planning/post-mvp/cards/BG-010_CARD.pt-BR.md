@@ -1,7 +1,7 @@
 # BG-010 Card
 
 ## Status
-- status: `TODO`
+- status: `DONE`
 - tipo: `mudanca de escopo`
 - prioridade: `P1`
 - owner: `PO`
@@ -55,3 +55,15 @@ PO alinhar com dev se o fallback atual sera aceito como compromisso do MVP funci
 
 ## Log de Acompanhamento
 - `2026-03-25`: evidencia real registrada de que `approve_builder_code` com assinatura da conta principal funcionou pelo caminho `primary`; o `fallback` segue sem necessidade comprovada nesse endpoint e nao deve permanecer por inercia se nao fizer sentido para os demais fluxos assinados.
+
+## Impacto de Design
+- onboarding passa a tratar `builder approval` como etapa separada entre wallet e `Agent Wallet`
+- a UX deve comunicar que esta aprovacao e autorizacao unica da conta, nao transferencia
+- erros e rejeicoes de assinatura precisam parecer recuperaveis quando houver retry
+- a etapa de `Agent Wallet` continua bloqueada ate aprovacao do builder code
+
+## Evidencia de Design
+- [ONBOARDING_STATE_MATRIX.pt-BR.md](../../../../design/ONBOARDING_STATE_MATRIX.pt-BR.md)
+- [SCREEN_HANDOFF.pt-BR.md](../../../../design/SCREEN_HANDOFF.pt-BR.md)
+- [DESIGN_HANDOFF.pt-BR.md](../../../../design/DESIGN_HANDOFF.pt-BR.md)
+- [onboarding.html](../../../../design/preview/onboarding.html)
