@@ -7,8 +7,9 @@ export type CredentialValidationStatus =
 
 export type PacificaCredential = {
   id: string;
-  operatorAccountId: string;
+  operatorAccountId: string | null;
   walletAddress: string;
+  credentialAlias: string | null;
   publicKey: string;
   encryptedPrivateKeyRef: string;
   keyFingerprint: string;

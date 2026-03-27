@@ -335,6 +335,46 @@ export const pacificaOperationalVerificationResponseSchema = z.union([
   pacificaOperationalVerificationErrorSchema,
 ]);
 
+export const operationalAccountLookupRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+});
+
+export const operationalAccountLookupFoundSchema = z.object({
+  status: z.literal("found"),
+  walletAddress: z.string().min(1),
+  accountExists: z.literal(true),
+  onboardingStatus: onboardingStatusSchema,
+  credentialId: z.string().uuid().nullable(),
+  agentWalletPublicKey: z.string().nullable(),
+  credentialAlias: z.string().nullable(),
+  keyFingerprint: z.string().nullable(),
+  operationallyVerified: z.boolean(),
+  canAccessProduct: z.literal(true),
+});
+
+export const operationalAccountLookupNotFoundSchema = z.object({
+  status: z.literal("not_found"),
+  walletAddress: z.string().min(1),
+  accountExists: z.literal(false),
+  canAccessProduct: z.literal(false),
+});
+
+export const operationalAccountLookupErrorSchema = z.object({
+  status: z.literal("error"),
+  walletAddress: z.string().min(1),
+  accountExists: z.literal(false),
+  code: z.enum(["provider_unavailable", "internal_error"]),
+  message: z.string().min(1),
+  retryable: z.boolean(),
+  canAccessProduct: z.literal(false),
+});
+
+export const operationalAccountLookupResponseSchema = z.union([
+  operationalAccountLookupFoundSchema,
+  operationalAccountLookupNotFoundSchema,
+  operationalAccountLookupErrorSchema,
+]);
+
 export const pacificaBuilderApprovalOperationType = "approve_builder_code";
 
 export function createPacificaBuilderApprovalSigningPayload(input: {
@@ -494,6 +534,11 @@ export type PacificaOperationalVerificationSubmission = z.infer<typeof pacificaO
 export type PacificaOperationalVerificationSuccess = z.infer<typeof pacificaOperationalVerificationSuccessSchema>;
 export type PacificaOperationalVerificationError = z.infer<typeof pacificaOperationalVerificationErrorSchema>;
 export type PacificaOperationalVerificationResponse = z.infer<typeof pacificaOperationalVerificationResponseSchema>;
+export type OperationalAccountLookupRequest = z.infer<typeof operationalAccountLookupRequestSchema>;
+export type OperationalAccountLookupFound = z.infer<typeof operationalAccountLookupFoundSchema>;
+export type OperationalAccountLookupNotFound = z.infer<typeof operationalAccountLookupNotFoundSchema>;
+export type OperationalAccountLookupError = z.infer<typeof operationalAccountLookupErrorSchema>;
+export type OperationalAccountLookupResponse = z.infer<typeof operationalAccountLookupResponseSchema>;
 export type BotRuntimeState = z.infer<typeof botRuntimeStateSchema>;
 export type OnboardingContract = z.infer<typeof onboardingContractSchema>;
 export type DashboardContract = z.infer<typeof dashboardContractSchema>;

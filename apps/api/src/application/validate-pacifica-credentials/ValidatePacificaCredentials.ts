@@ -9,6 +9,7 @@ export type ValidatePacificaCredentialsInput = {
   mainWalletPublicKey: string;
   agentWalletPublicKey: string;
   agentWalletPrivateKey: string;
+  credentialAlias: string | null | undefined;
 };
 
 export type ValidatePacificaCredentialsOutput =
@@ -84,6 +85,7 @@ export function createValidatePacificaCredentials(
     const credential = await dependencies.credentialRepository.save({
       id: dependencies.createCredentialId(),
       walletAddress: input.mainWalletPublicKey,
+      credentialAlias: input.credentialAlias?.trim() || null,
       publicKey: input.agentWalletPublicKey,
       encryptedPrivateKeyRef: encryptedSecret.encryptedPrivateKeyRef,
       keyFingerprint: encryptedSecret.keyFingerprint,

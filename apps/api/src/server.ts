@@ -68,6 +68,22 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "POST" &&
+    request.url === "/api/onboarding/account/lookup"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.lookupOperationalAccountByWallet({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "error" ? 500 : 200, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
     request.url === "/api/onboarding/credentials/validate"
   ) {
     const body = await readJsonBody(request);

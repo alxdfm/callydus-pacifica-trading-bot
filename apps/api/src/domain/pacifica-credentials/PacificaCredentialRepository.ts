@@ -21,10 +21,23 @@ export type UpdateOperationalVerificationInput = {
   lastOperationalProbeJson: unknown | null;
 };
 
+export type OperationalAccountLookup = {
+  walletAddress: string;
+  onboardingStatus: string;
+  credentialId: string | null;
+  credentialAlias: string | null;
+  agentWalletPublicKey: string | null;
+  keyFingerprint: string | null;
+  operationallyVerified: boolean;
+};
+
 export interface PacificaCredentialRepository {
   findActiveCredential(
     input: FindActiveCredentialInput,
   ): Promise<PacificaCredential | null>;
+  findOperationalAccountByWalletAddress(
+    walletAddress: string,
+  ): Promise<OperationalAccountLookup | null>;
   findById(credentialId: string): Promise<PacificaCredential | null>;
   save(credential: SavePacificaCredentialInput): Promise<PacificaCredential>;
   updateOperationalVerification(

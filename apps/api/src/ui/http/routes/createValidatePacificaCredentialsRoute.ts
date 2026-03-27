@@ -23,9 +23,15 @@ export function createValidatePacificaCredentialsRoute(
     request: ValidatePacificaCredentialsHttpRequest,
   ): Promise<PacificaCredentialValidationResponse> {
     const body = pacificaCredentialSubmissionSchema.parse(request.body);
-    const result = await handler(body);
+    const normalizedInput: ValidatePacificaCredentialsInput = {
+      mainWalletPublicKey: body.mainWalletPublicKey,
+      agentWalletPublicKey: body.agentWalletPublicKey,
+      agentWalletPrivateKey: body.agentWalletPrivateKey,
+      credentialAlias: body.credentialAlias ?? null,
+    };
+    const result = await handler(normalizedInput);
     return pacificaCredentialValidationResponseSchema.parse(
-      mapResultToContract(body, result),
+      mapResultToContract(normalizedInput, result),
     );
   };
 }

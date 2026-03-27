@@ -12,6 +12,10 @@ import {
   type ApprovePacificaBuilderDependencies,
 } from "./application/approve-pacifica-builder/ApprovePacificaBuilder";
 import {
+  createLookupOperationalAccountByWallet,
+  type LookupOperationalAccountByWalletDependencies,
+} from "./application/lookup-operational-account-by-wallet/LookupOperationalAccountByWallet";
+import {
   createVerifyPacificaOperational,
   type VerifyPacificaOperationalDependencies,
 } from "./application/verify-pacifica-operational/VerifyPacificaOperational";
@@ -43,6 +47,9 @@ export type CreateApiModuleInput = {
   approvePacificaBuilderDependencies?: Partial<
     ApprovePacificaBuilderDependencies
   >;
+  lookupOperationalAccountByWalletDependencies?: Partial<
+    LookupOperationalAccountByWalletDependencies
+  >;
   verifyPacificaOperationalDependencies?: Partial<
     VerifyPacificaOperationalDependencies
   >;
@@ -63,6 +70,12 @@ export function createApiModule(input: CreateApiModuleInput) {
   const credentialRepository =
     input.validatePacificaCredentialsDependencies?.credentialRepository ??
     new PrismaPacificaCredentialRepository(input.prisma);
+  const lookupOperationalAccountByWallet =
+    createLookupOperationalAccountByWallet({
+      credentialRepository:
+        input.lookupOperationalAccountByWalletDependencies
+          ?.credentialRepository ?? credentialRepository,
+    });
   const credentialEncryption =
     input.validatePacificaCredentialsDependencies?.credentialEncryption ??
     new AesCredentialEncryptionService(
@@ -98,6 +111,7 @@ export function createApiModule(input: CreateApiModuleInput) {
     environment,
     router: createApiRouter({
       approvePacificaBuilder,
+      lookupOperationalAccountByWallet,
       verifyPacificaOperational,
       validatePacificaCredentials,
     }),
