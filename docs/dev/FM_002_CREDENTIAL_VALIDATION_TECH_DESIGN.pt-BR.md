@@ -139,17 +139,26 @@ Observacao:
 ## Persistencia Recomendada
 
 ### OperatorAccount
-Garantir existencia ou upsert por `walletAddress`.
+Nao criar `OperatorAccount` no connect da wallet nem na validacao inicial da `Agent Wallet`.
+
+Regra atual:
+- `OperatorAccount` so e promovido/persistido ao final do onboarding
+- isso acontece apenas apos `operational verification` bem-sucedida
+- o lookup de conta existente no step 1 considera apenas contas prontas
 
 ### PacificaCredential
 Persistir:
-- `operatorAccountId`
+- `walletAddress`
 - `publicKey`
 - `encryptedPrivateKeyRef`
 - `keyFingerprint`
 - `validationStatus`
 - `lastValidatedAt`
 - `lastValidationErrorCode`
+
+Durante o onboarding:
+- `PacificaCredential` pode existir sem `operatorAccountId`
+- ao concluir o readiness check com sucesso, a credencial e anexada ao `OperatorAccount` promovido
 
 Regra de troca de credencial:
 - a credencial atualmente ativa so pode ser substituida apos nova validacao bem-sucedida
