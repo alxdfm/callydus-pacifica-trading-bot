@@ -115,6 +115,61 @@ export class PacificaClient {
     });
   }
 
+  async getMarketInfo(): Promise<unknown> {
+    const response = await fetch(`${this.apiBaseUrl}/api/v1/info`);
+    const payload = await parseResponseBody(response);
+
+    if (!response.ok) {
+      throw new PacificaApiError(
+        `Pacifica API request failed (${response.status}).`,
+        {
+          status: response.status,
+          body: payload,
+          retryable: response.status === 429 || response.status >= 500,
+        },
+      );
+    }
+
+    return payload;
+  }
+
+  async createLimitOrder(input: {
+    symbol: string;
+    side: "bid" | "ask";
+    amount: string;
+    price: string;
+    tif?: "ALO" | "GTC" | "IOC";
+    clientOrderId: string;
+  }): Promise<unknown> {
+    return this.requestSigned({
+      path: "/api/v1/orders/create",
+      operationType: "create_order",
+      data: {
+        symbol: input.symbol,
+        side: input.side,
+        amount: input.amount,
+        price: input.price,
+        tif: input.tif ?? "ALO",
+        reduce_only: false,
+        client_order_id: input.clientOrderId,
+      },
+    });
+  }
+
+  async cancelOrder(input: {
+    symbol: string;
+    clientOrderId: string;
+  }): Promise<unknown> {
+    return this.requestSigned({
+      path: "/api/v1/orders/cancel",
+      operationType: "cancel_order",
+      data: {
+        symbol: input.symbol,
+        client_order_id: input.clientOrderId,
+      },
+    });
+  }
+
   private async requestSigned(input: {
     path: string;
     operationType: string;
@@ -143,7 +198,7 @@ export class PacificaClient {
         .includes("verification failed");
 
     if (verificationFailed) {
-      logPacificaSignatureAttempt("Primary signature verification failed. Retrying with unsignedBody.", {
+      logPacificaSignatureRetry("Primary signature verification failed. Retrying with unsignedBody.", {
         path: input.path,
         operationType: input.operationType,
         account: this.account,
@@ -192,7 +247,7 @@ export class PacificaClient {
     path: string,
     unsignedBody: Record<string, unknown>,
     signingPayload: Record<string, unknown>,
-    attempt: "primary" | "fallback",
+    _attempt: "primary" | "fallback",
   ) {
     const signature = signPayload(this.signingKey, signingPayload);
     const response = await fetch(`${this.apiBaseUrl}${path}`, {
@@ -207,48 +262,31 @@ export class PacificaClient {
     });
     const payload = await parseResponseBody(response);
 
-    logPacificaSignatureAttempt("Pacifica signed request executed.", {
-      attempt,
-      path,
-      account: this.account,
-      agentWallet: this.agentWallet,
-      signerPublicKey: this.signerPublicKey,
-      includesAgentWallet: "agent_wallet" in unsignedBody,
-      responseStatus: response.status,
-      responseBody: payload,
-    });
-
     return { response, payload };
   }
 }
 
-function logPacificaSignatureAttempt(
+function logPacificaSignatureRetry(
   message: string,
   context: {
-    attempt?: "primary" | "fallback";
     path: string;
     operationType?: string;
     account: string;
     agentWallet: string;
     signerPublicKey: string;
     includesAgentWallet: boolean;
-    responseStatus?: number;
-    responseBody?: unknown;
     firstResponseStatus?: number;
     firstResponseBody?: unknown;
   },
 ) {
-  console.info("[pacifica-signature]", {
+  console.warn("[pacifica-signature]", {
     message,
-    attempt: context.attempt,
     path: context.path,
     operationType: context.operationType,
     account: shortenPublicKey(context.account),
     agentWallet: shortenPublicKey(context.agentWallet),
     signerPublicKey: shortenPublicKey(context.signerPublicKey),
     includesAgentWallet: context.includesAgentWallet,
-    responseStatus: context.responseStatus,
-    responseBody: context.responseBody,
     firstResponseStatus: context.firstResponseStatus,
     firstResponseBody: context.firstResponseBody,
   });

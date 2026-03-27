@@ -12,6 +12,10 @@ import {
   type ApprovePacificaBuilderDependencies,
 } from "./application/approve-pacifica-builder/ApprovePacificaBuilder";
 import {
+  createVerifyPacificaOperational,
+  type VerifyPacificaOperationalDependencies,
+} from "./application/verify-pacifica-operational/VerifyPacificaOperational";
+import {
   createValidatePacificaCredentials,
   type ValidatePacificaCredentialsDependencies,
 } from "./application/validate-pacifica-credentials/ValidatePacificaCredentials";
@@ -22,6 +26,7 @@ import {
 import { AesCredentialEncryptionService } from "./infrastructure/crypto/AesCredentialEncryptionService";
 import { PacificaBuilderApprovalGateway } from "./infrastructure/pacifica/PacificaBuilderApprovalGateway";
 import { PacificaCredentialValidationGateway } from "./infrastructure/pacifica/PacificaCredentialValidationGateway";
+import { PacificaOperationalVerificationGateway } from "./infrastructure/pacifica/PacificaOperationalVerificationGateway";
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
 
@@ -38,6 +43,9 @@ export type CreateApiModuleInput = {
   approvePacificaBuilderDependencies?: Partial<
     ApprovePacificaBuilderDependencies
   >;
+  verifyPacificaOperationalDependencies?: Partial<
+    VerifyPacificaOperationalDependencies
+  >;
   validatePacificaCredentialsDependencies?: Partial<
     ValidatePacificaCredentialsDependencies
   >;
@@ -52,16 +60,31 @@ export function createApiModule(input: CreateApiModuleInput) {
       new PacificaBuilderApprovalGateway(environment),
   });
 
-  const validatePacificaCredentials = createValidatePacificaCredentials({
+  const credentialRepository =
+    input.validatePacificaCredentialsDependencies?.credentialRepository ??
+    new PrismaPacificaCredentialRepository(input.prisma);
+  const credentialEncryption =
+    input.validatePacificaCredentialsDependencies?.credentialEncryption ??
+    new AesCredentialEncryptionService(
+      environment.credentialEncryptionKey,
+      environment.credentialEncryptionKeyId,
+    );
+
+  const verifyPacificaOperational = createVerifyPacificaOperational({
     credentialRepository:
-      input.validatePacificaCredentialsDependencies?.credentialRepository ??
-      new PrismaPacificaCredentialRepository(input.prisma),
+      input.verifyPacificaOperationalDependencies?.credentialRepository ??
+      credentialRepository,
     credentialEncryption:
-      input.validatePacificaCredentialsDependencies?.credentialEncryption ??
-      new AesCredentialEncryptionService(
-        environment.credentialEncryptionKey,
-        environment.credentialEncryptionKeyId,
-      ),
+      input.verifyPacificaOperationalDependencies?.credentialEncryption ??
+      credentialEncryption,
+    operationalVerification:
+      input.verifyPacificaOperationalDependencies?.operationalVerification ??
+      new PacificaOperationalVerificationGateway(environment),
+  });
+
+  const validatePacificaCredentials = createValidatePacificaCredentials({
+    credentialRepository,
+    credentialEncryption,
     credentialValidation:
       input.validatePacificaCredentialsDependencies?.credentialValidation ??
       new PacificaCredentialValidationGateway(environment),
@@ -75,6 +98,7 @@ export function createApiModule(input: CreateApiModuleInput) {
     environment,
     router: createApiRouter({
       approvePacificaBuilder,
+      verifyPacificaOperational,
       validatePacificaCredentials,
     }),
   };

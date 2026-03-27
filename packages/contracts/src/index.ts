@@ -24,6 +24,14 @@ export const builderApprovalStatusSchema = z.enum([
   "error",
 ]);
 
+export const operationalVerificationStatusSchema = z.enum([
+  "pending",
+  "verifying",
+  "verified",
+  "blocked",
+  "error",
+]);
+
 export const walletSessionStatusSchema = z.enum([
   "disconnected",
   "reconnecting",
@@ -60,6 +68,18 @@ export const pacificaBuilderApprovalErrorCodeSchema = z.enum([
   "wallet_signature_unavailable",
   "wallet_signature_rejected",
   "builder_approval_rejected",
+  "provider_unavailable",
+  "rate_limited",
+  "internal_error",
+]);
+
+export const pacificaOperationalVerificationErrorCodeSchema = z.enum([
+  "credential_not_found",
+  "credential_not_valid",
+  "probe_market_config_invalid",
+  "signature_rejected",
+  "agent_wallet_unauthorized_for_account",
+  "account_blocked",
   "provider_unavailable",
   "rate_limited",
   "internal_error",
@@ -288,6 +308,33 @@ export const pacificaBuilderApprovalResponseSchema = z.union([
   pacificaBuilderApprovalErrorSchema,
 ]);
 
+export const pacificaOperationalVerificationSubmissionSchema = z.object({
+  credentialId: z.string().uuid(),
+});
+
+export const pacificaOperationalVerificationSuccessSchema = z.object({
+  status: z.literal("verified"),
+  credentialId: z.string().uuid(),
+  operationalVerificationStatus: z.literal("verified"),
+  verifiedAt: z.string().datetime(),
+  probeSymbol: z.string().min(1),
+  probeClientOrderId: z.string().uuid(),
+  canProceed: z.literal(true),
+});
+
+export const pacificaOperationalVerificationErrorSchema = z.object({
+  status: z.enum(["blocked", "error"]),
+  code: pacificaOperationalVerificationErrorCodeSchema,
+  message: z.string().min(1),
+  retryable: z.boolean(),
+  canProceed: z.literal(false),
+});
+
+export const pacificaOperationalVerificationResponseSchema = z.union([
+  pacificaOperationalVerificationSuccessSchema,
+  pacificaOperationalVerificationErrorSchema,
+]);
+
 export const pacificaBuilderApprovalOperationType = "approve_builder_code";
 
 export function createPacificaBuilderApprovalSigningPayload(input: {
@@ -407,11 +454,13 @@ export const botCommandContractSchema = z.object({
 export type OnboardingStatus = z.infer<typeof onboardingStatusSchema>;
 export type CredentialValidationStatus = z.infer<typeof credentialValidationStatusSchema>;
 export type BuilderApprovalStatus = z.infer<typeof builderApprovalStatusSchema>;
+export type OperationalVerificationStatus = z.infer<typeof operationalVerificationStatusSchema>;
 export type WalletSessionStatus = z.infer<typeof walletSessionStatusSchema>;
 export type WalletProvider = z.infer<typeof walletProviderSchema>;
 export type WalletErrorCode = z.infer<typeof walletErrorCodeSchema>;
 export type PacificaValidationErrorCode = z.infer<typeof pacificaValidationErrorCodeSchema>;
 export type PacificaBuilderApprovalErrorCode = z.infer<typeof pacificaBuilderApprovalErrorCodeSchema>;
+export type PacificaOperationalVerificationErrorCode = z.infer<typeof pacificaOperationalVerificationErrorCodeSchema>;
 export type BotStatus = z.infer<typeof botStatusSchema>;
 export type SyncStatus = z.infer<typeof syncStatusSchema>;
 export type PacificaConnectionStatus = z.infer<typeof pacificaConnectionStatusSchema>;
@@ -441,6 +490,10 @@ export type PacificaBuilderApprovalSubmission = z.infer<typeof pacificaBuilderAp
 export type PacificaBuilderApprovalSuccess = z.infer<typeof pacificaBuilderApprovalSuccessSchema>;
 export type PacificaBuilderApprovalError = z.infer<typeof pacificaBuilderApprovalErrorSchema>;
 export type PacificaBuilderApprovalResponse = z.infer<typeof pacificaBuilderApprovalResponseSchema>;
+export type PacificaOperationalVerificationSubmission = z.infer<typeof pacificaOperationalVerificationSubmissionSchema>;
+export type PacificaOperationalVerificationSuccess = z.infer<typeof pacificaOperationalVerificationSuccessSchema>;
+export type PacificaOperationalVerificationError = z.infer<typeof pacificaOperationalVerificationErrorSchema>;
+export type PacificaOperationalVerificationResponse = z.infer<typeof pacificaOperationalVerificationResponseSchema>;
 export type BotRuntimeState = z.infer<typeof botRuntimeStateSchema>;
 export type OnboardingContract = z.infer<typeof onboardingContractSchema>;
 export type DashboardContract = z.infer<typeof dashboardContractSchema>;

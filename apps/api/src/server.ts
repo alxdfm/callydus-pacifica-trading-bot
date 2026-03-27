@@ -16,6 +16,18 @@ const api = createApiModule({
       process.env.PACIFICA_BUILDER_MAX_FEE_RATE ?? "",
     pacificaAccountPrivateKey:
       process.env.PACIFICA_ACCOUNT_PRIVATE_KEY ?? "",
+    pacificaOperationalProbeSymbol:
+      process.env.PACIFICA_OPERATIONAL_PROBE_SYMBOL ?? "BTC",
+    pacificaOperationalProbePrice:
+      process.env.PACIFICA_OPERATIONAL_PROBE_PRICE ?? "20000",
+    pacificaOperationalProbeTargetNotionalUsd:
+      process.env.PACIFICA_OPERATIONAL_PROBE_TARGET_NOTIONAL_USD ?? "11",
+    pacificaOperationalProbeTif:
+      (process.env.PACIFICA_OPERATIONAL_PROBE_TIF as
+        | "ALO"
+        | "GTC"
+        | "IOC"
+        | undefined) ?? "ALO",
     credentialEncryptionKey: process.env.CREDENTIAL_ENCRYPTION_KEY ?? "",
     credentialEncryptionKeyId:
       process.env.CREDENTIAL_ENCRYPTION_KEY_ID ?? "local-dev-v1",
@@ -60,6 +72,22 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
   ) {
     const body = await readJsonBody(request);
     const result = await api.router.validatePacificaCredentials({
+      body: body as never,
+    });
+
+    response.writeHead(result.canProceed ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/onboarding/credentials/verify-operational"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.verifyPacificaOperational({
       body: body as never,
     });
 

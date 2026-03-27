@@ -1,9 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import type { PacificaCredential } from "../../domain/pacifica-credentials/PacificaCredential";
 import type {
   FindActiveCredentialInput,
   PacificaCredentialRepository,
   SavePacificaCredentialInput,
+  UpdateOperationalVerificationInput,
 } from "../../domain/pacifica-credentials/PacificaCredentialRepository";
 
 export class PrismaPacificaCredentialRepository
@@ -25,6 +26,9 @@ export class PrismaPacificaCredentialRepository
       },
       orderBy: {
         createdAt: "desc",
+      },
+      include: {
+        operatorAccount: true,
       },
     });
 
@@ -54,19 +58,68 @@ export class PrismaPacificaCredentialRepository
         encryptedPrivateKeyRef: input.encryptedPrivateKeyRef,
         keyFingerprint: input.keyFingerprint,
         validationStatus: input.validationStatus,
+        operationallyVerified: input.operationallyVerified,
         lastValidatedAt: input.lastValidatedAt
           ? new Date(input.lastValidatedAt)
           : null,
         lastValidationErrorCode: input.lastValidationErrorCode,
+        lastOperationalVerifiedAt: input.lastOperationalVerifiedAt
+          ? new Date(input.lastOperationalVerifiedAt)
+          : null,
+        lastOperationalErrorCode: input.lastOperationalErrorCode,
+        lastOperationalProbeJson: toPrismaJsonValue(
+          input.lastOperationalProbeJson,
+        ),
+      },
+      include: {
+        operatorAccount: true,
+      },
+    });
+
+    return mapCredential(credential);
+  }
+
+  async findById(credentialId: string): Promise<PacificaCredential | null> {
+    const credential = await this.prisma.pacificaCredential.findUnique({
+      where: {
+        id: credentialId,
+      },
+      include: {
+        operatorAccount: true,
+      },
+    });
+
+    return credential ? mapCredential(credential) : null;
+  }
+
+  async updateOperationalVerification(
+    input: UpdateOperationalVerificationInput,
+  ): Promise<PacificaCredential> {
+    const credential = await this.prisma.pacificaCredential.update({
+      where: {
+        id: input.credentialId,
+      },
+      data: {
+        operationallyVerified: input.operationallyVerified,
+        lastOperationalVerifiedAt: input.lastOperationalVerifiedAt
+          ? new Date(input.lastOperationalVerifiedAt)
+          : null,
+        lastOperationalErrorCode: input.lastOperationalErrorCode,
+        lastOperationalProbeJson: toPrismaJsonValue(
+          input.lastOperationalProbeJson,
+        ),
+      },
+      include: {
+        operatorAccount: true,
       },
     });
 
     await this.prisma.operatorAccount.update({
       where: {
-        id: operatorAccount.id,
+        id: credential.operatorAccountId,
       },
       data: {
-        onboardingStatus: "ready",
+        onboardingStatus: input.operationallyVerified ? "ready" : "blocked",
       },
     });
 
@@ -75,25 +128,36 @@ export class PrismaPacificaCredentialRepository
 }
 
 function mapCredential(
-  credential: {
-    id: string;
-    operatorAccountId: string;
-    publicKey: string;
-    encryptedPrivateKeyRef: string;
-    keyFingerprint: string;
-    validationStatus: "pending" | "validating" | "valid" | "invalid" | "error";
-    lastValidatedAt: Date | null;
-    lastValidationErrorCode: string | null;
-  },
+  credential: Prisma.PacificaCredentialGetPayload<{
+    include: {
+      operatorAccount: true;
+    };
+  }>,
 ): PacificaCredential {
   return {
     id: credential.id,
     operatorAccountId: credential.operatorAccountId,
+    walletAddress: credential.operatorAccount.walletAddress,
     publicKey: credential.publicKey,
     encryptedPrivateKeyRef: credential.encryptedPrivateKeyRef,
     keyFingerprint: credential.keyFingerprint,
     validationStatus: credential.validationStatus,
+    operationallyVerified: credential.operationallyVerified,
     lastValidatedAt: credential.lastValidatedAt?.toISOString() ?? null,
     lastValidationErrorCode: credential.lastValidationErrorCode,
+    lastOperationalVerifiedAt:
+      credential.lastOperationalVerifiedAt?.toISOString() ?? null,
+    lastOperationalErrorCode: credential.lastOperationalErrorCode,
+    lastOperationalProbeJson: credential.lastOperationalProbeJson,
   };
+}
+
+function toPrismaJsonValue(
+  value: unknown,
+): Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
 }

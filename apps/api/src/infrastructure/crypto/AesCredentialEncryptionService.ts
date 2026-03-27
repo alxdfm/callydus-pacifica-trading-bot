@@ -1,6 +1,7 @@
 import {
   createCipheriv,
   createHash,
+  createDecipheriv,
   randomBytes,
 } from "node:crypto";
 import type {
@@ -40,5 +41,31 @@ export class AesCredentialEncryptionService implements CredentialEncryptionPort 
         .update(normalizedPublicKey)
         .digest("hex"),
     };
+  }
+
+  async decryptAgentWalletPrivateKey(input: {
+    encryptedPrivateKeyRef: string;
+  }): Promise<string> {
+    const parsed = JSON.parse(input.encryptedPrivateKeyRef) as {
+      keyId: string;
+      iv: string;
+      authTag: string;
+      ciphertext: string;
+    };
+    const key = createHash("sha256").update(this.encryptionKey).digest();
+    const decipher = createDecipheriv(
+      "aes-256-gcm",
+      key,
+      Buffer.from(parsed.iv, "base64"),
+    );
+
+    decipher.setAuthTag(Buffer.from(parsed.authTag, "base64"));
+
+    const plaintext = Buffer.concat([
+      decipher.update(Buffer.from(parsed.ciphertext, "base64")),
+      decipher.final(),
+    ]);
+
+    return plaintext.toString("utf8");
   }
 }

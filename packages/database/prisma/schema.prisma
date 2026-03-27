@@ -140,8 +140,12 @@ model PacificaCredential {
   encryptedPrivateKeyRef  String
   keyFingerprint          String
   validationStatus        CredentialValidationStatus
+  operationallyVerified   Boolean                    @default(false)
   lastValidatedAt         DateTime?                  @db.Timestamptz(6)
   lastValidationErrorCode String?
+  lastOperationalVerifiedAt DateTime?                @db.Timestamptz(6)
+  lastOperationalErrorCode String?
+  lastOperationalProbeJson Json?
   createdAt               DateTime                   @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime                   @updatedAt @db.Timestamptz(6)
   operatorAccount         OperatorAccount            @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)

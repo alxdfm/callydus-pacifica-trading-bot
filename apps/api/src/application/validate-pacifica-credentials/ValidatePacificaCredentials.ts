@@ -88,8 +88,12 @@ export function createValidatePacificaCredentials(
       encryptedPrivateKeyRef: encryptedSecret.encryptedPrivateKeyRef,
       keyFingerprint: encryptedSecret.keyFingerprint,
       validationStatus: "valid",
+      operationallyVerified: false,
       lastValidatedAt: validationResult.validatedAt,
       lastValidationErrorCode: null,
+      lastOperationalVerifiedAt: null,
+      lastOperationalErrorCode: null,
+      lastOperationalProbeJson: null,
     });
 
     return {

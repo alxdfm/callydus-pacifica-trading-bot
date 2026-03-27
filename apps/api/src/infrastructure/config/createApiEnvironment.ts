@@ -4,6 +4,10 @@ export type ApiEnvironment = {
   pacificaBuilderCode: string;
   pacificaBuilderMaxFeeRate: string;
   pacificaAccountPrivateKey: string;
+  pacificaOperationalProbeSymbol: string;
+  pacificaOperationalProbePrice: string;
+  pacificaOperationalProbeTargetNotionalUsd: string;
+  pacificaOperationalProbeTif: "ALO" | "GTC" | "IOC";
   credentialEncryptionKey: string;
   credentialEncryptionKeyId: string;
 };
@@ -18,6 +22,13 @@ export function createApiEnvironment(
     pacificaBuilderCode: input.pacificaBuilderCode ?? "",
     pacificaBuilderMaxFeeRate: input.pacificaBuilderMaxFeeRate ?? "",
     pacificaAccountPrivateKey: input.pacificaAccountPrivateKey ?? "",
+    pacificaOperationalProbeSymbol:
+      input.pacificaOperationalProbeSymbol ?? "BTC",
+    pacificaOperationalProbePrice:
+      input.pacificaOperationalProbePrice ?? "20000",
+    pacificaOperationalProbeTargetNotionalUsd:
+      input.pacificaOperationalProbeTargetNotionalUsd ?? "11",
+    pacificaOperationalProbeTif: input.pacificaOperationalProbeTif ?? "ALO",
     credentialEncryptionKey: input.credentialEncryptionKey ?? "",
     credentialEncryptionKeyId: input.credentialEncryptionKeyId ?? "local-dev-v1",
   };

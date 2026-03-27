@@ -8,4 +8,7 @@ export interface CredentialEncryptionPort {
     agentWalletPublicKey: string;
     agentWalletPrivateKey: string;
   }): Promise<EncryptedCredentialSecret>;
+  decryptAgentWalletPrivateKey(input: {
+    encryptedPrivateKeyRef: string;
+  }): Promise<string>;
 }
