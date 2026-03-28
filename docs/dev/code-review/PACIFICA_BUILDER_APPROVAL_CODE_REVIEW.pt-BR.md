@@ -191,3 +191,43 @@ Conclusao:
 - `pnpm --filter @pacifica/contracts typecheck` passou
 - `pnpm --filter @pacifica/app typecheck` passou
 - `pnpm --filter @pacifica/api typecheck` passou
+
+## Revisao Complementar em 2026-03-28
+
+### Resumo
+- os achados anteriores de maior severidade seguem resolvidos no codigo atual
+- a centralizacao do payload de assinatura em `packages/contracts` reduziu bem o risco de drift
+- a validacao antecipada de `expiryWindow` e do submission final foi aplicada corretamente
+- nao encontrei regressao nos pontos corrigidos
+
+### Finding Residual
+
+No momento, nao ficou finding residual funcional aberto no cliente de `builder approval`.
+
+#### 1. Tratamento de erro no cliente frontend para respostas invalidas ou nao JSON
+Fazia sentido.
+
+Acao aplicada:
+- `apps/app/src/features/onboarding/backend-builder-approval.ts` deixou de depender de `response.json()` direto
+- o cliente agora faz leitura tolerante do corpo com `response.text()`
+- resposta vazia, texto puro ou JSON malformado deixa de cair automaticamente como `provider_unavailable`
+- quando o corpo vem fora do contrato esperado, o frontend retorna `internal_error` com mensagem explicita de resposta inesperada da API
+
+Resultado:
+- erro de rede continua mapeado para `provider_unavailable`
+- erro de contrato/resposta inesperada deixa de ser mascarado como indisponibilidade
+- o diagnostico do fluxo de `builder approval` fica mais fiel
+
+### Gaps de Teste
+- nao encontrei testes automatizados cobrindo `createSignedBuilderApprovalSubmission`
+- nao encontrei testes automatizados cobrindo `approveBuilderCodeViaBackend`
+- ainda vale adicionar pelo menos testes de contrato para:
+  - env invalida de `expiryWindow`
+  - serializacao canonica do payload assinado
+  - parse do submission final
+  - resposta nao JSON da API no cliente frontend
+
+### Status Atualizado
+- revisao complementar realizada em `2026-03-28`
+- sem novos problemas nos pontos anteriormente corrigidos
+- tratamento de erro do cliente frontend de `builder approval` endurecido em `2026-03-28`
