@@ -121,6 +121,18 @@ Observacao:
 ### FM-005
 - Indicadores devem ser calculados por nos sobre candles Pacifica
 - Isso preserva coerencia entre sinal, auditoria e venue de execucao
+- O contrato tecnico canonico dos presets deve ficar compartilhado em `packages/contracts`, nao duplicado entre frontend e backend
+- O primeiro adaptador auditavel do slice pode ser exposto como `POST /api/presets/evaluate-signal`, recebendo `presetDefinitionId + editableConfig` e devolvendo:
+  - `signal`
+  - snapshots dos indicadores relevantes (`previous/current`)
+  - explicacao de quais regras `cross`/`threshold` passaram ou falharam
+  - `entryReferencePrice`
+  - `longRiskPlan` e `shortRiskPlan` com `stopLossPrice`, `takeProfitPrice` e `riskDistance` derivados do contrato de risco do preset
+
+Observacao de congruencia:
+- o contrato de produto usa simbolos como `BTC/USDC`
+- a Pacifica consome simbolos de mercado como `BTC`
+- o adapter backend deve fazer essa traducao na borda, sem contaminar o contrato interno do preset
 
 ### FM-006 a FM-008
 - ativacao, pause, resume e close trade devem ser comandos internos do nosso backend
