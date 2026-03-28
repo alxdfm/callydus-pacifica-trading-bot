@@ -68,6 +68,22 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "POST" &&
+    request.url === "/api/presets/activate"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.activatePreset({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
     request.url === "/api/presets/evaluate-signal"
   ) {
     const body = await readJsonBody(request);

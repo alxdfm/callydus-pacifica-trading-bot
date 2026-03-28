@@ -12,6 +12,10 @@ import {
   type ApprovePacificaBuilderDependencies,
 } from "./application/approve-pacifica-builder/ApprovePacificaBuilder";
 import {
+  createActivatePreset,
+  type ActivatePresetDependencies,
+} from "./application/activate-preset/ActivatePreset";
+import {
   createEvaluatePresetSignal,
   type EvaluatePresetSignalDependencies,
 } from "./application/evaluate-preset-signal/EvaluatePresetSignal";
@@ -64,6 +68,7 @@ export type CreateApiModuleInput = {
   approvePacificaBuilderDependencies?: Partial<
     ApprovePacificaBuilderDependencies
   >;
+  activatePresetDependencies?: Partial<ActivatePresetDependencies>;
   evaluatePresetSignalDependencies?: Partial<EvaluatePresetSignalDependencies>;
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
@@ -109,6 +114,17 @@ export function createApiModule(input: CreateApiModuleInput) {
   const defaultCredentialRepository = new PrismaPacificaCredentialRepository(
     input.prisma,
   );
+  const activatePreset = createActivatePreset({
+    credentialRepository:
+      input.activatePresetDependencies?.credentialRepository ??
+      defaultCredentialRepository,
+    presetActivationRepository:
+      input.activatePresetDependencies?.presetActivationRepository ??
+      defaultCredentialRepository,
+    ...(input.activatePresetDependencies?.now
+      ? { now: input.activatePresetDependencies.now }
+      : {}),
+  });
   const credentialRepository =
     input.validatePacificaCredentialsDependencies?.credentialRepository ??
     defaultCredentialRepository;
@@ -158,6 +174,7 @@ export function createApiModule(input: CreateApiModuleInput) {
     environment,
     router: createApiRouter({
       approvePacificaBuilder,
+      activatePreset,
       evaluatePresetSignal,
       getMarketCandles,
       getMarketPrices,

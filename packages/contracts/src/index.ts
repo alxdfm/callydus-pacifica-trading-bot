@@ -815,9 +815,36 @@ export const presetCatalogContractSchema = z.object({
 });
 
 export const presetActivationRequestSchema = z.object({
+  walletAddress: z.string().min(1),
   presetDefinitionId: z.string().uuid(),
   editableConfig: presetEditableConfigSchema,
 });
+
+export const presetActivationErrorCodeSchema = z.enum([
+  "wallet_not_connected",
+  "account_not_ready",
+  "preset_not_found",
+  "internal_error",
+]);
+
+export const presetActivationSuccessSchema = z.object({
+  status: z.literal("success"),
+  activation: presetActivationSchema,
+  runtime: botRuntimeStateSchema,
+  message: z.string().min(1),
+});
+
+export const presetActivationErrorSchema = z.object({
+  status: z.literal("error"),
+  code: presetActivationErrorCodeSchema,
+  message: z.string().min(1),
+  retryable: z.boolean(),
+});
+
+export const presetActivationResponseSchema = z.union([
+  presetActivationSuccessSchema,
+  presetActivationErrorSchema,
+]);
 
 export const currentTradesContractSchema = z.object({
   openTrades: z.array(openTradeSchema),
@@ -1188,6 +1215,10 @@ export type OnboardingContract = z.infer<typeof onboardingContractSchema>;
 export type DashboardContract = z.infer<typeof dashboardContractSchema>;
 export type PresetCatalogContract = z.infer<typeof presetCatalogContractSchema>;
 export type PresetActivationRequest = z.infer<typeof presetActivationRequestSchema>;
+export type PresetActivationErrorCode = z.infer<typeof presetActivationErrorCodeSchema>;
+export type PresetActivationSuccess = z.infer<typeof presetActivationSuccessSchema>;
+export type PresetActivationError = z.infer<typeof presetActivationErrorSchema>;
+export type PresetActivationResponse = z.infer<typeof presetActivationResponseSchema>;
 export type CurrentTradesContract = z.infer<typeof currentTradesContractSchema>;
 export type HistoryContract = z.infer<typeof historyContractSchema>;
 export type BotCommandContract = z.infer<typeof botCommandContractSchema>;

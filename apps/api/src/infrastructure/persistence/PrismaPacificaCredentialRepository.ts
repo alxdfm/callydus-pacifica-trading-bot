@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+import { botRuntimeStateSchema } from "@pacifica/contracts";
 import type { PacificaCredential } from "../../domain/pacifica-credentials/PacificaCredential";
 import type {
   FindActiveCredentialInput,
@@ -11,9 +12,17 @@ import type {
   OperationalSession,
   OperationalSessionRepository,
 } from "../../domain/operational-session/OperationalSession";
+import type {
+  ActivatePresetInput,
+  ActivatedPresetRecord,
+  PresetActivationRepository,
+} from "../../domain/preset-activations/PresetActivationRepository";
 
 export class PrismaPacificaCredentialRepository
-  implements PacificaCredentialRepository, OperationalSessionRepository
+  implements
+    PacificaCredentialRepository,
+    OperationalSessionRepository,
+    PresetActivationRepository
 {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -263,6 +272,110 @@ export class PrismaPacificaCredentialRepository
     };
   }
 
+  async activatePreset(
+    input: ActivatePresetInput,
+  ): Promise<ActivatedPresetRecord | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+        include: {
+          botRuntimeState: true,
+        },
+      });
+
+      if (!operatorAccount) {
+        return null;
+      }
+
+      const presetDefinition = getPresetDefinitionRecord(input.presetDefinitionId);
+
+      if (!presetDefinition) {
+        return null;
+      }
+
+      await tx.presetDefinition.upsert({
+        where: {
+          id: input.presetDefinitionId,
+        },
+        update: {
+          name: presetDefinition.name,
+          slug: presetDefinition.slug,
+          version: presetDefinition.version,
+          riskLabel: presetDefinition.riskLabel,
+          frequencyLabel: presetDefinition.frequencyLabel,
+          description: presetDefinition.description,
+          baseContractJson: toPrismaInputJsonValue(input.effectiveContract),
+          isActive: true,
+        },
+        create: {
+          id: input.presetDefinitionId,
+          name: presetDefinition.name,
+          slug: presetDefinition.slug,
+          version: presetDefinition.version,
+          riskLabel: presetDefinition.riskLabel,
+          frequencyLabel: presetDefinition.frequencyLabel,
+          description: presetDefinition.description,
+          baseContractJson: toPrismaInputJsonValue(input.effectiveContract),
+          isActive: true,
+        },
+      });
+
+      await tx.presetActivation.updateMany({
+        where: {
+          operatorAccountId: operatorAccount.id,
+          activationStatus: "active",
+        },
+        data: {
+          activationStatus: "stopped",
+          deactivatedAt: new Date(input.nowIso),
+        },
+      });
+
+      const activation = await tx.presetActivation.create({
+        data: {
+          operatorAccountId: operatorAccount.id,
+          presetDefinitionId: input.presetDefinitionId,
+          activationStatus: "active",
+          symbol: input.editableConfig.symbol,
+          positionSizeType: input.editableConfig.positionSizeType,
+          positionSizeValue: input.editableConfig.positionSizeValue,
+          longEnabled: input.editableConfig.longEnabled,
+          shortEnabled: input.editableConfig.shortEnabled,
+          editableConfigJson: toPrismaInputJsonValue(input.editableConfig),
+          effectiveContractJson: toPrismaInputJsonValue(input.effectiveContract),
+          activatedAt: new Date(input.nowIso),
+          deactivatedAt: null,
+          createdBy: input.requestedBy,
+        },
+      });
+
+      const runtime = await tx.botRuntimeState.upsert({
+        where: {
+          operatorAccountId: operatorAccount.id,
+        },
+        update: {
+          activePresetActivationId: activation.id,
+        },
+        create: {
+          operatorAccountId: operatorAccount.id,
+          botStatus: "inactive",
+          pacificaConnectionStatus: "connected",
+          syncStatus: "idle",
+          activePresetActivationId: activation.id,
+          lastHeartbeatAt: null,
+          lastErrorMessage: null,
+        },
+      });
+
+      return {
+        activation: mapPresetActivation(activation),
+        runtime: mapBotRuntimeState(runtime),
+      };
+    });
+  }
+
   async updateOperationalVerification(
     input: UpdateOperationalVerificationInput,
   ): Promise<PacificaCredential> {
@@ -410,6 +523,10 @@ function toPrismaJsonValue(
   return value as Prisma.InputJsonValue;
 }
 
+function toPrismaInputJsonValue(value: unknown): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue;
+}
+
 function decimalToNumber(value: Prisma.Decimal): number {
   return Number(value.toString());
 }
@@ -449,6 +566,63 @@ function mapPresetActivation(
     activatedAt: activation.activatedAt?.toISOString() ?? null,
     deactivatedAt: activation.deactivatedAt?.toISOString() ?? null,
   };
+}
+
+function mapBotRuntimeState(runtime: {
+  botStatus: "inactive" | "active" | "paused" | "syncing" | "error";
+  pacificaConnectionStatus:
+    | "disconnected"
+    | "connecting"
+    | "connected"
+    | "degraded"
+    | "error";
+  syncStatus: "idle" | "syncing" | "healthy" | "degraded" | "error";
+  activePresetActivationId: string | null;
+  lastHeartbeatAt: Date | null;
+  lastErrorMessage: string | null;
+}) {
+  return botRuntimeStateSchema.parse({
+    botStatus: runtime.botStatus,
+    pacificaConnectionStatus: runtime.pacificaConnectionStatus,
+    syncStatus: runtime.syncStatus,
+    activePresetActivationId: runtime.activePresetActivationId,
+    lastHeartbeatAt: runtime.lastHeartbeatAt?.toISOString() ?? null,
+    lastErrorMessage: runtime.lastErrorMessage,
+  });
+}
+
+function getPresetDefinitionRecord(presetDefinitionId: string) {
+  switch (presetDefinitionId) {
+    case "2d5a5641-c7ad-4ff0-9f75-4fbcb58a4d01":
+      return {
+        name: "Safer",
+        slug: "safer",
+        version: 1,
+        riskLabel: "Low risk",
+        frequencyLabel: "Low frequency",
+        description: "Lower activity and stronger protection.",
+      };
+    case "54663f73-b1e9-4384-9057-48d68ba689b2":
+      return {
+        name: "Balanced",
+        slug: "balanced",
+        version: 1,
+        riskLabel: "Medium risk",
+        frequencyLabel: "Medium frequency",
+        description: "Best default for the MVP with controlled exposure.",
+      };
+    case "1242f0f9-7a5b-44ea-b32d-368ceba95a93":
+      return {
+        name: "More active",
+        slug: "more-active",
+        version: 1,
+        riskLabel: "Higher activity",
+        frequencyLabel: "Higher frequency",
+        description: "More opportunities with looser selection rules.",
+      };
+    default:
+      return null;
+  }
 }
 
 function mapBalanceSnapshot(snapshot: {
