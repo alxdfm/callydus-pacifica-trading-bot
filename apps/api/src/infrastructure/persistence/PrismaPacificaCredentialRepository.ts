@@ -7,9 +7,13 @@ import type {
   SavePacificaCredentialInput,
   UpdateOperationalVerificationInput,
 } from "../../domain/pacifica-credentials/PacificaCredentialRepository";
+import type {
+  OperationalSession,
+  OperationalSessionRepository,
+} from "../../domain/operational-session/OperationalSession";
 
 export class PrismaPacificaCredentialRepository
-  implements PacificaCredentialRepository
+  implements PacificaCredentialRepository, OperationalSessionRepository
 {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -158,6 +162,107 @@ export class PrismaPacificaCredentialRepository
     return credential ? mapCredential(credential) : null;
   }
 
+  async findByWalletAddress(
+    walletAddress: string,
+  ): Promise<OperationalSession | null> {
+    const operatorAccount = await this.prisma.operatorAccount.findUnique({
+      where: {
+        walletAddress,
+      },
+      include: {
+        pacificaCredentials: {
+          where: {
+            validationStatus: "valid",
+            lifecycleStatus: "active",
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
+        botRuntimeState: true,
+        accountBalanceSnapshots: {
+          orderBy: {
+            capturedAt: "desc",
+          },
+          take: 1,
+        },
+        openTrades: {
+          orderBy: {
+            openedAt: "desc",
+          },
+        },
+        closedTrades: {
+          orderBy: {
+            closedAt: "desc",
+          },
+        },
+        operationalAlerts: {
+          where: {
+            isActive: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+        presetActivations: {
+          where: {
+            activationStatus: "active",
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!operatorAccount) {
+      return null;
+    }
+
+    const activeCredential = operatorAccount.pacificaCredentials[0] ?? null;
+    const balanceSnapshot = operatorAccount.accountBalanceSnapshots[0] ?? null;
+    const activePreset = operatorAccount.presetActivations[0] ?? null;
+    const runtime = operatorAccount.botRuntimeState;
+    const onboardingStatus = operatorAccount.onboardingStatus as
+      | "wallet_pending"
+      | "credentials_pending"
+      | "credentials_validating"
+      | "ready"
+      | "blocked";
+    const operationallyVerified = activeCredential?.operationallyVerified ?? false;
+    const canAccessProduct =
+      onboardingStatus === "ready" &&
+      Boolean(activeCredential?.id) &&
+      operationallyVerified;
+
+    return {
+      walletAddress: operatorAccount.walletAddress,
+      onboardingStatus,
+      credentialId: activeCredential?.id ?? null,
+      agentWalletPublicKey: activeCredential?.publicKey ?? null,
+      credentialAlias: activeCredential?.credentialAlias ?? null,
+      keyFingerprint: activeCredential?.keyFingerprint ?? null,
+      builderApproved: Boolean(activeCredential?.id),
+      operationallyVerified,
+      activePreset: activePreset ? mapPresetActivation(activePreset) : null,
+      runtime: {
+        balance: balanceSnapshot ? mapBalanceSnapshot(balanceSnapshot) : null,
+        botStatus: runtime?.botStatus ?? "inactive",
+        syncStatus: runtime?.syncStatus ?? "idle",
+        pacificaConnectionStatus: runtime?.pacificaConnectionStatus ?? "disconnected",
+        activePresetActivationId: runtime?.activePresetActivationId ?? null,
+        lastHeartbeatAt: runtime?.lastHeartbeatAt?.toISOString() ?? null,
+        lastErrorMessage: runtime?.lastErrorMessage ?? null,
+        currentTrades: operatorAccount.openTrades.map(mapOpenTrade),
+        closedTrades: operatorAccount.closedTrades.map(mapClosedTrade),
+        activeAlerts: operatorAccount.operationalAlerts.map(mapOperationalAlert),
+      },
+      canAccessProduct,
+    };
+  }
+
   async updateOperationalVerification(
     input: UpdateOperationalVerificationInput,
   ): Promise<PacificaCredential> {
@@ -303,4 +408,149 @@ function toPrismaJsonValue(
   }
 
   return value as Prisma.InputJsonValue;
+}
+
+function decimalToNumber(value: Prisma.Decimal): number {
+  return Number(value.toString());
+}
+
+function mapPresetActivation(
+  activation: {
+    id: string;
+    operatorAccountId: string;
+    presetDefinitionId: string;
+    activationStatus: string;
+    symbol: string;
+    positionSizeType: "fixed_amount" | "balance_percent";
+    positionSizeValue: Prisma.Decimal;
+    longEnabled: boolean;
+    shortEnabled: boolean;
+    activatedAt: Date | null;
+    deactivatedAt: Date | null;
+  },
+) {
+  return {
+    id: activation.id,
+    operatorAccountId: activation.operatorAccountId,
+    presetDefinitionId: activation.presetDefinitionId,
+    activationStatus: activation.activationStatus as
+      | "pending"
+      | "active"
+      | "paused"
+      | "stopped"
+      | "failed",
+    editableConfig: {
+      symbol: activation.symbol,
+      positionSizeType: activation.positionSizeType,
+      positionSizeValue: decimalToNumber(activation.positionSizeValue),
+      longEnabled: activation.longEnabled,
+      shortEnabled: activation.shortEnabled,
+    },
+    activatedAt: activation.activatedAt?.toISOString() ?? null,
+    deactivatedAt: activation.deactivatedAt?.toISOString() ?? null,
+  };
+}
+
+function mapBalanceSnapshot(snapshot: {
+  totalBalance: Prisma.Decimal;
+  availableBalance: Prisma.Decimal;
+  aggregatedPnl: Prisma.Decimal;
+  capitalInUse: Prisma.Decimal;
+  capturedAt: Date;
+}) {
+  return {
+    totalBalance: decimalToNumber(snapshot.totalBalance),
+    availableBalance: decimalToNumber(snapshot.availableBalance),
+    aggregatedPnl: decimalToNumber(snapshot.aggregatedPnl),
+    capitalInUse: decimalToNumber(snapshot.capitalInUse),
+    capturedAt: snapshot.capturedAt.toISOString(),
+  };
+}
+
+function mapOpenTrade(trade: {
+  id: string;
+  pacificaTradeId: string;
+  presetActivationId: string | null;
+  symbol: string;
+  side: "long" | "short";
+  entryPrice: Prisma.Decimal;
+  currentPrice: Prisma.Decimal;
+  quantity: Prisma.Decimal;
+  capitalAllocated: Prisma.Decimal;
+  unrealizedPnl: Prisma.Decimal;
+  tradeStatus: "open" | "close_requested" | "closing" | "sync_error";
+  openedAt: Date;
+  isPlatformTrade: boolean;
+}) {
+  return {
+    id: trade.id,
+    pacificaTradeId: trade.pacificaTradeId,
+    presetActivationId: trade.presetActivationId,
+    symbol: trade.symbol,
+    side: trade.side,
+    entryPrice: decimalToNumber(trade.entryPrice),
+    currentPrice: decimalToNumber(trade.currentPrice),
+    quantity: decimalToNumber(trade.quantity),
+    capitalAllocated: decimalToNumber(trade.capitalAllocated),
+    unrealizedPnl: decimalToNumber(trade.unrealizedPnl),
+    tradeStatus: trade.tradeStatus,
+    openedAt: trade.openedAt.toISOString(),
+    isPlatformTrade: trade.isPlatformTrade,
+  };
+}
+
+function mapClosedTrade(trade: {
+  id: string;
+  pacificaTradeId: string;
+  presetActivationId: string | null;
+  symbol: string;
+  side: "long" | "short";
+  entryPrice: Prisma.Decimal;
+  exitPrice: Prisma.Decimal;
+  quantity: Prisma.Decimal;
+  capitalAllocated: Prisma.Decimal;
+  realizedPnl: Prisma.Decimal;
+  closeReason: "take_profit" | "stop_loss" | "manual" | "system" | "error";
+  openedAt: Date;
+  closedAt: Date;
+  isPlatformTrade: boolean;
+}) {
+  return {
+    id: trade.id,
+    pacificaTradeId: trade.pacificaTradeId,
+    presetActivationId: trade.presetActivationId,
+    symbol: trade.symbol,
+    side: trade.side,
+    entryPrice: decimalToNumber(trade.entryPrice),
+    exitPrice: decimalToNumber(trade.exitPrice),
+    quantity: decimalToNumber(trade.quantity),
+    capitalAllocated: decimalToNumber(trade.capitalAllocated),
+    realizedPnl: decimalToNumber(trade.realizedPnl),
+    closeReason: trade.closeReason,
+    openedAt: trade.openedAt.toISOString(),
+    closedAt: trade.closedAt.toISOString(),
+    isPlatformTrade: trade.isPlatformTrade,
+  };
+}
+
+function mapOperationalAlert(alert: {
+  id: string;
+  alertType: "connection" | "runtime" | "reconciliation" | "command";
+  severity: "info" | "warning" | "error";
+  title: string;
+  message: string;
+  isActive: boolean;
+  createdAt: Date;
+  resolvedAt: Date | null;
+}) {
+  return {
+    id: alert.id,
+    alertType: alert.alertType,
+    severity: alert.severity,
+    title: alert.title,
+    message: alert.message,
+    isActive: alert.isActive,
+    createdAt: alert.createdAt.toISOString(),
+    resolvedAt: alert.resolvedAt?.toISOString() ?? null,
+  };
 }

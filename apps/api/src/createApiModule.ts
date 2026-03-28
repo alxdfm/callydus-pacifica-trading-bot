@@ -16,6 +16,10 @@ import {
   type LookupOperationalAccountByWalletDependencies,
 } from "./application/lookup-operational-account-by-wallet/LookupOperationalAccountByWallet";
 import {
+  createGetOperationalSessionByWallet,
+  type GetOperationalSessionByWalletDependencies,
+} from "./application/get-operational-session-by-wallet/GetOperationalSessionByWallet";
+import {
   createVerifyPacificaOperational,
   type VerifyPacificaOperationalDependencies,
 } from "./application/verify-pacifica-operational/VerifyPacificaOperational";
@@ -50,6 +54,9 @@ export type CreateApiModuleInput = {
   lookupOperationalAccountByWalletDependencies?: Partial<
     LookupOperationalAccountByWalletDependencies
   >;
+  getOperationalSessionByWalletDependencies?: Partial<
+    GetOperationalSessionByWalletDependencies
+  >;
   verifyPacificaOperationalDependencies?: Partial<
     VerifyPacificaOperationalDependencies
   >;
@@ -67,15 +74,23 @@ export function createApiModule(input: CreateApiModuleInput) {
       new PacificaBuilderApprovalGateway(environment),
   });
 
+  const defaultCredentialRepository = new PrismaPacificaCredentialRepository(
+    input.prisma,
+  );
   const credentialRepository =
     input.validatePacificaCredentialsDependencies?.credentialRepository ??
-    new PrismaPacificaCredentialRepository(input.prisma);
+    defaultCredentialRepository;
   const lookupOperationalAccountByWallet =
     createLookupOperationalAccountByWallet({
       credentialRepository:
         input.lookupOperationalAccountByWalletDependencies
           ?.credentialRepository ?? credentialRepository,
     });
+  const getOperationalSessionByWallet = createGetOperationalSessionByWallet({
+    operationalSessionRepository:
+      input.getOperationalSessionByWalletDependencies
+        ?.operationalSessionRepository ?? defaultCredentialRepository,
+  });
   const credentialEncryption =
     input.validatePacificaCredentialsDependencies?.credentialEncryption ??
     new AesCredentialEncryptionService(
@@ -112,6 +127,7 @@ export function createApiModule(input: CreateApiModuleInput) {
     router: createApiRouter({
       approvePacificaBuilder,
       lookupOperationalAccountByWallet,
+      getOperationalSessionByWallet,
       verifyPacificaOperational,
       validatePacificaCredentials,
     }),

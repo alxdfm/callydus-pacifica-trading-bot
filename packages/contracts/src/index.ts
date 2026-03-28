@@ -375,6 +375,62 @@ export const operationalAccountLookupResponseSchema = z.union([
   operationalAccountLookupErrorSchema,
 ]);
 
+export const operationalSessionSnapshotRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+});
+
+export const operationalRuntimeSnapshotSchema = z.object({
+  balance: balanceSnapshotSchema.nullable(),
+  botStatus: botStatusSchema,
+  syncStatus: syncStatusSchema,
+  pacificaConnectionStatus: pacificaConnectionStatusSchema,
+  activePresetActivationId: z.string().uuid().nullable(),
+  lastHeartbeatAt: z.string().datetime().nullable(),
+  lastErrorMessage: z.string().nullable(),
+  currentTrades: z.array(openTradeSchema),
+  closedTrades: z.array(closedTradeSchema),
+  activeAlerts: z.array(operationalAlertSchema),
+});
+
+export const operationalSessionSnapshotFoundSchema = z.object({
+  status: z.literal("found"),
+  walletAddress: z.string().min(1),
+  accountExists: z.literal(true),
+  onboardingStatus: onboardingStatusSchema,
+  credentialId: z.string().uuid().nullable(),
+  agentWalletPublicKey: z.string().nullable(),
+  credentialAlias: z.string().nullable(),
+  keyFingerprint: z.string().nullable(),
+  builderApproved: z.boolean(),
+  operationallyVerified: z.boolean(),
+  activePreset: presetActivationSchema.nullable(),
+  runtime: operationalRuntimeSnapshotSchema,
+  canAccessProduct: z.boolean(),
+});
+
+export const operationalSessionSnapshotNotFoundSchema = z.object({
+  status: z.literal("not_found"),
+  walletAddress: z.string().min(1),
+  accountExists: z.literal(false),
+  canAccessProduct: z.literal(false),
+});
+
+export const operationalSessionSnapshotErrorSchema = z.object({
+  status: z.literal("error"),
+  walletAddress: z.string().min(1),
+  accountExists: z.literal(false),
+  code: z.enum(["provider_unavailable", "internal_error"]),
+  message: z.string().min(1),
+  retryable: z.boolean(),
+  canAccessProduct: z.literal(false),
+});
+
+export const operationalSessionSnapshotResponseSchema = z.union([
+  operationalSessionSnapshotFoundSchema,
+  operationalSessionSnapshotNotFoundSchema,
+  operationalSessionSnapshotErrorSchema,
+]);
+
 export const pacificaBuilderApprovalOperationType = "approve_builder_code";
 
 export function createPacificaBuilderApprovalSigningPayload(input: {
@@ -539,6 +595,12 @@ export type OperationalAccountLookupFound = z.infer<typeof operationalAccountLoo
 export type OperationalAccountLookupNotFound = z.infer<typeof operationalAccountLookupNotFoundSchema>;
 export type OperationalAccountLookupError = z.infer<typeof operationalAccountLookupErrorSchema>;
 export type OperationalAccountLookupResponse = z.infer<typeof operationalAccountLookupResponseSchema>;
+export type OperationalSessionSnapshotRequest = z.infer<typeof operationalSessionSnapshotRequestSchema>;
+export type OperationalRuntimeSnapshot = z.infer<typeof operationalRuntimeSnapshotSchema>;
+export type OperationalSessionSnapshotFound = z.infer<typeof operationalSessionSnapshotFoundSchema>;
+export type OperationalSessionSnapshotNotFound = z.infer<typeof operationalSessionSnapshotNotFoundSchema>;
+export type OperationalSessionSnapshotError = z.infer<typeof operationalSessionSnapshotErrorSchema>;
+export type OperationalSessionSnapshotResponse = z.infer<typeof operationalSessionSnapshotResponseSchema>;
 export type BotRuntimeState = z.infer<typeof botRuntimeStateSchema>;
 export type OnboardingContract = z.infer<typeof onboardingContractSchema>;
 export type DashboardContract = z.infer<typeof dashboardContractSchema>;
