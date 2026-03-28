@@ -467,7 +467,12 @@ export const messages = {
     profileTopbarDescription:
       "Update connected credentials without re-entering the full onboarding flow.",
     profileTopbarAction: "View onboarding rules",
+    profileLogoutAction: "Log out",
+    profileLogoutConfirmTitle: "End this session on this device?",
+    profileLogoutConfirmDescription:
+      "This signs the current session out locally and clears the saved state on this device.",
     profileStatusAccount: "Account status",
+    profileStatusSession: "Current session",
     profileStatusMainWallet: "Main wallet",
     profileStatusAgentWallet: "Agent Wallet",
     profileStatusLastValidation: "Last validation",
@@ -477,6 +482,15 @@ export const messages = {
     profileStatusOperationalUnlocked: "Operational areas unlocked",
     profileStatusTemporaryLock: "Protected areas may remain temporarily locked",
     profileStatusAttentionCopy: "Review wallet and credential states before returning to operation.",
+    profileSessionEyebrow: "Current session",
+    profileSessionTitle: "End access on this device",
+    profileSessionDescription:
+      "Logout is separate from credential maintenance and only affects the current device session.",
+    profileSessionSignedIn: "Signed in",
+    profileSessionEnding: "Ending session",
+    profileSessionDisconnected: "Disconnected",
+    profileBotRunningBadge: "Bot running",
+    profileBotIdleBadge: "Bot idle",
     profileMainWalletEyebrow: "Main wallet",
     profileMainWalletTitle: "Identity wallet",
     profileMainWalletDescription:
@@ -491,9 +505,13 @@ export const messages = {
     profileReconnectConfirmDescription:
       "Reconnecting the main wallet may change the account identity and can temporarily lock protected areas.",
     profileAgentWalletEyebrow: "Agent Wallet",
-    profileAgentWalletTitle: "Update and revalidate",
+    profileAgentWalletCurrentTitle: "Current Agent Wallet",
+    profileAgentWalletCurrentDescription:
+      "Review the Agent Wallet currently linked to this account and replace it only when operational access really needs to change.",
+    profileAgentWalletTitle: "Replace Agent Wallet",
     profileAgentWalletDescription:
       "Use this area to replace the operational Agent Wallet without reopening onboarding.",
+    profileAgentWalletEditAction: "Replace",
     profileAgentWalletPublicKeyLabel: "Agent wallet public key",
     profileAgentWalletPrivateKeyLabel: "Agent wallet private key",
     profileAgentWalletPrivateKeyPlaceholder: "Paste a new Agent Wallet private key",
@@ -509,24 +527,37 @@ export const messages = {
     profileRevalidationRequiredTitle: "Revalidation required",
     profileRevalidationRequiredDescription:
       "Changes to Agent Wallet fields require validation before the account is fully unlocked again.",
+    profileCriticalEditBlockedTitle: "Critical edits are blocked while the bot is running",
+    profileCriticalEditBlockedDescription:
+      "Pause or stop the bot before replacing Agent Wallet keys. Alias-only updates can still be saved.",
+    profileSaveChangesAction: "Save changes",
+    profileAgentWalletValidateAction: "Validate Agent Wallet",
+    profileAgentWalletOperationalAction: "Run readiness check",
     profileClearChangesAction: "Clear changes",
     profileSaveAndRevalidateAction: "Save and revalidate",
-    profileAliasUpdated: "Alias updated.",
+    profileFlowSaveTitle: "Save Agent Wallet changes",
+    profileFlowValidateTitle: "Validate Agent Wallet",
+    profileFlowOperationalTitle: "Run readiness check",
+    profileFlowChanged: "Changed",
+    profileFlowCurrent: "Current",
+    profileFlowLocked: "Locked",
+    profileFlowDone: "Done",
+    profileFlowSaveSummary:
+      "Saving new Agent Wallet keys invalidates the previous ready state before the next checks can run.",
+    profileFlowValidateSummary:
+      "Confirm the new keys before the account can move to the final readiness step.",
+    profileFlowOperationalSummary:
+      "Run the controlled readiness check to unlock protected actions again.",
     profileAgentWalletValidated: "Agent Wallet validated.",
+    profileAgentWalletValidatedTitle: "Validation completed",
     profileAgentWalletValidationFailed:
       "Validation failed. Review the Agent Wallet fields and try again.",
-    profileSecurityEyebrow: "Security notes",
-    profileSecurityTitle: "Visible impact before save",
-    profileSecurityBadge: "Important",
-    profileSecurityMainWalletTitle: "Main wallet",
-    profileSecurityMainWalletDescription: "Changing it may affect account identity.",
-    profileSecurityAgentWalletTitle: "Agent Wallet",
-    profileSecurityAgentWalletDescription: "Changing keys requires a new validation.",
-    profileSecurityAliasTitle: "Alias only",
-    profileSecurityAliasDescription: "Display-only update with lower risk.",
-    profileSecuritySensitive: "Sensitive",
-    profileSecurityReview: "Review",
-    profileSecurityLight: "Light",
+    profileAgentWalletReplacementCompleted:
+      "Replacement completed. The new Agent Wallet is verified and ready to operate.",
+    profileAgentWalletReplacementCompletedTitle: "Replacement completed",
+    profileAgentWalletVerificationReuse:
+      "No new readiness check was required because these credentials are already verified.",
+    profileAgentWalletVerificationReuseTitle: "Readiness already satisfied",
     tradeCloseReasonTakeProfit: "Closed by target",
     tradeCloseReasonStopLoss: "Closed by stop",
     tradeCloseReasonManual: "Closed manually",

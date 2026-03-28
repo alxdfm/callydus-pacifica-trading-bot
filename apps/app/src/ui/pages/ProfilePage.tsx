@@ -1,15 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { validateAgentWalletLocally } from "../../features/onboarding/agent-wallet-validation";
+import { useAgentWalletReplacementFlow } from "../../features/profile/use-agent-wallet-replacement-flow";
 import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEnvironment";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
-
-type FieldErrors = {
-  agentWalletPublicKey?: string;
-  agentWalletPrivateKey?: string;
-};
 
 function formatRelativeValidation(value: string | null, fallback: string) {
   if (!value) {
@@ -32,38 +27,20 @@ function formatRelativeValidation(value: string | null, fallback: string) {
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { connectWallet, disconnectWallet } = useSolanaWalletPort();
-  const {
-    canAccessProduct,
-    setCredentialState,
-    setOnboardingState,
-    setOperationalState,
-    state,
-  } = useAppState();
+  const { disconnectWallet } = useSolanaWalletPort();
+  const { resetOnboardingState, state } = useAppState();
   const { t } = useI18n();
-  const [isReconnectModalOpen, setIsReconnectModalOpen] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [draftPublicKey, setDraftPublicKey] = useState(state.credentials.agentWalletPublicKey ?? "");
-  const [draftPrivateKey, setDraftPrivateKey] = useState("");
-  const [draftAlias, setDraftAlias] = useState(state.credentials.credentialAlias ?? "");
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isAgentWalletModalOpen, setIsAgentWalletModalOpen] = useState(false);
+  const [isEndingSession, setIsEndingSession] = useState(false);
+  const replacementFlow = useAgentWalletReplacementFlow();
 
   const hasCredentialKeyChanges =
-    draftPublicKey.trim() !== (state.credentials.agentWalletPublicKey ?? "") ||
-    draftPrivateKey.trim().length > 0;
-  const hasAliasChange = draftAlias.trim() !== (state.credentials.credentialAlias ?? "");
-  const hasAnyDraftChange = hasCredentialKeyChanges || hasAliasChange;
-
-  const accountStatus = canAccessProduct
-    ? t("profileAccountReady")
-    : state.credentials.validationStatus === "validating"
-      ? t("profileAccountNeedsValidation")
-      : t("profileAccountAttention");
-  const accountStatusCopy = canAccessProduct
-    ? t("profileStatusOperationalUnlocked")
-    : state.credentials.validationStatus === "validating"
-      ? t("profileStatusTemporaryLock")
-      : t("profileStatusAttentionCopy");
-  const agentWalletStatus = hasAnyDraftChange
+    isAgentWalletModalOpen &&
+    (replacementFlow.draftPublicKey.trim() !==
+      (state.credentials.agentWalletPublicKey ?? "") ||
+      replacementFlow.draftPrivateKey.trim().length > 0);
+  const agentWalletStatus = hasCredentialKeyChanges
     ? t("profileAgentWalletStatusEditing")
     : state.credentials.validationStatus === "valid"
       ? t("profileAgentWalletStatusValidated")
@@ -72,162 +49,224 @@ export function ProfilePage() {
         : state.credentials.validationStatus === "pending"
           ? t("profileAgentWalletStatusUnchanged")
           : t("profileAgentWalletStatusInvalid");
-  const agentWalletTone = hasAnyDraftChange
+  const agentWalletTone = hasCredentialKeyChanges
     ? "warning"
     : state.credentials.validationStatus === "valid"
       ? "success"
       : state.credentials.validationStatus === "validating"
         ? "warning"
         : "danger";
-  const shortenedWallet = useMemo(() => {
-    const key = state.wallet.mainWalletPublicKey;
+  const botStatusBadgeTone = replacementFlow.isBotRunning ? "warning" : "neutral";
+
+  const readonlyAgentWalletKey = useMemo(() => {
+    const key = state.credentials.agentWalletPublicKey;
 
     if (!key) {
-      return "No wallet connected";
+      return "";
     }
 
-    return `${key.slice(0, 4)}...${key.slice(-4)}`;
-  }, [state.wallet.mainWalletPublicKey]);
+    return key;
+  }, [state.credentials.agentWalletPublicKey]);
 
-  function resetDrafts() {
-    setDraftPublicKey(state.credentials.agentWalletPublicKey ?? "");
-    setDraftPrivateKey("");
-    setDraftAlias(state.credentials.credentialAlias ?? "");
-    setFieldErrors({});
+  function openAgentWalletModal() {
+    replacementFlow.resetDrafts();
+    setIsAgentWalletModalOpen(true);
   }
 
-  async function handleReconnectWallet() {
-    setIsReconnectModalOpen(false);
+  function closeAgentWalletModal() {
+    setIsAgentWalletModalOpen(false);
+    replacementFlow.resetDrafts();
+  }
+
+  async function handleLogout() {
+    setIsLogoutModalOpen(false);
+    setIsEndingSession(true);
+
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem("pacifica.dashboard-flash");
+      window.localStorage.removeItem("pacifica.app-state");
+      window.localStorage.removeItem("walletName");
+    }
+
+    resetOnboardingState();
 
     try {
       await disconnectWallet();
     } catch {
-      // The wallet bridge already reflects the disconnect failure in shared state.
+      // Shared wallet state already reflects disconnect failures.
+    } finally {
+      setIsEndingSession(false);
+      navigate("/onboarding", { replace: true });
     }
-
-    await connectWallet();
-  }
-
-  async function handleSave() {
-    setFieldErrors({});
-
-    if (!hasAnyDraftChange) {
-      return;
-    }
-
-    if (!hasCredentialKeyChanges) {
-      setCredentialState({
-        credentialAlias: draftAlias.trim() || null,
-        lastValidationMessage: t("profileAliasUpdated"),
-      });
-      return;
-    }
-
-    setCredentialState({
-      agentWalletPublicKey: draftPublicKey.trim() || null,
-      agentWalletPrivateKey: draftPrivateKey.trim() || null,
-      credentialAlias: draftAlias.trim() || null,
-      validationStatus: "validating",
-      lastErrorCode: null,
-      lastValidationMessage: t("profileRevalidationRequiredDescription"),
-      retryable: false,
-    });
-    setOperationalState({
-      status: "pending",
-      lastVerifiedAt: null,
-      lastErrorCode: null,
-      lastMessage: null,
-      retryable: false,
-      probeSymbol: null,
-      probeClientOrderId: null,
-    });
-    setOnboardingState({
-      status: "credentials_validating",
-      accountReady: false,
-    });
-
-    if (!state.wallet.mainWalletPublicKey) {
-      setCredentialState({
-        validationStatus: "error",
-        lastErrorCode: "wallet_not_connected",
-        lastValidationMessage: t("onboardingWalletErrorSessionLost"),
-        retryable: false,
-      });
-      setOnboardingState({
-        status: "blocked",
-        accountReady: false,
-      });
-      return;
-    }
-
-    const response = await validateAgentWalletLocally({
-      mainWalletPublicKey: state.wallet.mainWalletPublicKey,
-      agentWalletPublicKey: draftPublicKey.trim(),
-      agentWalletPrivateKey: draftPrivateKey.trim(),
-      credentialAlias: draftAlias.trim() || null,
-    });
-
-    if (response.canProceed) {
-      setCredentialState({
-        agentWalletPublicKey: response.agentWalletPublicKey,
-        agentWalletPrivateKey: draftPrivateKey.trim(),
-        credentialAlias: draftAlias.trim() || null,
-        credentialId: response.credentialId,
-        keyFingerprint: response.keyFingerprint,
-        validationStatus: "valid",
-        lastValidatedAt: response.validatedAt,
-        lastErrorCode: null,
-        lastValidationMessage: t("profileAgentWalletValidated"),
-        retryable: false,
-      });
-      setOperationalState({
-        status: "pending",
-        lastVerifiedAt: null,
-        lastErrorCode: null,
-        lastMessage: null,
-        retryable: false,
-        probeSymbol: null,
-        probeClientOrderId: null,
-      });
-      setOnboardingState({
-        status: "credentials_pending",
-        accountReady: false,
-      });
-      setDraftPrivateKey("");
-      setFieldErrors({});
-      return;
-    }
-
-    setCredentialState({
-      agentWalletPublicKey: draftPublicKey.trim() || null,
-      agentWalletPrivateKey: draftPrivateKey.trim() || null,
-      credentialAlias: draftAlias.trim() || null,
-      validationStatus: response.status === "error" ? "error" : "invalid",
-      lastErrorCode: response.code,
-      lastValidationMessage: response.message || t("profileAgentWalletValidationFailed"),
-      retryable: response.retryable,
-    });
-    setOnboardingState({
-      status: "blocked",
-      accountReady: false,
-    });
-    setFieldErrors({
-      [response.field ?? "agentWalletPrivateKey"]: response.message,
-    });
   }
 
   return (
     <div className="page-stack">
       <ConfirmationModal
         cancelLabel={t("modalCancelAction")}
-        confirmLabel={t("profileReconnectWalletAction")}
-        description={t("profileReconnectConfirmDescription")}
-        isOpen={isReconnectModalOpen}
-        onCancel={() => setIsReconnectModalOpen(false)}
-        onConfirm={() => void handleReconnectWallet()}
-        title={t("profileReconnectConfirmTitle")}
+        confirmLabel={t("profileLogoutAction")}
+        description={t("profileLogoutConfirmDescription")}
+        isOpen={isLogoutModalOpen}
+        onCancel={() => setIsLogoutModalOpen(false)}
+        onConfirm={() => void handleLogout()}
+        title={t("profileLogoutConfirmTitle")}
         tone="danger"
       />
+
+      {isAgentWalletModalOpen ? (
+        <div className="modal-overlay" onClick={closeAgentWalletModal} role="presentation">
+          <div
+            aria-modal="true"
+            className="modal-card profile-maintenance-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <div className="modal-copy">
+              <p className="panel-label">{t("profileAgentWalletEyebrow")}</p>
+              <h3>{t("profileAgentWalletTitle")}</h3>
+              <p>{t("profileAgentWalletDescription")}</p>
+            </div>
+
+            <div className="form-stack">
+              <label className="onboarding-form__field">
+                <span>{t("profileAgentWalletPublicKeyLabel")}</span>
+                <input
+                  className="onboarding-form__input"
+                  disabled={
+                    replacementFlow.criticalEditBlocked ||
+                    replacementFlow.isDraftValidating ||
+                    replacementFlow.isDraftVerifying ||
+                    replacementFlow.shouldLockReplacementInputs
+                  }
+                  onChange={(event) =>
+                    replacementFlow.setDraftPublicKey(event.target.value)
+                  }
+                  value={replacementFlow.draftPublicKey}
+                />
+                {replacementFlow.fieldErrors.agentWalletPublicKey ? (
+                  <small className="onboarding-form__error">
+                    {replacementFlow.fieldErrors.agentWalletPublicKey}
+                  </small>
+                ) : null}
+              </label>
+              <label className="onboarding-form__field">
+                <span>{t("profileAgentWalletPrivateKeyLabel")}</span>
+                <input
+                  className="onboarding-form__input"
+                  disabled={
+                    replacementFlow.criticalEditBlocked ||
+                    replacementFlow.isDraftValidating ||
+                    replacementFlow.isDraftVerifying ||
+                    replacementFlow.shouldLockReplacementInputs
+                  }
+                  type={
+                    replacementFlow.validatedDraft || replacementFlow.isReplacementCompleted
+                      ? "text"
+                      : "password"
+                  }
+                  onChange={(event) =>
+                    replacementFlow.setDraftPrivateKey(event.target.value)
+                  }
+                  placeholder={t("profileAgentWalletPrivateKeyPlaceholder")}
+                  value={replacementFlow.privateKeyFieldValue}
+                />
+                <small>{t("profileAgentWalletPrivateKeyHint")}</small>
+                {replacementFlow.fieldErrors.agentWalletPrivateKey ? (
+                  <small className="onboarding-form__error">
+                    {replacementFlow.fieldErrors.agentWalletPrivateKey}
+                  </small>
+                ) : null}
+              </label>
+              <label className="onboarding-form__field">
+                <span>{`${t("profileCredentialAliasLabel")} (${t("profileOptionalLabel")})`}</span>
+                <input
+                  className="onboarding-form__input"
+                  disabled={
+                    replacementFlow.isDraftValidating ||
+                    replacementFlow.isDraftVerifying ||
+                    replacementFlow.shouldLockReplacementInputs
+                  }
+                  onChange={(event) =>
+                    replacementFlow.setDraftAlias(event.target.value)
+                  }
+                  value={replacementFlow.draftAlias}
+                />
+              </label>
+            </div>
+
+            {replacementFlow.criticalEditBlocked ? (
+              <div className="info-note">
+                <strong>{t("profileCriticalEditBlockedTitle")}</strong>
+                <p>{t("profileCriticalEditBlockedDescription")}</p>
+              </div>
+            ) : null}
+
+            {!replacementFlow.hasStartedReplacementFlow ? (
+              <div className="done-note">
+                <strong>{t("profileRevalidationRequiredTitle")}</strong>
+                <p>{t("profileRevalidationRequiredDescription")}</p>
+              </div>
+            ) : null}
+
+            {replacementFlow.modalFeedback ? (
+              replacementFlow.validatedDraft || replacementFlow.isReplacementCompleted ? (
+                <div className="done-note">
+                  <strong>
+                    {replacementFlow.isReplacementCompleted
+                      ? replacementFlow.modalFeedback ===
+                        t("profileAgentWalletVerificationReuse")
+                        ? t("profileAgentWalletVerificationReuseTitle")
+                        : t("profileAgentWalletReplacementCompletedTitle")
+                      : t("profileAgentWalletValidatedTitle")}
+                  </strong>
+                  <p>{replacementFlow.modalFeedback}</p>
+                </div>
+              ) : (
+                <div className="status-row status-row--danger">
+                  <span className="status-dot status-dot--danger"></span>
+                  <div>
+                    <strong>{t("profileAgentWalletValidationFailed")}</strong>
+                    <p>{replacementFlow.modalFeedback}</p>
+                  </div>
+                </div>
+              )
+            ) : null}
+
+            <div className="action-row">
+              <button
+                className="btn danger"
+                disabled={!replacementFlow.isBotRunning || replacementFlow.isReplacementCompleted}
+                onClick={replacementFlow.handleStopBot}
+                type="button"
+              >
+                Stop bot
+              </button>
+              <button
+                className="btn secondary"
+                disabled={!replacementFlow.canValidateAgentWallet}
+                onClick={() => void replacementFlow.handleValidateAgentWallet()}
+                type="button"
+              >
+                {t("profileAgentWalletValidateAction")}
+              </button>
+              <button
+                className="btn primary"
+                disabled={!replacementFlow.canRunOperationalCheck}
+                onClick={() => void replacementFlow.handleRunReadinessCheck()}
+                type="button"
+              >
+                {t("profileAgentWalletOperationalAction")}
+              </button>
+            </div>
+
+            <div className="action-row modal-actions">
+              <button className="btn secondary" onClick={closeAgentWalletModal} type="button">
+                {t("modalCloseAction")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <section className="topbar">
         <div>
@@ -236,47 +275,23 @@ export function ProfilePage() {
           <p className="subtle">{t("profileTopbarDescription")}</p>
         </div>
         <div className="topbar-actions">
-          <span className={`badge badge--${canAccessProduct ? "success" : "warning"}`}>
-            {accountStatus}
+          <span className={`badge badge--${botStatusBadgeTone}`}>
+            {replacementFlow.isBotRunning
+              ? t("profileBotRunningBadge")
+              : t("profileBotIdleBadge")}
           </span>
-          <button className="btn secondary" onClick={() => navigate("/onboarding")} type="button">
-            {t("profileTopbarAction")}
+          <button
+            className="btn danger"
+            disabled={isEndingSession}
+            onClick={() => setIsLogoutModalOpen(true)}
+            type="button"
+          >
+            {t("profileLogoutAction")}
           </button>
         </div>
       </section>
 
-      <section className="metric-grid">
-        <article className="stat-panel emphasis">
-          <span>{t("profileStatusAccount")}</span>
-          <strong>{accountStatus}</strong>
-          <p>{accountStatusCopy}</p>
-        </article>
-        <article className="stat-panel">
-          <span>{t("profileStatusMainWallet")}</span>
-          <strong>
-            {state.wallet.sessionStatus === "connected"
-              ? t("onboardingStateWalletConnected")
-              : state.wallet.sessionStatus === "reconnecting"
-                ? t("onboardingStateWalletReconnecting")
-                : t("onboardingStateWalletError")}
-          </strong>
-          <p>{`${state.wallet.provider ?? "phantom"} ending in ${shortenedWallet}`}</p>
-        </article>
-        <article className="stat-panel">
-          <span>{t("profileStatusAgentWallet")}</span>
-          <strong>{agentWalletStatus}</strong>
-          <p>{`Alias: ${draftAlias.trim() || state.credentials.credentialAlias || "-"}`}</p>
-        </article>
-        <article className="stat-panel">
-          <span>{t("profileStatusLastValidation")}</span>
-          <strong>
-            {formatRelativeValidation(state.credentials.lastValidatedAt, t("stateEmptyValue"))}
-          </strong>
-          <p>{state.credentials.lastValidationMessage ?? t("stateEmptyValue")}</p>
-        </article>
-      </section>
-
-      <section className="dashboard-grid">
+      <section className="dashboard-grid profile-grid">
         <section className="panel hero-panel-wide">
           <div className="row-between align-start">
             <div>
@@ -306,120 +321,42 @@ export function ProfilePage() {
               <small>{t("profileMainWalletImpact")}</small>
             </label>
           </div>
-
-          <div className="action-row">
-            <button
-              className="btn secondary"
-              onClick={() => setIsReconnectModalOpen(true)}
-              type="button"
-            >
-              {t("profileReconnectWalletAction")}
-            </button>
-          </div>
         </section>
 
         <section className="panel trades-panel">
           <div className="row-between align-start section-gap">
             <div>
               <p className="panel-label">{t("profileAgentWalletEyebrow")}</p>
-              <h3>{t("profileAgentWalletTitle")}</h3>
-              <p className="subtle">{t("profileAgentWalletDescription")}</p>
+              <h3>{t("profileAgentWalletCurrentTitle")}</h3>
+              <p className="subtle">{t("profileAgentWalletCurrentDescription")}</p>
             </div>
-            <span className={`badge badge--${agentWalletTone}`}>{agentWalletStatus}</span>
+            <div className="topbar-actions">
+              <span className={`badge badge--${agentWalletTone}`}>{agentWalletStatus}</span>
+              <button className="btn secondary" onClick={openAgentWalletModal} type="button">
+                {t("profileAgentWalletEditAction")}
+              </button>
+            </div>
           </div>
 
           <div className="form-stack">
             <label className="onboarding-form__field">
               <span>{t("profileAgentWalletPublicKeyLabel")}</span>
-              <input
-                className="onboarding-form__input"
-                onChange={(event) => setDraftPublicKey(event.target.value)}
-                value={draftPublicKey}
-              />
-              {fieldErrors.agentWalletPublicKey ? (
-                <small className="onboarding-form__error">{fieldErrors.agentWalletPublicKey}</small>
-              ) : null}
-            </label>
-            <label className="onboarding-form__field">
-              <span>{t("profileAgentWalletPrivateKeyLabel")}</span>
-              <input
-                className="onboarding-form__input"
-                onChange={(event) => setDraftPrivateKey(event.target.value)}
-                placeholder={t("profileAgentWalletPrivateKeyPlaceholder")}
-                value={draftPrivateKey}
-              />
-              <small>{t("profileAgentWalletPrivateKeyHint")}</small>
-              {fieldErrors.agentWalletPrivateKey ? (
-                <small className="onboarding-form__error">{fieldErrors.agentWalletPrivateKey}</small>
-              ) : null}
+              <input className="onboarding-form__input" readOnly value={readonlyAgentWalletKey} />
             </label>
             <label className="onboarding-form__field">
               <span>{`${t("profileCredentialAliasLabel")} (${t("profileOptionalLabel")})`}</span>
               <input
                 className="onboarding-form__input"
-                onChange={(event) => setDraftAlias(event.target.value)}
-                value={draftAlias}
+                readOnly
+                value={state.credentials.credentialAlias ?? ""}
               />
             </label>
           </div>
 
-          <div className="status-stack">
-            <div className="status-row status-row--info">
-              <span className="status-dot status-dot--info"></span>
-              <div>
-                <strong>{t("profileRevalidationRequiredTitle")}</strong>
-                <p>{t("profileRevalidationRequiredDescription")}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="action-row">
-            <button className="btn secondary" onClick={resetDrafts} type="button">
-              {t("profileClearChangesAction")}
-            </button>
-            <button
-              className="btn primary"
-              disabled={!hasAnyDraftChange || state.credentials.validationStatus === "validating"}
-              onClick={() => void handleSave()}
-              type="button"
-            >
-              {t("profileSaveAndRevalidateAction")}
-            </button>
-          </div>
-        </section>
-
-        <section className="panel recent-panel">
-          <div className="row-between align-start section-gap">
-            <div>
-              <p className="panel-label">{t("profileSecurityEyebrow")}</p>
-              <h3>{t("profileSecurityTitle")}</h3>
-            </div>
-            <span className="badge badge--info">{t("profileSecurityBadge")}</span>
-          </div>
-
-          <div className="history-list">
-            <div className="history-row">
-              <div>
-                <strong>{t("profileSecurityMainWalletTitle")}</strong>
-                <p>{t("profileSecurityMainWalletDescription")}</p>
-              </div>
-              <strong className="down">{t("profileSecuritySensitive")}</strong>
-            </div>
-            <div className="history-row">
-              <div>
-                <strong>{t("profileSecurityAgentWalletTitle")}</strong>
-                <p>{t("profileSecurityAgentWalletDescription")}</p>
-              </div>
-              <strong>{t("profileSecurityReview")}</strong>
-            </div>
-            <div className="history-row">
-              <div>
-                <strong>{t("profileSecurityAliasTitle")}</strong>
-                <p>{t("profileSecurityAliasDescription")}</p>
-              </div>
-              <strong className="up">{t("profileSecurityLight")}</strong>
-            </div>
-          </div>
+          <p className="subtle">
+            {state.credentials.lastValidationMessage ??
+              formatRelativeValidation(state.credentials.lastValidatedAt, t("stateEmptyValue"))}
+          </p>
         </section>
       </section>
     </div>

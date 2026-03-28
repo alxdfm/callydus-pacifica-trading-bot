@@ -9,9 +9,10 @@ import { ConfirmationModal } from "../components/ConfirmationModal";
 export function DashboardPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { setOnboardingState, setRuntimeState, state } = useAppState();
+  const { canAccessProduct, setOnboardingState, setRuntimeState, state } = useAppState();
   const { t } = useI18n();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const botActionBlocked = !canAccessProduct;
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
     t,
@@ -142,6 +143,7 @@ export function DashboardPage() {
           </button>
           <button
             className="btn primary"
+            disabled={botActionBlocked}
             onClick={() => setRuntimeState(toggleBotState(state.runtime))}
             type="button"
           >

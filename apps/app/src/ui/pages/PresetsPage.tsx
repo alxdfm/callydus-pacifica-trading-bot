@@ -14,7 +14,7 @@ import { useAppState } from "../../state/app-state";
 
 export function PresetsPage() {
   const { t } = useI18n();
-  const { setPresetState, setRuntimeState, state } = useAppState();
+  const { canAccessProduct, setPresetState, setRuntimeState, state } = useAppState();
   const presets = getPresetCatalog(t);
   const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
   const selectedPreset = getPresetCatalogItemByDefinitionId(
@@ -390,7 +390,12 @@ export function PresetsPage() {
             </button>
             <button
               className="btn primary"
-              disabled={!selectedPreset || !draftConfig || state.presets.activationStatus === "loading"}
+              disabled={
+                !canAccessProduct ||
+                !selectedPreset ||
+                !draftConfig ||
+                state.presets.activationStatus === "loading"
+              }
               onClick={handleActivationRequest}
               type="button"
             >

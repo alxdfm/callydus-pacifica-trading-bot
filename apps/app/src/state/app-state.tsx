@@ -200,6 +200,7 @@ function parseStoredState(rawValue: string | null): AppSessionState {
       credentials: {
         ...baseState.credentials,
         ...parsed.credentials,
+        agentWalletPrivateKey: null,
         validationStatus: credentialValidationStatus(parsed.credentials?.validationStatus),
       },
       operational: {
@@ -368,6 +369,16 @@ function deriveCanAccessProduct(state: AppSessionState) {
   );
 }
 
+function sanitizeStateForPersistence(state: AppSessionState): AppSessionState {
+  return {
+    ...state,
+    credentials: {
+      ...state.credentials,
+      agentWalletPrivateKey: null,
+    },
+  };
+}
+
 function areObjectsShallowEqual<T extends Record<string, unknown>>(left: T, right: T) {
   const leftKeys = Object.keys(left) as Array<keyof T>;
   const rightKeys = Object.keys(right) as Array<keyof T>;
@@ -389,7 +400,10 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   });
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(state));
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify(sanitizeStateForPersistence(state)),
+    );
   }, [state]);
 
   const setLocale = useCallback((locale: AppLocale) => {

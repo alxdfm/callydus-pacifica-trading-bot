@@ -859,6 +859,12 @@ a {
   border-color: rgba(229, 107, 97, 0.28);
 }
 
+.profile-maintenance-modal {
+  width: min(100%, 760px);
+  max-height: min(90dvh, 920px);
+  overflow: auto;
+}
+
 .modal-copy {
   display: grid;
   gap: 12px;
@@ -919,6 +925,14 @@ a {
   border-radius: 18px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
+}
+
+.profile-grid {
+  align-items: start;
+}
+
+.status-stack.compact {
+  gap: 10px;
 }
 
 .panel-step {
