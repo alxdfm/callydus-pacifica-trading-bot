@@ -1,48 +1,20 @@
 import type {
+  PresetTechnicalContract,
   PresetActivation,
   PresetDefinition,
   PresetEditableConfig,
+} from "@pacifica/contracts";
+import {
+  BALANCED_PRESET_DEFINITION_ID,
+  MORE_ACTIVE_PRESET_DEFINITION_ID,
+  SAFER_PRESET_DEFINITION_ID,
+  getPresetTechnicalContractByDefinitionId as getSharedPresetTechnicalContractByDefinitionId,
 } from "@pacifica/contracts";
 import type { MessageKey } from "../../shared/i18n/messages";
 
 export type PresetRiskTone = "success" | "warning" | "danger";
 
 type TranslationFn = (key: MessageKey) => string;
-
-type PresetTechnicalContract = {
-  timeframe: string;
-  symbol: string;
-  indicators: Record<string, Record<string, number | string>>;
-  entry: {
-    long: {
-      enabled: boolean;
-      trigger: {
-        type: "all";
-        rules: Array<Record<string, number | string>>;
-      };
-    };
-    short: {
-      enabled: boolean;
-      trigger: {
-        type: "all";
-        rules: Array<Record<string, number | string>>;
-      };
-    };
-  };
-  risk: {
-    stopLoss: Record<string, number | string>;
-    takeProfit: Record<string, number | string>;
-  };
-  execution: {
-    positionSize: {
-      type: "fixedPercent";
-      value: number;
-    };
-    onePositionPerSymbol: boolean;
-    manualCloseAllowed: boolean;
-    closeOppositePositionOnSignal: boolean;
-  };
-};
 
 type PresetCatalogRawItem = {
   definition: {
@@ -88,7 +60,7 @@ export type PresetCatalogItem = {
 const presetCatalogRaw: PresetCatalogRawItem[] = [
   {
     definition: {
-      id: "2d5a5641-c7ad-4ff0-9f75-4fbcb58a4d01",
+      id: SAFER_PRESET_DEFINITION_ID,
       name: "Safer",
       slug: "safer",
       version: 1,
@@ -107,78 +79,12 @@ const presetCatalogRaw: PresetCatalogRawItem[] = [
     reviewSummaryKey: "presetSaferReviewSummary",
     activationSummaryKey: "presetSaferActivationSummary",
     riskTone: "success",
-    technicalContract: {
-      timeframe: "15m",
-      symbol: "BTC/USDC",
-      indicators: {
-        emaFast: { type: "ema", period: 12 },
-        emaSlow: { type: "ema", period: 24 },
-        rsi: { type: "rsi", period: 14 },
-        atr: { type: "atr", period: 14 },
-        volume: { type: "volume" },
-        volumeSma: { type: "sma", source: "volume", period: 20 },
-      },
-      entry: {
-        long: {
-          enabled: true,
-          trigger: {
-            type: "all",
-            rules: [
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "emaFast",
-                operator: "crossesAbove",
-                ref: "emaSlow",
-              },
-              {
-                scope: "currentCandle",
-                type: "threshold",
-                indicator: "rsi",
-                operator: "below",
-                value: 30,
-              },
-            ],
-          },
-        },
-        short: {
-          enabled: true,
-          trigger: {
-            type: "all",
-            rules: [
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "emaFast",
-                operator: "crossesBelow",
-                ref: "emaSlow",
-              },
-              {
-                scope: "currentCandle",
-                type: "threshold",
-                indicator: "rsi",
-                operator: "above",
-                value: 70,
-              },
-            ],
-          },
-        },
-      },
-      risk: {
-        stopLoss: { mode: "atr", period: 14, multiplier: 1.5 },
-        takeProfit: { mode: "rr", multiple: 2 },
-      },
-      execution: {
-        positionSize: { type: "fixedPercent", value: 3 },
-        onePositionPerSymbol: true,
-        manualCloseAllowed: true,
-        closeOppositePositionOnSignal: false,
-      },
-    },
+    technicalContract:
+      getSharedPresetTechnicalContractByDefinitionId(SAFER_PRESET_DEFINITION_ID)!,
   },
   {
     definition: {
-      id: "54663f73-b1e9-4384-9057-48d68ba689b2",
+      id: BALANCED_PRESET_DEFINITION_ID,
       name: "Balanced",
       slug: "balanced",
       version: 1,
@@ -197,92 +103,12 @@ const presetCatalogRaw: PresetCatalogRawItem[] = [
     reviewSummaryKey: "presetBalancedReviewSummary",
     activationSummaryKey: "presetBalancedActivationSummary",
     riskTone: "warning",
-    technicalContract: {
-      timeframe: "15m",
-      symbol: "BTC/USDC",
-      indicators: {
-        emaFast: { type: "ema", period: 8 },
-        emaSlow: { type: "ema", period: 21 },
-        rsi: { type: "rsi", period: 14 },
-        atr: { type: "atr", period: 14 },
-        volume: { type: "volume" },
-        volumeSma: { type: "sma", source: "volume", period: 20 },
-      },
-      entry: {
-        long: {
-          enabled: true,
-          trigger: {
-            type: "all",
-            rules: [
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "emaFast",
-                operator: "crossesAbove",
-                ref: "emaSlow",
-              },
-              {
-                scope: "currentCandle",
-                type: "threshold",
-                indicator: "rsi",
-                operator: "atOrAbove",
-                value: 50,
-              },
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "volume",
-                operator: "crossesAbove",
-                ref: "volumeSma",
-              },
-            ],
-          },
-        },
-        short: {
-          enabled: true,
-          trigger: {
-            type: "all",
-            rules: [
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "emaFast",
-                operator: "crossesBelow",
-                ref: "emaSlow",
-              },
-              {
-                scope: "currentCandle",
-                type: "threshold",
-                indicator: "rsi",
-                operator: "atOrBelow",
-                value: 50,
-              },
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "volume",
-                operator: "crossesAbove",
-                ref: "volumeSma",
-              },
-            ],
-          },
-        },
-      },
-      risk: {
-        stopLoss: { mode: "static", value: 1.2, unit: "percent" },
-        takeProfit: { mode: "rr", multiple: 2 },
-      },
-      execution: {
-        positionSize: { type: "fixedPercent", value: 5 },
-        onePositionPerSymbol: true,
-        manualCloseAllowed: true,
-        closeOppositePositionOnSignal: false,
-      },
-    },
+    technicalContract:
+      getSharedPresetTechnicalContractByDefinitionId(BALANCED_PRESET_DEFINITION_ID)!,
   },
   {
     definition: {
-      id: "1242f0f9-7a5b-44ea-b32d-368ceba95a93",
+      id: MORE_ACTIVE_PRESET_DEFINITION_ID,
       name: "More active",
       slug: "more-active",
       version: 1,
@@ -301,88 +127,8 @@ const presetCatalogRaw: PresetCatalogRawItem[] = [
     reviewSummaryKey: "presetMoreActiveReviewSummary",
     activationSummaryKey: "presetMoreActiveActivationSummary",
     riskTone: "danger",
-    technicalContract: {
-      timeframe: "5m",
-      symbol: "BTC/USDC",
-      indicators: {
-        emaFast: { type: "ema", period: 9 },
-        emaSlow: { type: "ema", period: 18 },
-        rsi: { type: "rsi", period: 14 },
-        atr: { type: "atr", period: 14 },
-        volume: { type: "volume" },
-        volumeSma: { type: "sma", source: "volume", period: 20 },
-      },
-      entry: {
-        long: {
-          enabled: true,
-          trigger: {
-            type: "all",
-            rules: [
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "volume",
-                operator: "crossesAbove",
-                ref: "volumeSma",
-              },
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "emaFast",
-                operator: "crossesAbove",
-                ref: "emaSlow",
-              },
-              {
-                scope: "currentCandle",
-                type: "threshold",
-                indicator: "rsi",
-                operator: "atOrAbove",
-                value: 45,
-              },
-            ],
-          },
-        },
-        short: {
-          enabled: true,
-          trigger: {
-            type: "all",
-            rules: [
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "volume",
-                operator: "crossesAbove",
-                ref: "volumeSma",
-              },
-              {
-                scope: "currentCandle",
-                type: "cross",
-                indicator: "emaFast",
-                operator: "crossesBelow",
-                ref: "emaSlow",
-              },
-              {
-                scope: "currentCandle",
-                type: "threshold",
-                indicator: "rsi",
-                operator: "atOrBelow",
-                value: 55,
-              },
-            ],
-          },
-        },
-      },
-      risk: {
-        stopLoss: { mode: "static", value: 1.0, unit: "percent" },
-        takeProfit: { mode: "rr", multiple: 1.6 },
-      },
-      execution: {
-        positionSize: { type: "fixedPercent", value: 5 },
-        onePositionPerSymbol: true,
-        manualCloseAllowed: true,
-        closeOppositePositionOnSignal: false,
-      },
-    },
+    technicalContract:
+      getSharedPresetTechnicalContractByDefinitionId(MORE_ACTIVE_PRESET_DEFINITION_ID)!,
   },
 ];
 
@@ -501,7 +247,11 @@ export function getEditableConfigForPreset(
 export function getPresetTechnicalContractByDefinitionId(
   presetDefinitionId: string | null | undefined,
 ) {
-  return getPresetCatalogRawItemByDefinitionId(presetDefinitionId)?.technicalContract ?? null;
+  return (
+    getSharedPresetTechnicalContractByDefinitionId(presetDefinitionId) ??
+    getPresetCatalogRawItemByDefinitionId(presetDefinitionId)?.technicalContract ??
+    null
+  );
 }
 
 export const allowedPresetSymbols = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "ARB/USDC"] as const;
