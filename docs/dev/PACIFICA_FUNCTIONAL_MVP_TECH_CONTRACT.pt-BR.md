@@ -39,6 +39,36 @@ Fechar o contrato tecnico minimo da Pacifica necessario para tirar o produto do 
 - Websocket `prices` para feed de preco em tempo real.
 - Websocket `candle` e `mark_price_candle` para streaming incremental de candles quando precisarmos reduzir polling.
 
+Contrato externo da Pacifica confirmado em teste:
+- candles retornam em objetos com chaves:
+  - `t`: candle start time
+  - `T`: candle end time
+  - `s`: symbol
+  - `i`: interval
+  - `o`: open
+  - `c`: close
+  - `h`: high
+  - `l`: low
+  - `v`: volume
+  - `n`: number of trades
+- na pratica, a Pacifica rejeita ranges muito amplos sem `end_time`, com erro do tipo:
+  - `Time range too large for 1h interval with limit 4000. Max range: 4000 candles`
+- por isso, nosso adapter local deve tratar `limit` apenas como conveniencia interna e convertê-lo para `end_time` antes de chamar a Pacifica
+
+Contrato interno normalizado do nosso backend:
+- o backend nao expoe esse formato compacto diretamente ao restante do sistema
+- o payload interno normalizado de candles usa:
+  - `symbol`
+  - `interval`
+  - `openTime`
+  - `closeTime`
+  - `open`
+  - `high`
+  - `low`
+  - `close`
+  - `volume`
+- isso reduz acoplamento com o shape externo da Pacifica e deixa o motor de indicadores trabalhar sobre um contrato mais semantico
+
 ### Estado de Trading
 - A doc oficial indica leitura de `positions`, `trades` e `orders` como fontes canonicas de eventos de trading.
 - `last_order_id` deve ser tratado como cursor oficial para ordenacao de eventos entre endpoints e streams de trading.
