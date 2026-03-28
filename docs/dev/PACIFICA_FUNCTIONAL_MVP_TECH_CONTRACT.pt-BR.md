@@ -139,6 +139,14 @@ Observacao de congruencia:
 - a traducao para a Pacifica acontece em camada de infraestrutura
 - dashboard, current trades e history devem ler de read models persistidos, nao direto da Pacifica
 
+Observacao pratica ja validada:
+- o primeiro comando real dessa trilha pode ser `POST /api/presets/activate`
+- ele deve:
+  - persistir `PresetActivation`
+  - gerar `effectiveContractJson` com os campos editaveis aplicados sobre o contrato base do preset
+  - desativar o preset ativo anterior da conta
+  - atualizar `BotRuntimeState.activePresetActivationId`
+
 ### FM-009 e FM-010
 - `last_order_id` e subscriptions de conta sao base para reconciliacao minima
 - rate limits, falhas de websocket e assinaturas invalidas devem virar eventos auditaveis do runtime
