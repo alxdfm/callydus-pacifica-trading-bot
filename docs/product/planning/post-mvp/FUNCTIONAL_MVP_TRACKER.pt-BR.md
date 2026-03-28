@@ -44,18 +44,18 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 10. FM-010
 
 ## Cards
-- [FM-001 Card](./cards/dev/FM-001_CARD.pt-BR.md)
-- [FM-002 Card](./cards/dev/FM-002_CARD.pt-BR.md)
-- [FM-003 Card](./cards/dev/FM-003_CARD.pt-BR.md)
-- [FM-004 Card](./cards/dev/FM-004_CARD.pt-BR.md)
-- [FM-005 Card](./cards/dev/FM-005_CARD.pt-BR.md)
-- [FM-006 Card](./cards/dev/FM-006_CARD.pt-BR.md)
-- [FM-007 Card](./cards/dev/FM-007_CARD.pt-BR.md)
-- [FM-008 Card](./cards/dev/FM-008_CARD.pt-BR.md)
-- [FM-009 Card](./cards/dev/FM-009_CARD.pt-BR.md)
-- [FM-010 Card](./cards/dev/FM-010_CARD.pt-BR.md)
-- [FM-011 Card](./cards/dev/FM-011_CARD.pt-BR.md)
-- [FM-012 Card](./cards/dev/FM-012_CARD.pt-BR.md)
+- [FM-001 Card](./cards/dev/fm/FM-001_CARD.pt-BR.md)
+- [FM-002 Card](./cards/dev/fm/FM-002_CARD.pt-BR.md)
+- [FM-003 Card](./cards/dev/fm/FM-003_CARD.pt-BR.md)
+- [FM-004 Card](./cards/dev/fm/FM-004_CARD.pt-BR.md)
+- [FM-005 Card](./cards/dev/fm/FM-005_CARD.pt-BR.md)
+- [FM-006 Card](./cards/dev/fm/FM-006_CARD.pt-BR.md)
+- [FM-007 Card](./cards/dev/fm/FM-007_CARD.pt-BR.md)
+- [FM-008 Card](./cards/dev/fm/FM-008_CARD.pt-BR.md)
+- [FM-009 Card](./cards/dev/fm/FM-009_CARD.pt-BR.md)
+- [FM-010 Card](./cards/dev/fm/FM-010_CARD.pt-BR.md)
+- [FM-011 Card](./cards/dev/fm/FM-011_CARD.pt-BR.md)
+- [FM-012 Card](./cards/dev/fm/FM-012_CARD.pt-BR.md)
 
 ## Atualizacoes Recentes
 - `2026-03-25`: `FM-001` fechado com o documento [PACIFICA_FUNCTIONAL_MVP_TECH_CONTRACT.pt-BR.md](../../../dev/PACIFICA_FUNCTIONAL_MVP_TECH_CONTRACT.pt-BR.md) e o ambiente local de banco padronizado com `docker compose`.

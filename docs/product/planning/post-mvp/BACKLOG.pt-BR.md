@@ -58,3 +58,19 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 - [BG-020 Card](./cards/BG-020_CARD.pt-BR.md)
 - [BG-021 Card](./cards/BG-021_CARD.pt-BR.md)
 - [BG-022 Card](./cards/BG-022_CARD.pt-BR.md)
+
+## Debt Arquitetural
+Trilha separada para refatoracoes estruturais, consolidacao de fluxo, fortalecimento de boundaries e cobertura automatizada. Esses itens nao competem diretamente com backlog funcional/UX e devem ser puxados quando o slice correspondente estiver funcionalmente estavel.
+
+| ID | Status | Tipo | Prioridade | Area | Resumo | Proximo passo |
+|----|--------|------|------------|------|--------|---------------|
+| AR-001 | TODO | architectural refactoring | P1 | frontend / seguranca | remover `agentWalletPrivateKey` do estado global em memoria | executar depois que onboarding/profile estiverem estabilizados e com testes minimos |
+| AR-002 | TODO | architectural refactoring | P1 | frontend / fluxo | consolidar fluxo compartilhado de validacao e readiness entre onboarding e profile | extrair maquina de estados/hook compartilhado de `validate + readiness` |
+| AR-003 | TODO | architectural refactoring | P2 | frontend / onboarding | decompor `OnboardingPage` por dominio e passo | quebrar renderizacao, handlers e transicoes em modulos menores |
+| AR-004 | TODO | architectural refactoring | P1 | testes | criar cobertura automatizada para onboarding e profile nos fluxos de credencial | adicionar testes de contrato e fluxo antes das refatoracoes maiores |
+
+## Cards de Debt Arquitetural
+- [AR-001 Card](./cards/dev/ar/AR-001_CARD.pt-BR.md)
+- [AR-002 Card](./cards/dev/ar/AR-002_CARD.pt-BR.md)
+- [AR-003 Card](./cards/dev/ar/AR-003_CARD.pt-BR.md)
+- [AR-004 Card](./cards/dev/ar/AR-004_CARD.pt-BR.md)
