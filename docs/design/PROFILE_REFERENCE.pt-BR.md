@@ -6,6 +6,7 @@ Consolidar a estrutura, os blocos, as regras de edição e o handoff visual da p
 ## Papel da Tela
 - separar manutenção recorrente de conta da jornada de `Onboarding`
 - dar um destino claro para edição posterior de dados sensíveis
+- mostrar quando a operação precisa parar antes de uma mudança crítica
 - preservar clareza para usuário não técnico
 
 ## Estrutura da Tela
@@ -14,29 +15,46 @@ Consolidar a estrutura, os blocos, as regras de edição e o handoff visual da p
 Ordem dos blocos:
 1. header da tela
 2. resumo de status da conta
-3. bloco de `Main wallet`
-4. bloco de `Agent Wallet`
-5. bloco de segurança e impacto das mudanças
+3. bloco de sessão atual
+4. bloco de `Main wallet`
+5. bloco de `Agent Wallet`
+6. bloco de segurança e impacto das mudanças
 
 ### Mobile
 Ordem dos blocos:
 1. header da tela
 2. resumo de status
-3. `Main wallet`
-4. `Agent Wallet`
-5. segurança e impacto
+3. sessão atual
+4. `Main wallet`
+5. `Agent Wallet`
+6. segurança e impacto
 
 ## Resumo de Status da Conta
 Campos mínimos:
 - status da conta
+- status operacional do bot
 - status da wallet principal
 - status da `Agent Wallet`
 - data da última validação bem-sucedida
 
 Regras:
 - o estado global da conta precisa ser escaneável em uma linha
-- `Ready`, `Needs validation` e `Attention required` não dependem só de cor
+- `Ready`, `Maintenance required` e `Attention required` não dependem só de cor
 - o resumo aparece acima dos blocos editáveis
+- quando o bot estiver rodando, o resumo precisa deixar explícito que edições críticas ficam bloqueadas
+
+## Sessão Atual
+Campos mínimos:
+- estado da sessão atual
+- regra de logout atual
+
+Ações:
+- `Log out`
+
+Regras:
+- `Log out` precisa aparecer como ação distinta das edições de credencial
+- a copy deve deixar claro que a sessão atual será encerrada no dispositivo
+- logout não compete visualmente com o CTA crítico de revalidação
 
 ## Main Wallet
 Campos mínimos:
@@ -44,13 +62,13 @@ Campos mínimos:
 - `mainWalletPublicKey`
 
 Ações:
-- `Reconnect wallet`
+- nenhuma troca inline de wallet principal
 
 Regras:
 - `mainWalletPublicKey` é somente leitura
 - a wallet principal representa a identidade da conta, não um campo comum de formulário
-- troca de wallet não acontece inline sem aviso
-- ao acionar `Reconnect wallet`, a UI deve avisar que a identidade da conta pode mudar e exigir confirmação antes de seguir
+- o bloco deve comunicar que usar outra wallet principal significa iniciar outra conta, não editar a atual
+- o `Profile` não deve sugerir que a wallet principal pode ser trocada como manutenção leve
 
 ## Agent Wallet
 Campos mínimos:
@@ -68,47 +86,60 @@ Regras:
 - `credentialAlias` é opcional e de baixa criticidade visual
 - alterações em `agentWalletPublicKey` ou `agentWalletPrivateKey` exigem revalidação
 - alteração apenas de `credentialAlias` pode salvar sem bloquear a conta
+- quando o bot estiver rodando, a edição crítica de `Agent Wallet` fica bloqueada
+- a UI precisa deixar evidente a próxima ação: parar operação para liberar edição, ou salvar e revalidar
+- salvar mudança crítica reabre validação de `Agent Wallet` e novo `operational verification`
 
 ## Segurança e Impacto
 Mensagens mínimas:
-- mudar a `Main wallet` pode alterar a identidade da conta
+- outra `Main wallet` significa outra conta
 - mudar a `Agent Wallet` exige nova validação
-- durante revalidação, áreas protegidas podem ficar temporariamente bloqueadas
+- mudar a `Agent Wallet` exige novo `operational verification`
+- durante revalidação, a operação permanece bloqueada
 
 Regras:
 - o bloco deve reduzir surpresa, não dramatizar
 - a consequência da ação precisa aparecer antes do CTA final
+- quando a conta estiver bloqueada por runtime, o bloco deve explicar o motivo e a ação de saída
 
 ## Estados Principais
 
 ### Conta
 - `Ready`
-- `Needs validation`
+- `Maintenance required`
 - `Attention required`
+
+### Sessão
+- `Signed in`
+- `Ending session`
 
 ### Main Wallet
 - `Connected`
-- `Reconnecting`
-- `Error`
+- `Identity locked`
 
 ### Agent Wallet
-- `Unchanged`
+- `Locked while bot is running`
 - `Editing`
 - `Validating`
 - `Validated`
+- `Reverification required`
 - `Invalid`
 
 ## Microcopy Base
 - `Profile`
-- `Manage account access and connected credentials.`
+- `Manage recurring account maintenance without reopening onboarding.`
+- `Current session`
+- `End access on this device.`
+- `Log out`
 - `Main wallet`
-- `This wallet identifies the account and cannot be edited directly.`
-- `Reconnect wallet`
+- `This wallet identifies the account and is not editable in Profile.`
+- `Using another main wallet starts a different account.`
 - `Agent Wallet`
 - `Update the Agent Wallet used to operate the account.`
 - `Use the private key from the Agent Wallet only.`
+- `Stop the bot to edit Agent Wallet.`
 - `Save and revalidate`
-- `Changes to Agent Wallet require validation before the account is fully unlocked again.`
+- `Changes to Agent Wallet require validation and a new readiness check before operation resumes.`
 - `Alias updated.`
 - `Agent Wallet validated.`
 - `Validation failed. Review the Agent Wallet fields and try again.`

@@ -12,7 +12,6 @@ Prioridades:
 - hierarquia `done/current/locked` inequívoca
 - barra de progresso acima da área principal
 - não agrupar `Step 1` e `Step 2` no mesmo card principal
-- priorizar leitura sequencial direta `1 > 2 > 3 > 4` no grid principal
 - no fluxo implementado, a lateral atua como seletor e a área principal mostra um único step ativo
 - `mainWalletPublicKey` readonly deve parecer dado herdado da wallet conectada
 - `builder approval` deve parecer autorização única da conta, não transferência
@@ -111,17 +110,22 @@ Referências: [preview/profile.html](./preview/profile.html), [PROFILE_REFERENCE
 Prioridades:
 - deixar claro que `Profile` é manutenção recorrente, não reabertura do onboarding
 - resumo de status da conta acima dos blocos editáveis
+- ação de `Log out` distinta das ações de manutenção crítica
 - `Main wallet` distinta de `Agent Wallet`
+- `Main wallet` como identidade readonly, sem expectativa de troca inline
+- bloqueio de edição da `Agent Wallet` quando o bot estiver rodando
+- impacto de revalidação + `operational verification` visível antes do CTA
 - mudanças sensíveis mostram impacto antes do CTA
 - `credentialAlias` não compete com campos críticos
 
 Comportamento Mobile:
 - tela colapsa para coluna única
 - resumo de status permanece acima dos formulários
+- `Log out` continua visível sem competir com o CTA crítico
 - CTAs de revalidação continuam visíveis sem scroll lateral
 
 Orientação de i18n:
-- textos de `Profile`, `Main wallet` e `Agent Wallet` seguem [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
+- textos de `Profile`, `Main wallet`, `Agent Wallet` e sessão atual seguem [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
 
 ## Navegação
 Referência: [preview/index.html](./preview/index.html)

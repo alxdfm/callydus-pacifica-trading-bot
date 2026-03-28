@@ -765,6 +765,22 @@ input {
   gap: 16px;
 }
 
+.profile-grid {
+  grid-template-columns: minmax(0, 960px);
+  justify-content: start;
+}
+
+.profile-flow {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.profile-flow-step h4 {
+  margin: 8px 0 0;
+  letter-spacing: -0.03em;
+}
+
 .hero-panel-wide {
   grid-column: 1;
 }
@@ -779,6 +795,13 @@ input {
 
 .recent-panel {
   grid-column: 2;
+}
+
+.profile-grid .alert-panel,
+.profile-grid .hero-panel-wide,
+.profile-grid .trades-panel,
+.profile-grid .recent-panel {
+  grid-column: 1;
 }
 
 .row-between.align-start,
@@ -1260,6 +1283,10 @@ input {
   display: grid;
   gap: 12px;
   margin: 18px 0;
+}
+
+.status-stack.compact {
+  margin-bottom: 0;
 }
 
 .status-row {

@@ -12,6 +12,11 @@ Congelar a hierarquia visual de progresso, bloqueio, conclusao e reabertura parc
 - quando a clareza sequencial for prioridade, preferir disposição vertical direta `1 > 2 > 3 > 4`
 - no fluxo implementado, a lateral funciona como seletor de step e a área principal mostra um único step ativo por vez
 
+Regra atual de implementação:
+- a sequência completa continua visível na lateral
+- o conteúdo principal não mostra todos os cards ao mesmo tempo
+- o usuário navega entre os steps pela lateral
+
 ## Estados de Step
 
 ### `Locked`

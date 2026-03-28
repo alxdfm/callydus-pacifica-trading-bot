@@ -28,9 +28,9 @@
           <a class="nav-item" href="./index.html">System</a>
         </nav>
         <div class="nav-card">
-          <span class="badge success">Account ready</span>
+          <span class="badge warning">Maintenance required</span>
           <strong>Maintenance area</strong>
-          <p>Profile replaces recurring access to onboarding after setup is complete.</p>
+          <p>Profile handles recurring account maintenance after setup is complete.</p>
         </div>
       </aside>
 
@@ -39,44 +39,22 @@
           <div>
             <p class="eyebrow">Profile</p>
             <h2>Account maintenance</h2>
-            <p class="subtle">Update connected credentials without re-entering the full onboarding flow.</p>
+            <p class="subtle">Manage recurring account maintenance without reopening the full onboarding flow.</p>
           </div>
           <div class="topbar-actions">
-            <span class="badge success">Ready</span>
+            <span class="badge warning">Bot running</span>
             <button class="btn secondary">View onboarding rules</button>
+            <button class="btn danger">Log out</button>
           </div>
         </header>
 
-        <section class="metric-grid">
-          <article class="stat-panel emphasis">
-            <span>Account status</span>
-            <strong>Ready</strong>
-            <p>Operational areas unlocked</p>
-          </article>
-          <article class="stat-panel">
-            <span>Main wallet</span>
-            <strong>Connected</strong>
-            <p>Phantom ending in 7K9p</p>
-          </article>
-          <article class="stat-panel">
-            <span>Agent Wallet</span>
-            <strong>Validated</strong>
-            <p>Alias: Trading Bot Wallet</p>
-          </article>
-          <article class="stat-panel">
-            <span>Last validation</span>
-            <strong>Today</strong>
-            <p>10:42 AM</p>
-          </article>
-        </section>
-
-        <section class="dashboard-grid">
+        <section class="dashboard-grid profile-grid">
           <section class="panel hero-panel-wide">
             <div class="row-between align-start">
               <div>
                 <p class="panel-label">Main wallet</p>
                 <h3>Identity wallet</h3>
-                <p class="subtle">This wallet identifies the account and is not edited like a regular form field.</p>
+                <p class="subtle">This wallet identifies the account and is not editable inside Profile.</p>
               </div>
               <span class="badge neutral">Read only</span>
             </div>
@@ -89,12 +67,8 @@
               <label>
                 <span>Main wallet public key</span>
                 <input value="9xQeWvG816bUx9EPfEZtN9dS2mJj9n7K9p" readonly />
-                <p class="subtle">Changing the main wallet may change the account identity and requires confirmation.</p>
+                <p class="subtle">Using another main wallet starts a different account instead of editing this one.</p>
               </label>
-            </div>
-
-            <div class="action-row">
-              <button class="btn secondary">Reconnect wallet</button>
             </div>
           </section>
 
@@ -102,21 +76,21 @@
             <div class="row-between align-start section-gap">
               <div>
                 <p class="panel-label">Agent Wallet</p>
-                <h3>Update and revalidate</h3>
-                <p class="subtle">Use this area to replace the operational Agent Wallet without reopening onboarding.</p>
+                <h3>Revalidation flow after a critical change</h3>
+                <p class="subtle">Changing Agent Wallet keys reopens a short readiness flow inside Profile before operation can resume.</p>
               </div>
-              <span class="badge warning">Editing</span>
+              <span class="badge warning">Needs revalidation</span>
             </div>
 
             <div class="form-stack">
               <label>
                 <span>Agent wallet public key</span>
-                <input value="Fg6PaFpoGXkYsidMpWxTWqkZ3G7xk9L2Qm" />
+                <input value="7fK3LmN9YxQp84BbM2rT5Zq1Dn" />
               </label>
               <label>
                 <span>Agent wallet private key</span>
-                <input value="" placeholder="Paste a new Agent Wallet private key" />
-                <p class="subtle">Use the private key from the Agent Wallet only. It is required again when changing wallet access.</p>
+                <input value="" placeholder="Paste the new Agent Wallet private key" />
+                <p class="subtle">Use the private key from the Agent Wallet only. A key change reopens validation and the readiness check.</p>
               </label>
               <label>
                 <span>Credential alias <small>(optional)</small></span>
@@ -124,12 +98,68 @@
               </label>
             </div>
 
+            <div class="done-note">
+              <strong>Impact before save</strong>
+              <p>Saving a new Agent Wallet keeps protected actions blocked until validation and the readiness check finish again.</p>
+            </div>
+
+            <div class="profile-flow">
+              <article class="profile-flow-step panel-step done">
+                <div class="panel-step__header">
+                  <div>
+                    <p class="panel-label">Step 1</p>
+                    <h4>Save Agent Wallet changes</h4>
+                  </div>
+                  <span class="step-meta done">Changed</span>
+                </div>
+                <p class="panel-step__summary subtle">The new keys were submitted and the previous ready state was invalidated.</p>
+              </article>
+
+              <article class="profile-flow-step panel-step current">
+                <div class="panel-step__header">
+                  <div>
+                    <p class="panel-label">Step 2</p>
+                    <h4>Validate Agent Wallet</h4>
+                  </div>
+                  <span class="step-meta current">Current</span>
+                </div>
+                <p class="panel-step__summary subtle">Confirm the new keys before the account can move to the final readiness step.</p>
+                <div class="status-stack compact">
+                  <div class="status-row">
+                    <span class="status-dot info-dot"></span>
+                    <div>
+                      <strong>Critical edits reopen validation</strong>
+                      <p>Key changes are treated as a new operational access check, not as a lightweight save.</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="profile-flow-step panel-step locked">
+                <div class="panel-step__header">
+                  <div>
+                    <p class="panel-label">Step 3</p>
+                    <h4>Run readiness check</h4>
+                  </div>
+                  <span class="step-meta locked">Locked</span>
+                </div>
+                <p class="panel-step__summary subtle">This step unlocks after Agent Wallet validation succeeds and confirms the account can operate again.</p>
+              </article>
+            </div>
+
             <div class="status-stack">
-              <div class="status-row info-row">
+              <div class="status-row">
+                <span class="status-dot neutral-dot"></span>
+                <div>
+                  <strong>Protected actions stay blocked</strong>
+                  <p>Trading actions remain unavailable until the new readiness check succeeds.</p>
+                </div>
+              </div>
+              <div class="status-row">
                 <span class="status-dot info-dot"></span>
                 <div>
-                  <strong>Revalidation required</strong>
-                  <p>Changes to Agent Wallet fields require validation before the account is fully unlocked again.</p>
+                  <strong>Alias-only edits remain lighter</strong>
+                  <p>Changing only the alias does not need the same critical flow as replacing keys.</p>
                 </div>
               </div>
             </div>
@@ -143,8 +173,8 @@
           <section class="panel recent-panel">
             <div class="row-between align-start section-gap">
               <div>
-                <p class="panel-label">Security notes</p>
-                <h3>Visible impact before save</h3>
+                <p class="panel-label">Security and impact</p>
+                <h3>What changes after a critical edit</h3>
               </div>
               <span class="badge info">Important</span>
             </div>
@@ -153,14 +183,14 @@
               <div class="history-row">
                 <div>
                   <strong>Main wallet</strong>
-                  <p>Changing it may affect account identity.</p>
+                  <p>It identifies the current account and is not replaced inside Profile.</p>
                 </div>
                 <strong class="down">Sensitive</strong>
               </div>
               <div class="history-row">
                 <div>
                   <strong>Agent Wallet</strong>
-                  <p>Changing keys requires a new validation.</p>
+                  <p>Changing keys requires validation and a new readiness check.</p>
                 </div>
                 <strong>Review</strong>
               </div>
@@ -170,6 +200,13 @@
                   <p>Display-only update with lower risk.</p>
                 </div>
                 <strong class="up">Light</strong>
+              </div>
+              <div class="history-row">
+                <div>
+                  <strong>Operation unlock</strong>
+                  <p>Protected actions remain blocked until the new readiness check succeeds.</p>
+                </div>
+                <strong>Gate</strong>
               </div>
             </div>
           </section>

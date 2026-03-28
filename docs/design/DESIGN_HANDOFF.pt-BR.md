@@ -117,8 +117,12 @@ QA deve validar:
 
 ## Regras Específicas de Profile
 - `Profile` existe para manutenção recorrente da conta após setup inicial
+- `Log out` deve aparecer como ação própria de sessão, sem competir com CTAs de formulário
 - `mainWalletPublicKey` permanece somente leitura e não deve parecer campo comum editável
+- `Main wallet` deve comunicar identidade da conta atual, não manutenção editável
+- edição crítica de `Agent Wallet` deve ficar bloqueada quando houver operação em andamento
 - mudanças de `Agent Wallet` exigem revalidação explícita
+- mudanças de chave em `Agent Wallet` exigem novo `operational verification` antes de retomar operação
 - mudança apenas de `credentialAlias` não deve carregar o mesmo peso visual de uma troca de chave
 - avisos de segurança precisam mostrar impacto sem linguagem alarmista
 
