@@ -68,6 +68,35 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "POST" &&
+    request.url === "/api/market/candles"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.getMarketCandles({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "GET" &&
+    request.url === "/api/market/prices"
+  ) {
+    const result = await api.router.getMarketPrices();
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
     request.url === "/api/onboarding/account/lookup"
   ) {
     const body = await readJsonBody(request);

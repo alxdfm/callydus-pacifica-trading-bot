@@ -1,3 +1,7 @@
+import { createGetMarketCandlesRoute } from "./routes/createGetMarketCandlesRoute";
+import type { GetMarketCandlesHandler } from "./routes/createGetMarketCandlesRoute";
+import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute";
+import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
 import { createVerifyPacificaOperationalRoute } from "./routes/createVerifyPacificaOperationalRoute";
 import type { VerifyPacificaOperationalHandler } from "./routes/createVerifyPacificaOperationalRoute";
 import { createApprovePacificaBuilderRoute } from "./routes/createApprovePacificaBuilderRoute";
@@ -11,6 +15,8 @@ import type { ValidatePacificaCredentialsHandler } from "./routes/createValidate
 
 export type ApiRouterDependencies = {
   approvePacificaBuilder: ApprovePacificaBuilderHandler;
+  getMarketCandles: GetMarketCandlesHandler;
+  getMarketPrices: GetMarketPricesHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
   getOperationalSessionByWallet: GetOperationalSessionByWalletHandler;
   validatePacificaCredentials: ValidatePacificaCredentialsHandler;
@@ -21,6 +27,12 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
   return {
     approvePacificaBuilder: createApprovePacificaBuilderRoute(
       dependencies.approvePacificaBuilder,
+    ),
+    getMarketCandles: createGetMarketCandlesRoute(
+      dependencies.getMarketCandles,
+    ),
+    getMarketPrices: createGetMarketPricesRoute(
+      dependencies.getMarketPrices,
     ),
     lookupOperationalAccountByWallet: createLookupOperationalAccountByWalletRoute(
       dependencies.lookupOperationalAccountByWallet,

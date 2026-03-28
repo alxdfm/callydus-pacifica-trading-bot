@@ -12,6 +12,14 @@ import {
   type ApprovePacificaBuilderDependencies,
 } from "./application/approve-pacifica-builder/ApprovePacificaBuilder";
 import {
+  createGetMarketCandles,
+  type GetMarketCandlesDependencies,
+} from "./application/get-market-candles/GetMarketCandles";
+import {
+  createGetMarketPrices,
+  type GetMarketPricesDependencies,
+} from "./application/get-market-prices/GetMarketPrices";
+import {
   createLookupOperationalAccountByWallet,
   type LookupOperationalAccountByWalletDependencies,
 } from "./application/lookup-operational-account-by-wallet/LookupOperationalAccountByWallet";
@@ -34,6 +42,7 @@ import {
 import { AesCredentialEncryptionService } from "./infrastructure/crypto/AesCredentialEncryptionService";
 import { PacificaBuilderApprovalGateway } from "./infrastructure/pacifica/PacificaBuilderApprovalGateway";
 import { PacificaCredentialValidationGateway } from "./infrastructure/pacifica/PacificaCredentialValidationGateway";
+import { PacificaMarketDataGateway } from "./infrastructure/pacifica/PacificaMarketDataGateway";
 import { PacificaOperationalVerificationGateway } from "./infrastructure/pacifica/PacificaOperationalVerificationGateway";
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
@@ -51,6 +60,8 @@ export type CreateApiModuleInput = {
   approvePacificaBuilderDependencies?: Partial<
     ApprovePacificaBuilderDependencies
   >;
+  getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
+  getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
   lookupOperationalAccountByWalletDependencies?: Partial<
     LookupOperationalAccountByWalletDependencies
   >;
@@ -72,6 +83,15 @@ export function createApiModule(input: CreateApiModuleInput) {
     builderApproval:
       input.approvePacificaBuilderDependencies?.builderApproval ??
       new PacificaBuilderApprovalGateway(environment),
+  });
+  const marketDataGateway = new PacificaMarketDataGateway(environment);
+  const getMarketCandles = createGetMarketCandles({
+    marketData:
+      input.getMarketCandlesDependencies?.marketData ?? marketDataGateway,
+  });
+  const getMarketPrices = createGetMarketPrices({
+    marketData:
+      input.getMarketPricesDependencies?.marketData ?? marketDataGateway,
   });
 
   const defaultCredentialRepository = new PrismaPacificaCredentialRepository(
@@ -126,6 +146,8 @@ export function createApiModule(input: CreateApiModuleInput) {
     environment,
     router: createApiRouter({
       approvePacificaBuilder,
+      getMarketCandles,
+      getMarketPrices,
       lookupOperationalAccountByWallet,
       getOperationalSessionByWallet,
       verifyPacificaOperational,

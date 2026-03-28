@@ -171,6 +171,22 @@ export const alertTypeSchema = z.enum([
   "command",
 ]);
 
+export const marketCandleIntervalSchema = z.enum([
+  "1m",
+  "3m",
+  "5m",
+  "15m",
+  "30m",
+  "1h",
+  "2h",
+  "4h",
+  "6h",
+  "12h",
+  "1d",
+]);
+
+export const marketPriceSourceSchema = z.enum(["market", "mark"]);
+
 export const presetDefinitionSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
@@ -251,6 +267,67 @@ export const operationalAlertSchema = z.object({
   createdAt: z.string().datetime(),
   resolvedAt: z.string().datetime().nullable(),
 });
+
+export const marketPriceSnapshotSchema = z.object({
+  symbol: z.string().min(1),
+  markPrice: z.number(),
+  indexPrice: z.number().nullable(),
+  lastPrice: z.number().nullable(),
+  volume24h: z.number().nullable(),
+  openInterest: z.number().nullable(),
+  fundingRate: z.number().nullable(),
+  capturedAt: z.string().datetime(),
+});
+
+export const marketCandleSchema = z.object({
+  symbol: z.string().min(1),
+  interval: marketCandleIntervalSchema,
+  openTime: z.number().int().nonnegative(),
+  closeTime: z.number().int().nonnegative(),
+  open: z.number(),
+  high: z.number(),
+  low: z.number(),
+  close: z.number(),
+  volume: z.number(),
+});
+
+export const marketCandleRequestSchema = z.object({
+  symbol: z.string().min(1),
+  interval: marketCandleIntervalSchema,
+  priceSource: marketPriceSourceSchema,
+  startTime: z.number().int().nonnegative(),
+  endTime: z.number().int().nonnegative().optional(),
+  limit: z.number().int().positive().max(1000).optional(),
+});
+
+export const marketCandleResponseSchema = z.union([
+  z.object({
+    status: z.literal("success"),
+    symbol: z.string().min(1),
+    interval: marketCandleIntervalSchema,
+    priceSource: marketPriceSourceSchema,
+    candles: z.array(marketCandleSchema),
+  }),
+  z.object({
+    status: z.literal("error"),
+    code: z.enum(["provider_unavailable", "internal_error"]),
+    message: z.string().min(1),
+    retryable: z.boolean(),
+  }),
+]);
+
+export const marketPricesResponseSchema = z.union([
+  z.object({
+    status: z.literal("success"),
+    prices: z.array(marketPriceSnapshotSchema),
+  }),
+  z.object({
+    status: z.literal("error"),
+    code: z.enum(["provider_unavailable", "internal_error"]),
+    message: z.string().min(1),
+    retryable: z.boolean(),
+  }),
+]);
 
 export const walletSessionSchema = z.object({
   provider: walletProviderSchema.nullable(),
@@ -570,6 +647,8 @@ export type CloseReason = z.infer<typeof closeReasonSchema>;
 export type TradeSide = z.infer<typeof tradeSideSchema>;
 export type AlertSeverity = z.infer<typeof alertSeveritySchema>;
 export type AlertType = z.infer<typeof alertTypeSchema>;
+export type MarketCandleInterval = z.infer<typeof marketCandleIntervalSchema>;
+export type MarketPriceSource = z.infer<typeof marketPriceSourceSchema>;
 export type PresetDefinition = z.infer<typeof presetDefinitionSchema>;
 export type PresetEditableConfig = z.infer<typeof presetEditableConfigSchema>;
 export type PresetActivation = z.infer<typeof presetActivationSchema>;
@@ -577,6 +656,11 @@ export type BalanceSnapshot = z.infer<typeof balanceSnapshotSchema>;
 export type OpenTrade = z.infer<typeof openTradeSchema>;
 export type ClosedTrade = z.infer<typeof closedTradeSchema>;
 export type OperationalAlert = z.infer<typeof operationalAlertSchema>;
+export type MarketPriceSnapshot = z.infer<typeof marketPriceSnapshotSchema>;
+export type MarketCandle = z.infer<typeof marketCandleSchema>;
+export type MarketCandleRequest = z.infer<typeof marketCandleRequestSchema>;
+export type MarketCandleResponse = z.infer<typeof marketCandleResponseSchema>;
+export type MarketPricesResponse = z.infer<typeof marketPricesResponseSchema>;
 export type WalletSession = z.infer<typeof walletSessionSchema>;
 export type PacificaCredentialSubmission = z.infer<typeof pacificaCredentialSubmissionSchema>;
 export type PacificaCredentialValidationSuccess = z.infer<typeof pacificaCredentialValidationSuccessSchema>;
