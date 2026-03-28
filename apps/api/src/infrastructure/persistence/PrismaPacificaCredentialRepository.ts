@@ -31,6 +31,37 @@ export class PrismaPacificaCredentialRepository
         publicKey: input.publicKey,
         keyFingerprint: input.keyFingerprint,
         validationStatus: "valid",
+        lifecycleStatus: "active",
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        operatorAccount: true,
+      },
+    });
+
+    return credential ? mapCredential(credential) : null;
+  }
+
+  async findLatestCredentialByWalletAndPublicKey(input: {
+    walletAddress: string;
+    publicKey: string;
+  }): Promise<PacificaCredential | null> {
+    const credential = await this.prisma.pacificaCredential.findFirst({
+      where: {
+        OR: [
+          {
+            walletAddress: input.walletAddress,
+          },
+          {
+            operatorAccount: {
+              walletAddress: input.walletAddress,
+            },
+          },
+        ],
+        publicKey: input.publicKey,
+        validationStatus: "valid",
       },
       orderBy: {
         createdAt: "desc",
@@ -54,6 +85,7 @@ export class PrismaPacificaCredentialRepository
         encryptedPrivateKeyRef: input.encryptedPrivateKeyRef,
         keyFingerprint: input.keyFingerprint,
         validationStatus: input.validationStatus,
+        lifecycleStatus: input.lifecycleStatus,
         operationallyVerified: input.operationallyVerified,
         lastValidatedAt: input.lastValidatedAt
           ? new Date(input.lastValidatedAt)
@@ -86,6 +118,7 @@ export class PrismaPacificaCredentialRepository
         pacificaCredentials: {
           where: {
             validationStatus: "valid",
+            lifecycleStatus: "active",
           },
           orderBy: {
             createdAt: "desc",
@@ -128,27 +161,38 @@ export class PrismaPacificaCredentialRepository
   async updateOperationalVerification(
     input: UpdateOperationalVerificationInput,
   ): Promise<PacificaCredential> {
-    const credential = await this.prisma.pacificaCredential.update({
+    const credential = await this.prisma.pacificaCredential.findUnique({
       where: {
         id: input.credentialId,
-      },
-      data: {
-        operationallyVerified: input.operationallyVerified,
-        lastOperationalVerifiedAt: input.lastOperationalVerifiedAt
-          ? new Date(input.lastOperationalVerifiedAt)
-          : null,
-        lastOperationalErrorCode: input.lastOperationalErrorCode,
-        lastOperationalProbeJson: toPrismaJsonValue(
-          input.lastOperationalProbeJson,
-        ),
       },
       include: {
         operatorAccount: true,
       },
     });
 
+    if (!credential) {
+      throw new Error("PacificaCredential not found during operational update.");
+    }
+
     if (!input.operationallyVerified) {
-      return mapCredential(credential);
+      const updatedCredential = await this.prisma.pacificaCredential.update({
+        where: {
+          id: input.credentialId,
+        },
+        data: {
+          operationallyVerified: false,
+          lastOperationalVerifiedAt: null,
+          lastOperationalErrorCode: input.lastOperationalErrorCode,
+          lastOperationalProbeJson: toPrismaJsonValue(
+            input.lastOperationalProbeJson,
+          ),
+        },
+        include: {
+          operatorAccount: true,
+        },
+      });
+
+      return mapCredential(updatedCredential);
     }
 
     const walletAddress =
@@ -160,29 +204,61 @@ export class PrismaPacificaCredentialRepository
       );
     }
 
-    const operatorAccount = await this.prisma.operatorAccount.upsert({
-      where: {
-        walletAddress,
-      },
-      update: {
-        onboardingStatus: "ready",
-      },
-      create: {
-        walletAddress,
-        onboardingStatus: "ready",
-      },
-    });
+    const attachedCredential = await this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.upsert({
+        where: {
+          walletAddress,
+        },
+        update: {
+          onboardingStatus: "ready",
+        },
+        create: {
+          walletAddress,
+          onboardingStatus: "ready",
+        },
+      });
 
-    const attachedCredential = await this.prisma.pacificaCredential.update({
-      where: {
-        id: credential.id,
-      },
-      data: {
-        operatorAccountId: operatorAccount.id,
-      },
-      include: {
-        operatorAccount: true,
-      },
+      await tx.pacificaCredential.updateMany({
+        where: {
+          id: {
+            not: credential.id,
+          },
+          lifecycleStatus: "active",
+          OR: [
+            {
+              walletAddress,
+            },
+            {
+              operatorAccountId: operatorAccount.id,
+            },
+          ],
+        },
+        data: {
+          lifecycleStatus: "replaced",
+          operationallyVerified: false,
+        },
+      });
+
+      return tx.pacificaCredential.update({
+        where: {
+          id: credential.id,
+        },
+        data: {
+          operatorAccountId: operatorAccount.id,
+          lifecycleStatus: "active",
+          operationallyVerified: true,
+          lastOperationalVerifiedAt: input.lastOperationalVerifiedAt
+            ? new Date(input.lastOperationalVerifiedAt)
+            : null,
+          lastOperationalErrorCode: null,
+          lastOperationalProbeJson: toPrismaJsonValue(
+            input.lastOperationalProbeJson,
+          ),
+        },
+        include: {
+          operatorAccount: true,
+        },
+      });
     });
 
     return mapCredential(attachedCredential);
@@ -208,6 +284,7 @@ function mapCredential(
     encryptedPrivateKeyRef: credential.encryptedPrivateKeyRef,
     keyFingerprint: credential.keyFingerprint,
     validationStatus: credential.validationStatus,
+    lifecycleStatus: credential.lifecycleStatus,
     operationallyVerified: credential.operationallyVerified,
     lastValidatedAt: credential.lastValidatedAt?.toISOString() ?? null,
     lastValidationErrorCode: credential.lastValidationErrorCode,

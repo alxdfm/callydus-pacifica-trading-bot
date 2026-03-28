@@ -23,6 +23,12 @@ enum CredentialValidationStatus {
   error
 }
 
+enum CredentialLifecycleStatus {
+  pending
+  active
+  replaced
+}
+
 enum BotStatus {
   inactive
   active
@@ -141,6 +147,7 @@ model PacificaCredential {
   encryptedPrivateKeyRef  String
   keyFingerprint          String
   validationStatus        CredentialValidationStatus
+  lifecycleStatus         CredentialLifecycleStatus  @default(pending)
   operationallyVerified   Boolean                    @default(false)
   lastValidatedAt         DateTime?                  @db.Timestamptz(6)
   lastValidationErrorCode String?
@@ -153,6 +160,7 @@ model PacificaCredential {
 
   @@index([operatorAccountId])
   @@index([walletAddress])
+  @@index([operatorAccountId, lifecycleStatus])
 }
 
 model PresetDefinition {

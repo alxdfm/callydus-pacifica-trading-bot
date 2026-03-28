@@ -35,6 +35,10 @@ export interface PacificaCredentialRepository {
   findActiveCredential(
     input: FindActiveCredentialInput,
   ): Promise<PacificaCredential | null>;
+  findLatestCredentialByWalletAndPublicKey(input: {
+    walletAddress: string;
+    publicKey: string;
+  }): Promise<PacificaCredential | null>;
   findOperationalAccountByWalletAddress(
     walletAddress: string,
   ): Promise<OperationalAccountLookup | null>;

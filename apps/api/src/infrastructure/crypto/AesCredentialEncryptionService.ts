@@ -38,7 +38,7 @@ export class AesCredentialEncryptionService implements CredentialEncryptionPort 
         ciphertext: ciphertext.toString("base64"),
       }),
       keyFingerprint: createHash("sha256")
-        .update(normalizedPublicKey)
+        .update(`${normalizedPublicKey}:${normalizedPrivateKey}`)
         .digest("hex"),
     };
   }

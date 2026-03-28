@@ -65,6 +65,33 @@ export function createValidatePacificaCredentials(
       };
     }
 
+    const latestCredential =
+      await dependencies.credentialRepository.findLatestCredentialByWalletAndPublicKey(
+        {
+          walletAddress: input.mainWalletPublicKey,
+          publicKey: input.agentWalletPublicKey,
+        },
+      );
+
+    if (latestCredential?.validationStatus === "valid") {
+      const decryptedPrivateKey =
+        await dependencies.credentialEncryption.decryptAgentWalletPrivateKey({
+          encryptedPrivateKeyRef: latestCredential.encryptedPrivateKeyRef,
+        });
+
+      if (decryptedPrivateKey.trim() === input.agentWalletPrivateKey.trim()) {
+        return {
+          ok: true,
+          credentialId: latestCredential.id,
+          keyFingerprint: latestCredential.keyFingerprint,
+          validationStatus: "valid",
+          validatedAt:
+            latestCredential.lastValidatedAt ?? new Date().toISOString(),
+          reusedExistingCredential: true,
+        };
+      }
+    }
+
     const validationResult =
       await dependencies.credentialValidation.validateAgentWallet({
         mainWalletPublicKey: input.mainWalletPublicKey,
@@ -90,6 +117,7 @@ export function createValidatePacificaCredentials(
       encryptedPrivateKeyRef: encryptedSecret.encryptedPrivateKeyRef,
       keyFingerprint: encryptedSecret.keyFingerprint,
       validationStatus: "valid",
+      lifecycleStatus: "pending",
       operationallyVerified: false,
       lastValidatedAt: validationResult.validatedAt,
       lastValidationErrorCode: null,

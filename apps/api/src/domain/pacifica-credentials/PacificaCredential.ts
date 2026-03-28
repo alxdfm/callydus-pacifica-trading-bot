@@ -5,6 +5,8 @@ export type CredentialValidationStatus =
   | "invalid"
   | "error";
 
+export type CredentialLifecycleStatus = "pending" | "active" | "replaced";
+
 export type PacificaCredential = {
   id: string;
   operatorAccountId: string | null;
@@ -14,6 +16,7 @@ export type PacificaCredential = {
   encryptedPrivateKeyRef: string;
   keyFingerprint: string;
   validationStatus: CredentialValidationStatus;
+  lifecycleStatus: CredentialLifecycleStatus;
   operationallyVerified: boolean;
   lastValidatedAt: string | null;
   lastValidationErrorCode: string | null;
