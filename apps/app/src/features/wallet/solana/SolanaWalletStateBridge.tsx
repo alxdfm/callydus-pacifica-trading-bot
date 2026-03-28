@@ -1,9 +1,11 @@
 import { useEffect, type PropsWithChildren } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { createEmptyRuntimeState } from "../../runtime/demo-runtime";
 import { useAppState } from "../../../state/app-state";
 import { useSolanaWalletPort } from "./SolanaWalletEnvironment";
 import { lookupOperationalAccountViaBackend } from "../../onboarding/backend-operational-account-lookup";
+import { readAccountSessionViaBackend } from "../../account/backend-account-session";
 
 export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   const {
@@ -17,9 +19,11 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   const { lastErrorCode, selectedProviderName } = useSolanaWalletPort();
   const {
     setOperationalState,
+    setPresetState,
     setBuilderApprovalState,
     setCredentialState,
     setOnboardingState,
+    setRuntimeState,
     setWalletSession,
     state,
   } = useAppState();
@@ -59,6 +63,16 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
         retryable: false,
         probeSymbol: null,
         probeClientOrderId: null,
+      });
+      setPresetState({
+        activePreset: null,
+        selectedPresetDefinitionId: null,
+        draftEditableConfig: null,
+        activationStatus: "idle",
+        activationMessage: null,
+      });
+      setRuntimeState({
+        ...createEmptyRuntimeState(),
       });
       setOnboardingState({
         accountLookupStatus: "idle",
@@ -153,6 +167,16 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
       probeSymbol: null,
       probeClientOrderId: null,
     });
+    setPresetState({
+      activePreset: null,
+      selectedPresetDefinitionId: null,
+      draftEditableConfig: null,
+      activationStatus: "idle",
+      activationMessage: null,
+    });
+    setRuntimeState({
+      ...createEmptyRuntimeState(),
+    });
     setOnboardingState({
       status: "wallet_pending",
       accountReady: false,
@@ -169,7 +193,9 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     setBuilderApprovalState,
     setCredentialState,
     setOperationalState,
+    setPresetState,
     setOnboardingState,
+    setRuntimeState,
     setWalletSession,
     state.builderApproval.approvalStatus,
     state.credentials.validationStatus,
@@ -206,45 +232,122 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
 
     void lookupOperationalAccountViaBackend({
       walletAddress: mainWalletPublicKey,
-    }).then((result) => {
+    }).then(async (result) => {
       if (isCancelled) {
         return;
       }
 
       if (result.status === "found") {
-        setBuilderApprovalState({
-          approvalStatus: "approved",
-          lastErrorCode: null,
-          lastMessage: "Existing operational account found for this wallet.",
-          retryable: false,
+        const sessionSnapshot = await readAccountSessionViaBackend({
+          walletAddress: mainWalletPublicKey,
         });
-        setCredentialState({
-          credentialId: result.credentialId,
-          agentWalletPublicKey: result.agentWalletPublicKey,
-          credentialAlias: result.credentialAlias,
-          keyFingerprint: result.keyFingerprint,
-          validationStatus: "valid",
-          lastValidatedAt: null,
-          lastErrorCode: null,
-          lastValidationMessage: "Existing operational account found.",
-          retryable: false,
-        });
-        setOperationalState({
-          status: "verified",
-          lastVerifiedAt: null,
-          lastErrorCode: null,
-          lastMessage: "Existing operational account found.",
-          retryable: false,
-          probeSymbol: null,
-          probeClientOrderId: null,
-        });
-        setOnboardingState({
-          status: "ready",
-          accountReady: true,
-          accountLookupStatus: "existing_account",
-          discoveredWalletAddress: mainWalletPublicKey,
-          showCompletionModal: false,
-        });
+
+        if (isCancelled) {
+          return;
+        }
+
+        if (sessionSnapshot.status === "found") {
+          setBuilderApprovalState({
+            approvalStatus: sessionSnapshot.builderApproved ? "approved" : "pending",
+            lastErrorCode: null,
+            lastMessage: "Operational session loaded from backend.",
+            retryable: false,
+          });
+          setCredentialState({
+            credentialId: sessionSnapshot.credentialId,
+            agentWalletPublicKey: sessionSnapshot.agentWalletPublicKey,
+            agentWalletPrivateKey: null,
+            credentialAlias: sessionSnapshot.credentialAlias,
+            keyFingerprint: sessionSnapshot.keyFingerprint,
+            validationStatus: sessionSnapshot.credentialId ? "valid" : "pending",
+            lastValidatedAt: null,
+            lastErrorCode: null,
+            lastValidationMessage: "Operational session loaded from backend.",
+            retryable: false,
+          });
+          setOperationalState({
+            status: sessionSnapshot.operationallyVerified ? "verified" : "pending",
+            lastVerifiedAt: sessionSnapshot.runtime.lastHeartbeatAt,
+            lastErrorCode: null,
+            lastMessage: sessionSnapshot.runtime.lastErrorMessage,
+            retryable: false,
+            probeSymbol: null,
+            probeClientOrderId: null,
+          });
+          setPresetState({
+            activePreset: sessionSnapshot.activePreset,
+            selectedPresetDefinitionId:
+              sessionSnapshot.activePreset?.presetDefinitionId ?? null,
+            draftEditableConfig:
+              sessionSnapshot.activePreset?.editableConfig ?? null,
+            activationStatus: "idle",
+            activationMessage: null,
+          });
+          setRuntimeState({
+            balance: sessionSnapshot.runtime.balance,
+            botStatus: sessionSnapshot.runtime.botStatus,
+            syncStatus: sessionSnapshot.runtime.syncStatus,
+            currentTrades: sessionSnapshot.runtime.currentTrades,
+            closedTrades: sessionSnapshot.runtime.closedTrades,
+            alerts: sessionSnapshot.runtime.activeAlerts,
+            screenStatus: sessionSnapshot.runtime.lastErrorMessage ? "error" : "ready",
+            lastRuntimeMessage: sessionSnapshot.runtime.lastErrorMessage,
+          });
+          setOnboardingState({
+            status: sessionSnapshot.onboardingStatus,
+            accountReady: sessionSnapshot.canAccessProduct,
+            accountLookupStatus: "existing_account",
+            discoveredWalletAddress: mainWalletPublicKey,
+            showCompletionModal: false,
+          });
+        } else {
+          setBuilderApprovalState({
+            approvalStatus: "approved",
+            lastErrorCode: null,
+            lastMessage: "Existing operational account found for this wallet.",
+            retryable: false,
+          });
+          setCredentialState({
+            credentialId: result.credentialId,
+            agentWalletPublicKey: result.agentWalletPublicKey,
+            agentWalletPrivateKey: null,
+            credentialAlias: result.credentialAlias,
+            keyFingerprint: result.keyFingerprint,
+            validationStatus: "valid",
+            lastValidatedAt: null,
+            lastErrorCode: null,
+            lastValidationMessage: "Existing operational account found.",
+            retryable: false,
+          });
+          setOperationalState({
+            status: "verified",
+            lastVerifiedAt: null,
+            lastErrorCode: null,
+            lastMessage: "Existing operational account found.",
+            retryable: false,
+            probeSymbol: null,
+            probeClientOrderId: null,
+          });
+          setPresetState({
+            activePreset: null,
+            selectedPresetDefinitionId: null,
+            draftEditableConfig: null,
+            activationStatus: "idle",
+            activationMessage: null,
+          });
+          setRuntimeState({
+            ...createEmptyRuntimeState(),
+            screenStatus: "ready",
+          });
+          setOnboardingState({
+            status: "ready",
+            accountReady: true,
+            accountLookupStatus: "existing_account",
+            discoveredWalletAddress: mainWalletPublicKey,
+            showCompletionModal: false,
+          });
+        }
+
         if (location.pathname === "/onboarding") {
           window.setTimeout(() => {
             navigate("/dashboard", { replace: true });
@@ -283,6 +386,8 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     setCredentialState,
     setOnboardingState,
     setOperationalState,
+    setPresetState,
+    setRuntimeState,
     location.pathname,
     navigate,
   ]);
