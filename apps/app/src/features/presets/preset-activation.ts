@@ -1,37 +1,33 @@
 import {
-  presetActivationRequestSchema,
-  presetActivationSchema,
-  type PresetActivation,
+  presetActivationResponseSchema,
   type PresetActivationRequest,
+  type PresetActivationSuccess,
 } from "@pacifica/contracts";
+import { parseJsonResponse } from "../onboarding/backend-response";
 
-const demoOperatorAccountId = "00000000-0000-0000-0000-000000000001";
+const defaultApiBaseUrl = "http://localhost:3000";
 
-export type PresetActivationResult = {
-  activation: PresetActivation;
-  message: string;
-};
-
-export async function activatePresetLocally(
+export async function activatePreset(
   request: PresetActivationRequest,
-  operatorAccountId?: string | null,
-): Promise<PresetActivationResult> {
-  const parsedRequest = presetActivationRequestSchema.parse(request);
+): Promise<PresetActivationSuccess> {
+  const response = await fetch(
+    `${import.meta.env.VITE_APP_API_BASE_URL ?? defaultApiBaseUrl}/api/presets/activate`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    },
+  );
 
-  await new Promise((resolve) => window.setTimeout(resolve, 700));
+  const payload = presetActivationResponseSchema.parse(
+    await parseJsonResponse(response),
+  );
 
-  const activation = presetActivationSchema.parse({
-    id: crypto.randomUUID(),
-    operatorAccountId: operatorAccountId ?? demoOperatorAccountId,
-    presetDefinitionId: parsedRequest.presetDefinitionId,
-    activationStatus: "active",
-    editableConfig: parsedRequest.editableConfig,
-    activatedAt: new Date().toISOString(),
-    deactivatedAt: null,
-  });
+  if (payload.status === "success") {
+    return payload;
+  }
 
-  return {
-    activation,
-    message: "Preset activated successfully.",
-  };
+  throw new Error(payload.message);
 }

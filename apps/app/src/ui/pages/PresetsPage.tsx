@@ -1,13 +1,12 @@
 import { presetActivationRequestSchema } from "@pacifica/contracts";
 import { useMemo, useState } from "react";
-import { activatePresetLocally } from "../../features/presets/preset-activation";
+import { activatePreset } from "../../features/presets/preset-activation";
 import {
   allowedPresetSymbols,
   getEditableConfigForPreset,
   getPresetCatalog,
   getPresetCatalogItemByDefinitionId,
 } from "../../features/presets/preset-catalog";
-import { createRuntimeFromPresetActivation } from "../../features/runtime/demo-runtime";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
@@ -95,20 +94,26 @@ export function PresetsPage() {
       });
 
       const request = presetActivationRequestSchema.parse({
+        walletAddress: state.wallet.mainWalletPublicKey,
         presetDefinitionId: selectedPreset.definition.id,
         editableConfig: draftConfig,
       });
 
-      const result = await activatePresetLocally(request, state.credentials.credentialId);
+      const result = await activatePreset(request);
 
       setPresetState({
         activePreset: result.activation,
         selectedPresetDefinitionId: selectedPreset.definition.id,
         draftEditableConfig: result.activation.editableConfig,
         activationStatus: "success",
-        activationMessage: t("presetActivationSuccess"),
+        activationMessage: result.message,
       });
-      setRuntimeState(createRuntimeFromPresetActivation(result.activation));
+      setRuntimeState({
+        botStatus: result.runtime.botStatus,
+        syncStatus: result.runtime.syncStatus,
+        screenStatus: "ready",
+        lastRuntimeMessage: result.message,
+      });
     } catch {
       setPresetState({
         activationStatus: "error",
