@@ -1,4 +1,6 @@
 import { createGetMarketCandlesRoute } from "./routes/createGetMarketCandlesRoute";
+import { createEvaluatePresetSignalRoute } from "./routes/createEvaluatePresetSignalRoute";
+import type { EvaluatePresetSignalHandler } from "./routes/createEvaluatePresetSignalRoute";
 import type { GetMarketCandlesHandler } from "./routes/createGetMarketCandlesRoute";
 import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute";
 import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
@@ -15,6 +17,7 @@ import type { ValidatePacificaCredentialsHandler } from "./routes/createValidate
 
 export type ApiRouterDependencies = {
   approvePacificaBuilder: ApprovePacificaBuilderHandler;
+  evaluatePresetSignal: EvaluatePresetSignalHandler;
   getMarketCandles: GetMarketCandlesHandler;
   getMarketPrices: GetMarketPricesHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
@@ -27,6 +30,9 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
   return {
     approvePacificaBuilder: createApprovePacificaBuilderRoute(
       dependencies.approvePacificaBuilder,
+    ),
+    evaluatePresetSignal: createEvaluatePresetSignalRoute(
+      dependencies.evaluatePresetSignal,
     ),
     getMarketCandles: createGetMarketCandlesRoute(
       dependencies.getMarketCandles,

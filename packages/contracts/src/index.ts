@@ -187,6 +187,220 @@ export const marketCandleIntervalSchema = z.enum([
 
 export const marketPriceSourceSchema = z.enum(["market", "mark"]);
 
+export const presetTriggerScopeSchema = z.enum([
+  "previousCandle",
+  "currentCandle",
+]);
+
+export const presetThresholdOperatorSchema = z.enum([
+  "above",
+  "below",
+  "atOrAbove",
+  "atOrBelow",
+  "equal",
+]);
+
+export const presetCrossOperatorSchema = z.enum([
+  "crossesAbove",
+  "crossesBelow",
+]);
+
+export const presetTriggerGroupTypeSchema = z.enum(["all", "any"]);
+
+export const presetIndicatorEmaSchema = z.object({
+  type: z.literal("ema"),
+  period: z.number().int().positive(),
+});
+
+export const presetIndicatorRsiSchema = z.object({
+  type: z.literal("rsi"),
+  period: z.number().int().positive(),
+});
+
+export const presetIndicatorAtrSchema = z.object({
+  type: z.literal("atr"),
+  period: z.number().int().positive(),
+});
+
+export const presetIndicatorVolumeSchema = z.object({
+  type: z.literal("volume"),
+});
+
+export const presetIndicatorSmaSchema = z.object({
+  type: z.literal("sma"),
+  source: z.string().min(1),
+  period: z.number().int().positive(),
+});
+
+export const presetIndicatorConfigSchema = z.discriminatedUnion("type", [
+  presetIndicatorEmaSchema,
+  presetIndicatorRsiSchema,
+  presetIndicatorAtrSchema,
+  presetIndicatorVolumeSchema,
+  presetIndicatorSmaSchema,
+]);
+
+export const presetThresholdRuleSchema = z.object({
+  scope: presetTriggerScopeSchema,
+  type: z.literal("threshold"),
+  indicator: z.string().min(1),
+  operator: presetThresholdOperatorSchema,
+  value: z.number(),
+});
+
+export const presetCrossRuleSchema = z.object({
+  scope: presetTriggerScopeSchema,
+  type: z.literal("cross"),
+  indicator: z.string().min(1),
+  operator: presetCrossOperatorSchema,
+  ref: z.string().min(1),
+});
+
+export const presetTriggerRuleSchema = z.discriminatedUnion("type", [
+  presetThresholdRuleSchema,
+  presetCrossRuleSchema,
+]);
+
+export const presetTriggerGroupSchema = z.object({
+  type: presetTriggerGroupTypeSchema,
+  rules: z.array(presetTriggerRuleSchema).min(1),
+});
+
+export const presetEntrySideSchema = z.object({
+  enabled: z.boolean(),
+  trigger: presetTriggerGroupSchema,
+});
+
+export const presetStopLossStaticSchema = z.object({
+  mode: z.literal("static"),
+  value: z.number().positive(),
+  unit: z.literal("percent"),
+});
+
+export const presetStopLossAtrSchema = z.object({
+  mode: z.literal("atr"),
+  period: z.number().int().positive(),
+  multiplier: z.number().positive(),
+});
+
+export const presetStopLossConfigSchema = z.discriminatedUnion("mode", [
+  presetStopLossStaticSchema,
+  presetStopLossAtrSchema,
+]);
+
+export const presetTakeProfitRrSchema = z.object({
+  mode: z.literal("rr"),
+  multiple: z.number().positive(),
+});
+
+export const presetTakeProfitConfigSchema = z.discriminatedUnion("mode", [
+  presetTakeProfitRrSchema,
+]);
+
+export const presetTechnicalContractSchema = z.object({
+  name: z.string().min(1),
+  version: z.number().int().positive(),
+  timeframe: marketCandleIntervalSchema,
+  symbol: z.string().min(1),
+  indicators: z.record(z.string().min(1), presetIndicatorConfigSchema),
+  entry: z.object({
+    long: presetEntrySideSchema,
+    short: presetEntrySideSchema,
+  }),
+  risk: z.object({
+    stopLoss: presetStopLossConfigSchema,
+    takeProfit: presetTakeProfitConfigSchema,
+  }),
+  execution: z.object({
+    positionSize: z.object({
+      type: z.literal("fixedPercent"),
+      value: z.number().positive(),
+    }),
+    onePositionPerSymbol: z.boolean(),
+    manualCloseAllowed: z.boolean(),
+    closeOppositePositionOnSignal: z.boolean(),
+  }),
+});
+
+export const presetIndicatorSnapshotSchema = z.object({
+  previous: z.number().nullable(),
+  current: z.number().nullable(),
+});
+
+export const presetRuleEvaluationSchema = z.object({
+  direction: tradeSideSchema,
+  ruleIndex: z.number().int().nonnegative(),
+  scope: presetTriggerScopeSchema,
+  type: z.enum(["threshold", "cross"]),
+  indicator: z.string().min(1),
+  operator: z.string().min(1),
+  ref: z.string().nullable(),
+  value: z.number().nullable(),
+  satisfied: z.boolean(),
+  explanation: z.string().min(1),
+});
+
+export const presetSignalSchema = z.enum(["none", "long", "short"]);
+
+export const presetSignalEvaluationRequestSchema = z.object({
+  presetDefinitionId: z.string().uuid(),
+  editableConfig: z.lazy(() => presetEditableConfigSchema),
+  priceSource: marketPriceSourceSchema.default("market"),
+});
+
+export const presetSignalEvaluationSuccessSchema = z.object({
+  status: z.literal("success"),
+  presetDefinitionId: z.string().uuid(),
+  symbol: z.string().min(1),
+  marketSymbol: z.string().min(1),
+  timeframe: marketCandleIntervalSchema,
+  priceSource: marketPriceSourceSchema,
+  evaluatedAt: z.string().datetime(),
+  candlesUsed: z.number().int().positive(),
+  signal: presetSignalSchema,
+  longSignal: z.boolean(),
+  shortSignal: z.boolean(),
+  entryReferencePrice: z.number().positive(),
+  indicators: z.record(z.string().min(1), presetIndicatorSnapshotSchema),
+  longRiskPlan: z.object({
+    side: z.literal("long"),
+    entryPrice: z.number().positive(),
+    stopLossPrice: z.number().positive(),
+    takeProfitPrice: z.number().positive(),
+    riskDistance: z.number().positive(),
+  }),
+  shortRiskPlan: z.object({
+    side: z.literal("short"),
+    entryPrice: z.number().positive(),
+    stopLossPrice: z.number().positive(),
+    takeProfitPrice: z.number().positive(),
+    riskDistance: z.number().positive(),
+  }),
+  longRuleEvaluations: z.array(presetRuleEvaluationSchema),
+  shortRuleEvaluations: z.array(presetRuleEvaluationSchema),
+});
+
+export const presetSignalEvaluationErrorCodeSchema = z.enum([
+  "preset_not_found",
+  "unsupported_symbol",
+  "insufficient_market_data",
+  "provider_unavailable",
+  "rate_limited",
+  "internal_error",
+]);
+
+export const presetSignalEvaluationErrorSchema = z.object({
+  status: z.literal("error"),
+  code: presetSignalEvaluationErrorCodeSchema,
+  message: z.string().min(1),
+  retryable: z.boolean(),
+});
+
+export const presetSignalEvaluationResponseSchema = z.union([
+  presetSignalEvaluationSuccessSchema,
+  presetSignalEvaluationErrorSchema,
+]);
+
 export const presetDefinitionSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
@@ -609,6 +823,264 @@ export const currentTradesContractSchema = z.object({
   openTrades: z.array(openTradeSchema),
 });
 
+export const SAFER_PRESET_DEFINITION_ID =
+  "2d5a5641-c7ad-4ff0-9f75-4fbcb58a4d01";
+export const BALANCED_PRESET_DEFINITION_ID =
+  "54663f73-b1e9-4384-9057-48d68ba689b2";
+export const MORE_ACTIVE_PRESET_DEFINITION_ID =
+  "1242f0f9-7a5b-44ea-b32d-368ceba95a93";
+
+export const presetTechnicalContractCatalog: Record<string, PresetTechnicalContract> = {
+  [SAFER_PRESET_DEFINITION_ID]: presetTechnicalContractSchema.parse({
+    name: "Safer",
+    version: 1,
+    timeframe: "15m",
+    symbol: "BTC/USDC",
+    indicators: {
+      emaFast: { type: "ema", period: 12 },
+      emaSlow: { type: "ema", period: 24 },
+      rsi: { type: "rsi", period: 14 },
+      atr: { type: "atr", period: 14 },
+      volume: { type: "volume" },
+      volumeSma: { type: "sma", source: "volume", period: 20 },
+    },
+    entry: {
+      long: {
+        enabled: true,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "emaFast",
+              operator: "crossesAbove",
+              ref: "emaSlow",
+            },
+            {
+              scope: "currentCandle",
+              type: "threshold",
+              indicator: "rsi",
+              operator: "below",
+              value: 30,
+            },
+          ],
+        },
+      },
+      short: {
+        enabled: true,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "emaFast",
+              operator: "crossesBelow",
+              ref: "emaSlow",
+            },
+            {
+              scope: "currentCandle",
+              type: "threshold",
+              indicator: "rsi",
+              operator: "above",
+              value: 70,
+            },
+          ],
+        },
+      },
+    },
+    risk: {
+      stopLoss: { mode: "atr", period: 14, multiplier: 1.5 },
+      takeProfit: { mode: "rr", multiple: 2 },
+    },
+    execution: {
+      positionSize: { type: "fixedPercent", value: 3 },
+      onePositionPerSymbol: true,
+      manualCloseAllowed: true,
+      closeOppositePositionOnSignal: false,
+    },
+  }),
+  [BALANCED_PRESET_DEFINITION_ID]: presetTechnicalContractSchema.parse({
+    name: "Balanced",
+    version: 1,
+    timeframe: "15m",
+    symbol: "BTC/USDC",
+    indicators: {
+      emaFast: { type: "ema", period: 8 },
+      emaSlow: { type: "ema", period: 21 },
+      rsi: { type: "rsi", period: 14 },
+      atr: { type: "atr", period: 14 },
+      volume: { type: "volume" },
+      volumeSma: { type: "sma", source: "volume", period: 20 },
+    },
+    entry: {
+      long: {
+        enabled: true,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "emaFast",
+              operator: "crossesAbove",
+              ref: "emaSlow",
+            },
+            {
+              scope: "currentCandle",
+              type: "threshold",
+              indicator: "rsi",
+              operator: "atOrAbove",
+              value: 50,
+            },
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "volume",
+              operator: "crossesAbove",
+              ref: "volumeSma",
+            },
+          ],
+        },
+      },
+      short: {
+        enabled: true,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "emaFast",
+              operator: "crossesBelow",
+              ref: "emaSlow",
+            },
+            {
+              scope: "currentCandle",
+              type: "threshold",
+              indicator: "rsi",
+              operator: "atOrBelow",
+              value: 50,
+            },
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "volume",
+              operator: "crossesAbove",
+              ref: "volumeSma",
+            },
+          ],
+        },
+      },
+    },
+    risk: {
+      stopLoss: { mode: "static", value: 1.2, unit: "percent" },
+      takeProfit: { mode: "rr", multiple: 2 },
+    },
+    execution: {
+      positionSize: { type: "fixedPercent", value: 5 },
+      onePositionPerSymbol: true,
+      manualCloseAllowed: true,
+      closeOppositePositionOnSignal: false,
+    },
+  }),
+  [MORE_ACTIVE_PRESET_DEFINITION_ID]: presetTechnicalContractSchema.parse({
+    name: "More active",
+    version: 1,
+    timeframe: "5m",
+    symbol: "BTC/USDC",
+    indicators: {
+      emaFast: { type: "ema", period: 9 },
+      emaSlow: { type: "ema", period: 18 },
+      rsi: { type: "rsi", period: 14 },
+      atr: { type: "atr", period: 14 },
+      volume: { type: "volume" },
+      volumeSma: { type: "sma", source: "volume", period: 20 },
+    },
+    entry: {
+      long: {
+        enabled: true,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "volume",
+              operator: "crossesAbove",
+              ref: "volumeSma",
+            },
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "emaFast",
+              operator: "crossesAbove",
+              ref: "emaSlow",
+            },
+            {
+              scope: "currentCandle",
+              type: "threshold",
+              indicator: "rsi",
+              operator: "atOrAbove",
+              value: 45,
+            },
+          ],
+        },
+      },
+      short: {
+        enabled: true,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "volume",
+              operator: "crossesAbove",
+              ref: "volumeSma",
+            },
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "emaFast",
+              operator: "crossesBelow",
+              ref: "emaSlow",
+            },
+            {
+              scope: "currentCandle",
+              type: "threshold",
+              indicator: "rsi",
+              operator: "atOrBelow",
+              value: 55,
+            },
+          ],
+        },
+      },
+    },
+    risk: {
+      stopLoss: { mode: "static", value: 1, unit: "percent" },
+      takeProfit: { mode: "rr", multiple: 1.6 },
+    },
+    execution: {
+      positionSize: { type: "fixedPercent", value: 5 },
+      onePositionPerSymbol: true,
+      manualCloseAllowed: true,
+      closeOppositePositionOnSignal: false,
+    },
+  }),
+};
+
+export function getPresetTechnicalContractByDefinitionId(
+  presetDefinitionId: string | null | undefined,
+): PresetTechnicalContract | null {
+  if (!presetDefinitionId) {
+    return null;
+  }
+
+  return presetTechnicalContractCatalog[presetDefinitionId] ?? null;
+}
+
 export const historyContractSchema = z.object({
   closedTrades: z.array(closedTradeSchema),
 });
@@ -649,6 +1121,17 @@ export type AlertSeverity = z.infer<typeof alertSeveritySchema>;
 export type AlertType = z.infer<typeof alertTypeSchema>;
 export type MarketCandleInterval = z.infer<typeof marketCandleIntervalSchema>;
 export type MarketPriceSource = z.infer<typeof marketPriceSourceSchema>;
+export type PresetTriggerScope = z.infer<typeof presetTriggerScopeSchema>;
+export type PresetThresholdOperator = z.infer<typeof presetThresholdOperatorSchema>;
+export type PresetCrossOperator = z.infer<typeof presetCrossOperatorSchema>;
+export type PresetTriggerGroupType = z.infer<typeof presetTriggerGroupTypeSchema>;
+export type PresetIndicatorConfig = z.infer<typeof presetIndicatorConfigSchema>;
+export type PresetTriggerRule = z.infer<typeof presetTriggerRuleSchema>;
+export type PresetTriggerGroup = z.infer<typeof presetTriggerGroupSchema>;
+export type PresetTechnicalContract = z.infer<typeof presetTechnicalContractSchema>;
+export type PresetIndicatorSnapshot = z.infer<typeof presetIndicatorSnapshotSchema>;
+export type PresetRuleEvaluation = z.infer<typeof presetRuleEvaluationSchema>;
+export type PresetSignal = z.infer<typeof presetSignalSchema>;
 export type PresetDefinition = z.infer<typeof presetDefinitionSchema>;
 export type PresetEditableConfig = z.infer<typeof presetEditableConfigSchema>;
 export type PresetActivation = z.infer<typeof presetActivationSchema>;
@@ -661,6 +1144,21 @@ export type MarketCandle = z.infer<typeof marketCandleSchema>;
 export type MarketCandleRequest = z.infer<typeof marketCandleRequestSchema>;
 export type MarketCandleResponse = z.infer<typeof marketCandleResponseSchema>;
 export type MarketPricesResponse = z.infer<typeof marketPricesResponseSchema>;
+export type PresetSignalEvaluationErrorCode = z.infer<
+  typeof presetSignalEvaluationErrorCodeSchema
+>;
+export type PresetSignalEvaluationRequest = z.infer<
+  typeof presetSignalEvaluationRequestSchema
+>;
+export type PresetSignalEvaluationSuccess = z.infer<
+  typeof presetSignalEvaluationSuccessSchema
+>;
+export type PresetSignalEvaluationError = z.infer<
+  typeof presetSignalEvaluationErrorSchema
+>;
+export type PresetSignalEvaluationResponse = z.infer<
+  typeof presetSignalEvaluationResponseSchema
+>;
 export type WalletSession = z.infer<typeof walletSessionSchema>;
 export type PacificaCredentialSubmission = z.infer<typeof pacificaCredentialSubmissionSchema>;
 export type PacificaCredentialValidationSuccess = z.infer<typeof pacificaCredentialValidationSuccessSchema>;

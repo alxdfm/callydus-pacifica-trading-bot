@@ -12,6 +12,10 @@ import {
   type ApprovePacificaBuilderDependencies,
 } from "./application/approve-pacifica-builder/ApprovePacificaBuilder";
 import {
+  createEvaluatePresetSignal,
+  type EvaluatePresetSignalDependencies,
+} from "./application/evaluate-preset-signal/EvaluatePresetSignal";
+import {
   createGetMarketCandles,
   type GetMarketCandlesDependencies,
 } from "./application/get-market-candles/GetMarketCandles";
@@ -60,6 +64,7 @@ export type CreateApiModuleInput = {
   approvePacificaBuilderDependencies?: Partial<
     ApprovePacificaBuilderDependencies
   >;
+  evaluatePresetSignalDependencies?: Partial<EvaluatePresetSignalDependencies>;
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
   lookupOperationalAccountByWalletDependencies?: Partial<
@@ -88,6 +93,13 @@ export function createApiModule(input: CreateApiModuleInput) {
   const getMarketCandles = createGetMarketCandles({
     marketData:
       input.getMarketCandlesDependencies?.marketData ?? marketDataGateway,
+  });
+  const evaluatePresetSignal = createEvaluatePresetSignal({
+    marketData:
+      input.evaluatePresetSignalDependencies?.marketData ?? marketDataGateway,
+    ...(input.evaluatePresetSignalDependencies?.now
+      ? { now: input.evaluatePresetSignalDependencies.now }
+      : {}),
   });
   const getMarketPrices = createGetMarketPrices({
     marketData:
@@ -146,6 +158,7 @@ export function createApiModule(input: CreateApiModuleInput) {
     environment,
     router: createApiRouter({
       approvePacificaBuilder,
+      evaluatePresetSignal,
       getMarketCandles,
       getMarketPrices,
       lookupOperationalAccountByWallet,
