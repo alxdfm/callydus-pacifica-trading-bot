@@ -28,6 +28,8 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 | FM-008 | TODO | implementacao | P0 | Sincronizar dashboard, current trades e history com dados reais | Definir read models finais e substituir progressivamente os pontos de leitura local. |
 | FM-009 | TODO | implementacao | P1 | Implementar reconciliacao, heartbeat e recuperacao basica | Definir rotina minima de reconciliacao e o que constitui divergencia critica no MVP funcional. |
 | FM-010 | TODO | implementacao | P1 | Instrumentar logs, alertas e auditoria minima do fluxo funcional | Definir eventos minimos obrigatorios de auditoria e alerta antes da demo funcional real. |
+| FM-011 | DONE | implementacao | P0 | Modelar lifecycle minimo de credenciais Pacifica com `active/replaced` | Concluida para garantir uma unica `Agent Wallet` ativa por conta e preservar historico sem ambiguidade. |
+| FM-012 | DONE | arquitetura + implementacao | P0 | Endurecer a arquitetura do fluxo de credenciais no frontend e alinhar o backend ao lifecycle `active` | Concluida com saneamento do storage local, modularizacao do `Profile` e correcao de `findActiveCredential`. |
 
 ## Ordem Recomendada
 1. FM-001
@@ -52,6 +54,8 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 - [FM-008 Card](./cards/dev/FM-008_CARD.pt-BR.md)
 - [FM-009 Card](./cards/dev/FM-009_CARD.pt-BR.md)
 - [FM-010 Card](./cards/dev/FM-010_CARD.pt-BR.md)
+- [FM-011 Card](./cards/dev/FM-011_CARD.pt-BR.md)
+- [FM-012 Card](./cards/dev/FM-012_CARD.pt-BR.md)
 
 ## Atualizacoes Recentes
 - `2026-03-25`: `FM-001` fechado com o documento [PACIFICA_FUNCTIONAL_MVP_TECH_CONTRACT.pt-BR.md](../../../dev/PACIFICA_FUNCTIONAL_MVP_TECH_CONTRACT.pt-BR.md) e o ambiente local de banco padronizado com `docker compose`.
@@ -66,3 +70,5 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 - `2026-03-26`: `BG-012` entrou em implementacao tecnica parcial sem depender da UX final: a API ganhou `POST /api/onboarding/credentials/verify-operational`, a persistencia de `PacificaCredential` passou a registrar estado e auditoria de verificacao operacional, e o probe backend foi preparado para `create limit order + cancel order` com parametros de mercado vindos de `GET /api/v1/info`.
 - `2026-03-26`: com o handoff do `BG-013` fechado, o onboarding do app passou a expor `Run readiness check` como quarto passo visivel e o acesso ao dashboard agora depende explicitamente de `operationally_verified`, mantendo o probe tecnico `create + cancel` transparente para o usuario.
 - `2026-03-26`: `BG-012` foi validado manualmente com sucesso; o fluxo completo de onboarding concluiu `builder approval`, validacao da `Agent Wallet` e `operational verification`, liberando a conta como operacionalmente pronta.
+- `2026-03-28`: `FM-011` concluida para introduzir lifecycle minimo `pending/active/replaced` em `PacificaCredential`, garantindo historico de `Agent Wallet` sem ambiguidade sobre qual credencial esta operacionalmente ativa e evitando que uma nova credencial validada seja promovida cedo demais.
+- `2026-03-28`: `FM-012` concluida para remover a persistencia da private key do frontend, modularizar o fluxo de `Replace Agent Wallet` e corrigir `findActiveCredential` para respeitar apenas credenciais `active`.

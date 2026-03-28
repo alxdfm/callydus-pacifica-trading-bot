@@ -24,6 +24,10 @@ Centralize backlog items identified after the MVP sprint flow, keeping PO classi
 - [BG-015 Card PT-BR](./cards/BG-015_CARD.pt-BR.md)
 - [BG-016 Card PT-BR](./cards/BG-016_CARD.pt-BR.md)
 - [BG-017 Card PT-BR](./cards/BG-017_CARD.pt-BR.md)
+- [BG-018 Card PT-BR](./cards/BG-018_CARD.pt-BR.md)
+- [BG-019 Card PT-BR](./cards/BG-019_CARD.pt-BR.md)
+- [BG-020 Card PT-BR](./cards/BG-020_CARD.pt-BR.md)
+- [BG-021 Card PT-BR](./cards/BG-021_CARD.pt-BR.md)
 
 ## Functional MVP
 - [Functional MVP Tracker](./FUNCTIONAL_MVP_TRACKER.pt-BR.md)

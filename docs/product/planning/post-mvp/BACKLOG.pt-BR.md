@@ -29,6 +29,11 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 | BG-015 | DONE | ajuste de UX | P0 | onboarding | ramificar o step 1 por `walletAddress`: conta existente vai direto ao dashboard; conta nova revela os proximos steps | decisao absorvida no onboarding real com bifurcacao logo apos conectar a wallet |
 | BG-016 | DONE | implementacao | P0 | onboarding | implementar lookup de `OperationalAccount` por `walletAddress` e redirecionamento condicional apos conectar a wallet | concluido com lookup backend, bifurcacao do step 1 e supressao do modal para conta existente |
 | BG-017 | DONE | ajuste de UX | P0 | onboarding | revisar o onboarding para mostrar apenas o step 1 inicialmente e revelar os proximos apenas para conta nova | concluido com menu lateral progressivo e ausencia de boas-vindas para conta existente |
+| BG-018 | DONE | ajuste de UX | P0 | profile | remapear `Profile` sequencialmente para logout, bloqueio de edicao critica e revalidacao operacional da `Agent Wallet` | direcao absorvida no `Profile` real por meio de `BG-020` e `BG-021` |
+| BG-019 | TODO | ajuste de UX | P1 | navegacao | redirecionar o `deslogar` para a pagina inicial quando ela existir | manter aberto ate a existencia da pagina inicial e ligar o redirect no fluxo de logout |
+| BG-020 | DONE | implementacao | P0 | profile | implementar remapeamento funcional do `Profile` para logout, bloqueio de edicao critica e revalidacao operacional da `Agent Wallet` | concluido no app; backlog residual segue separado em `BG-019` e `BG-022` |
+| BG-021 | DONE | ajuste de UX | P0 | profile | revisar UX do `Profile` para refletir manutencao recorrente, impacto de bloqueio e revalidacao critica da `Agent Wallet` | concluido com copy, estados e fluxo final aplicados no `Profile` real |
+| BG-022 | TODO | bug | P1 | profile | corrigir alias desatualizado ao reutilizar credencial antiga `replaced` no fluxo de `Replace Agent Wallet` | refinar regra de produto para alias em credencial reaproveitada antes de ajustar `/validate` ou persistencia |
 
 ## Cards
 - [BG-001 Card](./cards/BG-001_CARD.pt-BR.md)
@@ -48,3 +53,8 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 - [BG-015 Card](./cards/BG-015_CARD.pt-BR.md)
 - [BG-016 Card](./cards/BG-016_CARD.pt-BR.md)
 - [BG-017 Card](./cards/BG-017_CARD.pt-BR.md)
+- [BG-018 Card](./cards/BG-018_CARD.pt-BR.md)
+- [BG-019 Card](./cards/BG-019_CARD.pt-BR.md)
+- [BG-020 Card](./cards/BG-020_CARD.pt-BR.md)
+- [BG-021 Card](./cards/BG-021_CARD.pt-BR.md)
+- [BG-022 Card](./cards/BG-022_CARD.pt-BR.md)
