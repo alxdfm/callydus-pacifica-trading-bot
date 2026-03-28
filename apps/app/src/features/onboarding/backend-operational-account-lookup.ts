@@ -4,6 +4,7 @@ import {
   type OperationalAccountLookupRequest,
   type OperationalAccountLookupResponse,
 } from "@pacifica/contracts";
+import { parseSchemaOrFallback } from "./backend-response";
 
 const apiBaseUrl =
   import.meta.env.VITE_APP_API_BASE_URL?.trim() || "http://localhost:3000";
@@ -21,8 +22,20 @@ export async function lookupOperationalAccountViaBackend(
       },
       body: JSON.stringify(request),
     });
-    const payload = await response.json();
-    return operationalAccountLookupResponseSchema.parse(payload);
+
+    return await parseSchemaOrFallback(
+      response,
+      operationalAccountLookupResponseSchema,
+      operationalAccountLookupResponseSchema.parse({
+        status: "error",
+        walletAddress: request.walletAddress,
+        accountExists: false,
+        code: "internal_error",
+        message: "Account lookup returned an unexpected response. Check the API contract and try again.",
+        retryable: false,
+        canAccessProduct: false,
+      }),
+    );
   } catch {
     return operationalAccountLookupResponseSchema.parse({
       status: "error",

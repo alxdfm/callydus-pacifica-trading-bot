@@ -530,6 +530,7 @@ export const messages = {
     profileCriticalEditBlockedTitle: "Critical edits are blocked while the bot is running",
     profileCriticalEditBlockedDescription:
       "Pause or stop the bot before replacing Agent Wallet keys. Alias-only updates can still be saved.",
+    profileStopBotAction: "Stop bot",
     profileSaveChangesAction: "Save changes",
     profileAgentWalletValidateAction: "Validate Agent Wallet",
     profileAgentWalletOperationalAction: "Run readiness check",

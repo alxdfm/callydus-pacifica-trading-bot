@@ -4,6 +4,7 @@ import {
   type PacificaBuilderApprovalResponse,
   type PacificaBuilderApprovalSubmission,
 } from "@pacifica/contracts";
+import { parseSchemaOrFallback } from "./backend-response";
 
 const apiBaseUrl =
   import.meta.env.VITE_APP_API_BASE_URL?.trim() || "http://localhost:3000";
@@ -21,8 +22,19 @@ export async function approveBuilderCodeViaBackend(
       },
       body: JSON.stringify(submission),
     });
-    const payload = await response.json();
-    return pacificaBuilderApprovalResponseSchema.parse(payload);
+
+    return await parseSchemaOrFallback(
+      response,
+      pacificaBuilderApprovalResponseSchema,
+      pacificaBuilderApprovalResponseSchema.parse({
+        status: "error",
+        code: "internal_error",
+        message:
+          "Builder approval returned an unexpected response. Check the API contract and try again.",
+        retryable: false,
+        canProceed: false,
+      }),
+    );
   } catch {
     return pacificaBuilderApprovalResponseSchema.parse({
       status: "error",

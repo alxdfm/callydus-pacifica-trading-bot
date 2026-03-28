@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAgentWalletReplacementFlow } from "../../features/profile/use-agent-wallet-replacement-flow";
 import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEnvironment";
@@ -25,6 +25,42 @@ function formatRelativeValidation(value: string | null, fallback: string) {
   });
 }
 
+function deriveAgentWalletBadgeState(
+  hasCredentialKeyChanges: boolean,
+  validationStatus: ReturnType<typeof useAppState>["state"]["credentials"]["validationStatus"],
+  t: ReturnType<typeof useI18n>["t"],
+) {
+  if (hasCredentialKeyChanges) {
+    return {
+      agentWalletStatus: t("profileAgentWalletStatusEditing"),
+      agentWalletTone: "warning" as const,
+    };
+  }
+
+  switch (validationStatus) {
+    case "valid":
+      return {
+        agentWalletStatus: t("profileAgentWalletStatusValidated"),
+        agentWalletTone: "success" as const,
+      };
+    case "validating":
+      return {
+        agentWalletStatus: t("profileAgentWalletStatusValidating"),
+        agentWalletTone: "warning" as const,
+      };
+    case "pending":
+      return {
+        agentWalletStatus: t("profileAgentWalletStatusUnchanged"),
+        agentWalletTone: "neutral" as const,
+      };
+    default:
+      return {
+        agentWalletStatus: t("profileAgentWalletStatusInvalid"),
+        agentWalletTone: "danger" as const,
+      };
+  }
+}
+
 export function ProfilePage() {
   const navigate = useNavigate();
   const { disconnectWallet } = useSolanaWalletPort();
@@ -40,33 +76,12 @@ export function ProfilePage() {
     (replacementFlow.draftPublicKey.trim() !==
       (state.credentials.agentWalletPublicKey ?? "") ||
       replacementFlow.draftPrivateKey.trim().length > 0);
-  const agentWalletStatus = hasCredentialKeyChanges
-    ? t("profileAgentWalletStatusEditing")
-    : state.credentials.validationStatus === "valid"
-      ? t("profileAgentWalletStatusValidated")
-      : state.credentials.validationStatus === "validating"
-        ? t("profileAgentWalletStatusValidating")
-        : state.credentials.validationStatus === "pending"
-          ? t("profileAgentWalletStatusUnchanged")
-          : t("profileAgentWalletStatusInvalid");
-  const agentWalletTone = hasCredentialKeyChanges
-    ? "warning"
-    : state.credentials.validationStatus === "valid"
-      ? "success"
-      : state.credentials.validationStatus === "validating"
-        ? "warning"
-        : "danger";
+  const { agentWalletStatus, agentWalletTone } = deriveAgentWalletBadgeState(
+    hasCredentialKeyChanges,
+    state.credentials.validationStatus,
+    t,
+  );
   const botStatusBadgeTone = replacementFlow.isBotRunning ? "warning" : "neutral";
-
-  const readonlyAgentWalletKey = useMemo(() => {
-    const key = state.credentials.agentWalletPublicKey;
-
-    if (!key) {
-      return "";
-    }
-
-    return key;
-  }, [state.credentials.agentWalletPublicKey]);
 
   function openAgentWalletModal() {
     replacementFlow.resetDrafts();
@@ -239,7 +254,7 @@ export function ProfilePage() {
                 onClick={replacementFlow.handleStopBot}
                 type="button"
               >
-                Stop bot
+                {t("profileStopBotAction")}
               </button>
               <button
                 className="btn secondary"
@@ -341,7 +356,11 @@ export function ProfilePage() {
           <div className="form-stack">
             <label className="onboarding-form__field">
               <span>{t("profileAgentWalletPublicKeyLabel")}</span>
-              <input className="onboarding-form__input" readOnly value={readonlyAgentWalletKey} />
+              <input
+                className="onboarding-form__input"
+                readOnly
+                value={state.credentials.agentWalletPublicKey ?? ""}
+              />
             </label>
             <label className="onboarding-form__field">
               <span>{`${t("profileCredentialAliasLabel")} (${t("profileOptionalLabel")})`}</span>

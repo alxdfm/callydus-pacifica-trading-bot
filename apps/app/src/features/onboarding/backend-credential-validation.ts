@@ -4,6 +4,7 @@ import {
   type PacificaCredentialSubmission,
   type PacificaCredentialValidationResponse,
 } from "@pacifica/contracts";
+import { parseSchemaOrFallback } from "./backend-response";
 
 const apiBaseUrl =
   import.meta.env.VITE_APP_API_BASE_URL?.trim() || "http://localhost:3000";
@@ -24,8 +25,20 @@ export async function validateAgentWalletViaBackend(
         body: JSON.stringify(submission),
       },
     );
-    const payload = await response.json();
-    return pacificaCredentialValidationResponseSchema.parse(payload);
+
+    return await parseSchemaOrFallback(
+      response,
+      pacificaCredentialValidationResponseSchema,
+      pacificaCredentialValidationResponseSchema.parse({
+        status: "error",
+        code: "internal_error",
+        message:
+          "Backend validation returned an unexpected response. Check the API contract and try again.",
+        retryable: false,
+        field: null,
+        canProceed: false,
+      }),
+    );
   } catch {
     return pacificaCredentialValidationResponseSchema.parse({
       status: "error",
