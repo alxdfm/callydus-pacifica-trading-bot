@@ -68,9 +68,11 @@ Trilha separada para refatoracoes estruturais, consolidacao de fluxo, fortalecim
 | AR-002 | TODO | architectural refactoring | P1 | frontend / fluxo | consolidar fluxo compartilhado de validacao e readiness entre onboarding e profile | extrair maquina de estados/hook compartilhado de `validate + readiness` |
 | AR-003 | TODO | architectural refactoring | P2 | frontend / onboarding | decompor `OnboardingPage` por dominio e passo | quebrar renderizacao, handlers e transicoes em modulos menores |
 | AR-004 | TODO | architectural refactoring | P1 | testes | criar cobertura automatizada para onboarding e profile nos fluxos de credencial | adicionar testes de contrato e fluxo antes das refatoracoes maiores |
+| AR-005 | TODO | architectural refactoring | P2 | frontend / runtime | consolidar estrategia de refresh da sessao operacional | revisitar depois do MVP funcional com politica hibrida de refresh para mudancas assíncronas |
 
 ## Cards de Debt Arquitetural
 - [AR-001 Card](./cards/dev/ar/AR-001_CARD.pt-BR.md)
 - [AR-002 Card](./cards/dev/ar/AR-002_CARD.pt-BR.md)
 - [AR-003 Card](./cards/dev/ar/AR-003_CARD.pt-BR.md)
 - [AR-004 Card](./cards/dev/ar/AR-004_CARD.pt-BR.md)
+- [AR-005 Card](./cards/dev/ar/AR-005_CARD.pt-BR.md)

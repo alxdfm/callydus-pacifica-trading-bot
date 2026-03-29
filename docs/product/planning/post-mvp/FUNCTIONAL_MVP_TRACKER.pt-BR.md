@@ -7,7 +7,7 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 - wallet Phantom ja tem integracao real no frontend
 - validacao de credenciais ainda e local/simulada
 - ativacao de preset ainda e local/simulada
-- runtime operacional ainda depende de `demo-runtime`
+- runtime operacional ainda precisa consolidar leitura real em todas as telas, mas o `demo-runtime` ja foi removido como dependencia comportamental do app
 - API ainda nao implementa integracao funcional com Pacifica
 - contratos e esquema de banco ja existem como base para a proxima fase
 
@@ -25,7 +25,7 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 | FM-005 | IN_REVIEW | implementacao | P0 | Implementar motor de indicadores e avaliacao de gatilhos dos presets | Conectar a avaliacao real dos presets ao fluxo de ativacao/runtime e substituir progressivamente o `demo-runtime`. |
 | FM-006 | IN_REVIEW | implementacao | P0 | Ligar ativacao de preset ao runtime operacional real | Usar a ativacao persistida como entrada canonica dos proximos comandos reais de bot/trade em `FM-007`. |
 | FM-007 | IN_REVIEW | implementacao | P0 | Implementar comandos reais de bot e trade via backend | Conectar os comandos persistidos ao runtime/worker real quando a trilha de execucao Pacifica avancar. |
-| FM-008 | TODO | implementacao | P0 | Sincronizar dashboard, current trades e history com dados reais | Definir read models finais e substituir progressivamente os pontos de leitura local. |
+| FM-008 | IN_REVIEW | implementacao | P0 | Sincronizar dashboard, current trades e history com dados reais | Validar funcionalmente o slice com seed/read model real e decidir se o card ja pode ser promovido a `DONE`. |
 | FM-009 | TODO | implementacao | P1 | Implementar reconciliacao, heartbeat e recuperacao basica | Definir rotina minima de reconciliacao e o que constitui divergencia critica no MVP funcional. |
 | FM-010 | TODO | implementacao | P1 | Instrumentar logs, alertas e auditoria minima do fluxo funcional | Definir eventos minimos obrigatorios de auditoria e alerta antes da demo funcional real. |
 | FM-011 | DONE | implementacao | P0 | Modelar lifecycle minimo de credenciais Pacifica com `active/replaced` | Concluida para garantir uma unica `Agent Wallet` ativa por conta e preservar historico sem ambiguidade. |
@@ -81,3 +81,5 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 - `2026-03-28`: `FM-006` foi validado manualmente em ambiente local: a ativacao real respondeu `success` e o snapshot de sessao por `walletAddress` passou a refletir o `activePreset` e o `activePresetActivationId` persistidos.
 - `2026-03-28`: `FM-007` entrou em `IN_REVIEW` com command layer backend para `pause_bot`, `resume_bot` e `close_trade`, todos persistindo `BotCommand` com status rastreavel e deixando o frontend depender da API em vez de mutacao local de estado.
 - `2026-03-28`: `FM-007` ganhou validacao manual local: `POST /api/runtime/pause`, `POST /api/runtime/resume` e `POST /api/trades/:id/close` responderam `success`; o fechamento de trade foi refletido no `POST /api/account/session` com remocao de `OpenTrade` e criacao de `ClosedTrade`.
+- `2026-03-28`: `FM-008` entrou em `IN_REVIEW` com a remocao do `demo-runtime` como dependencia operacional do app; `AppState` e `SolanaWalletStateBridge` agora usam apenas um `RuntimeState` vazio canonico, sem helpers de mutacao fake, enquanto a leitura real continua centralizada na sessao operacional do backend.
+- `2026-03-29`: `FM-008` fechou o residual de UX de runtime; `syncStatus` ganhou camada propria de apresentacao no `Dashboard`, enquanto `Trades` e `History` passaram a herdar apenas os casos `degraded/error`, preservando `screenStatus` para acoes locais e transitórias.
