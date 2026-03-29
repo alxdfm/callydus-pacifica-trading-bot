@@ -39,4 +39,5 @@ Usar a ativacao persistida como entrada canonica dos proximos comandos reais de 
 ## Log de Acompanhamento
 - `2026-03-25`: card criado a partir do diagnostico de PO sobre a transicao para MVP funcional real.
 - `2026-03-28`: ativacao real implementada com `POST /api/presets/activate`, persistencia de `PresetActivation` no backend, upsert do `PresetDefinition`, desativacao do preset ativo anterior, atualizacao do `BotRuntimeState.activePresetActivationId` e substituicao do fluxo local no frontend.
+- `2026-03-28`: ajuste de consistencia no runtime da ativacao: ao ativar um preset, o backend agora promove o `BotRuntimeState` para `botStatus = active` e `syncStatus = syncing`, evitando divergencia em que o dashboard mostrava `Bot paused` com estrategia ativa recem-ativada.
 - `2026-03-28`: validacao manual local concluida com sucesso: `POST /api/presets/activate` respondeu `success` para uma conta operacional existente e `POST /api/account/session` passou a refletir o `activePreset` e o `activePresetActivationId` persistidos.
