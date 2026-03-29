@@ -787,6 +787,61 @@ export const botRuntimeStateSchema = z.object({
   lastErrorMessage: z.string().nullable(),
 });
 
+export const runtimeHeartbeatRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+  botStatus: botStatusSchema,
+  syncStatus: syncStatusSchema,
+  pacificaConnectionStatus: pacificaConnectionStatusSchema,
+  lastErrorMessage: z.string().nullable().optional(),
+});
+
+export const runtimeHeartbeatSuccessSchema = z.object({
+  status: z.literal("success"),
+  walletAddress: z.string().min(1),
+  runtime: botRuntimeStateSchema,
+  message: z.string().min(1),
+});
+
+export const runtimeHeartbeatErrorSchema = z.object({
+  status: z.literal("error"),
+  walletAddress: z.string().min(1),
+  code: z.enum(["account_not_ready", "internal_error"]),
+  message: z.string().min(1),
+  retryable: z.boolean(),
+});
+
+export const runtimeHeartbeatResponseSchema = z.union([
+  runtimeHeartbeatSuccessSchema,
+  runtimeHeartbeatErrorSchema,
+]);
+
+export const runtimeReconcileRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+});
+
+export const runtimeReconcileSuccessSchema = z.object({
+  status: z.literal("success"),
+  walletAddress: z.string().min(1),
+  runtime: botRuntimeStateSchema,
+  recoveredRuntimeState: z.boolean(),
+  detectedDivergence: z.boolean(),
+  alertMessage: z.string().nullable(),
+  message: z.string().min(1),
+});
+
+export const runtimeReconcileErrorSchema = z.object({
+  status: z.literal("error"),
+  walletAddress: z.string().min(1),
+  code: z.enum(["account_not_ready", "internal_error"]),
+  message: z.string().min(1),
+  retryable: z.boolean(),
+});
+
+export const runtimeReconcileResponseSchema = z.union([
+  runtimeReconcileSuccessSchema,
+  runtimeReconcileErrorSchema,
+]);
+
 export const onboardingContractSchema = z.object({
   walletAddress: z.string().nullable(),
   walletSession: walletSessionSchema,
@@ -1244,6 +1299,14 @@ export type OperationalSessionSnapshotFound = z.infer<typeof operationalSessionS
 export type OperationalSessionSnapshotNotFound = z.infer<typeof operationalSessionSnapshotNotFoundSchema>;
 export type OperationalSessionSnapshotError = z.infer<typeof operationalSessionSnapshotErrorSchema>;
 export type OperationalSessionSnapshotResponse = z.infer<typeof operationalSessionSnapshotResponseSchema>;
+export type RuntimeHeartbeatRequest = z.infer<typeof runtimeHeartbeatRequestSchema>;
+export type RuntimeHeartbeatSuccess = z.infer<typeof runtimeHeartbeatSuccessSchema>;
+export type RuntimeHeartbeatError = z.infer<typeof runtimeHeartbeatErrorSchema>;
+export type RuntimeHeartbeatResponse = z.infer<typeof runtimeHeartbeatResponseSchema>;
+export type RuntimeReconcileRequest = z.infer<typeof runtimeReconcileRequestSchema>;
+export type RuntimeReconcileSuccess = z.infer<typeof runtimeReconcileSuccessSchema>;
+export type RuntimeReconcileError = z.infer<typeof runtimeReconcileErrorSchema>;
+export type RuntimeReconcileResponse = z.infer<typeof runtimeReconcileResponseSchema>;
 export type BotRuntimeState = z.infer<typeof botRuntimeStateSchema>;
 export type OnboardingContract = z.infer<typeof onboardingContractSchema>;
 export type DashboardContract = z.infer<typeof dashboardContractSchema>;

@@ -32,6 +32,10 @@ import {
   type GetMarketPricesDependencies,
 } from "./application/get-market-prices/GetMarketPrices";
 import {
+  createHeartbeatRuntime,
+  type HeartbeatRuntimeDependencies,
+} from "./application/heartbeat-runtime/HeartbeatRuntime";
+import {
   createLookupOperationalAccountByWallet,
   type LookupOperationalAccountByWalletDependencies,
 } from "./application/lookup-operational-account-by-wallet/LookupOperationalAccountByWallet";
@@ -43,6 +47,10 @@ import {
   createPauseBot,
   type PauseBotDependencies,
 } from "./application/pause-bot/PauseBot";
+import {
+  createReconcileRuntime,
+  type ReconcileRuntimeDependencies,
+} from "./application/reconcile-runtime/ReconcileRuntime";
 import {
   createResumeBot,
   type ResumeBotDependencies,
@@ -85,6 +93,7 @@ export type CreateApiModuleInput = {
   evaluatePresetSignalDependencies?: Partial<EvaluatePresetSignalDependencies>;
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
+  heartbeatRuntimeDependencies?: Partial<HeartbeatRuntimeDependencies>;
   lookupOperationalAccountByWalletDependencies?: Partial<
     LookupOperationalAccountByWalletDependencies
   >;
@@ -92,6 +101,7 @@ export type CreateApiModuleInput = {
     GetOperationalSessionByWalletDependencies
   >;
   pauseBotDependencies?: Partial<PauseBotDependencies>;
+  reconcileRuntimeDependencies?: Partial<ReconcileRuntimeDependencies>;
   resumeBotDependencies?: Partial<ResumeBotDependencies>;
   verifyPacificaOperationalDependencies?: Partial<
     VerifyPacificaOperationalDependencies
@@ -173,10 +183,50 @@ export function createApiModule(input: CreateApiModuleInput) {
         input.lookupOperationalAccountByWalletDependencies
           ?.credentialRepository ?? credentialRepository,
     });
+  const heartbeatRuntime = createHeartbeatRuntime({
+    runtimeMaintenanceRepository:
+      input.heartbeatRuntimeDependencies?.runtimeMaintenanceRepository ??
+      defaultCredentialRepository,
+    ...(input.heartbeatRuntimeDependencies?.now
+      ? { now: input.heartbeatRuntimeDependencies.now }
+      : {}),
+  });
+  const reconcileRuntime = createReconcileRuntime({
+    runtimeMaintenanceRepository:
+      input.reconcileRuntimeDependencies?.runtimeMaintenanceRepository ??
+      defaultCredentialRepository,
+    ...(input.reconcileRuntimeDependencies?.now
+      ? { now: input.reconcileRuntimeDependencies.now }
+      : {}),
+    ...(input.reconcileRuntimeDependencies?.degradedAfterMs
+      ? { degradedAfterMs: input.reconcileRuntimeDependencies.degradedAfterMs }
+      : {}),
+    ...(input.reconcileRuntimeDependencies?.errorAfterMs
+      ? { errorAfterMs: input.reconcileRuntimeDependencies.errorAfterMs }
+      : {}),
+  });
   const getOperationalSessionByWallet = createGetOperationalSessionByWallet({
     operationalSessionRepository:
       input.getOperationalSessionByWalletDependencies
         ?.operationalSessionRepository ?? defaultCredentialRepository,
+    runtimeMaintenanceRepository:
+      input.getOperationalSessionByWalletDependencies
+        ?.runtimeMaintenanceRepository ?? defaultCredentialRepository,
+    ...(input.getOperationalSessionByWalletDependencies?.now
+      ? { now: input.getOperationalSessionByWalletDependencies.now }
+      : {}),
+    ...(input.getOperationalSessionByWalletDependencies?.degradedAfterMs
+      ? {
+          degradedAfterMs:
+            input.getOperationalSessionByWalletDependencies.degradedAfterMs,
+        }
+      : {}),
+    ...(input.getOperationalSessionByWalletDependencies?.errorAfterMs
+      ? {
+          errorAfterMs:
+            input.getOperationalSessionByWalletDependencies.errorAfterMs,
+        }
+      : {}),
   });
   const credentialEncryption =
     input.validatePacificaCredentialsDependencies?.credentialEncryption ??
@@ -218,8 +268,10 @@ export function createApiModule(input: CreateApiModuleInput) {
       evaluatePresetSignal,
       getMarketCandles,
       getMarketPrices,
+      heartbeatRuntime,
       lookupOperationalAccountByWallet,
       pauseBot,
+      reconcileRuntime,
       resumeBot,
       getOperationalSessionByWallet,
       verifyPacificaOperational,

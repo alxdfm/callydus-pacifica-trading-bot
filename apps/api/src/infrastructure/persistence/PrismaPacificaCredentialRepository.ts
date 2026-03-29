@@ -22,13 +22,20 @@ import type {
   ExecuteBotRuntimeCommandInput,
   ExecuteCloseTradeCommandInput,
 } from "../../domain/bot-commands/BotCommandRepository";
+import type {
+  RuntimeHeartbeatInput,
+  RuntimeMaintenanceRepository,
+  RuntimeReconcileInput,
+  RuntimeReconcileResult,
+} from "../../domain/runtime-maintenance/RuntimeMaintenanceRepository";
 
 export class PrismaPacificaCredentialRepository
   implements
     PacificaCredentialRepository,
     OperationalSessionRepository,
     PresetActivationRepository,
-    BotCommandRepository
+    BotCommandRepository,
+    RuntimeMaintenanceRepository
 {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -561,6 +568,245 @@ export class PrismaPacificaCredentialRepository
       });
 
       return mapBotCommand(command);
+    });
+  }
+
+  async heartbeatRuntime(input: RuntimeHeartbeatInput) {
+    return this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+        include: {
+          presetActivations: {
+            where: {
+              activationStatus: "active",
+            },
+            orderBy: {
+              updatedAt: "desc",
+            },
+            take: 1,
+          },
+        },
+      });
+
+      if (!operatorAccount) {
+        return null;
+      }
+
+      const activePreset = operatorAccount.presetActivations[0] ?? null;
+      const runtime = await tx.botRuntimeState.upsert({
+        where: {
+          operatorAccountId: operatorAccount.id,
+        },
+        update: {
+          botStatus: input.botStatus,
+          syncStatus: input.syncStatus,
+          pacificaConnectionStatus: input.pacificaConnectionStatus,
+          lastHeartbeatAt: new Date(input.nowIso),
+          lastErrorMessage: input.lastErrorMessage,
+          activePresetActivationId: activePreset?.id ?? null,
+        },
+        create: {
+          operatorAccountId: operatorAccount.id,
+          botStatus: input.botStatus,
+          syncStatus: input.syncStatus,
+          pacificaConnectionStatus: input.pacificaConnectionStatus,
+          activePresetActivationId: activePreset?.id ?? null,
+          lastHeartbeatAt: new Date(input.nowIso),
+          lastErrorMessage: input.lastErrorMessage,
+        },
+      });
+
+      if (input.syncStatus === "healthy" || input.syncStatus === "idle") {
+        await tx.operationalAlert.updateMany({
+          where: {
+            operatorAccountId: operatorAccount.id,
+            alertType: "reconciliation",
+            isActive: true,
+          },
+          data: {
+            isActive: false,
+            resolvedAt: new Date(input.nowIso),
+          },
+        });
+      }
+
+      return mapBotRuntimeState(runtime);
+    });
+  }
+
+  async reconcileRuntime(
+    input: RuntimeReconcileInput,
+  ): Promise<RuntimeReconcileResult | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+        include: {
+          botRuntimeState: true,
+          presetActivations: {
+            where: {
+              activationStatus: "active",
+            },
+            orderBy: {
+              updatedAt: "desc",
+            },
+            take: 1,
+          },
+        },
+      });
+
+      if (!operatorAccount) {
+        return null;
+      }
+
+      const activePreset = operatorAccount.presetActivations[0] ?? null;
+      const now = new Date(input.nowIso);
+      const runtime = operatorAccount.botRuntimeState;
+      let recoveredRuntimeState = false;
+      let detectedDivergence = false;
+      let alertMessage: string | null = null;
+
+      let nextBotStatus = runtime?.botStatus ?? "inactive";
+      let nextSyncStatus = runtime?.syncStatus ?? "idle";
+      let nextConnectionStatus = runtime?.pacificaConnectionStatus ?? "connected";
+      let nextHeartbeatAt = runtime?.lastHeartbeatAt ?? null;
+      let nextLastErrorMessage = runtime?.lastErrorMessage ?? null;
+      let nextActivePresetActivationId = runtime?.activePresetActivationId ?? null;
+
+      if (!runtime && activePreset) {
+        recoveredRuntimeState = true;
+        detectedDivergence = true;
+        alertMessage =
+          "Runtime state was recreated after a missing persisted runtime record.";
+        nextBotStatus = "paused";
+        nextSyncStatus = "degraded";
+        nextConnectionStatus = "connected";
+        nextHeartbeatAt = null;
+        nextLastErrorMessage = alertMessage;
+        nextActivePresetActivationId = activePreset.id;
+      }
+
+      if (activePreset && nextActivePresetActivationId !== activePreset.id) {
+        detectedDivergence = true;
+        alertMessage =
+          "Runtime preset reference was recovered to the current active preset.";
+        nextActivePresetActivationId = activePreset.id;
+        nextSyncStatus = "degraded";
+        nextLastErrorMessage = alertMessage;
+      }
+
+      if (!activePreset && nextActivePresetActivationId) {
+        detectedDivergence = true;
+        alertMessage =
+          "Runtime referenced a preset activation that is no longer active.";
+        nextActivePresetActivationId = null;
+        nextSyncStatus = "degraded";
+        nextLastErrorMessage = alertMessage;
+      }
+
+      const requiresHeartbeat =
+        nextBotStatus === "active" || nextBotStatus === "syncing";
+
+      if (requiresHeartbeat) {
+        const heartbeatAgeMs = nextHeartbeatAt
+          ? now.getTime() - nextHeartbeatAt.getTime()
+          : Number.POSITIVE_INFINITY;
+
+        if (heartbeatAgeMs >= input.errorAfterMs) {
+          detectedDivergence = true;
+          alertMessage =
+            "Runtime heartbeat is stale beyond the error threshold.";
+          nextSyncStatus = "error";
+          nextConnectionStatus = "error";
+          nextLastErrorMessage = alertMessage;
+        } else if (heartbeatAgeMs >= input.degradedAfterMs) {
+          detectedDivergence = true;
+          alertMessage =
+            "Runtime heartbeat is stale and the runtime is currently degraded.";
+          nextSyncStatus = "degraded";
+          nextConnectionStatus = "degraded";
+          nextLastErrorMessage = alertMessage;
+        } else if (
+          !detectedDivergence &&
+          (nextSyncStatus === "degraded" || nextSyncStatus === "error")
+        ) {
+          nextSyncStatus = "healthy";
+          nextConnectionStatus = "connected";
+          nextLastErrorMessage = null;
+        }
+      } else if (!detectedDivergence) {
+        nextSyncStatus = "idle";
+        if (nextConnectionStatus === "error" || nextConnectionStatus === "degraded") {
+          nextConnectionStatus = "connected";
+        }
+        nextLastErrorMessage = null;
+      }
+
+      const persistedRuntime = runtime
+        ? await tx.botRuntimeState.update({
+            where: {
+              operatorAccountId: operatorAccount.id,
+            },
+            data: {
+              botStatus: nextBotStatus,
+              syncStatus: nextSyncStatus,
+              pacificaConnectionStatus: nextConnectionStatus,
+              activePresetActivationId: nextActivePresetActivationId,
+              lastHeartbeatAt: nextHeartbeatAt,
+              lastErrorMessage: nextLastErrorMessage,
+            },
+          })
+        : await tx.botRuntimeState.create({
+            data: {
+              operatorAccountId: operatorAccount.id,
+              botStatus: nextBotStatus,
+              syncStatus: nextSyncStatus,
+              pacificaConnectionStatus: nextConnectionStatus,
+              activePresetActivationId: nextActivePresetActivationId,
+              lastHeartbeatAt: nextHeartbeatAt,
+              lastErrorMessage: nextLastErrorMessage,
+            },
+          });
+
+      await tx.operationalAlert.updateMany({
+        where: {
+          operatorAccountId: operatorAccount.id,
+          alertType: "reconciliation",
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+          resolvedAt: now,
+        },
+      });
+
+      if (detectedDivergence && alertMessage) {
+        await tx.operationalAlert.create({
+          data: {
+            operatorAccountId: operatorAccount.id,
+            alertType: "reconciliation",
+            severity: nextSyncStatus === "error" ? "error" : "warning",
+            title:
+              nextSyncStatus === "error"
+                ? "Runtime reconciliation error"
+                : "Runtime reconciliation warning",
+            message: alertMessage,
+            isActive: true,
+            createdAt: now,
+            resolvedAt: null,
+          },
+        });
+      }
+
+      return {
+        runtime: mapBotRuntimeState(persistedRuntime),
+        recoveredRuntimeState,
+        detectedDivergence,
+        alertMessage,
+      };
     });
   }
 

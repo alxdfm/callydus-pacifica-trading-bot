@@ -100,6 +100,38 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "POST" &&
+    request.url === "/api/runtime/heartbeat"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.heartbeatRuntime({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/runtime/reconcile"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.reconcileRuntime({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
     request.url === "/api/runtime/resume"
   ) {
     const body = await readJsonBody(request);

@@ -10,6 +10,10 @@ import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute"
 import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
 import { createPauseBotRoute } from "./routes/createPauseBotRoute";
 import type { PauseBotHandler } from "./routes/createPauseBotRoute";
+import { createHeartbeatRuntimeRoute } from "./routes/createHeartbeatRuntimeRoute";
+import type { HeartbeatRuntimeHandler } from "./routes/createHeartbeatRuntimeRoute";
+import { createReconcileRuntimeRoute } from "./routes/createReconcileRuntimeRoute";
+import type { ReconcileRuntimeHandler } from "./routes/createReconcileRuntimeRoute";
 import { createResumeBotRoute } from "./routes/createResumeBotRoute";
 import type { ResumeBotHandler } from "./routes/createResumeBotRoute";
 import { createVerifyPacificaOperationalRoute } from "./routes/createVerifyPacificaOperationalRoute";
@@ -30,8 +34,10 @@ export type ApiRouterDependencies = {
   evaluatePresetSignal: EvaluatePresetSignalHandler;
   getMarketCandles: GetMarketCandlesHandler;
   getMarketPrices: GetMarketPricesHandler;
+  heartbeatRuntime: HeartbeatRuntimeHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
   pauseBot: PauseBotHandler;
+  reconcileRuntime: ReconcileRuntimeHandler;
   resumeBot: ResumeBotHandler;
   getOperationalSessionByWallet: GetOperationalSessionByWalletHandler;
   validatePacificaCredentials: ValidatePacificaCredentialsHandler;
@@ -54,10 +60,16 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     getMarketPrices: createGetMarketPricesRoute(
       dependencies.getMarketPrices,
     ),
+    heartbeatRuntime: createHeartbeatRuntimeRoute(
+      dependencies.heartbeatRuntime,
+    ),
     lookupOperationalAccountByWallet: createLookupOperationalAccountByWalletRoute(
       dependencies.lookupOperationalAccountByWallet,
     ),
     pauseBot: createPauseBotRoute(dependencies.pauseBot),
+    reconcileRuntime: createReconcileRuntimeRoute(
+      dependencies.reconcileRuntime,
+    ),
     resumeBot: createResumeBotRoute(dependencies.resumeBot),
     getOperationalSessionByWallet: createGetOperationalSessionByWalletRoute(
       dependencies.getOperationalSessionByWallet,
