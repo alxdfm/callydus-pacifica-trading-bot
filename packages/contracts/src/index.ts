@@ -846,6 +846,40 @@ export const presetActivationResponseSchema = z.union([
   presetActivationErrorSchema,
 ]);
 
+export const botRuntimeCommandRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+});
+
+export const closeTradeCommandRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+  tradeId: z.string().uuid(),
+});
+
+export const botCommandErrorCodeSchema = z.enum([
+  "wallet_not_connected",
+  "account_not_ready",
+  "trade_not_found",
+  "internal_error",
+]);
+
+export const botCommandSuccessSchema = z.object({
+  status: z.literal("success"),
+  command: z.lazy(() => botCommandContractSchema),
+  message: z.string().min(1),
+});
+
+export const botCommandErrorSchema = z.object({
+  status: z.literal("error"),
+  code: botCommandErrorCodeSchema,
+  message: z.string().min(1),
+  retryable: z.boolean(),
+});
+
+export const botCommandResponseSchema = z.union([
+  botCommandSuccessSchema,
+  botCommandErrorSchema,
+]);
+
 export const currentTradesContractSchema = z.object({
   openTrades: z.array(openTradeSchema),
 });
@@ -1219,6 +1253,12 @@ export type PresetActivationErrorCode = z.infer<typeof presetActivationErrorCode
 export type PresetActivationSuccess = z.infer<typeof presetActivationSuccessSchema>;
 export type PresetActivationError = z.infer<typeof presetActivationErrorSchema>;
 export type PresetActivationResponse = z.infer<typeof presetActivationResponseSchema>;
+export type BotCommandErrorCode = z.infer<typeof botCommandErrorCodeSchema>;
+export type BotRuntimeCommandRequest = z.infer<typeof botRuntimeCommandRequestSchema>;
+export type CloseTradeCommandRequest = z.infer<typeof closeTradeCommandRequestSchema>;
+export type BotCommandSuccess = z.infer<typeof botCommandSuccessSchema>;
+export type BotCommandError = z.infer<typeof botCommandErrorSchema>;
+export type BotCommandResponse = z.infer<typeof botCommandResponseSchema>;
 export type CurrentTradesContract = z.infer<typeof currentTradesContractSchema>;
 export type HistoryContract = z.infer<typeof historyContractSchema>;
 export type BotCommandContract = z.infer<typeof botCommandContractSchema>;

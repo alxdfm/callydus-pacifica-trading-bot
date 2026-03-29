@@ -16,6 +16,10 @@ import {
   type ActivatePresetDependencies,
 } from "./application/activate-preset/ActivatePreset";
 import {
+  createCloseTrade,
+  type CloseTradeDependencies,
+} from "./application/close-trade/CloseTrade";
+import {
   createEvaluatePresetSignal,
   type EvaluatePresetSignalDependencies,
 } from "./application/evaluate-preset-signal/EvaluatePresetSignal";
@@ -35,6 +39,14 @@ import {
   createGetOperationalSessionByWallet,
   type GetOperationalSessionByWalletDependencies,
 } from "./application/get-operational-session-by-wallet/GetOperationalSessionByWallet";
+import {
+  createPauseBot,
+  type PauseBotDependencies,
+} from "./application/pause-bot/PauseBot";
+import {
+  createResumeBot,
+  type ResumeBotDependencies,
+} from "./application/resume-bot/ResumeBot";
 import {
   createVerifyPacificaOperational,
   type VerifyPacificaOperationalDependencies,
@@ -69,6 +81,7 @@ export type CreateApiModuleInput = {
     ApprovePacificaBuilderDependencies
   >;
   activatePresetDependencies?: Partial<ActivatePresetDependencies>;
+  closeTradeDependencies?: Partial<CloseTradeDependencies>;
   evaluatePresetSignalDependencies?: Partial<EvaluatePresetSignalDependencies>;
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
@@ -78,6 +91,8 @@ export type CreateApiModuleInput = {
   getOperationalSessionByWalletDependencies?: Partial<
     GetOperationalSessionByWalletDependencies
   >;
+  pauseBotDependencies?: Partial<PauseBotDependencies>;
+  resumeBotDependencies?: Partial<ResumeBotDependencies>;
   verifyPacificaOperationalDependencies?: Partial<
     VerifyPacificaOperationalDependencies
   >;
@@ -123,6 +138,30 @@ export function createApiModule(input: CreateApiModuleInput) {
       defaultCredentialRepository,
     ...(input.activatePresetDependencies?.now
       ? { now: input.activatePresetDependencies.now }
+      : {}),
+  });
+  const pauseBot = createPauseBot({
+    commandRepository:
+      input.pauseBotDependencies?.commandRepository ??
+      defaultCredentialRepository,
+    ...(input.pauseBotDependencies?.now
+      ? { now: input.pauseBotDependencies.now }
+      : {}),
+  });
+  const resumeBot = createResumeBot({
+    commandRepository:
+      input.resumeBotDependencies?.commandRepository ??
+      defaultCredentialRepository,
+    ...(input.resumeBotDependencies?.now
+      ? { now: input.resumeBotDependencies.now }
+      : {}),
+  });
+  const closeTrade = createCloseTrade({
+    commandRepository:
+      input.closeTradeDependencies?.commandRepository ??
+      defaultCredentialRepository,
+    ...(input.closeTradeDependencies?.now
+      ? { now: input.closeTradeDependencies.now }
       : {}),
   });
   const credentialRepository =
@@ -175,10 +214,13 @@ export function createApiModule(input: CreateApiModuleInput) {
     router: createApiRouter({
       approvePacificaBuilder,
       activatePreset,
+      closeTrade,
       evaluatePresetSignal,
       getMarketCandles,
       getMarketPrices,
       lookupOperationalAccountByWallet,
+      pauseBot,
+      resumeBot,
       getOperationalSessionByWallet,
       verifyPacificaOperational,
       validatePacificaCredentials,

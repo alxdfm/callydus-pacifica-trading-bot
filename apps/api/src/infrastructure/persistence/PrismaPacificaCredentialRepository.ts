@@ -17,12 +17,18 @@ import type {
   ActivatedPresetRecord,
   PresetActivationRepository,
 } from "../../domain/preset-activations/PresetActivationRepository";
+import type {
+  BotCommandRepository,
+  ExecuteBotRuntimeCommandInput,
+  ExecuteCloseTradeCommandInput,
+} from "../../domain/bot-commands/BotCommandRepository";
 
 export class PrismaPacificaCredentialRepository
   implements
     PacificaCredentialRepository,
     OperationalSessionRepository,
-    PresetActivationRepository
+    PresetActivationRepository,
+    BotCommandRepository
 {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -356,13 +362,16 @@ export class PrismaPacificaCredentialRepository
           operatorAccountId: operatorAccount.id,
         },
         update: {
+          botStatus: "active",
+          syncStatus: "syncing",
           activePresetActivationId: activation.id,
+          lastErrorMessage: null,
         },
         create: {
           operatorAccountId: operatorAccount.id,
-          botStatus: "inactive",
+          botStatus: "active",
           pacificaConnectionStatus: "connected",
-          syncStatus: "idle",
+          syncStatus: "syncing",
           activePresetActivationId: activation.id,
           lastHeartbeatAt: null,
           lastErrorMessage: null,
@@ -373,6 +382,185 @@ export class PrismaPacificaCredentialRepository
         activation: mapPresetActivation(activation),
         runtime: mapBotRuntimeState(runtime),
       };
+    });
+  }
+
+  async pauseBot(input: ExecuteBotRuntimeCommandInput) {
+    return this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+        include: {
+          botRuntimeState: true,
+        },
+      });
+
+      if (!operatorAccount) {
+        return null;
+      }
+
+      const command = await tx.botCommand.create({
+        data: {
+          operatorAccountId: operatorAccount.id,
+          commandType: "pause_bot",
+          targetType: "bot",
+          targetId: null,
+          payloadJson: Prisma.JsonNull,
+          requestedBy: input.requestedBy,
+          commandStatus: "completed",
+          idempotencyKey: input.idempotencyKey,
+          requestedAt: new Date(input.nowIso),
+          startedAt: new Date(input.nowIso),
+          finishedAt: new Date(input.nowIso),
+          failureReason: null,
+        },
+      });
+
+      await tx.botRuntimeState.upsert({
+        where: {
+          operatorAccountId: operatorAccount.id,
+        },
+        update: {
+          botStatus: "paused",
+        },
+        create: {
+          operatorAccountId: operatorAccount.id,
+          botStatus: "paused",
+          pacificaConnectionStatus: "connected",
+          syncStatus: "idle",
+          activePresetActivationId: null,
+          lastHeartbeatAt: null,
+          lastErrorMessage: null,
+        },
+      });
+
+      return mapBotCommand(command);
+    });
+  }
+
+  async resumeBot(input: ExecuteBotRuntimeCommandInput) {
+    return this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+        include: {
+          botRuntimeState: true,
+        },
+      });
+
+      if (!operatorAccount) {
+        return null;
+      }
+
+      const command = await tx.botCommand.create({
+        data: {
+          operatorAccountId: operatorAccount.id,
+          commandType: "resume_bot",
+          targetType: "bot",
+          targetId: null,
+          payloadJson: Prisma.JsonNull,
+          requestedBy: input.requestedBy,
+          commandStatus: "completed",
+          idempotencyKey: input.idempotencyKey,
+          requestedAt: new Date(input.nowIso),
+          startedAt: new Date(input.nowIso),
+          finishedAt: new Date(input.nowIso),
+          failureReason: null,
+        },
+      });
+
+      await tx.botRuntimeState.upsert({
+        where: {
+          operatorAccountId: operatorAccount.id,
+        },
+        update: {
+          botStatus: "active",
+        },
+        create: {
+          operatorAccountId: operatorAccount.id,
+          botStatus: "active",
+          pacificaConnectionStatus: "connected",
+          syncStatus: "idle",
+          activePresetActivationId: null,
+          lastHeartbeatAt: null,
+          lastErrorMessage: null,
+        },
+      });
+
+      return mapBotCommand(command);
+    });
+  }
+
+  async closeTrade(input: ExecuteCloseTradeCommandInput) {
+    return this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+      });
+
+      if (!operatorAccount) {
+        return null;
+      }
+
+      const trade = await tx.openTrade.findFirst({
+        where: {
+          id: input.tradeId,
+          operatorAccountId: operatorAccount.id,
+        },
+      });
+
+      if (!trade) {
+        return null;
+      }
+
+      const command = await tx.botCommand.create({
+        data: {
+          operatorAccountId: operatorAccount.id,
+          commandType: "close_trade",
+          targetType: "trade",
+          targetId: trade.id,
+          payloadJson: Prisma.JsonNull,
+          requestedBy: input.requestedBy,
+          commandStatus: "completed",
+          idempotencyKey: input.idempotencyKey,
+          requestedAt: new Date(input.nowIso),
+          startedAt: new Date(input.nowIso),
+          finishedAt: new Date(input.nowIso),
+          failureReason: null,
+        },
+      });
+
+      await tx.closedTrade.create({
+        data: {
+          operatorAccountId: trade.operatorAccountId,
+          pacificaTradeId: trade.pacificaTradeId,
+          presetActivationId: trade.presetActivationId,
+          symbol: trade.symbol,
+          side: trade.side,
+          entryPrice: trade.entryPrice,
+          exitPrice: trade.currentPrice,
+          quantity: trade.quantity,
+          capitalAllocated: trade.capitalAllocated,
+          realizedPnl: trade.unrealizedPnl,
+          closeReason: "manual",
+          openedAt: trade.openedAt,
+          closedAt: new Date(input.nowIso),
+          isPlatformTrade: trade.isPlatformTrade,
+          closedByCommandId: command.id,
+          lastSyncedAt: new Date(input.nowIso),
+        },
+      });
+
+      await tx.openTrade.delete({
+        where: {
+          id: trade.id,
+        },
+      });
+
+      return mapBotCommand(command);
     });
   }
 
@@ -589,6 +777,38 @@ function mapBotRuntimeState(runtime: {
     lastHeartbeatAt: runtime.lastHeartbeatAt?.toISOString() ?? null,
     lastErrorMessage: runtime.lastErrorMessage,
   });
+}
+
+function mapBotCommand(command: {
+  id: string;
+  commandType:
+    | "validate_credentials"
+    | "activate_preset"
+    | "pause_bot"
+    | "resume_bot"
+    | "close_trade";
+  commandStatus:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled";
+  targetType: "credential" | "preset_activation" | "trade" | "bot" | null;
+  targetId: string | null;
+  requestedAt: Date;
+  finishedAt: Date | null;
+  failureReason: string | null;
+}) {
+  return {
+    id: command.id,
+    commandType: command.commandType,
+    commandStatus: command.commandStatus,
+    targetType: command.targetType,
+    targetId: command.targetId,
+    requestedAt: command.requestedAt.toISOString(),
+    finishedAt: command.finishedAt?.toISOString() ?? null,
+    failureReason: command.failureReason,
+  };
 }
 
 function getPresetDefinitionRecord(presetDefinitionId: string) {

@@ -84,6 +84,58 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "POST" &&
+    request.url === "/api/runtime/pause"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.pauseBot({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/runtime/resume"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.resumeBot({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    /^\/api\/trades\/[^/]+\/close$/.test(request.url ?? "")
+  ) {
+    const tradeId = request.url?.split("/")[3] ?? "";
+    const body = await readJsonBody(request);
+    const result = await api.router.closeTrade({
+      body: {
+        ...(body as Record<string, unknown>),
+        tradeId,
+      } as never,
+    });
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
     request.url === "/api/presets/evaluate-signal"
   ) {
     const body = await readJsonBody(request);

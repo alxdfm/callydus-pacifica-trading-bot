@@ -1,11 +1,17 @@
 import { createActivatePresetRoute } from "./routes/createActivatePresetRoute";
 import type { ActivatePresetHandler } from "./routes/createActivatePresetRoute";
+import { createCloseTradeRoute } from "./routes/createCloseTradeRoute";
+import type { CloseTradeHandler } from "./routes/createCloseTradeRoute";
 import { createGetMarketCandlesRoute } from "./routes/createGetMarketCandlesRoute";
 import { createEvaluatePresetSignalRoute } from "./routes/createEvaluatePresetSignalRoute";
 import type { EvaluatePresetSignalHandler } from "./routes/createEvaluatePresetSignalRoute";
 import type { GetMarketCandlesHandler } from "./routes/createGetMarketCandlesRoute";
 import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute";
 import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
+import { createPauseBotRoute } from "./routes/createPauseBotRoute";
+import type { PauseBotHandler } from "./routes/createPauseBotRoute";
+import { createResumeBotRoute } from "./routes/createResumeBotRoute";
+import type { ResumeBotHandler } from "./routes/createResumeBotRoute";
 import { createVerifyPacificaOperationalRoute } from "./routes/createVerifyPacificaOperationalRoute";
 import type { VerifyPacificaOperationalHandler } from "./routes/createVerifyPacificaOperationalRoute";
 import { createApprovePacificaBuilderRoute } from "./routes/createApprovePacificaBuilderRoute";
@@ -20,10 +26,13 @@ import type { ValidatePacificaCredentialsHandler } from "./routes/createValidate
 export type ApiRouterDependencies = {
   activatePreset: ActivatePresetHandler;
   approvePacificaBuilder: ApprovePacificaBuilderHandler;
+  closeTrade: CloseTradeHandler;
   evaluatePresetSignal: EvaluatePresetSignalHandler;
   getMarketCandles: GetMarketCandlesHandler;
   getMarketPrices: GetMarketPricesHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
+  pauseBot: PauseBotHandler;
+  resumeBot: ResumeBotHandler;
   getOperationalSessionByWallet: GetOperationalSessionByWalletHandler;
   validatePacificaCredentials: ValidatePacificaCredentialsHandler;
   verifyPacificaOperational: VerifyPacificaOperationalHandler;
@@ -35,6 +44,7 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     approvePacificaBuilder: createApprovePacificaBuilderRoute(
       dependencies.approvePacificaBuilder,
     ),
+    closeTrade: createCloseTradeRoute(dependencies.closeTrade),
     evaluatePresetSignal: createEvaluatePresetSignalRoute(
       dependencies.evaluatePresetSignal,
     ),
@@ -47,6 +57,8 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     lookupOperationalAccountByWallet: createLookupOperationalAccountByWalletRoute(
       dependencies.lookupOperationalAccountByWallet,
     ),
+    pauseBot: createPauseBotRoute(dependencies.pauseBot),
+    resumeBot: createResumeBotRoute(dependencies.resumeBot),
     getOperationalSessionByWallet: createGetOperationalSessionByWalletRoute(
       dependencies.getOperationalSessionByWallet,
     ),
