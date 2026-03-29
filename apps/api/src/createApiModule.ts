@@ -119,6 +119,9 @@ export function createApiModule(input: CreateApiModuleInput) {
       input.approvePacificaBuilderDependencies?.builderApproval ??
       new PacificaBuilderApprovalGateway(environment),
   });
+  const defaultCredentialRepository = new PrismaPacificaCredentialRepository(
+    input.prisma,
+  );
   const marketDataGateway = new PacificaMarketDataGateway(environment);
   const getMarketCandles = createGetMarketCandles({
     marketData:
@@ -127,6 +130,9 @@ export function createApiModule(input: CreateApiModuleInput) {
   const evaluatePresetSignal = createEvaluatePresetSignal({
     marketData:
       input.evaluatePresetSignalDependencies?.marketData ?? marketDataGateway,
+    eventRepository:
+      input.evaluatePresetSignalDependencies?.eventRepository ??
+      defaultCredentialRepository,
     ...(input.evaluatePresetSignalDependencies?.now
       ? { now: input.evaluatePresetSignalDependencies.now }
       : {}),
@@ -136,15 +142,15 @@ export function createApiModule(input: CreateApiModuleInput) {
       input.getMarketPricesDependencies?.marketData ?? marketDataGateway,
   });
 
-  const defaultCredentialRepository = new PrismaPacificaCredentialRepository(
-    input.prisma,
-  );
   const activatePreset = createActivatePreset({
     credentialRepository:
       input.activatePresetDependencies?.credentialRepository ??
       defaultCredentialRepository,
     presetActivationRepository:
       input.activatePresetDependencies?.presetActivationRepository ??
+      defaultCredentialRepository,
+    eventRepository:
+      input.activatePresetDependencies?.eventRepository ??
       defaultCredentialRepository,
     ...(input.activatePresetDependencies?.now
       ? { now: input.activatePresetDependencies.now }
@@ -154,6 +160,8 @@ export function createApiModule(input: CreateApiModuleInput) {
     commandRepository:
       input.pauseBotDependencies?.commandRepository ??
       defaultCredentialRepository,
+    eventRepository:
+      input.pauseBotDependencies?.eventRepository ?? defaultCredentialRepository,
     ...(input.pauseBotDependencies?.now
       ? { now: input.pauseBotDependencies.now }
       : {}),
@@ -161,6 +169,9 @@ export function createApiModule(input: CreateApiModuleInput) {
   const resumeBot = createResumeBot({
     commandRepository:
       input.resumeBotDependencies?.commandRepository ??
+      defaultCredentialRepository,
+    eventRepository:
+      input.resumeBotDependencies?.eventRepository ??
       defaultCredentialRepository,
     ...(input.resumeBotDependencies?.now
       ? { now: input.resumeBotDependencies.now }
@@ -170,6 +181,8 @@ export function createApiModule(input: CreateApiModuleInput) {
     commandRepository:
       input.closeTradeDependencies?.commandRepository ??
       defaultCredentialRepository,
+    eventRepository:
+      input.closeTradeDependencies?.eventRepository ?? defaultCredentialRepository,
     ...(input.closeTradeDependencies?.now
       ? { now: input.closeTradeDependencies.now }
       : {}),
@@ -245,6 +258,9 @@ export function createApiModule(input: CreateApiModuleInput) {
     operationalVerification:
       input.verifyPacificaOperationalDependencies?.operationalVerification ??
       new PacificaOperationalVerificationGateway(environment),
+    eventRepository:
+      input.verifyPacificaOperationalDependencies?.eventRepository ??
+      defaultCredentialRepository,
   });
 
   const validatePacificaCredentials = createValidatePacificaCredentials({
@@ -256,6 +272,9 @@ export function createApiModule(input: CreateApiModuleInput) {
     createCredentialId:
       input.validatePacificaCredentialsDependencies?.createCredentialId ??
       (() => randomUUID()),
+    eventRepository:
+      input.validatePacificaCredentialsDependencies?.eventRepository ??
+      defaultCredentialRepository,
   });
 
   return {

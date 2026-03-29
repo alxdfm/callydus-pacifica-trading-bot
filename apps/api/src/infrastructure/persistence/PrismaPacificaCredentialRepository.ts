@@ -28,6 +28,10 @@ import type {
   RuntimeReconcileInput,
   RuntimeReconcileResult,
 } from "../../domain/runtime-maintenance/RuntimeMaintenanceRepository";
+import type {
+  AppendOperationalEventInput,
+  OperationalEventRepository,
+} from "../../domain/operational-events/OperationalEventRepository";
 
 export class PrismaPacificaCredentialRepository
   implements
@@ -35,7 +39,8 @@ export class PrismaPacificaCredentialRepository
     OperationalSessionRepository,
     PresetActivationRepository,
     BotCommandRepository,
-    RuntimeMaintenanceRepository
+    RuntimeMaintenanceRepository,
+    OperationalEventRepository
 {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -246,6 +251,22 @@ export class PrismaPacificaCredentialRepository
     const activeCredential = operatorAccount.pacificaCredentials[0] ?? null;
     const balanceSnapshot = operatorAccount.accountBalanceSnapshots[0] ?? null;
     const activePreset = operatorAccount.presetActivations[0] ?? null;
+    const recentEvents = await this.prisma.operationalEvent.findMany({
+      where: {
+        OR: [
+          {
+            operatorAccountId: operatorAccount.id,
+          },
+          {
+            walletAddress,
+          },
+        ],
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 8,
+    });
     const runtime = operatorAccount.botRuntimeState;
     const onboardingStatus = operatorAccount.onboardingStatus as
       | "wallet_pending"
@@ -281,8 +302,34 @@ export class PrismaPacificaCredentialRepository
         closedTrades: operatorAccount.closedTrades.map(mapClosedTrade),
         activeAlerts: operatorAccount.operationalAlerts.map(mapOperationalAlert),
       },
+      recentEvents: recentEvents.map(mapOperationalEvent),
       canAccessProduct,
     };
+  }
+
+  async appendOperationalEvent(input: AppendOperationalEventInput) {
+    const operatorAccount = input.walletAddress
+      ? await this.prisma.operatorAccount.findUnique({
+          where: {
+            walletAddress: input.walletAddress,
+          },
+        })
+      : null;
+
+    await this.prisma.operationalEvent.create({
+      data: {
+        operatorAccountId: operatorAccount?.id ?? null,
+        walletAddress: input.walletAddress ?? operatorAccount?.walletAddress ?? null,
+        eventType: input.eventType,
+        severity: input.severity,
+        title: input.title,
+        message: input.message,
+        payloadJson:
+          input.payloadJson === undefined
+            ? Prisma.JsonNull
+            : toPrismaJsonValue(input.payloadJson),
+      },
+    });
   }
 
   async activatePreset(
@@ -821,6 +868,26 @@ export class PrismaPacificaCredentialRepository
             resolvedAt: null,
           },
         });
+
+        await tx.operationalEvent.create({
+          data: {
+            operatorAccountId: operatorAccount.id,
+            walletAddress: operatorAccount.walletAddress,
+            eventType: "runtime_reconciliation",
+            severity: nextSyncStatus === "error" ? "error" : "warning",
+            title:
+              nextSyncStatus === "error"
+                ? "Runtime reconciliation error"
+                : "Runtime reconciliation warning",
+            message: alertMessage,
+            payloadJson: toPrismaInputJsonValue({
+              recoveredRuntimeState,
+              detectedDivergence,
+              nextSyncStatus,
+              nextBotStatus,
+            }),
+          },
+        });
       }
 
       return {
@@ -1214,5 +1281,31 @@ function mapOperationalAlert(alert: {
     isActive: alert.isActive,
     createdAt: alert.createdAt.toISOString(),
     resolvedAt: alert.resolvedAt?.toISOString() ?? null,
+  };
+}
+
+function mapOperationalEvent(event: {
+  id: string;
+  eventType:
+    | "credential_validation"
+    | "operational_verification"
+    | "signal_evaluation"
+    | "preset_activation"
+    | "bot_command"
+    | "runtime_reconciliation";
+  severity: "info" | "warning" | "error";
+  title: string;
+  message: string;
+  payloadJson: Prisma.JsonValue | null;
+  createdAt: Date;
+}) {
+  return {
+    id: event.id,
+    eventType: event.eventType,
+    severity: event.severity,
+    title: event.title,
+    message: event.message,
+    payloadJson: event.payloadJson,
+    createdAt: event.createdAt.toISOString(),
   };
 }

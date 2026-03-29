@@ -1,4 +1,5 @@
 import type { CredentialEncryptionPort } from "../../domain/pacifica-credentials/CredentialEncryptionPort";
+import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
 import type { PacificaCredentialRepository } from "../../domain/pacifica-credentials/PacificaCredentialRepository";
 import type { PacificaOperationalVerificationPort } from "../../domain/pacifica-operational/PacificaOperationalVerificationPort";
 
@@ -34,6 +35,7 @@ export type VerifyPacificaOperationalDependencies = {
   credentialRepository: PacificaCredentialRepository;
   credentialEncryption: CredentialEncryptionPort;
   operationalVerification: PacificaOperationalVerificationPort;
+  eventRepository?: OperationalEventRepository;
 };
 
 /**
@@ -75,6 +77,17 @@ export function createVerifyPacificaOperational(
     }
 
     if (credential.operationallyVerified && credential.lastOperationalVerifiedAt) {
+      await dependencies.eventRepository?.appendOperationalEvent({
+        walletAddress: credential.walletAddress,
+        eventType: "operational_verification",
+        severity: "info",
+        title: "Operational verification reused",
+        message: "The current Agent Wallet was already operationally verified.",
+        payloadJson: {
+          credentialId: credential.id,
+          reusedExistingVerification: true,
+        },
+      });
       return {
         ok: true,
         credentialId: credential.id,
@@ -111,6 +124,24 @@ export function createVerifyPacificaOperational(
         lastOperationalProbeJson: verificationResult.probePayload,
       });
 
+      await dependencies.eventRepository?.appendOperationalEvent({
+        walletAddress: credential.walletAddress,
+        eventType: "operational_verification",
+        severity:
+          verificationResult.errorCode === "provider_unavailable" ||
+          verificationResult.errorCode === "rate_limited" ||
+          verificationResult.errorCode === "internal_error"
+            ? "error"
+            : "warning",
+        title: "Operational verification failed",
+        message: `Operational verification failed with ${verificationResult.errorCode}.`,
+        payloadJson: {
+          credentialId: credential.id,
+          errorCode: verificationResult.errorCode,
+          probePayload: verificationResult.probePayload,
+        },
+      });
+
       return {
         ok: false,
         operationalVerificationStatus:
@@ -129,6 +160,19 @@ export function createVerifyPacificaOperational(
       lastOperationalVerifiedAt: verificationResult.verifiedAt,
       lastOperationalErrorCode: null,
       lastOperationalProbeJson: verificationResult.probePayload,
+    });
+
+    await dependencies.eventRepository?.appendOperationalEvent({
+      walletAddress: credential.walletAddress,
+      eventType: "operational_verification",
+      severity: "info",
+      title: "Operational verification passed",
+      message: "The Agent Wallet passed the operational readiness check.",
+      payloadJson: {
+        credentialId: credential.id,
+        probeSymbol: verificationResult.probeSymbol,
+        probeClientOrderId: verificationResult.probeClientOrderId,
+      },
     });
 
     return {

@@ -122,6 +122,15 @@ enum AlertSeverity {
   error
 }
 
+enum OperationalEventType {
+  credential_validation
+  operational_verification
+  signal_evaluation
+  preset_activation
+  bot_command
+  runtime_reconciliation
+}
+
 model OperatorAccount {
   id                      String                   @id @default(uuid()) @db.Uuid
   walletAddress           String                   @unique
@@ -136,6 +145,7 @@ model OperatorAccount {
   closedTrades            ClosedTrade[]
   accountBalanceSnapshots AccountBalanceSnapshot[]
   operationalAlerts       OperationalAlert[]
+  operationalEvents       OperationalEvent[]
 }
 
 model PacificaCredential {
@@ -330,4 +340,21 @@ model OperationalAlert {
 
   @@index([operatorAccountId, isActive])
   @@index([severity, createdAt(sort: Desc)])
+}
+
+model OperationalEvent {
+  id                String               @id @default(uuid()) @db.Uuid
+  operatorAccountId String?              @db.Uuid
+  walletAddress     String?
+  eventType         OperationalEventType
+  severity          AlertSeverity
+  title             String
+  message           String
+  payloadJson       Json?
+  createdAt         DateTime             @default(now()) @db.Timestamptz(6)
+  operatorAccount   OperatorAccount?     @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+
+  @@index([operatorAccountId, createdAt(sort: Desc)])
+  @@index([walletAddress, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
 }

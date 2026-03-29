@@ -4,12 +4,14 @@ import {
   type PresetSignalEvaluationRequest,
   type PresetSignalEvaluationResponse,
 } from "@pacifica/contracts";
+import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
 import { PacificaApiError } from "../../infrastructure/pacifica/PacificaClient";
 import { evaluatePresetSignal } from "../../domain/preset-signals/evaluatePresetSignal";
 import type { MarketDataPort as MarketDataPortType } from "../../domain/market-data/MarketDataPort";
 
 export type EvaluatePresetSignalDependencies = {
   marketData: MarketDataPortType;
+  eventRepository?: OperationalEventRepository;
   now?: () => Date;
 };
 
@@ -115,6 +117,20 @@ export function createEvaluatePresetSignal(
           retryable: true,
         };
       }
+
+      await dependencies.eventRepository?.appendOperationalEvent({
+        eventType: "signal_evaluation",
+        severity: "info",
+        title: "Preset signal evaluated",
+        message: `Signal ${evaluation.signal} evaluated for ${input.editableConfig.symbol}.`,
+        payloadJson: {
+          presetDefinitionId: input.presetDefinitionId,
+          symbol: input.editableConfig.symbol,
+          marketSymbol,
+          signal: evaluation.signal,
+          evaluatedAt: getNow().toISOString(),
+        },
+      });
 
       return {
         status: "success",

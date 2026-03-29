@@ -47,6 +47,7 @@ export function createGetOperationalSessionByWalletRoute(
       operationallyVerified: result.session.operationallyVerified,
       activePreset: result.session.activePreset,
       runtime: result.session.runtime,
+      recentEvents: result.session.recentEvents,
       canAccessProduct: result.session.canAccessProduct,
     });
   };

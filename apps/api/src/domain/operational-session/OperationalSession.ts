@@ -1,6 +1,7 @@
 import type {
   BalanceSnapshot,
   ClosedTrade,
+  OperationalEvent,
   OnboardingStatus,
   OpenTrade,
   OperationalAlert,
@@ -34,6 +35,7 @@ export type OperationalSession = {
   operationallyVerified: boolean;
   activePreset: PresetActivation | null;
   runtime: OperationalRuntimeReadModel;
+  recentEvents: OperationalEvent[];
   canAccessProduct: boolean;
 };
 

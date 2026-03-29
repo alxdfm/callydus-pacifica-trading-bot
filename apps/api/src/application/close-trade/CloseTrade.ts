@@ -3,9 +3,11 @@ import type {
   CloseTradeCommandRequest,
 } from "@pacifica/contracts";
 import type { BotCommandRepository } from "../../domain/bot-commands/BotCommandRepository";
+import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
 
 export type CloseTradeDependencies = {
   commandRepository: BotCommandRepository;
+  eventRepository?: OperationalEventRepository;
   now?: () => Date;
 };
 
@@ -44,6 +46,17 @@ export function createCloseTrade(dependencies: CloseTradeDependencies) {
     });
 
     if (!command) {
+      await dependencies.eventRepository?.appendOperationalEvent({
+        walletAddress: input.walletAddress,
+        eventType: "bot_command",
+        severity: "warning",
+        title: "Trade close failed",
+        message: "The selected trade could not be found for this account.",
+        payloadJson: {
+          tradeId: input.tradeId,
+          commandType: "close_trade",
+        },
+      });
       return {
         status: "error",
         code: "trade_not_found",
@@ -51,6 +64,19 @@ export function createCloseTrade(dependencies: CloseTradeDependencies) {
         retryable: false,
       };
     }
+
+    await dependencies.eventRepository?.appendOperationalEvent({
+      walletAddress: input.walletAddress,
+      eventType: "bot_command",
+      severity: "info",
+      title: "Trade close requested",
+      message: `Close trade command completed for trade ${input.tradeId}.`,
+      payloadJson: {
+        tradeId: input.tradeId,
+        commandId: command.id,
+        commandType: "close_trade",
+      },
+    });
 
     return {
       status: "success",

@@ -3,6 +3,7 @@ import {
   type PresetActivationRequest,
   type PresetActivationResponse,
 } from "@pacifica/contracts";
+import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
 import type { PacificaCredentialRepository } from "../../domain/pacifica-credentials/PacificaCredentialRepository";
 import type { PresetActivationRepository } from "../../domain/preset-activations/PresetActivationRepository";
 
@@ -12,6 +13,7 @@ export type ActivatePresetDependencies = {
     "findOperationalAccountByWalletAddress"
   >;
   presetActivationRepository: PresetActivationRepository;
+  eventRepository?: OperationalEventRepository;
   now?: () => Date;
 };
 
@@ -117,6 +119,19 @@ export function createActivatePreset(
         retryable: false,
       };
     }
+
+    await dependencies.eventRepository?.appendOperationalEvent({
+      walletAddress: input.walletAddress,
+      eventType: "preset_activation",
+      severity: "info",
+      title: "Preset activated",
+      message: `Preset ${activatedPreset.activation.presetDefinitionId} was activated for ${input.editableConfig.symbol}.`,
+      payloadJson: {
+        presetDefinitionId: activatedPreset.activation.presetDefinitionId,
+        symbol: input.editableConfig.symbol,
+        editableConfig: input.editableConfig,
+      },
+    });
 
     return {
       status: "success",

@@ -3,9 +3,11 @@ import type {
   BotRuntimeCommandRequest,
 } from "@pacifica/contracts";
 import type { BotCommandRepository } from "../../domain/bot-commands/BotCommandRepository";
+import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
 
 export type ResumeBotDependencies = {
   commandRepository: BotCommandRepository;
+  eventRepository?: OperationalEventRepository;
   now?: () => Date;
 };
 
@@ -43,6 +45,16 @@ export function createResumeBot(dependencies: ResumeBotDependencies) {
     });
 
     if (!command) {
+      await dependencies.eventRepository?.appendOperationalEvent({
+        walletAddress: input.walletAddress,
+        eventType: "bot_command",
+        severity: "warning",
+        title: "Resume bot failed",
+        message: "Could not resolve an operational account for this wallet.",
+        payloadJson: {
+          commandType: "resume_bot",
+        },
+      });
       return {
         status: "error",
         code: "account_not_ready",
@@ -50,6 +62,18 @@ export function createResumeBot(dependencies: ResumeBotDependencies) {
         retryable: false,
       };
     }
+
+    await dependencies.eventRepository?.appendOperationalEvent({
+      walletAddress: input.walletAddress,
+      eventType: "bot_command",
+      severity: "info",
+      title: "Bot resumed",
+      message: "Resume bot command completed successfully.",
+      payloadJson: {
+        commandId: command.id,
+        commandType: "resume_bot",
+      },
+    });
 
     return {
       status: "success",

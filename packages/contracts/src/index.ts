@@ -163,6 +163,14 @@ export const closeReasonSchema = z.enum([
 export const tradeSideSchema = z.enum(["long", "short"]);
 
 export const alertSeveritySchema = z.enum(["info", "warning", "error"]);
+export const operationalEventTypeSchema = z.enum([
+  "credential_validation",
+  "operational_verification",
+  "signal_evaluation",
+  "preset_activation",
+  "bot_command",
+  "runtime_reconciliation",
+]);
 
 export const alertTypeSchema = z.enum([
   "connection",
@@ -482,6 +490,16 @@ export const operationalAlertSchema = z.object({
   resolvedAt: z.string().datetime().nullable(),
 });
 
+export const operationalEventSchema = z.object({
+  id: z.string().uuid(),
+  eventType: operationalEventTypeSchema,
+  severity: alertSeveritySchema,
+  title: z.string().min(1),
+  message: z.string().min(1),
+  payloadJson: z.unknown().nullable().optional(),
+  createdAt: z.string().datetime(),
+});
+
 export const marketPriceSnapshotSchema = z.object({
   symbol: z.string().min(1),
   markPrice: z.number(),
@@ -696,6 +714,7 @@ export const operationalSessionSnapshotFoundSchema = z.object({
   operationallyVerified: z.boolean(),
   activePreset: presetActivationSchema.nullable(),
   runtime: operationalRuntimeSnapshotSchema,
+  recentEvents: z.array(operationalEventSchema),
   canAccessProduct: z.boolean(),
 });
 
@@ -1234,6 +1253,7 @@ export type TradeStatus = z.infer<typeof tradeStatusSchema>;
 export type CloseReason = z.infer<typeof closeReasonSchema>;
 export type TradeSide = z.infer<typeof tradeSideSchema>;
 export type AlertSeverity = z.infer<typeof alertSeveritySchema>;
+export type OperationalEventType = z.infer<typeof operationalEventTypeSchema>;
 export type AlertType = z.infer<typeof alertTypeSchema>;
 export type MarketCandleInterval = z.infer<typeof marketCandleIntervalSchema>;
 export type MarketPriceSource = z.infer<typeof marketPriceSourceSchema>;
@@ -1255,6 +1275,7 @@ export type BalanceSnapshot = z.infer<typeof balanceSnapshotSchema>;
 export type OpenTrade = z.infer<typeof openTradeSchema>;
 export type ClosedTrade = z.infer<typeof closedTradeSchema>;
 export type OperationalAlert = z.infer<typeof operationalAlertSchema>;
+export type OperationalEvent = z.infer<typeof operationalEventSchema>;
 export type MarketPriceSnapshot = z.infer<typeof marketPriceSnapshotSchema>;
 export type MarketCandle = z.infer<typeof marketCandleSchema>;
 export type MarketCandleRequest = z.infer<typeof marketCandleRequestSchema>;

@@ -1,4 +1,5 @@
 import type { CredentialEncryptionPort } from "../../domain/pacifica-credentials/CredentialEncryptionPort";
+import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
 import type { PacificaCredentialRepository } from "../../domain/pacifica-credentials/PacificaCredentialRepository";
 import type {
   PacificaCredentialValidationErrorCode,
@@ -32,6 +33,7 @@ export type ValidatePacificaCredentialsDependencies = {
   credentialEncryption: CredentialEncryptionPort;
   credentialValidation: PacificaCredentialValidationPort;
   createCredentialId: () => string;
+  eventRepository?: OperationalEventRepository;
 };
 
 /**
@@ -66,6 +68,18 @@ export function createValidatePacificaCredentials(
       });
 
     if (existingCredential?.validationStatus === "valid") {
+      await dependencies.eventRepository?.appendOperationalEvent({
+        walletAddress: input.mainWalletPublicKey,
+        eventType: "credential_validation",
+        severity: "info",
+        title: "Credential reused",
+        message: "An equivalent validated Agent Wallet credential was reused.",
+        payloadJson: {
+          credentialId: existingCredential.id,
+          publicKey: input.agentWalletPublicKey,
+          reusedExistingCredential: true,
+        },
+      });
       return {
         ok: true,
         credentialId: existingCredential.id,
@@ -92,6 +106,18 @@ export function createValidatePacificaCredentials(
         });
 
       if (decryptedPrivateKey.trim() === input.agentWalletPrivateKey.trim()) {
+        await dependencies.eventRepository?.appendOperationalEvent({
+          walletAddress: input.mainWalletPublicKey,
+          eventType: "credential_validation",
+          severity: "info",
+          title: "Credential reused",
+          message: "The latest validated Agent Wallet credential was reused.",
+          payloadJson: {
+            credentialId: latestCredential.id,
+            publicKey: input.agentWalletPublicKey,
+            reusedExistingCredential: true,
+          },
+        });
         return {
           ok: true,
           credentialId: latestCredential.id,
@@ -112,6 +138,20 @@ export function createValidatePacificaCredentials(
       });
 
     if (!validationResult.ok) {
+      await dependencies.eventRepository?.appendOperationalEvent({
+        walletAddress: input.mainWalletPublicKey,
+        eventType: "credential_validation",
+        severity:
+          mapErrorCodeToValidationStatus(validationResult.errorCode) === "error"
+            ? "error"
+            : "warning",
+        title: "Credential validation failed",
+        message: `Agent Wallet validation failed with ${validationResult.errorCode}.`,
+        payloadJson: {
+          publicKey: input.agentWalletPublicKey,
+          errorCode: validationResult.errorCode,
+        },
+      });
       return {
         ok: false,
         validationStatus: mapErrorCodeToValidationStatus(
@@ -136,6 +176,19 @@ export function createValidatePacificaCredentials(
       lastOperationalVerifiedAt: null,
       lastOperationalErrorCode: null,
       lastOperationalProbeJson: null,
+    });
+
+    await dependencies.eventRepository?.appendOperationalEvent({
+      walletAddress: input.mainWalletPublicKey,
+      eventType: "credential_validation",
+      severity: "info",
+      title: "Credential validated",
+      message: "Agent Wallet credentials were validated successfully.",
+      payloadJson: {
+        credentialId: credential.id,
+        publicKey: input.agentWalletPublicKey,
+        reusedExistingCredential: false,
+      },
     });
 
     return {
