@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { readAccountSessionViaBackend } from "../../features/account/backend-account-session";
 import { applyAccountSessionSnapshot } from "../../features/account/apply-account-session";
 import { closeTradeViaBackend } from "../../features/runtime/backend-bot-commands";
+import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
@@ -98,6 +99,12 @@ export function TradesPage() {
 
   const pendingTrade =
     state.runtime.currentTrades.find((trade) => trade.id === pendingCloseTradeId) ?? null;
+  const runtimeSyncPresentation = getSecondaryRuntimeSyncPresentation(
+    state.runtime.syncStatus,
+    state.runtime.lastRuntimeMessage,
+    t,
+  );
+  const shouldShowRuntimeActionBanner = Boolean(state.runtime.lastRuntimeMessage);
 
   return (
     <div className="page-stack">
@@ -135,7 +142,7 @@ export function TradesPage() {
         </div>
       </section>
 
-      {state.runtime.lastRuntimeMessage ? (
+      {shouldShowRuntimeActionBanner ? (
         <section
           className={`page-card status-banner status-banner--${
             state.runtime.screenStatus === "error"
@@ -151,6 +158,15 @@ export function TradesPage() {
               : t("runtimeStatusReady")}
           </strong>
           <p>{state.runtime.lastRuntimeMessage}</p>
+        </section>
+      ) : null}
+
+      {!shouldShowRuntimeActionBanner && runtimeSyncPresentation.show ? (
+        <section
+          className={`page-card status-banner status-banner--${runtimeSyncPresentation.tone}`}
+        >
+          <strong>{runtimeSyncPresentation.title}</strong>
+          <p>{runtimeSyncPresentation.message}</p>
         </section>
       ) : null}
 

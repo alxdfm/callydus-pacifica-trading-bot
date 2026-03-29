@@ -465,9 +465,6 @@ export const messages = {
     historyDetailDirection: "Direction",
     historyDetailEntry: "Entry",
     historyDetailExit: "Exit",
-    historyDetailReadingTitle: "Simple reading",
-    historyDetailReadingDescription:
-      "The reason stays in product language. No technical execution detail is needed here in the MVP.",
     historyDetailEmptyDescription:
       "Choose a closed trade from the log to inspect the outcome and closing reason.",
     profileTopbarTitle: "Account maintenance",
@@ -572,6 +569,18 @@ export const messages = {
     runtimeStatusLoading: "Loading operational data...",
     runtimeStatusError: "Operational data is temporarily unavailable.",
     runtimeStatusReady: "Operational data ready.",
+    runtimeSyncIdleTitle: "Runtime idle",
+    runtimeSyncIdleDescription:
+      "The runtime is connected but waiting for the next operational sync cycle.",
+    runtimeSyncSyncingTitle: "Runtime syncing",
+    runtimeSyncSyncingDescription:
+      "Operational state is being synchronized with the backend.",
+    runtimeSyncDegradedTitle: "Runtime degraded",
+    runtimeSyncDegradedDescription:
+      "Operational sync is degraded. Some runtime details may be stale.",
+    runtimeSyncErrorTitle: "Runtime error",
+    runtimeSyncErrorDescription:
+      "Operational sync failed. Review the runtime error and refresh after recovery.",
     runtimeActionProcessing: "Processing action...",
     runtimeActionCloseSuccess: "Trade closed successfully.",
     runtimeActionCloseMissing: "Trade could not be found.",

@@ -37,7 +37,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { createEmptyRuntimeState, type RuntimeState } from "../features/runtime/demo-runtime";
+import { createEmptyRuntimeState, type RuntimeState } from "../features/runtime/runtime-state";
 import { defaultLocale, type AppLocale } from "../shared/i18n/messages";
 
 type CredentialState = {

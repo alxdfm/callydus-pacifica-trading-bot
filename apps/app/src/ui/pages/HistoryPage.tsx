@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
@@ -20,6 +21,12 @@ export function HistoryPage() {
   const selectedTrade =
     state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId) ??
     null;
+  const runtimeSyncPresentation = getSecondaryRuntimeSyncPresentation(
+    state.runtime.syncStatus,
+    state.runtime.lastRuntimeMessage,
+    t,
+  );
+  const shouldShowRuntimeActionBanner = Boolean(state.runtime.lastRuntimeMessage);
 
   function formatSignedCurrency(value: number) {
     return `${value >= 0 ? "+" : "-"}${new Intl.NumberFormat("en-US", {
@@ -52,10 +59,27 @@ export function HistoryPage() {
         </div>
       </section>
 
-      {state.runtime.lastRuntimeMessage ? (
-        <section className="page-card status-banner status-banner--neutral">
-          <strong>{t("runtimeStatusReady")}</strong>
+      {shouldShowRuntimeActionBanner ? (
+        <section
+          className={`page-card status-banner status-banner--${
+            state.runtime.screenStatus === "error" ? "danger" : "neutral"
+          }`}
+        >
+          <strong>
+            {state.runtime.screenStatus === "error"
+              ? t("runtimeStatusError")
+              : t("runtimeStatusReady")}
+          </strong>
           <p>{state.runtime.lastRuntimeMessage}</p>
+        </section>
+      ) : null}
+
+      {!shouldShowRuntimeActionBanner && runtimeSyncPresentation.show ? (
+        <section
+          className={`page-card status-banner status-banner--${runtimeSyncPresentation.tone}`}
+        >
+          <strong>{runtimeSyncPresentation.title}</strong>
+          <p>{runtimeSyncPresentation.message}</p>
         </section>
       ) : null}
 
@@ -183,11 +207,6 @@ export function HistoryPage() {
                   <span>{t("historyDetailExit")}</span>
                   <strong>{selectedTrade.exitPrice}</strong>
                 </div>
-              </div>
-
-              <div className="info-note">
-                <strong>{t("historyDetailReadingTitle")}</strong>
-                <p>{t("historyDetailReadingDescription")}</p>
               </div>
             </>
           ) : (

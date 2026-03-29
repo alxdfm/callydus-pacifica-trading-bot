@@ -683,9 +683,10 @@ a {
 .alert-panel,
 .recent-panel,
 .detail-panel {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
-  align-content: start;
+  height: fit-content;
 }
 
 .alert-copy {

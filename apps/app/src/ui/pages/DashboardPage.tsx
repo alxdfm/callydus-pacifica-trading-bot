@@ -4,6 +4,7 @@ import { readAccountSessionViaBackend } from "../../features/account/backend-acc
 import { applyAccountSessionSnapshot } from "../../features/account/apply-account-session";
 import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { getBotStatusPresentation } from "../../features/runtime/bot-status-presentation";
+import { getDashboardRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
 import {
   pauseBotViaBackend,
   resumeBotViaBackend,
@@ -43,6 +44,11 @@ export function DashboardPage() {
   ).length;
   const losses = closedTodayCount - wins;
   const botStatusPresentation = getBotStatusPresentation(state.runtime.botStatus, t);
+  const runtimeSyncPresentation = getDashboardRuntimeSyncPresentation(
+    state.runtime.syncStatus,
+    state.runtime.lastRuntimeMessage,
+    t,
+  );
   const activePresetEyebrow = !activePresetItem
     ? t("dashboardNoPresetTitle")
     : state.runtime.botStatus === "active"
@@ -92,6 +98,7 @@ export function DashboardPage() {
       : state.runtime.screenStatus === "loading"
         ? t("runtimeStatusLoading")
         : state.runtime.lastRuntimeMessage;
+  const shouldShowRuntimeActionBanner = Boolean(runtimeBannerMessage);
 
   useEffect(() => {
     const onboardingFlashFromState =
@@ -236,7 +243,7 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {runtimeBannerMessage ? (
+      {shouldShowRuntimeActionBanner ? (
         <section
           className={`page-card status-banner status-banner--${runtimeBannerTone}`}
         >
@@ -248,6 +255,15 @@ export function DashboardPage() {
                 : t("runtimeStatusReady")}
           </strong>
           <p>{runtimeBannerMessage}</p>
+        </section>
+      ) : null}
+
+      {!shouldShowRuntimeActionBanner && runtimeSyncPresentation.show ? (
+        <section
+          className={`page-card status-banner status-banner--${runtimeSyncPresentation.tone}`}
+        >
+          <strong>{runtimeSyncPresentation.title}</strong>
+          <p>{runtimeSyncPresentation.message}</p>
         </section>
       ) : null}
 

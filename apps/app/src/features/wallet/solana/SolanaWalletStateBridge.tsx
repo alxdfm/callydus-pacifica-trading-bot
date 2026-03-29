@@ -1,7 +1,7 @@
 import { useEffect, type PropsWithChildren } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { createEmptyRuntimeState } from "../../runtime/demo-runtime";
+import { createEmptyRuntimeState } from "../../runtime/runtime-state";
 import { useAppState } from "../../../state/app-state";
 import { useSolanaWalletPort } from "./SolanaWalletEnvironment";
 import { lookupOperationalAccountViaBackend } from "../../onboarding/backend-operational-account-lookup";
