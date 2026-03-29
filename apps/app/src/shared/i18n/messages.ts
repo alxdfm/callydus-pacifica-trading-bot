@@ -406,6 +406,13 @@ export const messages = {
     dashboardRecentEmptyTitle: "No recent history",
     dashboardRecentEmptyDescription:
       "Closed positions will show up here once the MVP records operational exits.",
+    dashboardActivityEyebrow: "Operational activity",
+    dashboardActivityTitle: "Activity log",
+    dashboardActivityDescription:
+      "This is historical activity from the account. It does not mean an issue is still active now.",
+    dashboardActivityEmptyTitle: "No recent events",
+    dashboardActivityEmptyDescription:
+      "Validation, activation and bot commands will appear here once the account starts operating.",
     tradesTopbarTitle: "Intervene without confusion",
     tradesTopbarDescription:
       "Open positions come first. Direction, status and close action should be readable in seconds.",

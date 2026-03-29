@@ -56,6 +56,7 @@ export function applyAccountSessionSnapshot(
     currentTrades: snapshot.runtime.currentTrades,
     closedTrades: snapshot.runtime.closedTrades,
     alerts: snapshot.runtime.activeAlerts,
+    events: snapshot.recentEvents,
     screenStatus: snapshot.runtime.lastErrorMessage ? "error" : "ready",
     lastRuntimeMessage: snapshot.runtime.lastErrorMessage,
   });

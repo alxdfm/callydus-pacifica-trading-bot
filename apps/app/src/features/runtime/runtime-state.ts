@@ -2,6 +2,7 @@ import type {
   BalanceSnapshot,
   BotStatus,
   ClosedTrade,
+  OperationalEvent,
   OperationalAlert,
   OpenTrade,
   SyncStatus,
@@ -14,6 +15,7 @@ export type RuntimeState = {
   currentTrades: OpenTrade[];
   closedTrades: ClosedTrade[];
   alerts: OperationalAlert[];
+  events: OperationalEvent[];
   screenStatus: "idle" | "loading" | "ready" | "error";
   lastRuntimeMessage: string | null;
 };
@@ -26,6 +28,7 @@ export function createEmptyRuntimeState(): RuntimeState {
     currentTrades: [],
     closedTrades: [],
     alerts: [],
+    events: [],
     screenStatus: "idle",
     lastRuntimeMessage: null,
   };

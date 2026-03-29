@@ -35,6 +35,7 @@ export function DashboardPage() {
   );
   const currentTrades = state.runtime.currentTrades.slice(0, 2);
   const recentClosedTrades = state.runtime.closedTrades.slice(0, 3);
+  const recentEvents = state.runtime.events.slice(0, 4);
   const activeAlerts = state.runtime.alerts
     .filter((alert) => alert.isActive)
     .slice(0, 2);
@@ -92,9 +93,18 @@ export function DashboardPage() {
       : state.runtime.screenStatus === "loading"
         ? "warning"
         : "neutral";
+  const runtimeBannerTitle =
+    state.runtime.screenStatus === "loading"
+      ? t("runtimeStatusLoading")
+      : state.runtime.screenStatus === "error"
+        ? t("runtimeStatusError")
+        : t("runtimeStatusReady");
   const runtimeBannerMessage =
     state.runtime.screenStatus === "error"
-      ? t("runtimeStatusError")
+      ? state.runtime.lastRuntimeMessage &&
+          state.runtime.lastRuntimeMessage !== t("runtimeStatusError")
+        ? state.runtime.lastRuntimeMessage
+        : null
       : state.runtime.screenStatus === "loading"
         ? t("runtimeStatusLoading")
         : state.runtime.lastRuntimeMessage;
@@ -247,14 +257,8 @@ export function DashboardPage() {
         <section
           className={`page-card status-banner status-banner--${runtimeBannerTone}`}
         >
-          <strong>
-            {state.runtime.screenStatus === "loading"
-              ? t("runtimeStatusLoading")
-              : state.runtime.screenStatus === "error"
-                ? t("runtimeStatusError")
-                : t("runtimeStatusReady")}
-          </strong>
-          <p>{runtimeBannerMessage}</p>
+          <strong>{runtimeBannerTitle}</strong>
+          {runtimeBannerMessage ? <p>{runtimeBannerMessage}</p> : null}
         </section>
       ) : null}
 
@@ -513,6 +517,40 @@ export function DashboardPage() {
             <div className="info-note">
               <strong>{t("dashboardRecentEmptyTitle")}</strong>
               <p>{t("dashboardRecentEmptyDescription")}</p>
+            </div>
+          )}
+        </section>
+
+        <section className="panel recent-panel">
+          <div className="row-between align-start section-gap">
+            <div>
+              <p className="panel-label">{t("dashboardActivityEyebrow")}</p>
+              <h3>{t("dashboardActivityTitle")}</h3>
+              <p className="subtle">{t("dashboardActivityDescription")}</p>
+            </div>
+          </div>
+
+          {recentEvents.length > 0 ? (
+            <div className="history-list">
+              {recentEvents.map((event) => (
+                <div key={event.id} className="history-row">
+                  <div>
+                    <strong>{event.title}</strong>
+                    <p>{event.message}</p>
+                  </div>
+                  <strong>
+                    {new Date(event.createdAt).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="info-note">
+              <strong>{t("dashboardActivityEmptyTitle")}</strong>
+              <p>{t("dashboardActivityEmptyDescription")}</p>
             </div>
           )}
         </section>

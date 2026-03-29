@@ -4,6 +4,7 @@ import {
   builderApprovalStatusSchema,
   credentialValidationStatusSchema,
   operationalAlertSchema,
+  operationalEventSchema,
   operationalVerificationStatusSchema,
   onboardingStatusSchema,
   openTradeSchema,
@@ -18,6 +19,7 @@ import {
   type CredentialValidationStatus,
   type OnboardingStatus,
   type OperationalAlert,
+  type OperationalEvent,
   type OperationalVerificationStatus,
   type PacificaOperationalVerificationErrorCode,
   type PacificaValidationErrorCode,
@@ -224,6 +226,7 @@ function parseStoredState(rawValue: string | null): AppSessionState {
         currentTrades: openTradesValue(parsed.runtime?.currentTrades),
         closedTrades: closedTradesValue(parsed.runtime?.closedTrades),
         alerts: operationalAlertsValue(parsed.runtime?.alerts),
+        events: operationalEventsValue(parsed.runtime?.events),
         screenStatus: runtimeScreenStatus(parsed.runtime?.screenStatus),
       },
       onboarding: {
@@ -350,6 +353,17 @@ function operationalAlertsValue(value: unknown): OperationalAlert[] {
 
   return value.flatMap((item) => {
     const result = operationalAlertSchema.safeParse(item);
+    return result.success ? [result.data] : [];
+  });
+}
+
+function operationalEventsValue(value: unknown): OperationalEvent[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    const result = operationalEventSchema.safeParse(item);
     return result.success ? [result.data] : [];
   });
 }
