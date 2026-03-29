@@ -15,11 +15,22 @@ export type ActivatePresetDependencies = {
   now?: () => Date;
 };
 
+/**
+ * Creates the preset activation use case.
+ *
+ * Responsibility:
+ * - validate whether the wallet is operationally ready
+ * - materialize the effective preset contract from the editable config
+ * - delegate persistence/activation to the repository layer
+ */
 export function createActivatePreset(
   dependencies: ActivatePresetDependencies,
 ) {
   const getNow = dependencies.now ?? (() => new Date());
 
+  /**
+   * Activates a preset for a ready operational account.
+   */
   return async function activatePreset(
     input: PresetActivationRequest,
   ): Promise<PresetActivationResponse> {

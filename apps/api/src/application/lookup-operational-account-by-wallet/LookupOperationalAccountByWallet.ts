@@ -31,9 +31,19 @@ export type LookupOperationalAccountByWalletDependencies = {
   credentialRepository: PacificaCredentialRepository;
 };
 
+/**
+ * Creates the lightweight onboarding account-lookup use case.
+ *
+ * Responsibility:
+ * - answer whether a wallet already has an operational account
+ * - expose only the minimum onboarding-relevant account metadata
+ */
 export function createLookupOperationalAccountByWallet(
   dependencies: LookupOperationalAccountByWalletDependencies,
 ) {
+  /**
+   * Looks up whether the wallet already maps to an operational account.
+   */
   return async function lookupOperationalAccountByWallet(
     input: LookupOperationalAccountByWalletInput,
   ): Promise<LookupOperationalAccountByWalletOutput> {

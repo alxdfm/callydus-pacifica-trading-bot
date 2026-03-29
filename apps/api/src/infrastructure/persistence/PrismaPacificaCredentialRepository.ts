@@ -572,6 +572,15 @@ export class PrismaPacificaCredentialRepository
   }
 
   async heartbeatRuntime(input: RuntimeHeartbeatInput) {
+    /**
+     * Persists the latest runtime liveness/status snapshot for an account.
+     *
+     * Responsibility:
+     * - upsert `BotRuntimeState`
+     * - refresh `lastHeartbeatAt`
+     * - align the runtime with the current active preset reference
+     * - resolve prior reconciliation alerts when the runtime is healthy/idle
+     */
     return this.prisma.$transaction(async (tx) => {
       const operatorAccount = await tx.operatorAccount.findUnique({
         where: {
@@ -639,6 +648,19 @@ export class PrismaPacificaCredentialRepository
   async reconcileRuntime(
     input: RuntimeReconcileInput,
   ): Promise<RuntimeReconcileResult | null> {
+    /**
+     * Runs the minimal internal runtime reconciliation for an account.
+     *
+     * Responsibility:
+     * - detect missing runtime with active preset and recreate a safe runtime
+     * - fix runtime/preset reference divergence
+     * - detect stale heartbeat and classify degraded/error
+     * - create or resolve `OperationalAlert` entries for reconciliation
+     *
+     * Non-responsibility:
+     * - it does not talk to Pacifica
+     * - it does not rebuild exchange trades, orders or balances
+     */
     return this.prisma.$transaction(async (tx) => {
       const operatorAccount = await tx.operatorAccount.findUnique({
         where: {

@@ -29,6 +29,18 @@ export type GetOperationalSessionByWalletDependencies = {
   errorAfterMs?: number;
 };
 
+/**
+ * Returns the operational session snapshot for a wallet.
+ *
+ * Responsibility:
+ * - optionally run the minimal runtime reconciliation step first
+ * - read the persisted session snapshot after reconciliation
+ * - report whether an operational account exists for the wallet
+ *
+ * Non-responsibility:
+ * - it does not reconcile directly with Pacifica
+ * - it does not rebuild trades or positions from the exchange
+ */
 export function createGetOperationalSessionByWallet(
   dependencies: GetOperationalSessionByWalletDependencies,
 ) {
@@ -36,6 +48,14 @@ export function createGetOperationalSessionByWallet(
   const degradedAfterMs = dependencies.degradedAfterMs ?? 2 * 60 * 1000;
   const errorAfterMs = dependencies.errorAfterMs ?? 5 * 60 * 1000;
 
+  /**
+   * Reads the current session snapshot for a wallet.
+   *
+   * If runtime maintenance is available, the snapshot is preceded by a
+   * lightweight internal reconciliation so the returned session already
+   * reflects stale-heartbeat degradation, preset/runtime congruence fixes,
+   * and basic runtime recovery after missing persisted state.
+   */
   return async function getOperationalSessionByWallet(
     input: GetOperationalSessionByWalletInput,
   ): Promise<GetOperationalSessionByWalletOutput> {

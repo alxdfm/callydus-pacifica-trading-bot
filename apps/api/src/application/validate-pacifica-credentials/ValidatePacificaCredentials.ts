@@ -34,9 +34,21 @@ export type ValidatePacificaCredentialsDependencies = {
   createCredentialId: () => string;
 };
 
+/**
+ * Creates the Agent Wallet validation use case.
+ *
+ * Responsibility:
+ * - encrypt the submitted private key
+ * - reuse an equivalent valid credential when possible
+ * - call the external credential validation port when needed
+ * - persist a new validated credential in `pending` lifecycle when required
+ */
 export function createValidatePacificaCredentials(
   dependencies: ValidatePacificaCredentialsDependencies,
 ) {
+  /**
+   * Validates and persists an Agent Wallet credential candidate.
+   */
   return async function validatePacificaCredentials(
     input: ValidatePacificaCredentialsInput,
   ): Promise<ValidatePacificaCredentialsOutput> {
@@ -137,6 +149,10 @@ export function createValidatePacificaCredentials(
   };
 }
 
+/**
+ * Maps low-level validation failure reasons into the product's higher-level
+ * validation status buckets.
+ */
 function mapErrorCodeToValidationStatus(
   errorCode: PacificaCredentialValidationErrorCode,
 ): "invalid" | "error" {

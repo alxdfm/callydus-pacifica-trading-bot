@@ -9,9 +9,19 @@ export type GetMarketCandlesDependencies = {
   marketData: MarketDataPort;
 };
 
+/**
+ * Creates the market-candles read use case.
+ *
+ * Responsibility:
+ * - forward a normalized candle request to the market data port
+ * - translate Pacifica/infrastructure failures into product-facing errors
+ */
 export function createGetMarketCandles(
   dependencies: GetMarketCandlesDependencies,
 ) {
+  /**
+   * Returns normalized candles for the requested symbol/timeframe/source.
+   */
   return async function getMarketCandles(
     input: MarketCandleRequest,
   ): Promise<MarketCandleResponse> {
@@ -45,6 +55,10 @@ export function createGetMarketCandles(
   };
 }
 
+/**
+ * Extracts the most useful error message from Pacifica responses while keeping
+ * a stable fallback for unknown payloads.
+ */
 function extractPacificaErrorMessage(body: unknown, fallback: string): string {
   const apiMessage = (body as { error?: unknown } | null)?.error;
 

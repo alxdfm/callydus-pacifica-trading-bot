@@ -26,9 +26,19 @@ export type ApprovePacificaBuilderDependencies = {
   builderApproval: PacificaBuilderApprovalPort;
 };
 
+/**
+ * Creates the builder approval use case.
+ *
+ * Responsibility:
+ * - validate minimum wallet presence
+ * - forward the approval payload to the builder approval port
+ */
 export function createApprovePacificaBuilder(
   dependencies: ApprovePacificaBuilderDependencies,
 ) {
+  /**
+   * Approves the Pacifica builder code for the connected main wallet.
+   */
   return async function approvePacificaBuilder(
     input: ApprovePacificaBuilderInput,
   ): Promise<ApprovePacificaBuilderOutput> {

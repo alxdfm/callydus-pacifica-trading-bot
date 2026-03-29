@@ -36,9 +36,21 @@ export type VerifyPacificaOperationalDependencies = {
   operationalVerification: PacificaOperationalVerificationPort;
 };
 
+/**
+ * Creates the operational-readiness verification use case.
+ *
+ * Responsibility:
+ * - load a previously validated credential
+ * - short-circuit when the credential is already operationally verified
+ * - decrypt the stored Agent Wallet secret and run the operational probe
+ * - persist the resulting verified/blocked/error state on the credential
+ */
 export function createVerifyPacificaOperational(
   dependencies: VerifyPacificaOperationalDependencies,
 ) {
+  /**
+   * Verifies whether a validated credential can actually operate on Pacifica.
+   */
   return async function verifyPacificaOperational(
     input: VerifyPacificaOperationalInput,
   ): Promise<VerifyPacificaOperationalOutput> {

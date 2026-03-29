@@ -11,6 +11,18 @@ export type ReconcileRuntimeDependencies = {
   errorAfterMs?: number;
 };
 
+/**
+ * Creates the runtime reconciliation command handler.
+ *
+ * Responsibility:
+ * - trigger the minimal internal consistency pass for the persisted runtime
+ * - classify stale runtime state as degraded/error
+ * - expose whether divergence or recovery was detected
+ *
+ * Non-responsibility:
+ * - it does not reconcile with Pacifica positions/orders
+ * - it does not rebuild the full trading state from the exchange
+ */
 export function createReconcileRuntime(
   dependencies: ReconcileRuntimeDependencies,
 ) {
@@ -18,6 +30,11 @@ export function createReconcileRuntime(
   const degradedAfterMs = dependencies.degradedAfterMs ?? 2 * 60 * 1000;
   const errorAfterMs = dependencies.errorAfterMs ?? 5 * 60 * 1000;
 
+  /**
+   * Reconciles the persisted runtime for a wallet against the product's own
+   * source of truth (`OperatorAccount`, `PresetActivation`, `BotRuntimeState`
+   * and `OperationalAlert`).
+   */
   return async function reconcileRuntime(
     input: RuntimeReconcileRequest,
   ): Promise<RuntimeReconcileResponse> {

@@ -9,9 +9,19 @@ export type ResumeBotDependencies = {
   now?: () => Date;
 };
 
+/**
+ * Creates the resume-bot command use case.
+ *
+ * Responsibility:
+ * - validate wallet presence
+ * - issue a tracked resume command through the command repository
+ */
 export function createResumeBot(dependencies: ResumeBotDependencies) {
   const getNow = dependencies.now ?? (() => new Date());
 
+  /**
+   * Requests that the paused bot runtime resume for the account.
+   */
   return async function resumeBot(
     input: BotRuntimeCommandRequest,
   ): Promise<BotCommandResponse> {

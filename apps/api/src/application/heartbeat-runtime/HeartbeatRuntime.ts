@@ -9,11 +9,29 @@ export type HeartbeatRuntimeDependencies = {
   now?: () => Date;
 };
 
+/**
+ * Creates the runtime heartbeat command handler.
+ *
+ * Responsibility:
+ * - validate the minimum command input
+ * - persist the latest runtime liveness/status payload
+ * - return the updated runtime snapshot
+ *
+ * Non-responsibility:
+ * - it does not infer divergence by itself
+ * - it does not query Pacifica
+ */
 export function createHeartbeatRuntime(
   dependencies: HeartbeatRuntimeDependencies,
 ) {
   const getNow = dependencies.now ?? (() => new Date());
 
+  /**
+   * Records a fresh runtime heartbeat for the wallet.
+   *
+   * This is the write-side signal that the worker/runtime is alive and that
+   * the persisted runtime state can move back to a healthy or idle condition.
+   */
   return async function heartbeatRuntime(
     input: RuntimeHeartbeatRequest,
   ): Promise<RuntimeHeartbeatResponse> {

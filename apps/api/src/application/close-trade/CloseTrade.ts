@@ -9,9 +9,19 @@ export type CloseTradeDependencies = {
   now?: () => Date;
 };
 
+/**
+ * Creates the close-trade command use case.
+ *
+ * Responsibility:
+ * - validate wallet presence
+ * - issue a tracked close-trade command through the command repository
+ */
 export function createCloseTrade(dependencies: CloseTradeDependencies) {
   const getNow = dependencies.now ?? (() => new Date());
 
+  /**
+   * Requests the closure of a specific open trade for the account.
+   */
   return async function closeTrade(
     input: CloseTradeCommandRequest,
   ): Promise<BotCommandResponse> {

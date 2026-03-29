@@ -9,9 +9,19 @@ export type PauseBotDependencies = {
   now?: () => Date;
 };
 
+/**
+ * Creates the pause-bot command use case.
+ *
+ * Responsibility:
+ * - validate wallet presence
+ * - issue a tracked pause command through the command repository
+ */
 export function createPauseBot(dependencies: PauseBotDependencies) {
   const getNow = dependencies.now ?? (() => new Date());
 
+  /**
+   * Requests that the active bot runtime be paused for the account.
+   */
   return async function pauseBot(
     input: BotRuntimeCommandRequest,
   ): Promise<BotCommandResponse> {

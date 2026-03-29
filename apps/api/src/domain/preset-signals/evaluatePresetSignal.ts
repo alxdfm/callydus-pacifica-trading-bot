@@ -22,6 +22,14 @@ export type EvaluatedPresetSignal = {
   shortRuleEvaluations: PresetRuleEvaluation[];
 };
 
+/**
+ * Evaluates the canonical preset technical contract against a candle series.
+ *
+ * Responsibility:
+ * - compute all declared indicators
+ * - evaluate long/short trigger groups
+ * - return an auditable signal snapshot for downstream runtime decisions
+ */
 export function evaluatePresetSignal(
   technicalContract: PresetTechnicalContract,
   candles: MarketCandle[],
@@ -81,6 +89,12 @@ export function evaluatePresetSignal(
   };
 }
 
+/**
+ * Materializes every indicator series declared by the preset contract.
+ *
+ * The function caches intermediate series so dependent indicators do not
+ * recalculate their sources multiple times.
+ */
 function buildIndicatorSeriesMap(
   indicators: PresetTechnicalContract["indicators"],
   candles: MarketCandle[],
@@ -141,6 +155,9 @@ function buildIndicatorSeriesMap(
   return cache;
 }
 
+/**
+ * Evaluates all rules in one trigger group (`all` / `any`) for one direction.
+ */
 function evaluateRuleGroup(
   direction: "long" | "short",
   groupType: "all" | "any",
@@ -152,6 +169,9 @@ function evaluateRuleGroup(
   );
 }
 
+/**
+ * Evaluates one threshold/cross rule and returns an auditable explanation.
+ */
 function evaluateRule(
   direction: "long" | "short",
   groupType: "all" | "any",
@@ -213,6 +233,9 @@ function evaluateRule(
   };
 }
 
+/**
+ * Resolves whether the trigger group passes as a whole.
+ */
 function didRuleGroupPass(
   groupType: "all" | "any",
   evaluations: PresetRuleEvaluation[],
@@ -226,10 +249,17 @@ function didRuleGroupPass(
     : evaluations.some((evaluation) => evaluation.satisfied);
 }
 
+/**
+ * Creates an indicator series prefilled with `NaN` placeholders so indexing is
+ * preserved even before enough data exists to calculate a real value.
+ */
 function createEmptySeries(length: number) {
   return Array.from({ length }, () => Number.NaN);
 }
 
+/**
+ * Calculates a simple moving average aligned to the original series length.
+ */
 function calculateSma(values: number[], period: number) {
   const result = createEmptySeries(values.length);
 
@@ -256,6 +286,10 @@ function calculateSma(values: number[], period: number) {
   return result;
 }
 
+/**
+ * Calculates an exponential moving average aligned to the original series
+ * length, using SMA as the initial seed.
+ */
 function calculateEma(values: number[], period: number) {
   const result = createEmptySeries(values.length);
   const smoothingMultiplier = 2 / (period + 1);
@@ -282,6 +316,9 @@ function calculateEma(values: number[], period: number) {
   return result;
 }
 
+/**
+ * Calculates RSI using Wilder-style smoothed average gain/loss.
+ */
 function calculateRsi(values: number[], period: number) {
   const result = createEmptySeries(values.length);
 
@@ -315,6 +352,9 @@ function calculateRsi(values: number[], period: number) {
   return result;
 }
 
+/**
+ * Converts average gain/loss into an RSI value.
+ */
 function calculateRsiValue(averageGain: number, averageLoss: number) {
   if (averageLoss === 0) {
     return 100;
@@ -324,6 +364,9 @@ function calculateRsiValue(averageGain: number, averageLoss: number) {
   return 100 - 100 / (1 + relativeStrength);
 }
 
+/**
+ * Calculates ATR using true range plus Wilder smoothing.
+ */
 function calculateAtr(
   highs: number[],
   lows: number[],
@@ -363,11 +406,19 @@ function calculateAtr(
   return result;
 }
 
+/**
+ * Picks the last usable value for a threshold rule according to the configured
+ * candle scope.
+ */
 function getScopedValue(series: number[], scope: "previousCandle" | "currentCandle") {
   const offset = scope === "currentCandle" ? 1 : 2;
   return toNullableFinite(series.at(-offset));
 }
 
+/**
+ * Picks the two values required to evaluate a cross rule according to the
+ * configured candle scope.
+ */
 function getScopedCrossValues(
   series: number[],
   scope: "previousCandle" | "currentCandle",
@@ -383,6 +434,9 @@ function getScopedCrossValues(
   return previous === null || current === null ? null : { previous, current };
 }
 
+/**
+ * Evaluates one threshold comparison against a target constant.
+ */
 function compareThreshold(
   currentValue: number,
   operator: "above" | "below" | "atOrAbove" | "atOrBelow" | "equal",
@@ -402,6 +456,10 @@ function compareThreshold(
   }
 }
 
+/**
+ * Evaluates whether one series crossed another between the previous and
+ * current scoped values.
+ */
 function compareCross(
   previousValue: number,
   currentValue: number,
@@ -416,6 +474,10 @@ function compareCross(
   return previousValue >= previousReference && currentValue < currentReference;
 }
 
+/**
+ * Normalizes invalid numeric values to `null` for outward-facing snapshots and
+ * rule evaluation helpers.
+ */
 function toNullableFinite(value: number | undefined) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }

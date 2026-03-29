@@ -13,11 +13,22 @@ export type EvaluatePresetSignalDependencies = {
   now?: () => Date;
 };
 
+/**
+ * Creates the preset-signal evaluation use case.
+ *
+ * Responsibility:
+ * - resolve the canonical preset technical contract
+ * - fetch the required market candles from Pacifica-backed market data
+ * - evaluate indicators, entry rules and derived risk plans
+ */
 export function createEvaluatePresetSignal(
   dependencies: EvaluatePresetSignalDependencies,
 ) {
   const getNow = dependencies.now ?? (() => new Date());
 
+  /**
+   * Evaluates whether the preset currently emits a long/short signal.
+   */
   return async function evaluateSignal(
     input: PresetSignalEvaluationRequest,
   ): Promise<PresetSignalEvaluationResponse> {
@@ -144,6 +155,10 @@ export function createEvaluatePresetSignal(
   };
 }
 
+/**
+ * Converts the evaluated preset risk configuration into executable long/short
+ * price plans around the current entry reference price.
+ */
 function buildRiskPlans(
   technicalContract: NonNullable<
     ReturnType<typeof getPresetTechnicalContractByDefinitionId>
@@ -175,6 +190,13 @@ function buildRiskPlans(
   };
 }
 
+/**
+ * Resolves the absolute stop-loss distance from the preset contract.
+ *
+ * Static stop losses are percentage-based over the entry price. ATR stop
+ * losses depend on the latest evaluated ATR indicator and its configured
+ * multiplier.
+ */
 function resolveRiskDistance(
   technicalContract: NonNullable<
     ReturnType<typeof getPresetTechnicalContractByDefinitionId>
@@ -197,6 +219,9 @@ function resolveRiskDistance(
   throw new Error("ATR-based stop loss could not be derived from indicator evaluation.");
 }
 
+/**
+ * Finds the indicator key that represents ATR inside the preset definition.
+ */
 function findAtrIndicatorName(
   technicalContract: NonNullable<
     ReturnType<typeof getPresetTechnicalContractByDefinitionId>
@@ -213,6 +238,9 @@ function findAtrIndicatorName(
   return null;
 }
 
+/**
+ * Normalizes the editable UI symbol into the Pacifica market symbol.
+ */
 function toPacificaMarketSymbol(symbol: string) {
   const match = symbol.match(/^([A-Z]+)\/USDC$/);
   return match?.[1] ?? null;

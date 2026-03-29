@@ -6,9 +6,19 @@ export type GetMarketPricesDependencies = {
   marketData: MarketDataPort;
 };
 
+/**
+ * Creates the market-prices read use case.
+ *
+ * Responsibility:
+ * - fetch normalized market prices from the market data port
+ * - translate provider failures into product-facing errors
+ */
 export function createGetMarketPrices(
   dependencies: GetMarketPricesDependencies,
 ) {
+  /**
+   * Returns the current normalized price snapshot set.
+   */
   return async function getMarketPrices(): Promise<MarketPricesResponse> {
     try {
       const prices = await dependencies.marketData.getPrices();
@@ -37,6 +47,10 @@ export function createGetMarketPrices(
   };
 }
 
+/**
+ * Extracts the most useful error message from Pacifica responses while keeping
+ * a stable fallback for unknown payloads.
+ */
 function extractPacificaErrorMessage(body: unknown, fallback: string): string {
   const apiMessage = (body as { error?: unknown } | null)?.error;
 
