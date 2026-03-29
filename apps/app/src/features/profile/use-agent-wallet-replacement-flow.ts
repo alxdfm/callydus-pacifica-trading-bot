@@ -4,8 +4,11 @@ import type {
   PacificaValidationErrorCode,
   PacificaOperationalVerificationResponse,
 } from "@pacifica/contracts";
+import { applyAccountSessionSnapshot } from "../account/apply-account-session";
+import { readAccountSessionViaBackend } from "../account/backend-account-session";
 import { validateAgentWalletViaBackend } from "../onboarding/backend-credential-validation";
 import { verifyAgentWalletOperationallyViaBackend } from "../onboarding/backend-operational-verification";
+import { pauseBotViaBackend } from "../runtime/backend-bot-commands";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
@@ -13,6 +16,8 @@ type FieldErrors = {
   agentWalletPublicKey?: string;
   agentWalletPrivateKey?: string;
 };
+
+type ModalFeedbackTone = "danger" | "success" | "info";
 
 export type ValidatedDraftState = {
   credentialId: string;
@@ -48,9 +53,11 @@ function maskSecret(secret: string | null | undefined): string {
 export function useAgentWalletReplacementFlow() {
   const { t } = useI18n();
   const {
+    setBuilderApprovalState,
     setCredentialState,
     setOnboardingState,
     setOperationalState,
+    setPresetState,
     setRuntimeState,
     state,
   } = useAppState();
@@ -60,6 +67,7 @@ export function useAgentWalletReplacementFlow() {
   const [hasStartedReplacementFlow, setHasStartedReplacementFlow] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [modalFeedback, setModalFeedback] = useState<string | null>(null);
+  const [modalFeedbackTone, setModalFeedbackTone] = useState<ModalFeedbackTone | null>(null);
   const [validatedDraft, setValidatedDraft] = useState<ValidatedDraftState | null>(null);
   const [draftPublicKey, setDraftPublicKey] = useState(
     state.credentials.agentWalletPublicKey ?? "",
@@ -97,6 +105,7 @@ export function useAgentWalletReplacementFlow() {
     setDraftAlias(state.credentials.credentialAlias ?? "");
     setFieldErrors({});
     setModalFeedback(null);
+    setModalFeedbackTone(null);
     setValidatedDraft(null);
     setIsDraftValidating(false);
     setIsDraftVerifying(false);
@@ -124,6 +133,7 @@ export function useAgentWalletReplacementFlow() {
   function clearPendingValidation() {
     setValidatedDraft(null);
     setModalFeedback(null);
+    setModalFeedbackTone(null);
     setIsReplacementCompleted(false);
   }
 
@@ -142,12 +152,65 @@ export function useAgentWalletReplacementFlow() {
     clearPendingValidation();
   }
 
-  function handleStopBot() {
+  async function handleStopBot() {
     setHasStartedReplacementFlow(true);
+    const walletAddress = state.wallet.mainWalletPublicKey;
+
+    if (!walletAddress) {
+      setModalFeedback("Connect the main wallet before stopping the bot.");
+      setModalFeedbackTone("danger");
+      return;
+    }
+
     setRuntimeState({
-      botStatus: "paused",
-      lastRuntimeMessage: "Bot paused from Profile to allow Agent Wallet maintenance.",
+      screenStatus: "loading",
+      lastRuntimeMessage: t("runtimeActionProcessing"),
     });
+
+    const commandResult = await pauseBotViaBackend({ walletAddress });
+
+    if (commandResult.status === "error") {
+      setRuntimeState({
+        screenStatus: "error",
+        lastRuntimeMessage: commandResult.message,
+      });
+      setModalFeedback(commandResult.message);
+      setModalFeedbackTone("danger");
+      return;
+    }
+
+    const sessionSnapshot = await readAccountSessionViaBackend({
+      walletAddress,
+    });
+
+    if (sessionSnapshot.status === "found") {
+      applyAccountSessionSnapshot(sessionSnapshot, {
+        setBuilderApprovalState,
+        setCredentialState,
+        setOperationalState,
+        setPresetState,
+        setRuntimeState,
+        setOnboardingState,
+      });
+      setRuntimeState({
+        screenStatus: "ready",
+        lastRuntimeMessage: commandResult.message,
+      });
+      setModalFeedback("Bot paused successfully. You can now validate the replacement Agent Wallet.");
+      setModalFeedbackTone("info");
+      return;
+    }
+
+    const fallbackMessage =
+      sessionSnapshot.status === "error"
+        ? sessionSnapshot.message
+        : "Could not refresh the account session after pausing the bot.";
+    setRuntimeState({
+      screenStatus: "error",
+      lastRuntimeMessage: fallbackMessage,
+    });
+    setModalFeedback(fallbackMessage);
+    setModalFeedbackTone("danger");
   }
 
   function applyValidationResponse(response: PacificaCredentialValidationResponse) {
@@ -162,6 +225,7 @@ export function useAgentWalletReplacementFlow() {
         credentialAlias: trimmedDraftAlias || null,
       });
       setModalFeedback(t("profileAgentWalletValidated"));
+      setModalFeedbackTone("success");
       return;
     }
 
@@ -169,6 +233,7 @@ export function useAgentWalletReplacementFlow() {
     setValidatedDraft(null);
     setFieldErrorsFromCode(invalidField, response.message);
     setModalFeedback(response.message);
+    setModalFeedbackTone("danger");
   }
 
   async function handleValidateAgentWallet() {
@@ -192,17 +257,20 @@ export function useAgentWalletReplacementFlow() {
     if (!state.wallet.mainWalletPublicKey) {
       setValidatedDraft(null);
       setModalFeedback("Connect the main wallet before validating the Agent Wallet.");
+      setModalFeedbackTone("danger");
       return;
     }
 
     if (state.builderApproval.approvalStatus !== "approved") {
       setValidatedDraft(null);
       setModalFeedback("Approve the builder code before validating the Agent Wallet.");
+      setModalFeedbackTone("danger");
       return;
     }
 
     setFieldErrors({});
     setModalFeedback(null);
+    setModalFeedbackTone(null);
     setValidatedDraft(null);
     setIsDraftValidating(true);
 
@@ -258,10 +326,12 @@ export function useAgentWalletReplacementFlow() {
       setValidatedDraft(null);
       setIsReplacementCompleted(true);
       setModalFeedback(t("profileAgentWalletReplacementCompleted"));
+      setModalFeedbackTone("success");
       return;
     }
 
     setModalFeedback(response.message);
+    setModalFeedbackTone("danger");
   }
 
   async function handleRunReadinessCheck() {
@@ -269,6 +339,7 @@ export function useAgentWalletReplacementFlow() {
 
     if (!validatedDraft?.credentialId) {
       setModalFeedback("Validate the Agent Wallet before running the readiness check.");
+      setModalFeedbackTone("danger");
       return;
     }
 
@@ -295,11 +366,13 @@ export function useAgentWalletReplacementFlow() {
       setValidatedDraft(null);
       setIsReplacementCompleted(true);
       setModalFeedback(t("profileAgentWalletVerificationReuse"));
+      setModalFeedbackTone("success");
       return;
     }
 
     setIsDraftVerifying(true);
     setModalFeedback(null);
+    setModalFeedbackTone(null);
 
     const response = await verifyAgentWalletOperationallyViaBackend({
       credentialId: validatedDraft.credentialId,
@@ -327,6 +400,7 @@ export function useAgentWalletReplacementFlow() {
     isDraftVerifying,
     isReplacementCompleted,
     modalFeedback,
+    modalFeedbackTone,
     privateKeyFieldValue,
     resetDrafts,
     setDraftAlias: updateDraftAlias,

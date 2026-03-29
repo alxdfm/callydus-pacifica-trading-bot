@@ -15,7 +15,9 @@ function NavigationLinks({ showOnboarding }: { showOnboarding: boolean }) {
         <NavLink
           key={item.to}
           className={({ isActive }) =>
-            isActive ? "shell-nav__link shell-nav__link--active" : "shell-nav__link"
+            isActive
+              ? "shell-nav__link shell-nav__link--active"
+              : "shell-nav__link"
           }
           to={item.to}
         >
@@ -53,7 +55,11 @@ export function AppLayout() {
     <div className="shell">
       <aside className="shell-sidebar">
         <div className="shell-brand">
-          <img alt={`${t("appName")} logo`} className="shell-brand__logo" src={logoUrl} />
+          <img
+            alt={`${t("appName")} logo`}
+            className="shell-brand__logo"
+            src={logoUrl}
+          />
           <div className="shell-brand__copy">
             <p className="shell-sidebar__eyebrow">{t("appName")}</p>
             <h1>{t("appTagline")}</h1>
@@ -63,11 +69,17 @@ export function AppLayout() {
           <NavigationLinks showOnboarding={showOnboarding} />
         </nav>
         <div className="nav-card shell-side-card">
-          <span className={`badge badge--${activePresetItem ? "warning" : "neutral"}`}>
-            {activePresetItem ? t("presetSidebarActive") : t("presetSidebarEmpty")}
+          <span
+            className={`badge badge--${state.runtime.botStatus === "active" ? "warning" : "neutral"}`}
+          >
+            {state.runtime.botStatus === "active"
+              ? t("presetSidebarActive")
+              : t("presetSidebarEmpty")}
           </span>
           <strong>
-            {activePresetItem ? activePresetItem.definition.name : t("presetSidebarTitle")}
+            {activePresetItem
+              ? activePresetItem.definition.name
+              : t("presetSidebarTitle")}
           </strong>
           <p>
             {activePresetItem
@@ -75,12 +87,17 @@ export function AppLayout() {
               : t("presetSidebarHint")}
           </p>
         </div>
-        <label className="shell-locale shell-side-controls" htmlFor="locale-select">
+        <label
+          className="shell-locale shell-side-controls"
+          htmlFor="locale-select"
+        >
           <span>{t("localeLabel")}</span>
           <select
             id="locale-select"
             value={state.locale}
-            onChange={(event) => setLocale(event.target.value as typeof state.locale)}
+            onChange={(event) =>
+              setLocale(event.target.value as typeof state.locale)
+            }
           >
             <option value="en">{t("localeName")}</option>
           </select>
@@ -88,7 +105,10 @@ export function AppLayout() {
       </aside>
 
       <div className="shell-body">
-        <nav aria-label={t("mobileMenuLabel")} className="shell-nav shell-nav--mobile">
+        <nav
+          aria-label={t("mobileMenuLabel")}
+          className="shell-nav shell-nav--mobile"
+        >
           <NavigationLinks showOnboarding={showOnboarding} />
         </nav>
 

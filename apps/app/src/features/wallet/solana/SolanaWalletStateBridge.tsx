@@ -6,6 +6,7 @@ import { useAppState } from "../../../state/app-state";
 import { useSolanaWalletPort } from "./SolanaWalletEnvironment";
 import { lookupOperationalAccountViaBackend } from "../../onboarding/backend-operational-account-lookup";
 import { readAccountSessionViaBackend } from "../../account/backend-account-session";
+import { applyAccountSessionSnapshot } from "../../account/apply-account-session";
 
 export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   const {
@@ -247,58 +248,13 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
         }
 
         if (sessionSnapshot.status === "found") {
-          setBuilderApprovalState({
-            approvalStatus: sessionSnapshot.builderApproved ? "approved" : "pending",
-            lastErrorCode: null,
-            lastMessage: "Operational session loaded from backend.",
-            retryable: false,
-          });
-          setCredentialState({
-            credentialId: sessionSnapshot.credentialId,
-            agentWalletPublicKey: sessionSnapshot.agentWalletPublicKey,
-            agentWalletPrivateKey: null,
-            credentialAlias: sessionSnapshot.credentialAlias,
-            keyFingerprint: sessionSnapshot.keyFingerprint,
-            validationStatus: sessionSnapshot.credentialId ? "valid" : "pending",
-            lastValidatedAt: null,
-            lastErrorCode: null,
-            lastValidationMessage: "Operational session loaded from backend.",
-            retryable: false,
-          });
-          setOperationalState({
-            status: sessionSnapshot.operationallyVerified ? "verified" : "pending",
-            lastVerifiedAt: sessionSnapshot.runtime.lastHeartbeatAt,
-            lastErrorCode: null,
-            lastMessage: sessionSnapshot.runtime.lastErrorMessage,
-            retryable: false,
-            probeSymbol: null,
-            probeClientOrderId: null,
-          });
-          setPresetState({
-            activePreset: sessionSnapshot.activePreset,
-            selectedPresetDefinitionId:
-              sessionSnapshot.activePreset?.presetDefinitionId ?? null,
-            draftEditableConfig:
-              sessionSnapshot.activePreset?.editableConfig ?? null,
-            activationStatus: "idle",
-            activationMessage: null,
-          });
-          setRuntimeState({
-            balance: sessionSnapshot.runtime.balance,
-            botStatus: sessionSnapshot.runtime.botStatus,
-            syncStatus: sessionSnapshot.runtime.syncStatus,
-            currentTrades: sessionSnapshot.runtime.currentTrades,
-            closedTrades: sessionSnapshot.runtime.closedTrades,
-            alerts: sessionSnapshot.runtime.activeAlerts,
-            screenStatus: sessionSnapshot.runtime.lastErrorMessage ? "error" : "ready",
-            lastRuntimeMessage: sessionSnapshot.runtime.lastErrorMessage,
-          });
-          setOnboardingState({
-            status: sessionSnapshot.onboardingStatus,
-            accountReady: sessionSnapshot.canAccessProduct,
-            accountLookupStatus: "existing_account",
-            discoveredWalletAddress: mainWalletPublicKey,
-            showCompletionModal: false,
+          applyAccountSessionSnapshot(sessionSnapshot, {
+            setBuilderApprovalState,
+            setCredentialState,
+            setOperationalState,
+            setPresetState,
+            setRuntimeState,
+            setOnboardingState,
           });
         } else {
           setBuilderApprovalState({

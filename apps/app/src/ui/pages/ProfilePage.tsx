@@ -27,7 +27,9 @@ function formatRelativeValidation(value: string | null, fallback: string) {
 
 function deriveAgentWalletBadgeState(
   hasCredentialKeyChanges: boolean,
-  validationStatus: ReturnType<typeof useAppState>["state"]["credentials"]["validationStatus"],
+  validationStatus: ReturnType<
+    typeof useAppState
+  >["state"]["credentials"]["validationStatus"],
   t: ReturnType<typeof useI18n>["t"],
 ) {
   if (hasCredentialKeyChanges) {
@@ -81,7 +83,9 @@ export function ProfilePage() {
     state.credentials.validationStatus,
     t,
   );
-  const botStatusBadgeTone = replacementFlow.isBotRunning ? "warning" : "neutral";
+  const botStatusBadgeTone = replacementFlow.isBotRunning
+    ? "warning"
+    : "neutral";
 
   function openAgentWalletModal() {
     replacementFlow.resetDrafts();
@@ -129,7 +133,11 @@ export function ProfilePage() {
       />
 
       {isAgentWalletModalOpen ? (
-        <div className="modal-overlay" onClick={closeAgentWalletModal} role="presentation">
+        <div
+          className="modal-overlay"
+          onClick={closeAgentWalletModal}
+          role="presentation"
+        >
           <div
             aria-modal="true"
             className="modal-card profile-maintenance-modal"
@@ -175,7 +183,8 @@ export function ProfilePage() {
                     replacementFlow.shouldLockReplacementInputs
                   }
                   type={
-                    replacementFlow.validatedDraft || replacementFlow.isReplacementCompleted
+                    replacementFlow.validatedDraft ||
+                    replacementFlow.isReplacementCompleted
                       ? "text"
                       : "password"
                   }
@@ -224,7 +233,10 @@ export function ProfilePage() {
             ) : null}
 
             {replacementFlow.modalFeedback ? (
-              replacementFlow.validatedDraft || replacementFlow.isReplacementCompleted ? (
+              replacementFlow.validatedDraft ||
+              replacementFlow.isReplacementCompleted ||
+              replacementFlow.modalFeedbackTone === "success" ||
+              replacementFlow.modalFeedbackTone === "info" ? (
                 <div className="done-note">
                   <strong>
                     {replacementFlow.isReplacementCompleted
@@ -232,6 +244,8 @@ export function ProfilePage() {
                         t("profileAgentWalletVerificationReuse")
                         ? t("profileAgentWalletVerificationReuseTitle")
                         : t("profileAgentWalletReplacementCompletedTitle")
+                      : replacementFlow.modalFeedbackTone === "info"
+                        ? t("profilePauseBotCompletedTitle")
                       : t("profileAgentWalletValidatedTitle")}
                   </strong>
                   <p>{replacementFlow.modalFeedback}</p>
@@ -250,11 +264,14 @@ export function ProfilePage() {
             <div className="action-row">
               <button
                 className="btn danger"
-                disabled={!replacementFlow.isBotRunning || replacementFlow.isReplacementCompleted}
-                onClick={replacementFlow.handleStopBot}
+                disabled={
+                  !replacementFlow.isBotRunning ||
+                  replacementFlow.isReplacementCompleted
+                }
+                onClick={() => void replacementFlow.handleStopBot()}
                 type="button"
               >
-                {t("profileStopBotAction")}
+                {t("profilePauseBotAction")}
               </button>
               <button
                 className="btn secondary"
@@ -275,7 +292,11 @@ export function ProfilePage() {
             </div>
 
             <div className="action-row modal-actions">
-              <button className="btn secondary" onClick={closeAgentWalletModal} type="button">
+              <button
+                className="btn secondary"
+                onClick={closeAgentWalletModal}
+                type="button"
+              >
                 {t("modalCloseAction")}
               </button>
             </div>
@@ -290,11 +311,6 @@ export function ProfilePage() {
           <p className="subtle">{t("profileTopbarDescription")}</p>
         </div>
         <div className="topbar-actions">
-          <span className={`badge badge--${botStatusBadgeTone}`}>
-            {replacementFlow.isBotRunning
-              ? t("profileBotRunningBadge")
-              : t("profileBotIdleBadge")}
-          </span>
           <button
             className="btn danger"
             disabled={isEndingSession}
@@ -314,7 +330,9 @@ export function ProfilePage() {
               <h3>{t("profileMainWalletTitle")}</h3>
               <p className="subtle">{t("profileMainWalletDescription")}</p>
             </div>
-            <span className="badge badge--neutral">{t("profileMainWalletReadonlyBadge")}</span>
+            <span className="badge badge--neutral">
+              {t("profileMainWalletReadonlyBadge")}
+            </span>
           </div>
 
           <div className="form-stack">
@@ -343,11 +361,19 @@ export function ProfilePage() {
             <div>
               <p className="panel-label">{t("profileAgentWalletEyebrow")}</p>
               <h3>{t("profileAgentWalletCurrentTitle")}</h3>
-              <p className="subtle">{t("profileAgentWalletCurrentDescription")}</p>
+              <p className="subtle">
+                {t("profileAgentWalletCurrentDescription")}
+              </p>
             </div>
             <div className="topbar-actions">
-              <span className={`badge badge--${agentWalletTone}`}>{agentWalletStatus}</span>
-              <button className="btn secondary" onClick={openAgentWalletModal} type="button">
+              <span className={`badge badge--${agentWalletTone}`}>
+                {agentWalletStatus}
+              </span>
+              <button
+                className="btn secondary"
+                onClick={openAgentWalletModal}
+                type="button"
+              >
                 {t("profileAgentWalletEditAction")}
               </button>
             </div>
@@ -374,7 +400,10 @@ export function ProfilePage() {
 
           <p className="subtle">
             {state.credentials.lastValidationMessage ??
-              formatRelativeValidation(state.credentials.lastValidatedAt, t("stateEmptyValue"))}
+              formatRelativeValidation(
+                state.credentials.lastValidatedAt,
+                t("stateEmptyValue"),
+              )}
           </p>
         </section>
       </section>

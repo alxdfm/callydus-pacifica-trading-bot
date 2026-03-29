@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
-import { closeTradeInRuntime } from "../../features/runtime/demo-runtime";
+import { readAccountSessionViaBackend } from "../../features/account/backend-account-session";
+import { applyAccountSessionSnapshot } from "../../features/account/apply-account-session";
+import { closeTradeViaBackend } from "../../features/runtime/backend-bot-commands";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 
 export function TradesPage() {
-  const { setRuntimeState, state } = useAppState();
+  const {
+    setBuilderApprovalState,
+    setCredentialState,
+    setOperationalState,
+    setPresetState,
+    setRuntimeState,
+    state,
+  } = useAppState();
   const { t } = useI18n();
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(
     state.runtime.currentTrades[0]?.id ?? null,
@@ -32,8 +41,9 @@ export function TradesPage() {
 
   async function handleCloseTrade(tradeId: string) {
     const trade = state.runtime.currentTrades.find((candidate) => candidate.id === tradeId);
+    const walletAddress = state.wallet.mainWalletPublicKey;
 
-    if (!trade) {
+    if (!trade || !walletAddress) {
       return;
     }
 
@@ -43,20 +53,46 @@ export function TradesPage() {
       lastRuntimeMessage: t("runtimeActionProcessing"),
     });
 
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, 350);
+    const commandResult = await closeTradeViaBackend({
+      walletAddress,
+      tradeId,
     });
 
-    const nextRuntime = closeTradeInRuntime(state.runtime, tradeId);
+    if (commandResult.status === "error") {
+      setRuntimeState({
+        screenStatus: "error",
+        lastRuntimeMessage: commandResult.message,
+      });
+      setClosingTradeId(null);
+      return;
+    }
 
-    setRuntimeState({
-      ...nextRuntime,
-      screenStatus: "ready",
-      lastRuntimeMessage:
-        nextRuntime.currentTrades.length === state.runtime.currentTrades.length
-          ? t("runtimeActionCloseMissing")
-          : t("runtimeActionCloseSuccess"),
+    const sessionSnapshot = await readAccountSessionViaBackend({
+      walletAddress,
     });
+
+    if (sessionSnapshot.status === "found") {
+      applyAccountSessionSnapshot(sessionSnapshot, {
+        setBuilderApprovalState,
+        setCredentialState,
+        setOperationalState,
+        setPresetState,
+        setRuntimeState,
+      });
+      setRuntimeState({
+        screenStatus: "ready",
+        lastRuntimeMessage: t("runtimeActionCloseSuccess"),
+      });
+    } else {
+      setRuntimeState({
+        screenStatus: "error",
+        lastRuntimeMessage:
+          sessionSnapshot.status === "error"
+            ? sessionSnapshot.message
+            : t("runtimeStatusError"),
+      });
+    }
+
     setClosingTradeId(null);
   }
 

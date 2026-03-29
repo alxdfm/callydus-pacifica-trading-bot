@@ -10,13 +10,16 @@ export function HistoryPage() {
   );
 
   useEffect(() => {
-    if (!state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId)) {
+    if (
+      !state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId)
+    ) {
       setSelectedTradeId(state.runtime.closedTrades[0]?.id ?? null);
     }
   }, [selectedTradeId, state.runtime.closedTrades]);
 
   const selectedTrade =
-    state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId) ?? null;
+    state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId) ??
+    null;
 
   function formatSignedCurrency(value: number) {
     return `${value >= 0 ? "+" : "-"}${new Intl.NumberFormat("en-US", {
@@ -46,9 +49,6 @@ export function HistoryPage() {
           <p className="page-card__eyebrow">{t("pageHistoryTitle")}</p>
           <h2>{t("historyTopbarTitle")}</h2>
           <p className="subtle">{t("historyTopbarDescription")}</p>
-        </div>
-        <div className="topbar-actions">
-          <span className="badge badge--neutral">{t("historyNoFiltersBadge")}</span>
         </div>
       </section>
 
@@ -82,21 +82,40 @@ export function HistoryPage() {
                   <div>
                     <div className="trade-head">
                       <strong>{trade.symbol}</strong>
-                      <span className={`badge badge--${trade.side === "long" ? "info" : "danger"}`}>
-                        {trade.side === "long" ? t("tradeSideLong") : t("tradeSideShort")}
+                      <span
+                        className={`badge badge--${trade.side === "long" ? "info" : "danger"}`}
+                      >
+                        {trade.side === "long"
+                          ? t("tradeSideLong")
+                          : t("tradeSideShort")}
                       </span>
-                      <span className={`badge badge--${trade.realizedPnl >= 0 ? "success" : "danger"}`}>
+                      <span
+                        className={`badge badge--${trade.realizedPnl >= 0 ? "success" : "danger"}`}
+                      >
                         {closeReasonLabel(trade.closeReason)}
                       </span>
                     </div>
                     <p>
-                      {t("historyEntryLabel")} {new Date(trade.openedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} ·{" "}
-                      {t("historyExitLabel")} {new Date(trade.closedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} ·{" "}
-                      {trade.isPlatformTrade ? t("tradeOriginPlatform") : t("tradeOriginExternal")}
+                      {t("historyEntryLabel")}{" "}
+                      {new Date(trade.openedAt).toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}{" "}
+                      · {t("historyExitLabel")}{" "}
+                      {new Date(trade.closedAt).toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}{" "}
+                      ·{" "}
+                      {trade.isPlatformTrade
+                        ? t("tradeOriginPlatform")
+                        : t("tradeOriginExternal")}
                     </p>
                   </div>
                   <div>
-                    <span className="trade-label">{t("historyResultLabel")}</span>
+                    <span className="trade-label">
+                      {t("historyResultLabel")}
+                    </span>
                     <strong className={trade.realizedPnl >= 0 ? "up" : "down"}>
                       {formatSignedCurrency(trade.realizedPnl)}
                     </strong>
@@ -112,15 +131,25 @@ export function HistoryPage() {
           )}
         </section>
 
-        <aside className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}>
+        <aside
+          className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}
+        >
           <div className="row-between align-start section-gap">
             <div>
               <p className="panel-label">{t("historyDetailEyebrow")}</p>
-              <h3>{selectedTrade ? selectedTrade.symbol : t("historyDetailEmptyTitle")}</h3>
+              <h3>
+                {selectedTrade
+                  ? selectedTrade.symbol
+                  : t("historyDetailEmptyTitle")}
+              </h3>
             </div>
             <span
               className={`badge badge--${
-                selectedTrade ? (selectedTrade.realizedPnl >= 0 ? "success" : "danger") : "neutral"
+                selectedTrade
+                  ? selectedTrade.realizedPnl >= 0
+                    ? "success"
+                    : "danger"
+                  : "neutral"
               }`}
             >
               {selectedTrade
@@ -140,7 +169,11 @@ export function HistoryPage() {
                 </div>
                 <div className="detail-item">
                   <span>{t("historyDetailDirection")}</span>
-                  <strong>{selectedTrade.side === "long" ? t("tradeSideLong") : t("tradeSideShort")}</strong>
+                  <strong>
+                    {selectedTrade.side === "long"
+                      ? t("tradeSideLong")
+                      : t("tradeSideShort")}
+                  </strong>
                 </div>
                 <div className="detail-item">
                   <span>{t("historyDetailEntry")}</span>
