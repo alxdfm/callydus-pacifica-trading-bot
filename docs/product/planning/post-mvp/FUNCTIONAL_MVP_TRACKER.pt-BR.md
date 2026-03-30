@@ -15,6 +15,10 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 - foco principal: fechar integracao Pacifica + analise real dos presets + read models reais do produto
 - bloqueio principal: falta contrato tecnico real da Pacifica e runtime de mercado/indicadores
 
+## Nota Operacional
+- `FM-003` a `FM-010` continuam em `IN_REVIEW` por sincronizacao e validacao manual final, mas ja formam a baseline implementada que destrava a trilha `FM-013` a `FM-017`
+- portanto, o status `IN_REVIEW` desses slices nao deve ser lido como bloqueio tecnico para iniciar `FM-013` e `FM-014`
+
 ## Dev
 | Task | Status | Tipo | Prioridade | Resumo | Proximo passo |
 |------|--------|------|------------|--------|---------------|
@@ -30,6 +34,11 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 | FM-010 | IN_REVIEW | implementacao | P1 | Instrumentar logs, alertas e auditoria minima do fluxo funcional | Validar manualmente a trilha de `OperationalEvent` e decidir se o card ja pode ser promovido a `DONE`. |
 | FM-011 | DONE | implementacao | P0 | Modelar lifecycle minimo de credenciais Pacifica com `active/replaced` | Concluida para garantir uma unica `Agent Wallet` ativa por conta e preservar historico sem ambiguidade. |
 | FM-012 | DONE | arquitetura + implementacao | P0 | Endurecer a arquitetura do fluxo de credenciais no frontend e alinhar o backend ao lifecycle `active` | Concluida com saneamento do storage local, modularizacao do `Profile` e correcao de `findActiveCredential`. |
+| FM-013 | TODO | implementacao | P0 | Transformar o `worker` em loop operacional continuo por conta/preset ativo | Fechar adapter e heartbeat do worker como consumidor canonico do runtime persistido. |
+| FM-014 | TODO | implementacao | P0 | Levar a avaliacao de sinais para loop real com regras finais de produto | Aplicar no worker a cadencia de `1 minuto`, sem `cooldown` artificial e com `reentrada no mesmo candle` permitida. |
+| FM-015 | TODO | implementacao | P0 | Executar ordens reais na Pacifica com `market order`, idempotencia e auto-pausa em erro critico | Fechar a camada de order execution usando os contratos reais ja mapeados em `FM-001`. |
+| FM-016 | TODO | implementacao | P0 | Fechar lifecycle real de ordens/trades/posicoes com `1 posicao por simbolo`, `stop loss` e `take profit` obrigatorios | Transformar execucao e risk plan em estado operacional real refletido no produto. |
+| FM-017 | TODO | implementacao | P0 | Reconciliar banco/runtime com a Pacifica e tratar a exchange como fonte visivel de verdade | Fechar a estrategia de verdade externa, snapshot local degradado e recuperacao apos drift. |
 
 ## Ordem Recomendada
 1. FM-001
@@ -42,6 +51,11 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 8. FM-008
 9. FM-009
 10. FM-010
+11. FM-013
+12. FM-014
+13. FM-015
+14. FM-016
+15. FM-017
 
 ## Cards
 - [FM-001 Card](./cards/dev/fm/FM-001_CARD.pt-BR.md)
@@ -56,6 +70,11 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 - [FM-010 Card](./cards/dev/fm/FM-010_CARD.pt-BR.md)
 - [FM-011 Card](./cards/dev/fm/FM-011_CARD.pt-BR.md)
 - [FM-012 Card](./cards/dev/fm/FM-012_CARD.pt-BR.md)
+- [FM-013 Card](./cards/dev/fm/FM-013_CARD.pt-BR.md)
+- [FM-014 Card](./cards/dev/fm/FM-014_CARD.pt-BR.md)
+- [FM-015 Card](./cards/dev/fm/FM-015_CARD.pt-BR.md)
+- [FM-016 Card](./cards/dev/fm/FM-016_CARD.pt-BR.md)
+- [FM-017 Card](./cards/dev/fm/FM-017_CARD.pt-BR.md)
 
 ## Atualizacoes Recentes
 - `2026-03-25`: `FM-001` fechado com o documento [PACIFICA_FUNCTIONAL_MVP_TECH_CONTRACT.pt-BR.md](../../../dev/PACIFICA_FUNCTIONAL_MVP_TECH_CONTRACT.pt-BR.md) e o ambiente local de banco padronizado com `docker compose`.
@@ -85,3 +104,4 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 - `2026-03-29`: `FM-008` fechou o residual de UX de runtime; `syncStatus` ganhou camada propria de apresentacao no `Dashboard`, enquanto `Trades` e `History` passaram a herdar apenas os casos `degraded/error`, preservando `screenStatus` para acoes locais e transitórias.
 - `2026-03-29`: `FM-009` entrou em `IN_REVIEW` com manutencao minima de runtime no backend: `POST /api/runtime/heartbeat`, `POST /api/runtime/reconcile`, recuperacao basica de runtime ausente, degradacao/erro por heartbeat stale e reconciliacao automatica antes do `POST /api/account/session`. O escopo deste slice e congruencia entre os dados persistidos do proprio produto, e nao reconciliacao completa com a Pacifica.
 - `2026-03-29`: `FM-010` entrou em `IN_REVIEW` com a introducao de `OperationalEvent` como trilha minima de auditoria do fluxo real. Validacao de credencial, readiness operacional, ativacao de preset, comandos do bot/trade e reconciliacao de runtime agora registram eventos persistidos, e o `POST /api/account/session` passou a devolver `recentEvents` para o dashboard.
+- `2026-03-30`: com o `PRODUCT_FINALIZATION_PO_GUIDE` respondido pelo PO, a trilha final foi desdobrada em `FM-013` a `FM-017` para fechar worker continuo, loop real de sinais, execucao real de ordens, lifecycle/risk execution e reconciliacao externa com a Pacifica.

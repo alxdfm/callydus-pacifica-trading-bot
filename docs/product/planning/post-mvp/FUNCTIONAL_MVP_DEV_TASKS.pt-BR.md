@@ -214,3 +214,110 @@ Transformar o estado atual do produto, hoje majoritariamente local/mockado, em u
 
 ### Proximo Passo
 - Definir eventos minimos obrigatorios de auditoria e alerta antes da demo funcional real.
+
+## FM-013: Transformar o worker em consumidor operacional continuo
+
+- Tipo: `implementacao`
+- Prioridade: `P0`
+- Objetivo: Fazer o `worker` assumir o loop principal do runtime por conta/preset ativo, com `heartbeat`, retomada segura e bloqueio de dupla execucao.
+
+### Escopo
+- consumir contas com preset ativo e prontidao operacional valida
+- rodar loop recorrente por conta ativa
+- publicar `heartbeat` real recorrente
+- evitar que a mesma conta rode em paralelo em dois loops ativos
+- suportar retomada segura apos restart
+- aplicar retry e backoff tecnicos no loop
+
+### Critérios de Aceite Iniciais
+- existe um `worker` continuo operando sobre o runtime persistido
+- o produto nao depende mais apenas de comandos pontuais para parecer “ativo”
+- o `heartbeat` do runtime passa a refletir atividade real do worker
+
+### Proximo Passo
+- Fechar a estrategia de ownership por conta e a politica minima de retry/backoff do loop.
+
+## FM-014: Executar analise e decisao em loop real
+
+- Tipo: `implementacao`
+- Prioridade: `P0`
+- Objetivo: Levar mercado, indicadores e gatilhos dos presets para execucao recorrente em producao, respeitando as decisoes de PO fechadas para o produto final.
+
+### Escopo
+- executar avaliacao do preset ativo em loop recorrente no `worker`
+- usar baseline de analise de `1 minuto`
+- nao aplicar `cooldown` artificial entre sinais
+- permitir `reentrada no mesmo candle`
+- evitar disparos duplicados tecnicamente quando a mesma oportunidade ja estiver em processamento
+- traduzir o resultado da avaliacao em decisao operacional pronta para ordem
+
+### Critérios de Aceite Iniciais
+- o bot consegue avaliar mercado de forma recorrente sem acao manual do usuario
+- a decisao de entrada e auditavel e coerente com o preset ativo
+- a semantica final de produto (`1 preset por conta`, sem cooldown artificial, reentrada permitida) esta refletida no loop real
+
+### Proximo Passo
+- Fechar a chave tecnica de deduplicacao de sinais para nao duplicar ordem por erro de execucao ou repeticao do loop.
+
+## FM-015: Executar ordens reais na Pacifica
+
+- Tipo: `implementacao`
+- Prioridade: `P0`
+- Objetivo: Fechar o ciclo de criacao de ordens reais na Pacifica com idempotencia, persistencia e tratamento de falhas criticas.
+
+### Escopo
+- criar ordens reais via adapter Pacifica
+- persistir request, resposta e status da ordem
+- garantir idempotencia para nao criar ordem duplicada
+- tratar slippage, saldo insuficiente, rejeicao e falha parcial
+- pausar automaticamente o bot em erro de criacao de ordem
+
+### Critérios de Aceite Iniciais
+- o produto consegue abrir ordem real a partir de decisao do loop
+- cada tentativa de execucao fica rastreavel no banco e na auditoria
+- erro critico de execucao pausa o bot de forma visivel e consistente
+
+### Proximo Passo
+- Fechar o contrato canonico de `create order` e a matriz minima de falhas criticas vs recuperaveis.
+
+## FM-016: Fechar lifecycle real de ordens, trades e posicoes com risk execution
+
+- Tipo: `implementacao`
+- Prioridade: `P0`
+- Objetivo: Refletir o ciclo real de ordens/posicoes no produto, aplicando `stop loss` e `take profit` obrigatorios na operacao real.
+
+### Escopo
+- acompanhar status real de ordens abertas, preenchidas, canceladas ou falhas
+- abrir `OpenTrade` apenas a partir de execucao real
+- fechar `ClosedTrade` por evento real, `stop loss`, `take profit` ou fechamento manual
+- transformar `risk plan` em niveis executaveis reais
+- garantir que `stop loss` e `take profit` sejam obrigatorios em todas as entradas
+
+### Critérios de Aceite Iniciais
+- dashboard, trades e history refletem lifecycle real vindo da exchange
+- `stop loss` e `take profit` deixam de ser apenas calculo e passam a proteger a operacao real
+- fechamento manual continua tendo precedencia como comando explicito do usuario
+
+### Proximo Passo
+- Definir como o risk execution vira ordem/regra operacional concreta na Pacifica sem ambiguidade de estado.
+
+## FM-017: Reconciliar runtime/banco com a Pacifica como fonte visivel de verdade
+
+- Tipo: `implementacao`
+- Prioridade: `P0`
+- Objetivo: Implementar reconciliacao externa com a exchange e fechar a regra de verdade operacional do produto final.
+
+### Escopo
+- consultar ordens, posicoes e saldo reais na Pacifica
+- detectar drift entre banco/runtime e exchange
+- corrigir runtime apos restart, falha ou divergencia externa
+- tratar a Pacifica como fonte visivel de verdade
+- quando a Pacifica estiver indisponivel, mostrar explicitamente o `ultimo snapshot conhecido`
+
+### Critérios de Aceite Iniciais
+- divergencias relevantes entre produto e exchange deixam de ficar silenciosas
+- o usuario enxerga como estado principal o que a Pacifica confirma
+- quando a Pacifica nao puder ser consultada, a UI explicita degradacao e nao vende o snapshot local como verdade
+
+### Proximo Passo
+- Fechar a rotina minima de consulta externa e a politica de degradacao/recuperacao visivel ao usuario.
