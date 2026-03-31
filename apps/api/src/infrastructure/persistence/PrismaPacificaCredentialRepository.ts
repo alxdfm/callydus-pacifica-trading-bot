@@ -1290,6 +1290,7 @@ function mapOperationalEvent(event: {
     | "credential_validation"
     | "operational_verification"
     | "signal_evaluation"
+    | "order_execution"
     | "preset_activation"
     | "bot_command"
     | "runtime_reconciliation";
