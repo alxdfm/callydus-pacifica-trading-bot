@@ -151,6 +151,18 @@ Observacao pratica ja validada:
 - `last_order_id` e subscriptions de conta sao base para reconciliacao minima
 - rate limits, falhas de websocket e assinaturas invalidas devem virar eventos auditaveis do runtime
 
+### FM-017
+- `POST /api/account/session` deixa de ser apenas read model interno e passa a tentar sincronizacao externa com a Pacifica antes de devolver a sessao.
+- quando a Pacifica responde, o runtime deve marcar:
+  - `exchangeSnapshotStatus = confirmed`
+  - `exchangeLastSyncedAt`
+  - `exchangeSnapshotMessage = null`
+- quando a Pacifica nao responde, o produto nao deve vender o estado local como se fosse confirmado:
+  - o ultimo estado persistido pode continuar visivel
+  - mas o runtime deve marcar `exchangeSnapshotStatus = last_known`
+  - e expor `exchangeSnapshotMessage` explicando o fallback
+- drift relevante entre exchange e banco/runtime deve ser tratado como reconciliacao externa, nao como diferenca silenciosa de read model
+
 ## Contrato Minimo Recomendado para o Nosso Backend
 
 ### Inbound para API
