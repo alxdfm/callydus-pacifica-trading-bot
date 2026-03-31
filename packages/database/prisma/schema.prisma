@@ -223,12 +223,17 @@ model BotRuntimeState {
   pacificaConnectionStatus PacificaConnectionStatus
   syncStatus               SyncStatus
   activePresetActivationId String?                  @db.Uuid
+  workerOwnerId            String?
+  workerLeaseExpiresAt     DateTime?                @db.Timestamptz(6)
+  workerLoopStartedAt      DateTime?                @db.Timestamptz(6)
   lastHeartbeatAt          DateTime?                @db.Timestamptz(6)
   lastErrorMessage         String?
   createdAt                DateTime                 @default(now()) @db.Timestamptz(6)
   updatedAt                DateTime                 @updatedAt @db.Timestamptz(6)
   operatorAccount          OperatorAccount          @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
   activePresetActivation   PresetActivation?        @relation(fields: [activePresetActivationId], references: [id])
+
+  @@index([workerOwnerId, workerLeaseExpiresAt])
 }
 
 model BotCommand {

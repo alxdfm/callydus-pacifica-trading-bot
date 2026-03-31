@@ -4,12 +4,17 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
+    "start": "dotenv -e ../../.env -- tsx src/index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@pacifica/contracts": "workspace:*"
+    "@pacifica/contracts": "workspace:*",
+    "@prisma/client": "^6.19.2"
   },
   "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.3"
   }
 }

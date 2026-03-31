@@ -23,7 +23,7 @@ cp .env.example .env
 
 ## Como rodar
 
-Hoje, o fluxo útil para desenvolvimento está no frontend `app`.
+Hoje, o fluxo útil para desenvolvimento está no conjunto `database + api + app`, e o `worker` ja pode ser iniciado no primeiro corte do `FM-013`.
 
 Subir o PostgreSQL local via `docker compose`:
 
@@ -43,13 +43,19 @@ Subir a API local do Functional MVP:
 pnpm --filter @pacifica/api dev
 ```
 
+Subir o worker local em modo dev:
+
+```bash
+pnpm --filter @pacifica/worker dev
+```
+
 Subir o app em modo dev:
 
 ```bash
 pnpm --filter @pacifica/app dev
 ```
 
-O `app`, a `api` e o `database` carregam o `.env` da raiz automaticamente.
+O `app`, a `api`, o `worker` e o `database` carregam o `.env` da raiz automaticamente.
 
 O Vite deve abrir em algo como:
 
@@ -63,6 +69,12 @@ Rodar typecheck do app:
 
 ```bash
 pnpm --filter @pacifica/app typecheck
+```
+
+Rodar typecheck do worker:
+
+```bash
+pnpm --filter @pacifica/worker typecheck
 ```
 
 Gerar build do app:
@@ -104,10 +116,25 @@ pnpm db:down
 
 - `apps/app`: frontend React + Vite
 - `apps/api`: base da API
-- `apps/worker`: base do worker
+- `apps/worker`: worker operacional continuo
 - `packages/contracts`: contratos compartilhados
 - `packages/database`: schema Prisma e base de dados
 - `docker-compose.yml`: PostgreSQL local para desenvolvimento
+
+## Worker
+
+No estado atual do `FM-013`, o `worker`:
+- varre contas com `preset` ativo
+- assume ownership por conta via lease persistida em `BotRuntimeState`
+- registra `heartbeat` real no runtime
+- libera ownership em pause, desativacao ou shutdown
+
+Ele ainda nao:
+- avalia sinais em loop
+- cria ordens reais na Pacifica
+- fecha trades automaticamente
+
+Esses proximos passos ficam para `FM-014` em diante.
 
 ## Banco local
 
