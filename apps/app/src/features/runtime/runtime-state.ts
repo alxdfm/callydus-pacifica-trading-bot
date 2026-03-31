@@ -2,6 +2,7 @@ import type {
   BalanceSnapshot,
   BotStatus,
   ClosedTrade,
+  ExchangeSnapshotStatus,
   OperationalEvent,
   OperationalAlert,
   OpenTrade,
@@ -12,6 +13,9 @@ export type RuntimeState = {
   balance: BalanceSnapshot | null;
   botStatus: BotStatus;
   syncStatus: SyncStatus;
+  exchangeSnapshotStatus: ExchangeSnapshotStatus;
+  exchangeLastSyncedAt: string | null;
+  exchangeSnapshotMessage: string | null;
   currentTrades: OpenTrade[];
   closedTrades: ClosedTrade[];
   alerts: OperationalAlert[];
@@ -25,6 +29,9 @@ export function createEmptyRuntimeState(): RuntimeState {
     balance: null,
     botStatus: "inactive",
     syncStatus: "idle",
+    exchangeSnapshotStatus: "last_known",
+    exchangeLastSyncedAt: null,
+    exchangeSnapshotMessage: null,
     currentTrades: [],
     closedTrades: [],
     alerts: [],

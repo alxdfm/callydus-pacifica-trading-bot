@@ -588,6 +588,9 @@ export const messages = {
     runtimeSyncErrorTitle: "Runtime error",
     runtimeSyncErrorDescription:
       "Operational sync failed. Review the runtime error and refresh after recovery.",
+    runtimeExchangeLastKnownTitle: "Showing last known Pacifica snapshot",
+    runtimeExchangeLastKnownDescription:
+      "Pacifica is temporarily unavailable, so the product is showing the most recent confirmed exchange snapshot.",
     runtimeActionProcessing: "Processing action...",
     runtimeActionCloseSuccess: "Trade closed successfully.",
     runtimeActionCloseMissing: "Trade could not be found.",

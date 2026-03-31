@@ -47,6 +47,9 @@ export function DashboardPage() {
   const botStatusPresentation = getBotStatusPresentation(state.runtime.botStatus, t);
   const runtimeSyncPresentation = getDashboardRuntimeSyncPresentation(
     state.runtime.syncStatus,
+    state.runtime.exchangeSnapshotStatus,
+    state.runtime.exchangeSnapshotMessage,
+    state.runtime.exchangeLastSyncedAt,
     state.runtime.lastRuntimeMessage,
     t,
   );

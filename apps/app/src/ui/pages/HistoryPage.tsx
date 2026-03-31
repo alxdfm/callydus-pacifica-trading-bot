@@ -23,6 +23,9 @@ export function HistoryPage() {
     null;
   const runtimeSyncPresentation = getSecondaryRuntimeSyncPresentation(
     state.runtime.syncStatus,
+    state.runtime.exchangeSnapshotStatus,
+    state.runtime.exchangeSnapshotMessage,
+    state.runtime.exchangeLastSyncedAt,
     state.runtime.lastRuntimeMessage,
     t,
   );

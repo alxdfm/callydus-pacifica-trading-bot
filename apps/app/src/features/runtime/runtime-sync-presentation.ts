@@ -1,4 +1,4 @@
-import type { SyncStatus } from "@pacifica/contracts";
+import type { ExchangeSnapshotStatus, SyncStatus } from "@pacifica/contracts";
 
 export type RuntimeSyncPresentation = {
   show: boolean;
@@ -9,9 +9,25 @@ export type RuntimeSyncPresentation = {
 
 export function getDashboardRuntimeSyncPresentation<TTranslate extends (key: any) => string>(
   syncStatus: SyncStatus,
+  exchangeSnapshotStatus: ExchangeSnapshotStatus,
+  exchangeSnapshotMessage: string | null,
+  exchangeLastSyncedAt: string | null,
   lastErrorMessage: string | null,
   t: TTranslate,
 ): RuntimeSyncPresentation {
+  if (exchangeSnapshotStatus === "last_known") {
+    return {
+      show: true,
+      tone: "warning",
+      title: t("runtimeExchangeLastKnownTitle"),
+      message:
+        exchangeSnapshotMessage ??
+        (exchangeLastSyncedAt
+          ? `${t("runtimeExchangeLastKnownDescription")} ${exchangeLastSyncedAt}`
+          : t("runtimeExchangeLastKnownDescription")),
+    };
+  }
+
   switch (syncStatus) {
     case "syncing":
       return {
@@ -54,9 +70,25 @@ export function getDashboardRuntimeSyncPresentation<TTranslate extends (key: any
 
 export function getSecondaryRuntimeSyncPresentation<TTranslate extends (key: any) => string>(
   syncStatus: SyncStatus,
+  exchangeSnapshotStatus: ExchangeSnapshotStatus,
+  exchangeSnapshotMessage: string | null,
+  exchangeLastSyncedAt: string | null,
   lastErrorMessage: string | null,
   t: TTranslate,
 ): RuntimeSyncPresentation {
+  if (exchangeSnapshotStatus === "last_known") {
+    return {
+      show: true,
+      tone: "warning",
+      title: t("runtimeExchangeLastKnownTitle"),
+      message:
+        exchangeSnapshotMessage ??
+        (exchangeLastSyncedAt
+          ? `${t("runtimeExchangeLastKnownDescription")} ${exchangeLastSyncedAt}`
+          : t("runtimeExchangeLastKnownDescription")),
+    };
+  }
+
   if (syncStatus === "degraded") {
     return {
       show: true,

@@ -101,6 +101,9 @@ export function TradesPage() {
     state.runtime.currentTrades.find((trade) => trade.id === pendingCloseTradeId) ?? null;
   const runtimeSyncPresentation = getSecondaryRuntimeSyncPresentation(
     state.runtime.syncStatus,
+    state.runtime.exchangeSnapshotStatus,
+    state.runtime.exchangeSnapshotMessage,
+    state.runtime.exchangeLastSyncedAt,
     state.runtime.lastRuntimeMessage,
     t,
   );
