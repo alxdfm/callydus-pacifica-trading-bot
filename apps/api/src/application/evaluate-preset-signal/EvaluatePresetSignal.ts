@@ -1,12 +1,17 @@
 import {
   getPresetTechnicalContractByDefinitionId,
-  type MarketCandleInterval,
   type PresetSignalEvaluationRequest,
   type PresetSignalEvaluationResponse,
 } from "@pacifica/contracts";
+import {
+  buildPresetRiskPlans,
+  evaluatePresetSignal,
+  getIntervalDurationMs,
+  getRequiredPeriod,
+  toPacificaMarketSymbol,
+} from "@pacifica/preset-engine";
+import { PacificaApiError } from "@pacifica/pacifica-market-data";
 import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
-import { PacificaApiError } from "../../infrastructure/pacifica/PacificaClient";
-import { evaluatePresetSignal } from "../../domain/preset-signals/evaluatePresetSignal";
 import type { MarketDataPort as MarketDataPortType } from "../../domain/market-data/MarketDataPort";
 
 export type EvaluatePresetSignalDependencies = {
@@ -98,10 +103,10 @@ export function createEvaluatePresetSignal(
         };
       }
 
-      let riskPlans: ReturnType<typeof buildRiskPlans>;
+      let riskPlans: ReturnType<typeof buildPresetRiskPlans>;
 
       try {
-        riskPlans = buildRiskPlans(
+        riskPlans = buildPresetRiskPlans(
           technicalContract,
           evaluation.indicators,
           entryReferencePrice,
@@ -169,149 +174,6 @@ export function createEvaluatePresetSignal(
       };
     }
   };
-}
-
-/**
- * Converts the evaluated preset risk configuration into executable long/short
- * price plans around the current entry reference price.
- */
-function buildRiskPlans(
-  technicalContract: NonNullable<
-    ReturnType<typeof getPresetTechnicalContractByDefinitionId>
-  >,
-  indicators: Record<string, { previous: number | null; current: number | null }>,
-  entryPrice: number,
-) {
-  const riskDistance = resolveRiskDistance(
-    technicalContract,
-    indicators,
-    entryPrice,
-  );
-
-  return {
-    long: {
-      side: "long" as const,
-      entryPrice,
-      stopLossPrice: entryPrice - riskDistance,
-      takeProfitPrice: entryPrice + riskDistance * technicalContract.risk.takeProfit.multiple,
-      riskDistance,
-    },
-    short: {
-      side: "short" as const,
-      entryPrice,
-      stopLossPrice: entryPrice + riskDistance,
-      takeProfitPrice: entryPrice - riskDistance * technicalContract.risk.takeProfit.multiple,
-      riskDistance,
-    },
-  };
-}
-
-/**
- * Resolves the absolute stop-loss distance from the preset contract.
- *
- * Static stop losses are percentage-based over the entry price. ATR stop
- * losses depend on the latest evaluated ATR indicator and its configured
- * multiplier.
- */
-function resolveRiskDistance(
-  technicalContract: NonNullable<
-    ReturnType<typeof getPresetTechnicalContractByDefinitionId>
-  >,
-  indicators: Record<string, { previous: number | null; current: number | null }>,
-  entryPrice: number,
-) {
-  if (technicalContract.risk.stopLoss.mode === "static") {
-    return entryPrice * (technicalContract.risk.stopLoss.value / 100);
-  }
-
-  const atrIndicator = findAtrIndicatorName(technicalContract);
-  const atrValue =
-    (atrIndicator ? indicators[atrIndicator]?.current : null) ?? null;
-
-  if (typeof atrValue === "number" && Number.isFinite(atrValue) && atrValue > 0) {
-    return atrValue * technicalContract.risk.stopLoss.multiplier;
-  }
-
-  throw new Error("ATR-based stop loss could not be derived from indicator evaluation.");
-}
-
-/**
- * Finds the indicator key that represents ATR inside the preset definition.
- */
-function findAtrIndicatorName(
-  technicalContract: NonNullable<
-    ReturnType<typeof getPresetTechnicalContractByDefinitionId>
-  >,
-) {
-  for (const [indicatorName, indicatorConfig] of Object.entries(
-    technicalContract.indicators,
-  )) {
-    if (indicatorConfig.type === "atr") {
-      return indicatorName;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Normalizes the editable UI symbol into the Pacifica market symbol.
- */
-function toPacificaMarketSymbol(symbol: string) {
-  const match = symbol.match(/^([A-Z]+)\/USDC$/);
-  return match?.[1] ?? null;
-}
-
-function getRequiredPeriod(
-  technicalContract: NonNullable<
-    ReturnType<typeof getPresetTechnicalContractByDefinitionId>
-  >,
-) {
-  const indicatorPeriods = Object.values(technicalContract.indicators).map((indicator) => {
-    switch (indicator.type) {
-      case "ema":
-      case "rsi":
-      case "atr":
-      case "sma":
-        return indicator.period;
-      case "volume":
-        return 1;
-    }
-  });
-
-  const stopLossPeriod =
-    technicalContract.risk.stopLoss.mode === "atr"
-      ? technicalContract.risk.stopLoss.period
-      : 1;
-
-  return Math.max(...indicatorPeriods, stopLossPeriod);
-}
-
-function getIntervalDurationMs(interval: MarketCandleInterval) {
-  switch (interval) {
-    case "1m":
-      return 60_000;
-    case "3m":
-      return 180_000;
-    case "5m":
-      return 300_000;
-    case "15m":
-      return 900_000;
-    case "30m":
-      return 1_800_000;
-    case "1h":
-      return 3_600_000;
-    case "2h":
-      return 7_200_000;
-    case "4h":
-      return 14_400_000;
-    case "6h":
-      return 21_600_000;
-    case "12h":
-      return 43_200_000;
-    case "1d":
-      return 86_400_000;
-  }
 }
 
 function extractPacificaErrorMessage(body: unknown, fallback: string): string {
