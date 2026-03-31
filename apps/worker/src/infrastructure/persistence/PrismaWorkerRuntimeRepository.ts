@@ -1,10 +1,17 @@
-import { PrismaClient } from "@prisma/client";
+import {
+  presetEditableConfigSchema,
+  presetTechnicalContractSchema,
+} from "@pacifica/contracts";
+import { Prisma, PrismaClient } from "@prisma/client";
 import type {
   AcquireWorkerLeaseInput,
   AcquiredWorkerLease,
+  AppendWorkerOperationalEventInput,
+  CreateSignalDecisionInput,
   HeartbeatOwnedRuntimeInput,
   OwnedRuntimeSnapshot,
   ReleaseWorkerLeaseInput,
+  SignalDecisionWriteResult,
   StopOwnedRuntimeInput,
   WorkerRuntimeCandidate,
   WorkerRuntimeRepository,
@@ -187,6 +194,21 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       walletAddress: operatorAccount.walletAddress,
       activePresetActivationId: operatorAccount.presetActivations[0]?.id ?? null,
       botStatus: operatorAccount.botRuntimeState.botStatus,
+      lastSignalEvaluationAt:
+        operatorAccount.botRuntimeState.lastSignalEvaluationAt?.toISOString() ?? null,
+      activePreset: operatorAccount.presetActivations[0]
+        ? {
+            id: operatorAccount.presetActivations[0].id,
+            presetDefinitionId: operatorAccount.presetActivations[0].presetDefinitionId,
+            symbol: operatorAccount.presetActivations[0].symbol,
+            editableConfig: parseEditableConfig(
+              operatorAccount.presetActivations[0].editableConfigJson,
+            ),
+            effectiveContract: parseTechnicalContract(
+              operatorAccount.presetActivations[0].effectiveContractJson,
+            ),
+          }
+        : null,
     };
   }
 
@@ -202,6 +224,12 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         pacificaConnectionStatus: input.pacificaConnectionStatus,
         workerLeaseExpiresAt: new Date(input.leaseExpiresAtIso),
         lastHeartbeatAt: new Date(input.nowIso),
+        ...(input.lastSignalEvaluationAtIso
+          ? {
+              lastSignalEvaluationAt: new Date(input.lastSignalEvaluationAtIso),
+              lastSignalFingerprint: input.lastSignalFingerprint ?? null,
+            }
+          : {}),
         lastErrorMessage: input.lastErrorMessage,
       },
     });
@@ -223,6 +251,7 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         workerOwnerId: null,
         workerLeaseExpiresAt: null,
         workerLoopStartedAt: null,
+        lastSignalFingerprint: null,
         lastErrorMessage: input.lastErrorMessage,
       },
     });
@@ -241,4 +270,106 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       },
     });
   }
+
+  async createSignalDecision(
+    input: CreateSignalDecisionInput,
+  ): Promise<SignalDecisionWriteResult> {
+    return this.prisma.$transaction(async (tx) => {
+      const duplicate = await tx.signalDecision.findFirst({
+        where: {
+          operatorAccountId: input.operatorAccountId,
+          signalFingerprint: input.signalFingerprint,
+          decisionStatus: {
+            in: ["pending", "processing"],
+          },
+        },
+        orderBy: {
+          requestedAt: "desc",
+        },
+      });
+
+      if (duplicate) {
+        return {
+          status: "duplicate",
+          decisionId: duplicate.id,
+        };
+      }
+
+      const decision = await tx.signalDecision.create({
+        data: {
+          operatorAccountId: input.operatorAccountId,
+          presetActivationId: input.presetActivationId,
+          signalFingerprint: input.signalFingerprint,
+          decisionStatus: "pending",
+          signalSide: input.signalSide,
+          symbol: input.symbol,
+          marketSymbol: input.marketSymbol,
+          timeframe: input.timeframe,
+          priceSource: input.priceSource,
+          candleOpenTime: new Date(input.candleOpenTimeIso),
+          candleCloseTime: new Date(input.candleCloseTimeIso),
+          entryReferencePrice: new Prisma.Decimal(input.entryReferencePrice),
+          stopLossPrice: new Prisma.Decimal(input.stopLossPrice),
+          takeProfitPrice: new Prisma.Decimal(input.takeProfitPrice),
+          riskDistance: new Prisma.Decimal(input.riskDistance),
+          payloadJson: toPrismaInputJsonValue(input.payloadJson),
+          requestedAt: new Date(input.requestedAtIso),
+        },
+      });
+
+      await tx.operationalEvent.create({
+        data: {
+          operatorAccountId: input.operatorAccountId,
+          eventType: "signal_evaluation",
+          severity: "info",
+          title: "Signal decision queued",
+          message: `${input.signalSide} decision queued for ${input.symbol}.`,
+          payloadJson: toPrismaInputJsonValue({
+            signalDecisionId: decision.id,
+            signalFingerprint: input.signalFingerprint,
+            signalSide: input.signalSide,
+            marketSymbol: input.marketSymbol,
+            timeframe: input.timeframe,
+            priceSource: input.priceSource,
+          }),
+        },
+      });
+
+      return {
+        status: "created",
+        decisionId: decision.id,
+      };
+    });
+  }
+
+  async appendOperationalEvent(
+    input: AppendWorkerOperationalEventInput,
+  ): Promise<void> {
+    await this.prisma.operationalEvent.create({
+      data: {
+        operatorAccountId: input.operatorAccountId,
+        eventType: input.eventType,
+        severity: input.severity,
+        title: input.title,
+        message: input.message,
+        payloadJson: toPrismaInputJsonValue(input.payloadJson),
+      },
+    });
+  }
+}
+
+function parseEditableConfig(value: Prisma.JsonValue | null) {
+  return presetEditableConfigSchema.parse(value);
+}
+
+function parseTechnicalContract(value: Prisma.JsonValue) {
+  return presetTechnicalContractSchema.parse(value);
+}
+
+function toPrismaInputJsonValue(value: unknown): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  if (value === undefined || value === null) {
+    return Prisma.JsonNull;
+  }
+
+  return value as Prisma.InputJsonValue;
 }

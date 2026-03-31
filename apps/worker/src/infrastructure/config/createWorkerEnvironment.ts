@@ -1,7 +1,10 @@
 export type WorkerEnvironment = {
   workerId: string;
+  pacificaRestBaseUrl: string;
+  signalTraceEnabled: boolean;
   scanIntervalMs: number;
   heartbeatIntervalMs: number;
+  analysisIntervalMs: number;
   leaseDurationMs: number;
   maxBackoffMs: number;
 };
@@ -21,8 +24,12 @@ export function createWorkerEnvironment(
 ): WorkerEnvironment {
   return {
     workerId: input.workerId ?? `worker-local-${process.pid}`,
+    pacificaRestBaseUrl:
+      input.pacificaRestBaseUrl ?? "https://api.pacifica.fi",
+    signalTraceEnabled: input.signalTraceEnabled ?? false,
     scanIntervalMs: input.scanIntervalMs ?? 5_000,
     heartbeatIntervalMs: input.heartbeatIntervalMs ?? 15_000,
+    analysisIntervalMs: input.analysisIntervalMs ?? 60_000,
     leaseDurationMs: input.leaseDurationMs ?? 45_000,
     maxBackoffMs: input.maxBackoffMs ?? 30_000,
   };

@@ -23,7 +23,7 @@ cp .env.example .env
 
 ## Como rodar
 
-Hoje, o fluxo útil para desenvolvimento está no conjunto `database + api + app`, e o `worker` ja pode ser iniciado no primeiro corte do `FM-013`.
+Hoje, o fluxo útil para desenvolvimento está no conjunto `database + api + app`, e o `worker` ja pode ser iniciado com os cortes de `FM-013` e `FM-014`.
 
 Subir o PostgreSQL local via `docker compose`:
 
@@ -123,18 +123,33 @@ pnpm db:down
 
 ## Worker
 
-No estado atual do `FM-013`, o `worker`:
+No estado atual de `FM-013` + `FM-014`, o `worker`:
 - varre contas com `preset` ativo
 - assume ownership por conta via lease persistida em `BotRuntimeState`
 - registra `heartbeat` real no runtime
+- avalia o preset ativo em loop recorrente
+- usa baseline de analise de `1 minuto`
+- persiste `SignalDecision` deduplicada e pronta para ordem
 - libera ownership em pause, desativacao ou shutdown
 
 Ele ainda nao:
-- avalia sinais em loop
 - cria ordens reais na Pacifica
 - fecha trades automaticamente
 
-Esses proximos passos ficam para `FM-014` em diante.
+Esses proximos passos ficam para `FM-015` em diante.
+
+Para depurar o loop de sinais do `FM-014`, voce pode habilitar:
+
+```bash
+WORKER_SIGNAL_TRACE_ENABLED=true
+```
+
+Com isso, o worker passa a logar detalhadamente:
+- busca de candles reais da Pacifica
+- calculo de indicadores
+- avaliacao das regras do preset
+- decisao `long`, `short` ou `none`
+- persistencia da `SignalDecision`
 
 ## Banco local
 

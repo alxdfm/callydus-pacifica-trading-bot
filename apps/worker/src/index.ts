@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { PacificaMarketDataGateway } from "@pacifica/pacifica-market-data";
 import { createOperationalWorker } from "./application/createOperationalWorker";
 import { createWorkerEnvironment } from "./infrastructure/config/createWorkerEnvironment";
 import { PrismaWorkerRuntimeRepository } from "./infrastructure/persistence/PrismaWorkerRuntimeRepository";
@@ -6,10 +7,21 @@ import { PrismaWorkerRuntimeRepository } from "./infrastructure/persistence/Pris
 const prisma = new PrismaClient();
 const environment = createWorkerEnvironment({
   ...(process.env.WORKER_ID ? { workerId: process.env.WORKER_ID } : {}),
+  ...(process.env.PACIFICA_REST_BASE_URL
+    ? { pacificaRestBaseUrl: process.env.PACIFICA_REST_BASE_URL }
+    : {}),
+  signalTraceEnabled: booleanFromEnv(
+    process.env.WORKER_SIGNAL_TRACE_ENABLED,
+    false,
+  ),
   scanIntervalMs: numberFromEnv(process.env.WORKER_SCAN_INTERVAL_MS, 5_000),
   heartbeatIntervalMs: numberFromEnv(
     process.env.WORKER_HEARTBEAT_INTERVAL_MS,
     15_000,
+  ),
+  analysisIntervalMs: numberFromEnv(
+    process.env.WORKER_ANALYSIS_INTERVAL_MS,
+    60_000,
   ),
   leaseDurationMs: numberFromEnv(process.env.WORKER_LEASE_DURATION_MS, 45_000),
   maxBackoffMs: numberFromEnv(process.env.WORKER_MAX_BACKOFF_MS, 30_000),
@@ -17,6 +29,9 @@ const environment = createWorkerEnvironment({
 const worker = createOperationalWorker({
   environment,
   repository: new PrismaWorkerRuntimeRepository(prisma),
+  marketData: new PacificaMarketDataGateway({
+    pacificaRestBaseUrl: environment.pacificaRestBaseUrl,
+  }),
 });
 
 void worker.start();
@@ -59,4 +74,22 @@ async function shutdown(reason: string) {
 function numberFromEnv(rawValue: string | undefined, fallback: number) {
   const parsed = rawValue ? Number(rawValue) : Number.NaN;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function booleanFromEnv(rawValue: string | undefined, fallback: boolean) {
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const normalized = rawValue.trim().toLowerCase();
+
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+
+  return fallback;
 }

@@ -1,3 +1,12 @@
+import type { MarketCandleRequest } from "@pacifica/contracts";
+import { PacificaApiError } from "@pacifica/pacifica-market-data";
+import {
+  buildPresetRiskPlans,
+  evaluatePresetSignal,
+  getIntervalDurationMs,
+  getRequiredPeriod,
+  toPacificaMarketSymbol,
+} from "@pacifica/preset-engine";
 import type { WorkerEnvironment } from "../infrastructure/config/createWorkerEnvironment";
 import type {
   AcquiredWorkerLease,
@@ -13,6 +22,21 @@ export type WorkerLogger = {
 export type OperationalWorkerDependencies = {
   environment: WorkerEnvironment;
   repository: WorkerRuntimeRepository;
+  marketData: {
+    getCandles(input: MarketCandleRequest): Promise<
+      Array<{
+        symbol: string;
+        interval: MarketCandleRequest["interval"];
+        openTime: number;
+        closeTime: number;
+        open: number;
+        high: number;
+        low: number;
+        close: number;
+        volume: number;
+      }>
+    >;
+  };
   logger?: WorkerLogger;
   now?: () => Date;
   sleep?: (ms: number) => Promise<void>;
@@ -37,20 +61,23 @@ const defaultLogger: WorkerLogger = {
  * - scan runnable accounts from persisted runtime/preset state
  * - acquire a single-account lease before starting a loop
  * - keep the runtime alive through persisted heartbeats
+ * - evaluate active presets on the agreed runtime cadence
+ * - enqueue deduplicated signal decisions that are ready for order execution
  * - release ownership on pause/deactivation/shutdown
  *
  * Non-responsibility:
- * - it does not evaluate signals yet
- * - it does not create or close orders yet
+ * - it does not submit Pacifica orders yet
+ * - it does not manage the full trade lifecycle yet
  */
 export function createOperationalWorker(
   dependencies: OperationalWorkerDependencies,
 ) {
   const logger = dependencies.logger ?? defaultLogger;
   const now = dependencies.now ?? (() => new Date());
-  const sleep = dependencies.sleep ?? ((ms: number) => new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  }));
+  const sleep = dependencies.sleep ?? ((ms: number) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    }));
   const runningLoops = new Map<string, AbortController>();
   let scanAbortController: AbortController | null = null;
 
@@ -58,6 +85,252 @@ export function createOperationalWorker(
     return new Date(
       reference.getTime() + dependencies.environment.leaseDurationMs,
     ).toISOString();
+  }
+
+  function traceSignal(
+    message: string,
+    payload?: Record<string, unknown>,
+  ) {
+    if (!dependencies.environment.signalTraceEnabled) {
+      return;
+    }
+
+    logger.info(message, payload);
+  }
+
+  function shouldEvaluateSignals(
+    snapshot: Awaited<
+      ReturnType<WorkerRuntimeRepository["readOwnedRuntimeSnapshot"]>
+    >,
+    tickAt: Date,
+  ) {
+    const lastEvaluationAt = snapshot?.lastSignalEvaluationAt
+      ? new Date(snapshot.lastSignalEvaluationAt)
+      : null;
+
+    return (
+      lastEvaluationAt === null ||
+      tickAt.getTime() - lastEvaluationAt.getTime() >=
+        dependencies.environment.analysisIntervalMs
+    );
+  }
+
+  /**
+   * Evaluates the currently active preset and persists a deduplicated
+   * operational decision when a signal is present.
+   */
+  async function evaluateOwnedPreset(
+    lease: AcquiredWorkerLease,
+    snapshot: NonNullable<
+      Awaited<ReturnType<WorkerRuntimeRepository["readOwnedRuntimeSnapshot"]>>
+    >,
+    tickAt: Date,
+  ) {
+    if (!snapshot.activePreset) {
+      return { signalFingerprint: null as string | null };
+    }
+
+    const marketSymbol = toPacificaMarketSymbol(snapshot.activePreset.symbol);
+
+    if (!marketSymbol) {
+      throw new Error("Unsupported preset symbol for Pacifica market data.");
+    }
+
+    const requiredPeriod = getRequiredPeriod(snapshot.activePreset.effectiveContract);
+    const candleLimit = Math.max(120, requiredPeriod * 5);
+    const endTime = tickAt.getTime();
+    const startTime =
+      endTime -
+      candleLimit *
+        getIntervalDurationMs(snapshot.activePreset.effectiveContract.timeframe);
+
+    traceSignal("worker.signal_trace.fetch_candles_started", {
+      operatorAccountId: snapshot.operatorAccountId,
+      walletAddress: lease.walletAddress,
+      presetActivationId: snapshot.activePreset.id,
+      presetDefinitionId: snapshot.activePreset.presetDefinitionId,
+      symbol: snapshot.activePreset.symbol,
+      marketSymbol,
+      timeframe: snapshot.activePreset.effectiveContract.timeframe,
+      priceSource: "market",
+      startTime,
+      endTime,
+      candleLimit,
+      requiredPeriod,
+    });
+
+    const candles = await dependencies.marketData.getCandles({
+      symbol: marketSymbol,
+      interval: snapshot.activePreset.effectiveContract.timeframe,
+      priceSource: "market",
+      startTime,
+      endTime,
+      limit: candleLimit,
+    });
+
+    traceSignal("worker.signal_trace.fetch_candles_completed", {
+      operatorAccountId: snapshot.operatorAccountId,
+      walletAddress: lease.walletAddress,
+      presetActivationId: snapshot.activePreset.id,
+      candlesReturned: candles.length,
+      latestCandleCloseTime:
+        candles[candles.length - 1]?.closeTime ?? null,
+    });
+
+    if (candles.length < requiredPeriod + 3) {
+      throw new Error(
+        "Not enough market candles were returned to evaluate the active preset.",
+      );
+    }
+
+    traceSignal("worker.signal_trace.indicators_started", {
+      operatorAccountId: snapshot.operatorAccountId,
+      walletAddress: lease.walletAddress,
+      presetActivationId: snapshot.activePreset.id,
+      indicatorKeys: Object.keys(snapshot.activePreset.effectiveContract.indicators),
+    });
+
+    const evaluation = evaluatePresetSignal(
+      snapshot.activePreset.effectiveContract,
+      candles,
+    );
+
+    traceSignal("worker.signal_trace.indicators_completed", {
+      operatorAccountId: snapshot.operatorAccountId,
+      walletAddress: lease.walletAddress,
+      presetActivationId: snapshot.activePreset.id,
+      indicatorKeys: Object.keys(evaluation.indicators),
+      indicatorCurrents: Object.fromEntries(
+        Object.entries(evaluation.indicators).map(([indicatorName, indicatorSnapshot]) => [
+          indicatorName,
+          indicatorSnapshot.current,
+        ]),
+      ),
+    });
+
+    traceSignal("worker.signal_trace.rules_evaluated", {
+      operatorAccountId: snapshot.operatorAccountId,
+      walletAddress: lease.walletAddress,
+      presetActivationId: snapshot.activePreset.id,
+      longSatisfiedCount: evaluation.longRuleEvaluations.filter(
+        (rule) => rule.satisfied,
+      ).length,
+      longRuleCount: evaluation.longRuleEvaluations.length,
+      shortSatisfiedCount: evaluation.shortRuleEvaluations.filter(
+        (rule) => rule.satisfied,
+      ).length,
+      shortRuleCount: evaluation.shortRuleEvaluations.length,
+      longRuleSummary: evaluation.longRuleEvaluations.map((rule) => ({
+        ruleIndex: rule.ruleIndex,
+        type: rule.type,
+        satisfied: rule.satisfied,
+        explanation: rule.explanation,
+      })),
+      shortRuleSummary: evaluation.shortRuleEvaluations.map((rule) => ({
+        ruleIndex: rule.ruleIndex,
+        type: rule.type,
+        satisfied: rule.satisfied,
+        explanation: rule.explanation,
+      })),
+    });
+
+    traceSignal("worker.signal_trace.signal_decided", {
+      operatorAccountId: snapshot.operatorAccountId,
+      walletAddress: lease.walletAddress,
+      presetActivationId: snapshot.activePreset.id,
+      signal: evaluation.signal,
+      longSignal: evaluation.longSignal,
+      shortSignal: evaluation.shortSignal,
+    });
+
+    if (evaluation.signal === "none") {
+      return { signalFingerprint: null as string | null };
+    }
+
+    const latestCandle = candles[candles.length - 1];
+
+    if (!latestCandle) {
+      throw new Error("Latest market candle could not be resolved.");
+    }
+
+    const riskPlans = buildPresetRiskPlans(
+      snapshot.activePreset.effectiveContract,
+      evaluation.indicators,
+      latestCandle.close,
+    );
+    const riskPlan =
+      evaluation.signal === "long" ? riskPlans.long : riskPlans.short;
+    const signalFingerprint = [
+      snapshot.operatorAccountId,
+      snapshot.activePreset.id,
+      evaluation.signal,
+      latestCandle.closeTime,
+      "market",
+    ].join(":");
+
+    traceSignal("worker.signal_trace.signal_decision_persisting", {
+      operatorAccountId: snapshot.operatorAccountId,
+      walletAddress: lease.walletAddress,
+      presetActivationId: snapshot.activePreset.id,
+      signal: evaluation.signal,
+      signalFingerprint,
+      candleOpenTime: latestCandle.openTime,
+      candleCloseTime: latestCandle.closeTime,
+      entryReferencePrice: riskPlan.entryPrice,
+      stopLossPrice: riskPlan.stopLossPrice,
+      takeProfitPrice: riskPlan.takeProfitPrice,
+      riskDistance: riskPlan.riskDistance,
+    });
+
+    const decisionResult = await dependencies.repository.createSignalDecision({
+      operatorAccountId: snapshot.operatorAccountId,
+      presetActivationId: snapshot.activePreset.id,
+      signalFingerprint,
+      signalSide: evaluation.signal,
+      symbol: snapshot.activePreset.symbol,
+      marketSymbol,
+      timeframe: snapshot.activePreset.effectiveContract.timeframe,
+      priceSource: "market",
+      candleOpenTimeIso: new Date(latestCandle.openTime).toISOString(),
+      candleCloseTimeIso: new Date(latestCandle.closeTime).toISOString(),
+      entryReferencePrice: riskPlan.entryPrice,
+      stopLossPrice: riskPlan.stopLossPrice,
+      takeProfitPrice: riskPlan.takeProfitPrice,
+      riskDistance: riskPlan.riskDistance,
+      payloadJson: {
+        presetDefinitionId: snapshot.activePreset.presetDefinitionId,
+        signal: evaluation.signal,
+        indicators: evaluation.indicators,
+        longRuleEvaluations: evaluation.longRuleEvaluations,
+        shortRuleEvaluations: evaluation.shortRuleEvaluations,
+        latestCandle,
+      },
+      requestedAtIso: tickAt.toISOString(),
+    });
+
+    traceSignal("worker.signal_trace.signal_decision_persisted", {
+      operatorAccountId: snapshot.operatorAccountId,
+      walletAddress: lease.walletAddress,
+      presetActivationId: snapshot.activePreset.id,
+      signal: evaluation.signal,
+      signalFingerprint,
+      decisionStatus: decisionResult.status,
+      decisionId: decisionResult.decisionId,
+    });
+
+    logger.info("worker.signal_decision_evaluated", {
+      operatorAccountId: lease.operatorAccountId,
+      walletAddress: lease.walletAddress,
+      activePresetActivationId: snapshot.activePreset.id,
+      signal: evaluation.signal,
+      signalFingerprint,
+      decisionStatus: decisionResult.status,
+      decisionId: decisionResult.decisionId,
+    });
+
+    return {
+      signalFingerprint,
+    };
   }
 
   async function runOwnedAccountLoop(lease: AcquiredWorkerLease, signal: AbortSignal) {
@@ -100,6 +373,13 @@ export function createOperationalWorker(
         }
 
         const tickAt = now();
+        let signalFingerprint: string | null | undefined;
+
+        if (shouldEvaluateSignals(snapshot, tickAt)) {
+          const evaluationResult = await evaluateOwnedPreset(lease, snapshot, tickAt);
+          signalFingerprint = evaluationResult.signalFingerprint;
+        }
+
         const heartbeatApplied = await dependencies.repository.heartbeatOwnedRuntime({
           operatorAccountId: lease.operatorAccountId,
           workerId: dependencies.environment.workerId,
@@ -109,6 +389,12 @@ export function createOperationalWorker(
           syncStatus: "healthy",
           pacificaConnectionStatus: "connected",
           lastErrorMessage: null,
+          ...(signalFingerprint !== undefined
+            ? {
+                lastSignalEvaluationAtIso: tickAt.toISOString(),
+                lastSignalFingerprint: signalFingerprint,
+              }
+            : {}),
         });
 
         if (!heartbeatApplied) {
@@ -124,9 +410,11 @@ export function createOperationalWorker(
       } catch (error) {
         const tickAt = now();
         const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "Worker loop failed with an unknown runtime error.";
+          error instanceof PacificaApiError
+            ? extractPacificaErrorMessage(error.details.body, error.message)
+            : error instanceof Error
+              ? error.message
+              : "Worker loop failed with an unknown runtime error.";
 
         await dependencies.repository.heartbeatOwnedRuntime({
           operatorAccountId: lease.operatorAccountId,
@@ -137,6 +425,16 @@ export function createOperationalWorker(
           syncStatus: "degraded",
           pacificaConnectionStatus: "degraded",
           lastErrorMessage: errorMessage,
+        });
+        await dependencies.repository.appendOperationalEvent({
+          operatorAccountId: lease.operatorAccountId,
+          eventType: "signal_evaluation",
+          severity: "warning",
+          title: "Signal evaluation failed",
+          message: errorMessage,
+          payloadJson: {
+            walletAddress: lease.walletAddress,
+          },
         });
         logger.error("worker.runtime_loop_error", {
           operatorAccountId: lease.operatorAccountId,
@@ -267,4 +565,20 @@ export function createOperationalWorker(
     start,
     stop,
   };
+}
+
+function extractPacificaErrorMessage(body: unknown, fallback: string): string {
+  const apiMessage = (body as { error?: unknown } | null)?.error;
+
+  if (typeof apiMessage === "string" && apiMessage.trim()) {
+    return apiMessage;
+  }
+
+  const rawMessage = (body as { raw?: unknown } | null)?.raw;
+
+  if (typeof rawMessage === "string" && rawMessage.trim()) {
+    return rawMessage;
+  }
+
+  return fallback;
 }

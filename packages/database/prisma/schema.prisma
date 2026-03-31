@@ -74,6 +74,14 @@ enum CommandType {
   close_trade
 }
 
+enum SignalDecisionStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
 enum CommandStatus {
   pending
   running
@@ -146,6 +154,7 @@ model OperatorAccount {
   accountBalanceSnapshots AccountBalanceSnapshot[]
   operationalAlerts       OperationalAlert[]
   operationalEvents       OperationalEvent[]
+  signalDecisions         SignalDecision[]
 }
 
 model PacificaCredential {
@@ -210,6 +219,7 @@ model PresetActivation {
   openTrades            OpenTrade[]
   closedTrades          ClosedTrade[]
   activeInRuntime       BotRuntimeState[]
+  signalDecisions       SignalDecision[]
 
   @@index([operatorAccountId])
   @@index([activationStatus])
@@ -227,6 +237,8 @@ model BotRuntimeState {
   workerLeaseExpiresAt     DateTime?                @db.Timestamptz(6)
   workerLoopStartedAt      DateTime?                @db.Timestamptz(6)
   lastHeartbeatAt          DateTime?                @db.Timestamptz(6)
+  lastSignalEvaluationAt   DateTime?                @db.Timestamptz(6)
+  lastSignalFingerprint    String?
   lastErrorMessage         String?
   createdAt                DateTime                 @default(now()) @db.Timestamptz(6)
   updatedAt                DateTime                 @updatedAt @db.Timestamptz(6)
@@ -234,6 +246,36 @@ model BotRuntimeState {
   activePresetActivation   PresetActivation?        @relation(fields: [activePresetActivationId], references: [id])
 
   @@index([workerOwnerId, workerLeaseExpiresAt])
+}
+
+model SignalDecision {
+  id                  String               @id @default(uuid()) @db.Uuid
+  operatorAccountId   String               @db.Uuid
+  presetActivationId  String               @db.Uuid
+  signalFingerprint   String
+  decisionStatus      SignalDecisionStatus
+  signalSide          TradeSide
+  symbol              String
+  marketSymbol        String
+  timeframe           String
+  priceSource         String
+  candleOpenTime      DateTime             @db.Timestamptz(6)
+  candleCloseTime     DateTime             @db.Timestamptz(6)
+  entryReferencePrice Decimal              @db.Decimal(24, 8)
+  stopLossPrice       Decimal              @db.Decimal(24, 8)
+  takeProfitPrice     Decimal              @db.Decimal(24, 8)
+  riskDistance        Decimal              @db.Decimal(24, 8)
+  payloadJson         Json?
+  requestedAt         DateTime             @db.Timestamptz(6)
+  createdAt           DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(6)
+  operatorAccount     OperatorAccount      @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  presetActivation    PresetActivation     @relation(fields: [presetActivationId], references: [id], onDelete: Cascade)
+
+  @@index([decisionStatus])
+  @@index([operatorAccountId, requestedAt(sort: Desc)])
+  @@index([presetActivationId, requestedAt(sort: Desc)])
+  @@index([operatorAccountId, signalFingerprint, decisionStatus])
 }
 
 model BotCommand {
