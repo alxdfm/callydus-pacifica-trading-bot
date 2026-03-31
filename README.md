@@ -142,11 +142,17 @@ No estado atual de `FM-015`, o `worker` tambem:
 - persiste `OrderExecutionAttempt` com request, response e status
 - pausa automaticamente o runtime em erro bloqueante de criacao de ordem
 
-Ele ainda nao:
-- fecha trades automaticamente
-- transforma `stop loss` e `take profit` em protecao operacional real
+No estado atual de `FM-016`, o `worker` tambem:
+- cria `OpenTrade` a partir da execucao real enviada
+- anexa `stop loss` e `take profit` obrigatorios ao request de entrada
+- atualiza `currentPrice` e `unrealizedPnl` no lifecycle local
+- fecha `ClosedTrade` automaticamente quando o candle mais recente cruza `take_profit` ou `stop_loss`
+- cancela novos sinais para simbolos que ja tenham posicao aberta
 
-Esses proximos passos ficam para `FM-016` em diante.
+Ele ainda nao:
+- reconcilia esse lifecycle local contra a Pacifica como fonte final de verdade
+
+Esse endurecimento final fica para `FM-017`.
 
 Para depurar o loop de sinais do `FM-014`, voce pode habilitar:
 

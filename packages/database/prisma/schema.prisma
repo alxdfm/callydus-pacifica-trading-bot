@@ -350,6 +350,10 @@ model OpenTrade {
   operatorAccountId  String            @db.Uuid
   pacificaTradeId    String
   presetActivationId String?           @db.Uuid
+  stopLossPrice      Decimal?          @db.Decimal(24, 8)
+  takeProfitPrice    Decimal?          @db.Decimal(24, 8)
+  entryClientOrderId String?
+  pacificaOrderId    String?
   symbol             String
   side               TradeSide
   entryPrice         Decimal           @db.Decimal(24, 8)

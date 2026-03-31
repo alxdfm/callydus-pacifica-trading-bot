@@ -140,6 +140,7 @@ export type ExecutableSignalDecision = {
     capitalInUse: number;
     capturedAt: string;
   } | null;
+  hasOpenTradeForSymbol: boolean;
 };
 
 export type ClaimSignalDecisionInput = {
@@ -177,6 +178,58 @@ export type CompleteSignalDecisionInput = {
   signalDecisionId: string;
 };
 
+export type CancelSignalDecisionInput = {
+  signalDecisionId: string;
+};
+
+export type OpenTradeLifecycleSnapshot = {
+  tradeId: string;
+  operatorAccountId: string;
+  symbol: string;
+  side: TradeSide;
+  entryPrice: number;
+  quantity: number;
+  capitalAllocated: number;
+  stopLossPrice: number | null;
+  takeProfitPrice: number | null;
+  currentPrice: number;
+  openedAt: string;
+  presetActivationId: string | null;
+  pacificaTradeId: string;
+  isPlatformTrade: boolean;
+};
+
+export type CreateOpenTradeFromExecutionInput = {
+  operatorAccountId: string;
+  presetActivationId: string;
+  signalDecisionId: string;
+  clientOrderId: string;
+  pacificaOrderId: string | null;
+  symbol: string;
+  side: TradeSide;
+  entryPrice: number;
+  quantity: number;
+  capitalAllocated: number;
+  stopLossPrice: number;
+  takeProfitPrice: number;
+  openedAtIso: string;
+};
+
+export type UpdateOpenTradeMarketSnapshotInput = {
+  tradeId: string;
+  currentPrice: number;
+  unrealizedPnl: number;
+  lastSyncedAtIso: string;
+};
+
+export type CloseOpenTradeInput = {
+  tradeId: string;
+  exitPrice: number;
+  realizedPnl: number;
+  closeReason: "take_profit" | "stop_loss" | "manual" | "system" | "error";
+  closedAtIso: string;
+};
+
 export type PauseRuntimeAfterExecutionFailureInput = {
   operatorAccountId: string;
   workerId: string;
@@ -210,6 +263,15 @@ export interface WorkerRuntimeRepository {
   ): Promise<void>;
   failSignalDecision(input: FailSignalDecisionInput): Promise<void>;
   completeSignalDecision(input: CompleteSignalDecisionInput): Promise<void>;
+  cancelSignalDecision(input: CancelSignalDecisionInput): Promise<void>;
+  createOpenTradeFromExecution(
+    input: CreateOpenTradeFromExecutionInput,
+  ): Promise<void>;
+  listOpenTrades(operatorAccountId: string): Promise<OpenTradeLifecycleSnapshot[]>;
+  updateOpenTradeMarketSnapshot(
+    input: UpdateOpenTradeMarketSnapshotInput,
+  ): Promise<void>;
+  closeOpenTrade(input: CloseOpenTradeInput): Promise<void>;
   pauseRuntimeAfterExecutionFailure(
     input: PauseRuntimeAfterExecutionFailureInput,
   ): Promise<void>;

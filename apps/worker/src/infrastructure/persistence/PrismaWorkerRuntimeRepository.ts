@@ -7,18 +7,23 @@ import type {
   AcquireWorkerLeaseInput,
   AcquiredWorkerLease,
   AppendWorkerOperationalEventInput,
+  CancelSignalDecisionInput,
   ClaimSignalDecisionInput,
+  CloseOpenTradeInput,
   CompleteSignalDecisionInput,
+  CreateOpenTradeFromExecutionInput,
   CreateSignalDecisionInput,
   ExecutableSignalDecision,
   FailSignalDecisionInput,
   HeartbeatOwnedRuntimeInput,
+  OpenTradeLifecycleSnapshot,
   OwnedRuntimeSnapshot,
   PauseRuntimeAfterExecutionFailureInput,
   RecordOrderExecutionAttemptInput,
   ReleaseWorkerLeaseInput,
   SignalDecisionWriteResult,
   StopOwnedRuntimeInput,
+  UpdateOpenTradeMarketSnapshotInput,
   WorkerRuntimeCandidate,
   WorkerRuntimeRepository,
 } from "../../domain/WorkerRuntimeRepository";
@@ -424,6 +429,15 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       }
 
       const balanceSnapshot = decision.operatorAccount.accountBalanceSnapshots[0] ?? null;
+      const existingOpenTrade = await tx.openTrade.findFirst({
+        where: {
+          operatorAccountId,
+          symbol: decision.symbol,
+        },
+        select: {
+          id: true,
+        },
+      });
 
       return {
         signalDecisionId: decision.id,
@@ -459,6 +473,7 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
               capturedAt: balanceSnapshot.capturedAt.toISOString(),
             }
           : null,
+        hasOpenTradeForSymbol: existingOpenTrade !== null,
       };
     });
   }
@@ -511,6 +526,136 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       data: {
         decisionStatus: "completed",
       },
+    });
+  }
+
+  async cancelSignalDecision(input: CancelSignalDecisionInput): Promise<void> {
+    await this.prisma.signalDecision.update({
+      where: {
+        id: input.signalDecisionId,
+      },
+      data: {
+        decisionStatus: "cancelled",
+      },
+    });
+  }
+
+  async createOpenTradeFromExecution(
+    input: CreateOpenTradeFromExecutionInput,
+  ): Promise<void> {
+    await this.prisma.openTrade.create({
+      data: {
+        operatorAccountId: input.operatorAccountId,
+        pacificaTradeId: input.pacificaOrderId ?? input.clientOrderId,
+        presetActivationId: input.presetActivationId,
+        stopLossPrice: new Prisma.Decimal(input.stopLossPrice),
+        takeProfitPrice: new Prisma.Decimal(input.takeProfitPrice),
+        entryClientOrderId: input.clientOrderId,
+        pacificaOrderId: input.pacificaOrderId,
+        symbol: input.symbol,
+        side: input.side,
+        entryPrice: new Prisma.Decimal(input.entryPrice),
+        currentPrice: new Prisma.Decimal(input.entryPrice),
+        quantity: new Prisma.Decimal(input.quantity),
+        capitalAllocated: new Prisma.Decimal(input.capitalAllocated),
+        unrealizedPnl: new Prisma.Decimal(0),
+        tradeStatus: "open",
+        openedAt: new Date(input.openedAtIso),
+        closeRequestedAt: null,
+        closeReasonPending: null,
+        isPlatformTrade: true,
+        lastSyncedAt: new Date(input.openedAtIso),
+      },
+    });
+  }
+
+  async listOpenTrades(
+    operatorAccountId: string,
+  ): Promise<OpenTradeLifecycleSnapshot[]> {
+    const trades = await this.prisma.openTrade.findMany({
+      where: {
+        operatorAccountId,
+      },
+      orderBy: {
+        openedAt: "asc",
+      },
+    });
+
+    return trades.map((trade) => ({
+      tradeId: trade.id,
+      operatorAccountId: trade.operatorAccountId,
+      symbol: trade.symbol,
+      side: trade.side,
+      entryPrice: decimalToNumber(trade.entryPrice),
+      quantity: decimalToNumber(trade.quantity),
+      capitalAllocated: decimalToNumber(trade.capitalAllocated),
+      stopLossPrice: trade.stopLossPrice
+        ? decimalToNumber(trade.stopLossPrice)
+        : null,
+      takeProfitPrice: trade.takeProfitPrice
+        ? decimalToNumber(trade.takeProfitPrice)
+        : null,
+      currentPrice: decimalToNumber(trade.currentPrice),
+      openedAt: trade.openedAt.toISOString(),
+      presetActivationId: trade.presetActivationId,
+      pacificaTradeId: trade.pacificaTradeId,
+      isPlatformTrade: trade.isPlatformTrade,
+    }));
+  }
+
+  async updateOpenTradeMarketSnapshot(
+    input: UpdateOpenTradeMarketSnapshotInput,
+  ): Promise<void> {
+    await this.prisma.openTrade.update({
+      where: {
+        id: input.tradeId,
+      },
+      data: {
+        currentPrice: new Prisma.Decimal(input.currentPrice),
+        unrealizedPnl: new Prisma.Decimal(input.unrealizedPnl),
+        lastSyncedAt: new Date(input.lastSyncedAtIso),
+      },
+    });
+  }
+
+  async closeOpenTrade(input: CloseOpenTradeInput): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const trade = await tx.openTrade.findUnique({
+        where: {
+          id: input.tradeId,
+        },
+      });
+
+      if (!trade) {
+        return;
+      }
+
+      await tx.closedTrade.create({
+        data: {
+          operatorAccountId: trade.operatorAccountId,
+          pacificaTradeId: trade.pacificaTradeId,
+          presetActivationId: trade.presetActivationId,
+          symbol: trade.symbol,
+          side: trade.side,
+          entryPrice: trade.entryPrice,
+          exitPrice: new Prisma.Decimal(input.exitPrice),
+          quantity: trade.quantity,
+          capitalAllocated: trade.capitalAllocated,
+          realizedPnl: new Prisma.Decimal(input.realizedPnl),
+          closeReason: input.closeReason,
+          openedAt: trade.openedAt,
+          closedAt: new Date(input.closedAtIso),
+          isPlatformTrade: trade.isPlatformTrade,
+          closedByCommandId: null,
+          lastSyncedAt: new Date(input.closedAtIso),
+        },
+      });
+
+      await tx.openTrade.delete({
+        where: {
+          id: trade.id,
+        },
+      });
     });
   }
 
