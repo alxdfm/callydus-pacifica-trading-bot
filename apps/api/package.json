@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@pacifica/contracts": "workspace:*",
+    "@pacifica/pacifica-market-data": "workspace:*",
+    "@pacifica/preset-engine": "workspace:*",
     "@prisma/client": "^6.19.2"
   },
   "devDependencies": {

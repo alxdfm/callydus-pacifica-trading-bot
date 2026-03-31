@@ -17,6 +17,12 @@ importers:
       '@pacifica/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@pacifica/pacifica-market-data':
+        specifier: workspace:*
+        version: link:../../packages/pacifica-market-data
+      '@pacifica/preset-engine':
+        specifier: workspace:*
+        version: link:../../packages/preset-engine
       '@prisma/client':
         specifier: ^6.19.2
         version: 6.19.2(prisma@6.19.2(typescript@5.9.3))(typescript@5.9.3)
@@ -88,6 +94,12 @@ importers:
       '@pacifica/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@pacifica/pacifica-market-data':
+        specifier: workspace:*
+        version: link:../../packages/pacifica-market-data
+      '@pacifica/preset-engine':
+        specifier: workspace:*
+        version: link:../../packages/preset-engine
       '@prisma/client':
         specifier: ^6.19.2
         version: 6.19.2(prisma@6.19.2(typescript@5.9.3))(typescript@5.9.3)
@@ -120,6 +132,26 @@ importers:
       prisma:
         specifier: ^6.5.0
         version: 6.19.2(typescript@5.9.3)
+
+  packages/pacifica-market-data:
+    dependencies:
+      '@pacifica/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/preset-engine:
+    dependencies:
+      '@pacifica/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
 packages:
 
