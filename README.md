@@ -133,10 +133,20 @@ No estado atual de `FM-013` + `FM-014`, o `worker`:
 - libera ownership em pause, desativacao ou shutdown
 
 Ele ainda nao:
-- cria ordens reais na Pacifica
 - fecha trades automaticamente
 
-Esses proximos passos ficam para `FM-015` em diante.
+No estado atual de `FM-015`, o `worker` tambem:
+- consome `SignalDecision` pendente
+- decripta a `Agent Wallet` ativa
+- cria `market order` real na Pacifica
+- persiste `OrderExecutionAttempt` com request, response e status
+- pausa automaticamente o runtime em erro bloqueante de criacao de ordem
+
+Ele ainda nao:
+- fecha trades automaticamente
+- transforma `stop loss` e `take profit` em protecao operacional real
+
+Esses proximos passos ficam para `FM-016` em diante.
 
 Para depurar o loop de sinais do `FM-014`, voce pode habilitar:
 
@@ -150,6 +160,12 @@ Com isso, o worker passa a logar detalhadamente:
 - avaliacao das regras do preset
 - decisao `long`, `short` ou `none`
 - persistencia da `SignalDecision`
+
+Para configuracao da entrada real de ordem do `FM-015`, o worker usa:
+
+```bash
+WORKER_MARKET_ORDER_SLIPPAGE_PERCENT=0.5
+```
 
 ## Banco local
 

@@ -1,5 +1,12 @@
+import { randomUUID } from "node:crypto";
 import type { MarketCandleRequest } from "@pacifica/contracts";
+import type { AesCredentialEncryptionService } from "@pacifica/credential-crypto";
 import { PacificaApiError } from "@pacifica/pacifica-market-data";
+import {
+  findMarketInfo,
+  normalizeMarketOrderInput,
+  PacificaClient,
+} from "@pacifica/pacifica-trading";
 import {
   buildPresetRiskPlans,
   evaluatePresetSignal,
@@ -22,6 +29,10 @@ export type WorkerLogger = {
 export type OperationalWorkerDependencies = {
   environment: WorkerEnvironment;
   repository: WorkerRuntimeRepository;
+  credentialEncryption: Pick<
+    AesCredentialEncryptionService,
+    "decryptAgentWalletPrivateKey"
+  >;
   marketData: {
     getCandles(input: MarketCandleRequest): Promise<
       Array<{
@@ -333,6 +344,252 @@ export function createOperationalWorker(
     };
   }
 
+  function calculateTargetNotionalUsd(input: {
+    latestBalanceSnapshot: {
+      availableBalance: number;
+    } | null;
+    positionSizeType: "fixed_amount" | "balance_percent";
+    positionSizeValue: number;
+  }) {
+    if (input.positionSizeType === "fixed_amount") {
+      return input.positionSizeValue;
+    }
+
+    const availableBalance = input.latestBalanceSnapshot?.availableBalance ?? 0;
+    return availableBalance * (input.positionSizeValue / 100);
+  }
+
+  function classifyOrderExecutionFailure(error: unknown) {
+    if (error instanceof PacificaApiError) {
+      const status = error.details.status;
+
+      if (status === 429 || error.details.retryable) {
+        return {
+          retryable: true,
+          blocking: false,
+          message: extractPacificaErrorMessage(error.details.body, error.message),
+          responseBody: error.details.body,
+        };
+      }
+
+      return {
+        retryable: false,
+        blocking: true,
+        message: extractPacificaErrorMessage(error.details.body, error.message),
+        responseBody: error.details.body,
+      };
+    }
+
+    return {
+      retryable: false,
+      blocking: true,
+      message: error instanceof Error ? error.message : String(error),
+      responseBody: null as unknown,
+    };
+  }
+
+  /**
+   * Processes the oldest pending signal decision for the owned account and
+   * turns it into one real market-order attempt.
+   */
+  async function processExecutableSignalDecision(
+    lease: AcquiredWorkerLease,
+    tickAt: Date,
+  ) {
+    const signalDecision =
+      await dependencies.repository.claimNextExecutableSignalDecision(
+        lease.operatorAccountId,
+      );
+
+    if (!signalDecision) {
+      return;
+    }
+
+    const clientOrderId = randomUUID();
+    const requestedAtIso = tickAt.toISOString();
+    const side: "bid" | "ask" =
+      signalDecision.signalSide === "long" ? "bid" : "ask";
+    const targetNotionalUsd = calculateTargetNotionalUsd({
+      latestBalanceSnapshot: signalDecision.latestBalanceSnapshot,
+      positionSizeType: signalDecision.activation.positionSizeType,
+      positionSizeValue: signalDecision.activation.positionSizeValue,
+    });
+
+    traceSignal("worker.execution_trace.execution_started", {
+      operatorAccountId: signalDecision.operatorAccountId,
+      walletAddress: signalDecision.walletAddress,
+      signalDecisionId: signalDecision.signalDecisionId,
+      signalFingerprint: signalDecision.signalFingerprint,
+      signalSide: signalDecision.signalSide,
+      targetNotionalUsd,
+    });
+
+    try {
+      const decryptedPrivateKey =
+        await dependencies.credentialEncryption.decryptAgentWalletPrivateKey({
+          encryptedPrivateKeyRef: signalDecision.credential.encryptedPrivateKeyRef,
+        });
+
+      const client = new PacificaClient({
+        apiBaseUrl: dependencies.environment.pacificaRestBaseUrl,
+        account: signalDecision.walletAddress,
+        privateKey: decryptedPrivateKey,
+        agentWallet: signalDecision.credential.publicKey,
+        expiryWindowMs: dependencies.environment.pacificaSignatureExpiryWindowMs,
+      });
+      const marketInfoPayload = await client.getMarketInfo();
+      const marketInfo = findMarketInfo(marketInfoPayload, signalDecision.marketSymbol);
+
+      if (!marketInfo) {
+        throw new Error("Market info not found for the signal symbol.");
+      }
+
+      const normalizedOrder = normalizeMarketOrderInput({
+        symbol: signalDecision.marketSymbol,
+        referencePrice: signalDecision.entryReferencePrice,
+        tickSize: marketInfo.tickSize,
+        lotSize: marketInfo.lotSize,
+        minOrderSize: marketInfo.minOrderSize,
+        targetNotionalUsd,
+      });
+
+      const requestPayload = {
+        symbol: normalizedOrder.symbol,
+        side,
+        amount: normalizedOrder.amount,
+        slippagePercent: dependencies.environment.marketOrderSlippagePercent,
+        clientOrderId,
+      };
+
+      const response = await client.createMarketOrder(requestPayload);
+      const pacificaOrderId =
+        (response as { order_id?: unknown } | null)?.order_id !== undefined
+          ? String((response as { order_id: unknown }).order_id)
+          : null;
+
+      await dependencies.repository.recordOrderExecutionAttempt({
+        operatorAccountId: signalDecision.operatorAccountId,
+        presetActivationId: signalDecision.presetActivationId,
+        signalDecisionId: signalDecision.signalDecisionId,
+        clientOrderId,
+        signalFingerprint: signalDecision.signalFingerprint,
+        symbol: signalDecision.symbol,
+        marketSymbol: signalDecision.marketSymbol,
+        orderSide: signalDecision.signalSide,
+        requestedNotionalUsd: targetNotionalUsd,
+        requestedQuantity: Number(normalizedOrder.amount),
+        entryReferencePrice: signalDecision.entryReferencePrice,
+        slippagePercent: Number(
+          dependencies.environment.marketOrderSlippagePercent,
+        ),
+        requestJson: requestPayload,
+        responseJson: response,
+        executionStatus: "sent",
+        failureReason: null,
+        retryableFailure: false,
+        pacificaOrderId,
+        requestedAtIso,
+        finishedAtIso: now().toISOString(),
+      });
+      await dependencies.repository.completeSignalDecision({
+        signalDecisionId: signalDecision.signalDecisionId,
+      });
+      await dependencies.repository.appendOperationalEvent({
+        operatorAccountId: signalDecision.operatorAccountId,
+        eventType: "order_execution",
+        severity: "info",
+        title: "Market order submitted",
+        message: `${signalDecision.signalSide} market order submitted for ${signalDecision.symbol}.`,
+        payloadJson: {
+          signalDecisionId: signalDecision.signalDecisionId,
+          signalFingerprint: signalDecision.signalFingerprint,
+          clientOrderId,
+          pacificaOrderId,
+          requestPayload,
+        },
+      });
+      traceSignal("worker.execution_trace.execution_completed", {
+        operatorAccountId: signalDecision.operatorAccountId,
+        walletAddress: signalDecision.walletAddress,
+        signalDecisionId: signalDecision.signalDecisionId,
+        signalFingerprint: signalDecision.signalFingerprint,
+        clientOrderId,
+        pacificaOrderId,
+      });
+    } catch (error) {
+      const failure = classifyOrderExecutionFailure(error);
+
+      await dependencies.repository.recordOrderExecutionAttempt({
+        operatorAccountId: signalDecision.operatorAccountId,
+        presetActivationId: signalDecision.presetActivationId,
+        signalDecisionId: signalDecision.signalDecisionId,
+        clientOrderId,
+        signalFingerprint: signalDecision.signalFingerprint,
+        symbol: signalDecision.symbol,
+        marketSymbol: signalDecision.marketSymbol,
+        orderSide: signalDecision.signalSide,
+        requestedNotionalUsd: targetNotionalUsd,
+        requestedQuantity: 0,
+        entryReferencePrice: signalDecision.entryReferencePrice,
+        slippagePercent: Number(
+          dependencies.environment.marketOrderSlippagePercent,
+        ),
+        requestJson: {
+          signalDecisionId: signalDecision.signalDecisionId,
+          signalFingerprint: signalDecision.signalFingerprint,
+          marketSymbol: signalDecision.marketSymbol,
+          signalSide: signalDecision.signalSide,
+        },
+        responseJson: failure.responseBody,
+        executionStatus: "failed",
+        failureReason: failure.message,
+        retryableFailure: failure.retryable,
+        pacificaOrderId: null,
+        requestedAtIso,
+        finishedAtIso: now().toISOString(),
+      });
+      await dependencies.repository.failSignalDecision({
+        signalDecisionId: signalDecision.signalDecisionId,
+      });
+      await dependencies.repository.appendOperationalEvent({
+        operatorAccountId: signalDecision.operatorAccountId,
+        eventType: "order_execution",
+        severity: failure.blocking ? "error" : "warning",
+        title: failure.blocking
+          ? "Order execution failed"
+          : "Order execution delayed",
+        message: failure.message,
+        payloadJson: {
+          signalDecisionId: signalDecision.signalDecisionId,
+          signalFingerprint: signalDecision.signalFingerprint,
+          clientOrderId,
+          retryable: failure.retryable,
+          blocking: failure.blocking,
+          responseBody: failure.responseBody,
+        },
+      });
+
+      if (failure.blocking) {
+        await dependencies.repository.pauseRuntimeAfterExecutionFailure({
+          operatorAccountId: signalDecision.operatorAccountId,
+          workerId: dependencies.environment.workerId,
+          nowIso: now().toISOString(),
+          message: failure.message,
+        });
+      }
+
+      logger.error("worker.order_execution_error", {
+        operatorAccountId: signalDecision.operatorAccountId,
+        walletAddress: signalDecision.walletAddress,
+        signalDecisionId: signalDecision.signalDecisionId,
+        signalFingerprint: signalDecision.signalFingerprint,
+        retryable: failure.retryable,
+        blocking: failure.blocking,
+        errorMessage: failure.message,
+      });
+    }
+  }
+
   async function runOwnedAccountLoop(lease: AcquiredWorkerLease, signal: AbortSignal) {
     let nextBackoffMs = dependencies.environment.heartbeatIntervalMs;
 
@@ -379,6 +636,8 @@ export function createOperationalWorker(
           const evaluationResult = await evaluateOwnedPreset(lease, snapshot, tickAt);
           signalFingerprint = evaluationResult.signalFingerprint;
         }
+
+        await processExecutableSignalDecision(lease, tickAt);
 
         const heartbeatApplied = await dependencies.repository.heartbeatOwnedRuntime({
           operatorAccountId: lease.operatorAccountId,

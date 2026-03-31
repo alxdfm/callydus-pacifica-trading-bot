@@ -7,9 +7,15 @@ import type {
   AcquireWorkerLeaseInput,
   AcquiredWorkerLease,
   AppendWorkerOperationalEventInput,
+  ClaimSignalDecisionInput,
+  CompleteSignalDecisionInput,
   CreateSignalDecisionInput,
+  ExecutableSignalDecision,
+  FailSignalDecisionInput,
   HeartbeatOwnedRuntimeInput,
   OwnedRuntimeSnapshot,
+  PauseRuntimeAfterExecutionFailureInput,
+  RecordOrderExecutionAttemptInput,
   ReleaseWorkerLeaseInput,
   SignalDecisionWriteResult,
   StopOwnedRuntimeInput,
@@ -356,6 +362,190 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       },
     });
   }
+
+  async claimNextExecutableSignalDecision(
+    operatorAccountId: string,
+  ): Promise<ExecutableSignalDecision | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const decision = await tx.signalDecision.findFirst({
+        where: {
+          operatorAccountId,
+          decisionStatus: "pending",
+        },
+        orderBy: {
+          requestedAt: "asc",
+        },
+        include: {
+          operatorAccount: {
+            include: {
+              accountBalanceSnapshots: {
+                orderBy: {
+                  capturedAt: "desc",
+                },
+                take: 1,
+              },
+              pacificaCredentials: {
+                where: {
+                  lifecycleStatus: "active",
+                },
+                orderBy: {
+                  updatedAt: "desc",
+                },
+                take: 1,
+              },
+            },
+          },
+          presetActivation: true,
+        },
+      });
+
+      if (!decision) {
+        return null;
+      }
+
+      const updated = await tx.signalDecision.updateMany({
+        where: {
+          id: decision.id,
+          decisionStatus: "pending",
+        },
+        data: {
+          decisionStatus: "processing",
+        },
+      });
+
+      if (updated.count === 0) {
+        return null;
+      }
+
+      const credential = decision.operatorAccount.pacificaCredentials[0];
+
+      if (!credential) {
+        throw new Error("No active Pacifica credential is available for execution.");
+      }
+
+      const balanceSnapshot = decision.operatorAccount.accountBalanceSnapshots[0] ?? null;
+
+      return {
+        signalDecisionId: decision.id,
+        operatorAccountId: decision.operatorAccountId,
+        walletAddress: decision.operatorAccount.walletAddress,
+        presetActivationId: decision.presetActivationId,
+        signalFingerprint: decision.signalFingerprint,
+        signalSide: decision.signalSide,
+        symbol: decision.symbol,
+        marketSymbol: decision.marketSymbol,
+        entryReferencePrice: decimalToNumber(decision.entryReferencePrice),
+        stopLossPrice: decimalToNumber(decision.stopLossPrice),
+        takeProfitPrice: decimalToNumber(decision.takeProfitPrice),
+        riskDistance: decimalToNumber(decision.riskDistance),
+        requestedAt: decision.requestedAt.toISOString(),
+        credential: {
+          publicKey: credential.publicKey,
+          encryptedPrivateKeyRef: credential.encryptedPrivateKeyRef,
+        },
+        activation: {
+          positionSizeType: decision.presetActivation.positionSizeType,
+          positionSizeValue: decimalToNumber(decision.presetActivation.positionSizeValue),
+          symbol: decision.presetActivation.symbol,
+          effectiveContract: parseTechnicalContract(
+            decision.presetActivation.effectiveContractJson,
+          ),
+        },
+        latestBalanceSnapshot: balanceSnapshot
+          ? {
+              availableBalance: decimalToNumber(balanceSnapshot.availableBalance),
+              totalBalance: decimalToNumber(balanceSnapshot.totalBalance),
+              capitalInUse: decimalToNumber(balanceSnapshot.capitalInUse),
+              capturedAt: balanceSnapshot.capturedAt.toISOString(),
+            }
+          : null,
+      };
+    });
+  }
+
+  async recordOrderExecutionAttempt(
+    input: RecordOrderExecutionAttemptInput,
+  ): Promise<void> {
+    await this.prisma.orderExecutionAttempt.create({
+      data: {
+        operatorAccountId: input.operatorAccountId,
+        presetActivationId: input.presetActivationId,
+        signalDecisionId: input.signalDecisionId,
+        executionStatus: input.executionStatus,
+        clientOrderId: input.clientOrderId,
+        signalFingerprint: input.signalFingerprint,
+        symbol: input.symbol,
+        marketSymbol: input.marketSymbol,
+        orderSide: input.orderSide,
+        requestedNotionalUsd: new Prisma.Decimal(input.requestedNotionalUsd),
+        requestedQuantity: new Prisma.Decimal(input.requestedQuantity),
+        entryReferencePrice: new Prisma.Decimal(input.entryReferencePrice),
+        slippagePercent: new Prisma.Decimal(input.slippagePercent),
+        requestJson: toPrismaInputJsonValue(input.requestJson),
+        responseJson: toPrismaInputJsonValue(input.responseJson),
+        failureReason: input.failureReason,
+        retryableFailure: input.retryableFailure,
+        pacificaOrderId: input.pacificaOrderId,
+        requestedAt: new Date(input.requestedAtIso),
+        finishedAt: input.finishedAtIso ? new Date(input.finishedAtIso) : null,
+      },
+    });
+  }
+
+  async failSignalDecision(input: FailSignalDecisionInput): Promise<void> {
+    await this.prisma.signalDecision.update({
+      where: {
+        id: input.signalDecisionId,
+      },
+      data: {
+        decisionStatus: "failed",
+      },
+    });
+  }
+
+  async completeSignalDecision(input: CompleteSignalDecisionInput): Promise<void> {
+    await this.prisma.signalDecision.update({
+      where: {
+        id: input.signalDecisionId,
+      },
+      data: {
+        decisionStatus: "completed",
+      },
+    });
+  }
+
+  async pauseRuntimeAfterExecutionFailure(
+    input: PauseRuntimeAfterExecutionFailureInput,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.botRuntimeState.updateMany({
+        where: {
+          operatorAccountId: input.operatorAccountId,
+          workerOwnerId: input.workerId,
+        },
+        data: {
+          botStatus: "paused",
+          syncStatus: "degraded",
+          pacificaConnectionStatus: "degraded",
+          lastErrorMessage: input.message,
+          workerOwnerId: null,
+          workerLeaseExpiresAt: null,
+          workerLoopStartedAt: null,
+        },
+      });
+
+      await tx.operationalAlert.create({
+        data: {
+          operatorAccountId: input.operatorAccountId,
+          alertType: "command",
+          severity: "error",
+          title: "Order execution failed",
+          message: input.message,
+          isActive: true,
+        },
+      });
+    });
+  }
 }
 
 function parseEditableConfig(value: Prisma.JsonValue | null) {
@@ -372,4 +562,8 @@ function toPrismaInputJsonValue(value: unknown): Prisma.InputJsonValue | Prisma.
   }
 
   return value as Prisma.InputJsonValue;
+}
+
+function decimalToNumber(value: Prisma.Decimal) {
+  return Number(value.toString());
 }

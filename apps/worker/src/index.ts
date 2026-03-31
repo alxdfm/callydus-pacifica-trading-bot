@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { AesCredentialEncryptionService } from "@pacifica/credential-crypto";
 import { PacificaMarketDataGateway } from "@pacifica/pacifica-market-data";
 import { createOperationalWorker } from "./application/createOperationalWorker";
 import { createWorkerEnvironment } from "./infrastructure/config/createWorkerEnvironment";
@@ -9,6 +10,19 @@ const environment = createWorkerEnvironment({
   ...(process.env.WORKER_ID ? { workerId: process.env.WORKER_ID } : {}),
   ...(process.env.PACIFICA_REST_BASE_URL
     ? { pacificaRestBaseUrl: process.env.PACIFICA_REST_BASE_URL }
+    : {}),
+  pacificaSignatureExpiryWindowMs: numberFromEnv(
+    process.env.PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS,
+    30_000,
+  ),
+  ...(process.env.CREDENTIAL_ENCRYPTION_KEY
+    ? { credentialEncryptionKey: process.env.CREDENTIAL_ENCRYPTION_KEY }
+    : {}),
+  ...(process.env.CREDENTIAL_ENCRYPTION_KEY_ID
+    ? { credentialEncryptionKeyId: process.env.CREDENTIAL_ENCRYPTION_KEY_ID }
+    : {}),
+  ...(process.env.WORKER_MARKET_ORDER_SLIPPAGE_PERCENT
+    ? { marketOrderSlippagePercent: process.env.WORKER_MARKET_ORDER_SLIPPAGE_PERCENT }
     : {}),
   signalTraceEnabled: booleanFromEnv(
     process.env.WORKER_SIGNAL_TRACE_ENABLED,
@@ -32,6 +46,10 @@ const worker = createOperationalWorker({
   marketData: new PacificaMarketDataGateway({
     pacificaRestBaseUrl: environment.pacificaRestBaseUrl,
   }),
+  credentialEncryption: new AesCredentialEncryptionService(
+    environment.credentialEncryptionKey,
+    environment.credentialEncryptionKeyId,
+  ),
 });
 
 void worker.start();

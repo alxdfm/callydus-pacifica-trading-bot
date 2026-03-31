@@ -1,6 +1,10 @@
 export type WorkerEnvironment = {
   workerId: string;
   pacificaRestBaseUrl: string;
+  pacificaSignatureExpiryWindowMs: number;
+  credentialEncryptionKey: string;
+  credentialEncryptionKeyId: string;
+  marketOrderSlippagePercent: string;
   signalTraceEnabled: boolean;
   scanIntervalMs: number;
   heartbeatIntervalMs: number;
@@ -26,6 +30,11 @@ export function createWorkerEnvironment(
     workerId: input.workerId ?? `worker-local-${process.pid}`,
     pacificaRestBaseUrl:
       input.pacificaRestBaseUrl ?? "https://api.pacifica.fi",
+    pacificaSignatureExpiryWindowMs:
+      input.pacificaSignatureExpiryWindowMs ?? 30000,
+    credentialEncryptionKey: input.credentialEncryptionKey ?? "",
+    credentialEncryptionKeyId: input.credentialEncryptionKeyId ?? "local-dev-v1",
+    marketOrderSlippagePercent: input.marketOrderSlippagePercent ?? "0.5",
     signalTraceEnabled: input.signalTraceEnabled ?? false,
     scanIntervalMs: input.scanIntervalMs ?? 5_000,
     heartbeatIntervalMs: input.heartbeatIntervalMs ?? 15_000,

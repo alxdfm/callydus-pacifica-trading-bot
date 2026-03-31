@@ -134,9 +134,16 @@ enum OperationalEventType {
   credential_validation
   operational_verification
   signal_evaluation
+  order_execution
   preset_activation
   bot_command
   runtime_reconciliation
+}
+
+enum OrderExecutionStatus {
+  pending
+  sent
+  failed
 }
 
 model OperatorAccount {
@@ -155,6 +162,7 @@ model OperatorAccount {
   operationalAlerts       OperationalAlert[]
   operationalEvents       OperationalEvent[]
   signalDecisions         SignalDecision[]
+  orderExecutionAttempts  OrderExecutionAttempt[]
 }
 
 model PacificaCredential {
@@ -220,6 +228,7 @@ model PresetActivation {
   closedTrades          ClosedTrade[]
   activeInRuntime       BotRuntimeState[]
   signalDecisions       SignalDecision[]
+  orderExecutionAttempts OrderExecutionAttempt[]
 
   @@index([operatorAccountId])
   @@index([activationStatus])
@@ -271,11 +280,45 @@ model SignalDecision {
   updatedAt           DateTime             @updatedAt @db.Timestamptz(6)
   operatorAccount     OperatorAccount      @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
   presetActivation    PresetActivation     @relation(fields: [presetActivationId], references: [id], onDelete: Cascade)
+  orderExecutionAttempts OrderExecutionAttempt[]
 
   @@index([decisionStatus])
   @@index([operatorAccountId, requestedAt(sort: Desc)])
   @@index([presetActivationId, requestedAt(sort: Desc)])
   @@index([operatorAccountId, signalFingerprint, decisionStatus])
+}
+
+model OrderExecutionAttempt {
+  id                  String               @id @default(uuid()) @db.Uuid
+  operatorAccountId   String               @db.Uuid
+  presetActivationId  String               @db.Uuid
+  signalDecisionId    String               @db.Uuid
+  executionStatus     OrderExecutionStatus
+  clientOrderId       String               @unique
+  signalFingerprint   String
+  symbol              String
+  marketSymbol        String
+  orderSide           TradeSide
+  requestedNotionalUsd Decimal             @db.Decimal(24, 8)
+  requestedQuantity   Decimal              @db.Decimal(24, 8)
+  entryReferencePrice Decimal              @db.Decimal(24, 8)
+  slippagePercent     Decimal              @db.Decimal(24, 8)
+  requestJson         Json?
+  responseJson        Json?
+  failureReason       String?
+  retryableFailure    Boolean              @default(false)
+  pacificaOrderId     String?
+  requestedAt         DateTime             @db.Timestamptz(6)
+  finishedAt          DateTime?            @db.Timestamptz(6)
+  createdAt           DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(6)
+  operatorAccount     OperatorAccount      @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  presetActivation    PresetActivation     @relation(fields: [presetActivationId], references: [id], onDelete: Cascade)
+  signalDecision      SignalDecision       @relation(fields: [signalDecisionId], references: [id], onDelete: Cascade)
+
+  @@index([operatorAccountId, requestedAt(sort: Desc)])
+  @@index([signalDecisionId, requestedAt(sort: Desc)])
+  @@index([executionStatus, requestedAt(sort: Desc)])
 }
 
 model BotCommand {
