@@ -45,6 +45,11 @@ enum PacificaConnectionStatus {
   error
 }
 
+enum ExchangeSnapshotStatus {
+  confirmed
+  last_known
+}
+
 enum SyncStatus {
   idle
   syncing
@@ -241,6 +246,9 @@ model BotRuntimeState {
   botStatus                BotStatus
   pacificaConnectionStatus PacificaConnectionStatus
   syncStatus               SyncStatus
+  exchangeSnapshotStatus   ExchangeSnapshotStatus     @default(last_known)
+  exchangeLastSyncedAt     DateTime?                  @db.Timestamptz(6)
+  exchangeSnapshotMessage  String?
   activePresetActivationId String?                  @db.Uuid
   workerOwnerId            String?
   workerLeaseExpiresAt     DateTime?                @db.Timestamptz(6)

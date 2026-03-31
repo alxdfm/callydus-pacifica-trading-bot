@@ -1,6 +1,7 @@
 import type {
   BalanceSnapshot,
   ClosedTrade,
+  ExchangeSnapshotStatus,
   OperationalEvent,
   OnboardingStatus,
   OpenTrade,
@@ -16,6 +17,9 @@ export type OperationalRuntimeReadModel = {
   botStatus: BotStatus;
   syncStatus: SyncStatus;
   pacificaConnectionStatus: PacificaConnectionStatus;
+  exchangeSnapshotStatus: ExchangeSnapshotStatus;
+  exchangeLastSyncedAt: string | null;
+  exchangeSnapshotMessage: string | null;
   activePresetActivationId: string | null;
   lastHeartbeatAt: string | null;
   lastErrorMessage: string | null;

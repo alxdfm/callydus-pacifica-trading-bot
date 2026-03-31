@@ -44,6 +44,10 @@ import {
   type GetOperationalSessionByWalletDependencies,
 } from "./application/get-operational-session-by-wallet/GetOperationalSessionByWallet";
 import {
+  createSynchronizePacificaAccountState,
+  type SynchronizePacificaAccountStateDependencies,
+} from "./application/synchronize-pacifica-account-state/SynchronizePacificaAccountState";
+import {
   createPauseBot,
   type PauseBotDependencies,
 } from "./application/pause-bot/PauseBot";
@@ -69,6 +73,7 @@ import {
 } from "./infrastructure/config/createApiEnvironment";
 import { AesCredentialEncryptionService } from "./infrastructure/crypto/AesCredentialEncryptionService";
 import { PacificaBuilderApprovalGateway } from "./infrastructure/pacifica/PacificaBuilderApprovalGateway";
+import { PacificaAccountStateGateway } from "./infrastructure/pacifica/PacificaAccountStateGateway";
 import { PacificaCredentialValidationGateway } from "./infrastructure/pacifica/PacificaCredentialValidationGateway";
 import { PacificaMarketDataGateway } from "./infrastructure/pacifica/PacificaMarketDataGateway";
 import { PacificaOperationalVerificationGateway } from "./infrastructure/pacifica/PacificaOperationalVerificationGateway";
@@ -99,6 +104,9 @@ export type CreateApiModuleInput = {
   >;
   getOperationalSessionByWalletDependencies?: Partial<
     GetOperationalSessionByWalletDependencies
+  >;
+  synchronizePacificaAccountStateDependencies?: Partial<
+    SynchronizePacificaAccountStateDependencies
   >;
   pauseBotDependencies?: Partial<PauseBotDependencies>;
   reconcileRuntimeDependencies?: Partial<ReconcileRuntimeDependencies>;
@@ -218,6 +226,17 @@ export function createApiModule(input: CreateApiModuleInput) {
       ? { errorAfterMs: input.reconcileRuntimeDependencies.errorAfterMs }
       : {}),
   });
+  const synchronizePacificaAccountState = createSynchronizePacificaAccountState({
+    pacificaAccountState:
+      input.synchronizePacificaAccountStateDependencies?.pacificaAccountState ??
+      new PacificaAccountStateGateway(environment),
+    runtimeMaintenanceRepository:
+      input.synchronizePacificaAccountStateDependencies
+        ?.runtimeMaintenanceRepository ?? defaultCredentialRepository,
+    ...(input.synchronizePacificaAccountStateDependencies?.now
+      ? { now: input.synchronizePacificaAccountStateDependencies.now }
+      : {}),
+  });
   const getOperationalSessionByWallet = createGetOperationalSessionByWallet({
     operationalSessionRepository:
       input.getOperationalSessionByWalletDependencies
@@ -240,6 +259,7 @@ export function createApiModule(input: CreateApiModuleInput) {
             input.getOperationalSessionByWalletDependencies.errorAfterMs,
         }
       : {}),
+    synchronizePacificaAccountState,
   });
   const credentialEncryption =
     input.validatePacificaCredentialsDependencies?.credentialEncryption ??

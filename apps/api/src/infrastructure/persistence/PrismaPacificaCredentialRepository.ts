@@ -23,6 +23,8 @@ import type {
   ExecuteCloseTradeCommandInput,
 } from "../../domain/bot-commands/BotCommandRepository";
 import type {
+  ApplyPacificaExternalSnapshotInput,
+  MarkPacificaSnapshotUnavailableInput,
   RuntimeHeartbeatInput,
   RuntimeMaintenanceRepository,
   RuntimeReconcileInput,
@@ -295,6 +297,10 @@ export class PrismaPacificaCredentialRepository
         botStatus: runtime?.botStatus ?? "inactive",
         syncStatus: runtime?.syncStatus ?? "idle",
         pacificaConnectionStatus: runtime?.pacificaConnectionStatus ?? "disconnected",
+        exchangeSnapshotStatus: runtime?.exchangeSnapshotStatus ?? "last_known",
+        exchangeLastSyncedAt:
+          runtime?.exchangeLastSyncedAt?.toISOString() ?? null,
+        exchangeSnapshotMessage: runtime?.exchangeSnapshotMessage ?? null,
         activePresetActivationId: runtime?.activePresetActivationId ?? null,
         lastHeartbeatAt: runtime?.lastHeartbeatAt?.toISOString() ?? null,
         lastErrorMessage: runtime?.lastErrorMessage ?? null,
@@ -668,6 +674,8 @@ export class PrismaPacificaCredentialRepository
           botStatus: input.botStatus,
           syncStatus: input.syncStatus,
           pacificaConnectionStatus: input.pacificaConnectionStatus,
+          exchangeSnapshotStatus: "last_known",
+          exchangeSnapshotMessage: null,
           activePresetActivationId: activePreset?.id ?? null,
           lastHeartbeatAt: new Date(input.nowIso),
           lastErrorMessage: input.lastErrorMessage,
@@ -741,6 +749,10 @@ export class PrismaPacificaCredentialRepository
       let nextBotStatus = runtime?.botStatus ?? "inactive";
       let nextSyncStatus = runtime?.syncStatus ?? "idle";
       let nextConnectionStatus = runtime?.pacificaConnectionStatus ?? "connected";
+      let nextExchangeSnapshotStatus =
+        runtime?.exchangeSnapshotStatus ?? "last_known";
+      let nextExchangeLastSyncedAt = runtime?.exchangeLastSyncedAt ?? null;
+      let nextExchangeSnapshotMessage = runtime?.exchangeSnapshotMessage ?? null;
       let nextHeartbeatAt = runtime?.lastHeartbeatAt ?? null;
       let nextLastErrorMessage = runtime?.lastErrorMessage ?? null;
       let nextActivePresetActivationId = runtime?.activePresetActivationId ?? null;
@@ -823,6 +835,9 @@ export class PrismaPacificaCredentialRepository
               botStatus: nextBotStatus,
               syncStatus: nextSyncStatus,
               pacificaConnectionStatus: nextConnectionStatus,
+              exchangeSnapshotStatus: nextExchangeSnapshotStatus,
+              exchangeLastSyncedAt: nextExchangeLastSyncedAt,
+              exchangeSnapshotMessage: nextExchangeSnapshotMessage,
               activePresetActivationId: nextActivePresetActivationId,
               lastHeartbeatAt: nextHeartbeatAt,
               lastErrorMessage: nextLastErrorMessage,
@@ -834,6 +849,9 @@ export class PrismaPacificaCredentialRepository
               botStatus: nextBotStatus,
               syncStatus: nextSyncStatus,
               pacificaConnectionStatus: nextConnectionStatus,
+              exchangeSnapshotStatus: nextExchangeSnapshotStatus,
+              exchangeLastSyncedAt: nextExchangeLastSyncedAt,
+              exchangeSnapshotMessage: nextExchangeSnapshotMessage,
               activePresetActivationId: nextActivePresetActivationId,
               lastHeartbeatAt: nextHeartbeatAt,
               lastErrorMessage: nextLastErrorMessage,
@@ -896,6 +914,307 @@ export class PrismaPacificaCredentialRepository
         detectedDivergence,
         alertMessage,
       };
+    });
+  }
+
+  async applyPacificaExternalSnapshot(
+    input: ApplyPacificaExternalSnapshotInput,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+        include: {
+          botRuntimeState: true,
+          openTrades: {
+            orderBy: {
+              openedAt: "asc",
+            },
+          },
+        },
+      });
+
+      if (!operatorAccount) {
+        return;
+      }
+
+      if (input.snapshot.balance) {
+        await tx.accountBalanceSnapshot.create({
+          data: {
+            operatorAccountId: operatorAccount.id,
+            totalBalance: new Prisma.Decimal(input.snapshot.balance.totalBalance),
+            availableBalance: new Prisma.Decimal(
+              input.snapshot.balance.availableBalance,
+            ),
+            aggregatedPnl: new Prisma.Decimal(
+              input.snapshot.balance.aggregatedPnl,
+            ),
+            capitalInUse: new Prisma.Decimal(input.snapshot.balance.capitalInUse),
+            capturedAt: new Date(input.snapshot.balance.capturedAtIso),
+          },
+        });
+      }
+
+      const openTradesBySymbol = new Map(
+        operatorAccount.openTrades.map((trade) => [trade.symbol, trade]),
+      );
+      const externalSymbols = new Set(
+        input.snapshot.positions.map((position) => position.symbol),
+      );
+      let detectedDivergence = false;
+      let divergenceMessage: string | null = null;
+
+      for (const position of input.snapshot.positions) {
+        const existingTrade = openTradesBySymbol.get(position.symbol) ?? null;
+
+        if (existingTrade) {
+          await tx.openTrade.update({
+            where: {
+              id: existingTrade.id,
+            },
+            data: {
+              pacificaTradeId: position.pacificaTradeId,
+              side: position.side,
+              entryPrice: new Prisma.Decimal(position.entryPrice),
+              currentPrice: new Prisma.Decimal(position.currentPrice),
+              quantity: new Prisma.Decimal(position.quantity),
+              capitalAllocated: new Prisma.Decimal(
+                position.entryPrice * position.quantity,
+              ),
+              unrealizedPnl: new Prisma.Decimal(position.unrealizedPnl),
+              tradeStatus: "open",
+              isPlatformTrade:
+                existingTrade.isPlatformTrade || position.isPlatformTrade,
+              lastSyncedAt: new Date(input.snapshot.fetchedAtIso),
+            },
+          });
+        } else {
+          detectedDivergence = true;
+          divergenceMessage =
+            divergenceMessage ??
+            "Pacifica reported an open position that was missing from the local runtime.";
+          await tx.openTrade.create({
+            data: {
+              operatorAccountId: operatorAccount.id,
+              pacificaTradeId: position.pacificaTradeId,
+              presetActivationId: null,
+              stopLossPrice: null,
+              takeProfitPrice: null,
+              entryClientOrderId: null,
+              pacificaOrderId: null,
+              symbol: position.symbol,
+              side: position.side,
+              entryPrice: new Prisma.Decimal(position.entryPrice),
+              currentPrice: new Prisma.Decimal(position.currentPrice),
+              quantity: new Prisma.Decimal(position.quantity),
+              capitalAllocated: new Prisma.Decimal(
+                position.entryPrice * position.quantity,
+              ),
+              unrealizedPnl: new Prisma.Decimal(position.unrealizedPnl),
+              tradeStatus: "open",
+              openedAt: new Date(input.snapshot.fetchedAtIso),
+              closeRequestedAt: null,
+              closeReasonPending: null,
+              isPlatformTrade: position.isPlatformTrade,
+              lastSyncedAt: new Date(input.snapshot.fetchedAtIso),
+            },
+          });
+        }
+      }
+
+      for (const localTrade of operatorAccount.openTrades) {
+        if (externalSymbols.has(localTrade.symbol)) {
+          continue;
+        }
+
+        detectedDivergence = true;
+        divergenceMessage =
+          divergenceMessage ??
+          "Pacifica no longer reports one of the local open trades.";
+        const matchingClose = findMatchingExternalCloseEvent(
+          localTrade.symbol,
+          localTrade.side,
+          input.snapshot.recentTradeHistory,
+        );
+
+        await tx.closedTrade.create({
+          data: {
+            operatorAccountId: localTrade.operatorAccountId,
+            pacificaTradeId: localTrade.pacificaTradeId,
+            presetActivationId: localTrade.presetActivationId,
+            symbol: localTrade.symbol,
+            side: localTrade.side,
+            entryPrice: localTrade.entryPrice,
+            exitPrice: new Prisma.Decimal(
+              matchingClose?.price ??
+                Number(localTrade.currentPrice.toString()),
+            ),
+            quantity: localTrade.quantity,
+            capitalAllocated: localTrade.capitalAllocated,
+            realizedPnl: new Prisma.Decimal(
+              matchingClose?.pnl ?? Number(localTrade.unrealizedPnl.toString()),
+            ),
+            closeReason:
+              matchingClose?.closeReason ??
+              (localTrade.closeReasonPending ?? "system"),
+            openedAt: localTrade.openedAt,
+            closedAt: new Date(
+              matchingClose?.createdAtIso ?? input.snapshot.fetchedAtIso,
+            ),
+            isPlatformTrade: localTrade.isPlatformTrade,
+            closedByCommandId: null,
+            lastSyncedAt: new Date(input.snapshot.fetchedAtIso),
+          },
+        });
+        await tx.openTrade.delete({
+          where: {
+            id: localTrade.id,
+          },
+        });
+      }
+
+      const nextSyncStatus =
+        operatorAccount.botRuntimeState?.syncStatus === "error"
+          ? "error"
+          : detectedDivergence
+            ? "degraded"
+            : operatorAccount.botRuntimeState?.botStatus === "active" ||
+                operatorAccount.botRuntimeState?.botStatus === "syncing"
+              ? "healthy"
+              : "idle";
+
+      await tx.botRuntimeState.upsert({
+        where: {
+          operatorAccountId: operatorAccount.id,
+        },
+        update: {
+          pacificaConnectionStatus: "connected",
+          exchangeSnapshotStatus: "confirmed",
+          exchangeLastSyncedAt: new Date(input.snapshot.fetchedAtIso),
+          exchangeSnapshotMessage: null,
+          syncStatus: nextSyncStatus,
+          ...(detectedDivergence
+            ? { lastErrorMessage: divergenceMessage }
+            : {}),
+        },
+        create: {
+          operatorAccountId: operatorAccount.id,
+          botStatus: "inactive",
+          pacificaConnectionStatus: "connected",
+          syncStatus: nextSyncStatus,
+          exchangeSnapshotStatus: "confirmed",
+          exchangeLastSyncedAt: new Date(input.snapshot.fetchedAtIso),
+          exchangeSnapshotMessage: null,
+          activePresetActivationId: null,
+          lastHeartbeatAt: null,
+          lastErrorMessage: detectedDivergence ? divergenceMessage : null,
+        },
+      });
+
+      await tx.operationalAlert.updateMany({
+        where: {
+          operatorAccountId: operatorAccount.id,
+          alertType: "connection",
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+          resolvedAt: new Date(input.nowIso),
+        },
+      });
+
+      if (detectedDivergence && divergenceMessage) {
+        await tx.operationalAlert.create({
+          data: {
+            operatorAccountId: operatorAccount.id,
+            alertType: "reconciliation",
+            severity: "warning",
+            title: "Pacifica reconciliation drift detected",
+            message: divergenceMessage,
+            isActive: true,
+          },
+        });
+        await tx.operationalEvent.create({
+          data: {
+            operatorAccountId: operatorAccount.id,
+            walletAddress: operatorAccount.walletAddress,
+            eventType: "runtime_reconciliation",
+            severity: "warning",
+            title: "Pacifica reconciliation drift detected",
+            message: divergenceMessage,
+            payloadJson: toPrismaInputJsonValue({
+              positions: input.snapshot.positions.length,
+              openOrderCount: input.snapshot.orderHistorySummary.openOrderCount,
+              stopOrderCount: input.snapshot.orderHistorySummary.stopOrderCount,
+              lastOrderId: input.snapshot.orderHistorySummary.lastOrderId,
+            }),
+          },
+        });
+      }
+    });
+  }
+
+  async markPacificaSnapshotUnavailable(
+    input: MarkPacificaSnapshotUnavailableInput,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+      });
+
+      if (!operatorAccount) {
+        return;
+      }
+
+      await tx.botRuntimeState.upsert({
+        where: {
+          operatorAccountId: operatorAccount.id,
+        },
+        update: {
+          pacificaConnectionStatus: "degraded",
+          exchangeSnapshotStatus: "last_known",
+          exchangeSnapshotMessage: input.message,
+          lastErrorMessage: input.message,
+        },
+        create: {
+          operatorAccountId: operatorAccount.id,
+          botStatus: "inactive",
+          pacificaConnectionStatus: "degraded",
+          syncStatus: "degraded",
+          exchangeSnapshotStatus: "last_known",
+          exchangeLastSyncedAt: null,
+          exchangeSnapshotMessage: input.message,
+          activePresetActivationId: null,
+          lastHeartbeatAt: null,
+          lastErrorMessage: input.message,
+        },
+      });
+
+      await tx.operationalAlert.updateMany({
+        where: {
+          operatorAccountId: operatorAccount.id,
+          alertType: "connection",
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+          resolvedAt: new Date(input.nowIso),
+        },
+      });
+
+      await tx.operationalAlert.create({
+        data: {
+          operatorAccountId: operatorAccount.id,
+          alertType: "connection",
+          severity: "warning",
+          title: "Pacifica snapshot unavailable",
+          message: input.message,
+          isActive: true,
+        },
+      });
     });
   }
 
@@ -1100,6 +1419,9 @@ function mapBotRuntimeState(runtime: {
     | "degraded"
     | "error";
   syncStatus: "idle" | "syncing" | "healthy" | "degraded" | "error";
+  exchangeSnapshotStatus: "confirmed" | "last_known";
+  exchangeLastSyncedAt: Date | null;
+  exchangeSnapshotMessage: string | null;
   activePresetActivationId: string | null;
   lastHeartbeatAt: Date | null;
   lastErrorMessage: string | null;
@@ -1108,10 +1430,47 @@ function mapBotRuntimeState(runtime: {
     botStatus: runtime.botStatus,
     pacificaConnectionStatus: runtime.pacificaConnectionStatus,
     syncStatus: runtime.syncStatus,
+    exchangeSnapshotStatus: runtime.exchangeSnapshotStatus,
+    exchangeLastSyncedAt: runtime.exchangeLastSyncedAt?.toISOString() ?? null,
+    exchangeSnapshotMessage: runtime.exchangeSnapshotMessage,
     activePresetActivationId: runtime.activePresetActivationId,
     lastHeartbeatAt: runtime.lastHeartbeatAt?.toISOString() ?? null,
     lastErrorMessage: runtime.lastErrorMessage,
   });
+}
+
+function findMatchingExternalCloseEvent(
+  symbol: string,
+  side: "long" | "short",
+  recentTradeHistory: Array<{
+    symbol: string;
+    side: "open_long" | "open_short" | "close_long" | "close_short";
+    clientOrderId: string | null;
+    price: number;
+    pnl: number;
+    createdAtIso: string;
+  }>,
+) {
+  const expectedSide = side === "long" ? "close_long" : "close_short";
+  const match = recentTradeHistory.find(
+    (trade) => trade.symbol === symbol && trade.side === expectedSide,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    price: match.price,
+    pnl: match.pnl,
+    createdAtIso: match.createdAtIso,
+    closeReason:
+      match.clientOrderId?.endsWith(":tp")
+        ? ("take_profit" as const)
+        : match.clientOrderId?.endsWith(":sl")
+          ? ("stop_loss" as const)
+          : ("system" as const),
+  };
 }
 
 function mapBotCommand(command: {

@@ -24,6 +24,9 @@ export type GetOperationalSessionByWalletOutput =
 export type GetOperationalSessionByWalletDependencies = {
   operationalSessionRepository: OperationalSessionRepository;
   runtimeMaintenanceRepository?: RuntimeMaintenanceRepository;
+  synchronizePacificaAccountState?: (input: {
+    walletAddress: string;
+  }) => Promise<void>;
   now?: () => Date;
   degradedAfterMs?: number;
   errorAfterMs?: number;
@@ -35,11 +38,12 @@ export type GetOperationalSessionByWalletDependencies = {
  * Responsibility:
  * - optionally run the minimal runtime reconciliation step first
  * - read the persisted session snapshot after reconciliation
+ * - refresh the visible product snapshot from Pacifica when available
  * - report whether an operational account exists for the wallet
  *
  * Non-responsibility:
- * - it does not reconcile directly with Pacifica
- * - it does not rebuild trades or positions from the exchange
+ * - it does not implement Pacifica REST parsing itself
+ * - it does not turn a Pacifica outage into a hard product outage
  */
 export function createGetOperationalSessionByWallet(
   dependencies: GetOperationalSessionByWalletDependencies,
@@ -68,7 +72,7 @@ export function createGetOperationalSessionByWallet(
       });
     }
 
-    const session =
+    let session =
       await dependencies.operationalSessionRepository.findByWalletAddress(
         input.walletAddress,
       );
@@ -79,6 +83,24 @@ export function createGetOperationalSessionByWallet(
         accountExists: false,
         walletAddress: input.walletAddress,
       };
+    }
+
+    if (dependencies.synchronizePacificaAccountState) {
+      await dependencies.synchronizePacificaAccountState({
+        walletAddress: input.walletAddress,
+      });
+      session =
+        await dependencies.operationalSessionRepository.findByWalletAddress(
+          input.walletAddress,
+        );
+
+      if (!session) {
+        return {
+          ok: true,
+          accountExists: false,
+          walletAddress: input.walletAddress,
+        };
+      }
     }
 
     return {

@@ -109,6 +109,11 @@ export const pacificaConnectionStatusSchema = z.enum([
   "error",
 ]);
 
+export const exchangeSnapshotStatusSchema = z.enum([
+  "confirmed",
+  "last_known",
+]);
+
 export const presetActivationStatusSchema = z.enum([
   "pending",
   "active",
@@ -694,6 +699,9 @@ export const operationalRuntimeSnapshotSchema = z.object({
   botStatus: botStatusSchema,
   syncStatus: syncStatusSchema,
   pacificaConnectionStatus: pacificaConnectionStatusSchema,
+  exchangeSnapshotStatus: exchangeSnapshotStatusSchema,
+  exchangeLastSyncedAt: z.string().datetime().nullable(),
+  exchangeSnapshotMessage: z.string().nullable(),
   activePresetActivationId: z.string().uuid().nullable(),
   lastHeartbeatAt: z.string().datetime().nullable(),
   lastErrorMessage: z.string().nullable(),
@@ -802,6 +810,9 @@ export const botRuntimeStateSchema = z.object({
   botStatus: botStatusSchema,
   pacificaConnectionStatus: pacificaConnectionStatusSchema,
   syncStatus: syncStatusSchema,
+  exchangeSnapshotStatus: exchangeSnapshotStatusSchema,
+  exchangeLastSyncedAt: z.string().datetime().nullable(),
+  exchangeSnapshotMessage: z.string().nullable(),
   activePresetActivationId: z.string().uuid().nullable(),
   lastHeartbeatAt: z.string().datetime().nullable(),
   lastErrorMessage: z.string().nullable(),
@@ -1245,6 +1256,7 @@ export type PacificaOperationalVerificationErrorCode = z.infer<typeof pacificaOp
 export type BotStatus = z.infer<typeof botStatusSchema>;
 export type SyncStatus = z.infer<typeof syncStatusSchema>;
 export type PacificaConnectionStatus = z.infer<typeof pacificaConnectionStatusSchema>;
+export type ExchangeSnapshotStatus = z.infer<typeof exchangeSnapshotStatusSchema>;
 export type PresetActivationStatus = z.infer<typeof presetActivationStatusSchema>;
 export type PositionSizeType = z.infer<typeof positionSizeTypeSchema>;
 export type CommandType = z.infer<typeof commandTypeSchema>;
