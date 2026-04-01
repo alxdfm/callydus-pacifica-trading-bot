@@ -372,7 +372,7 @@ export const messages = {
     dashboardLossesLabel: "losses",
     dashboardEmptyTitle: "No operational data yet",
     dashboardEmptyDescription:
-      "Activate a preset to populate account balance, open trades and recent history in the MVP.",
+      "Activate a preset to populate account balance, open trades and recent history.",
     dashboardActivePresetEyebrow: "Preset is active",
     dashboardPausedPresetEyebrow: "Preset is paused",
     dashboardSyncingPresetEyebrow: "Preset is syncing",
