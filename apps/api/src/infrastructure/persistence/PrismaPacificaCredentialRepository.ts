@@ -524,10 +524,25 @@ export class PrismaPacificaCredentialRepository
         },
         include: {
           botRuntimeState: true,
+          presetActivations: {
+            where: {
+              activationStatus: "active",
+            },
+            orderBy: {
+              updatedAt: "desc",
+            },
+            take: 1,
+          },
         },
       });
 
       if (!operatorAccount) {
+        return null;
+      }
+
+      const activePreset = operatorAccount.presetActivations[0] ?? null;
+
+      if (!activePreset) {
         return null;
       }
 
@@ -571,13 +586,14 @@ export class PrismaPacificaCredentialRepository
         },
         update: {
           botStatus: "active",
+          activePresetActivationId: activePreset.id,
         },
         create: {
           operatorAccountId: operatorAccount.id,
           botStatus: "active",
           pacificaConnectionStatus: "connected",
           syncStatus: "idle",
-          activePresetActivationId: null,
+          activePresetActivationId: activePreset.id,
           lastHeartbeatAt: null,
           lastErrorMessage: null,
         },
