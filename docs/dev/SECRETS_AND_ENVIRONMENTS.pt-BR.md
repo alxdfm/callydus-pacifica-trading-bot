@@ -47,6 +47,10 @@ No estado atual do projeto:
 - existe um `.env.example` na raiz do monorepo com as variaveis minimas para banco local, integracao Pacifica e criptografia de credenciais
 - para a trilha funcional com Builder Program, o ambiente tambem deve prever `PACIFICA_BUILDER_CODE` e `PACIFICA_BUILDER_MAX_FEE_RATE`
 
+Semantica atual dessas variaveis:
+- `PACIFICA_BUILDER_MAX_FEE_RATE` e usado no fluxo de aprovacao/autorizacao do builder code
+- requests de criacao de ordem usam `builder_code`; `max_fee_rate` nao entra no payload de ordem
+
 ## Próxima Regra Operacional
 Antes do deploy real, definir:
 - onde os segredos ficarão em `dev`

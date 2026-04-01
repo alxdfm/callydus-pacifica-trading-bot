@@ -187,6 +187,10 @@ Para o fluxo do `FM-002`, o app espera:
 - banco local aplicado
 - `PACIFICA_REST_BASE_URL`, `PACIFICA_BUILDER_CODE`, `PACIFICA_BUILDER_MAX_FEE_RATE`, `CREDENTIAL_ENCRYPTION_KEY` e `CREDENTIAL_ENCRYPTION_KEY_ID` preenchidos no ambiente da API
 
+Observacao:
+- `PACIFICA_BUILDER_MAX_FEE_RATE` participa do fluxo de aprovacao do builder code
+- criacao de ordem usa `builder_code`, nao `max_fee_rate`
+
 Para o `Run readiness check`, a API usa por padrao:
 - `PACIFICA_OPERATIONAL_PROBE_SYMBOL=BTC`
 - `PACIFICA_OPERATIONAL_PROBE_PRICE=20000`
