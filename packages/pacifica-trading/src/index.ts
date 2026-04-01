@@ -36,6 +36,7 @@ export type PacificaClientInput = {
   account: string;
   privateKey: string;
   agentWallet: string;
+  builderCode?: string | null;
   expiryWindowMs: number;
 };
 
@@ -50,6 +51,7 @@ export class PacificaClient {
   private readonly apiBaseUrl: string;
   private readonly account: string;
   private readonly agentWallet: string;
+  private readonly builderCode: string | null;
   private readonly expiryWindowMs: number;
   private readonly signingKey: KeyObject;
   private readonly signerPublicKey: string;
@@ -58,6 +60,7 @@ export class PacificaClient {
     this.apiBaseUrl = cleanBaseUrl(input.apiBaseUrl);
     this.account = normalizeAddress(input.account);
     this.agentWallet = normalizeAddress(input.agentWallet);
+    this.builderCode = normalizeOptionalString(input.builderCode);
     this.expiryWindowMs = input.expiryWindowMs;
 
     const rawPrivateKey = parsePrivateKey(input.privateKey);
@@ -123,6 +126,7 @@ export class PacificaClient {
         tif: input.tif ?? "ALO",
         reduce_only: false,
         client_order_id: input.clientOrderId,
+        ...(this.builderCode ? { builder_code: this.builderCode } : {}),
       },
     });
   }
@@ -154,6 +158,7 @@ export class PacificaClient {
         slippage_percent: input.slippagePercent,
         reduce_only: false,
         client_order_id: input.clientOrderId,
+        ...(this.builderCode ? { builder_code: this.builderCode } : {}),
         ...(input.takeProfit
           ? {
               take_profit: {
@@ -216,19 +221,24 @@ export class PacificaClient {
       unsignedBody,
       primarySigningPayload,
     );
-
-    const verificationFailed =
+    const signatureRejected =
       response.status === 400 &&
       typeof (payload as { raw?: unknown } | null)?.raw === "string" &&
-      String((payload as { raw: string }).raw)
-        .toLowerCase()
-        .includes("verification failed");
+      (() => {
+        const rawMessage = String((payload as { raw: string }).raw).toLowerCase();
+        return (
+          rawMessage.includes("verification failed") ||
+          rawMessage.includes("invalid signature")
+        );
+      })();
 
-    if (verificationFailed) {
+    if (signatureRejected) {
+      const fallbackSigningPayload = { ...unsignedBody };
+
       ({ response, payload } = await this.postSigned(
         input.path,
         unsignedBody,
-        { ...unsignedBody },
+        fallbackSigningPayload,
       ));
     }
 
@@ -264,15 +274,17 @@ export class PacificaClient {
     signingPayload: Record<string, unknown>,
   ) {
     const signature = signPayload(this.signingKey, signingPayload);
+    const requestBody = {
+      ...unsignedBody,
+      signature,
+    };
+
     const response = await fetch(`${this.apiBaseUrl}${path}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        ...unsignedBody,
-        signature,
-      }),
+      body: JSON.stringify(requestBody),
     });
     const payload = await parseResponseBody(response);
     return { response, payload };
@@ -421,11 +433,12 @@ function derivePublicKeyBase58(signingKey: KeyObject) {
 }
 
 function signPayload(signingKey: KeyObject, payload: Record<string, unknown>) {
-  return sign(
+  const signatureBytes = sign(
     null,
     Buffer.from(serializePacificaSigningPayload(payload)),
     signingKey,
-  ).toString("base64");
+  );
+  return encodeBase58(signatureBytes);
 }
 
 function cleanBaseUrl(rawBaseUrl: string) {
@@ -440,6 +453,11 @@ function normalizeAddress(rawAddress: string) {
   }
 
   return normalized;
+}
+
+function normalizeOptionalString(rawValue: string | null | undefined) {
+  const normalized = String(rawValue ?? "").trim();
+  return normalized ? normalized : null;
 }
 
 function parsePrivateKey(rawPrivateKey: string) {

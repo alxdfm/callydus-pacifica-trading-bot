@@ -15,6 +15,9 @@ const environment = createWorkerEnvironment({
     process.env.PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS,
     30_000,
   ),
+  ...(process.env.PACIFICA_BUILDER_CODE
+    ? { pacificaBuilderCode: process.env.PACIFICA_BUILDER_CODE }
+    : {}),
   ...(process.env.CREDENTIAL_ENCRYPTION_KEY
     ? { credentialEncryptionKey: process.env.CREDENTIAL_ENCRYPTION_KEY }
     : {}),

@@ -628,6 +628,7 @@ export function createOperationalWorker(
         account: signalDecision.walletAddress,
         privateKey: decryptedPrivateKey,
         agentWallet: signalDecision.credential.publicKey,
+        builderCode: dependencies.environment.pacificaBuilderCode,
         expiryWindowMs: dependencies.environment.pacificaSignatureExpiryWindowMs,
       });
       const marketInfoPayload = await client.getMarketInfo();

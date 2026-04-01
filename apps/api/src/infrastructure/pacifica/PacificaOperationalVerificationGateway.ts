@@ -35,6 +35,7 @@ export class PacificaOperationalVerificationGateway
         account: input.mainWalletPublicKey,
         privateKey: input.agentWalletPrivateKey,
         agentWallet: input.agentWalletPublicKey,
+        builderCode: this.environment.pacificaBuilderCode,
         expiryWindowMs: this.environment.pacificaSignatureExpiryWindowMs,
       });
       const marketInfoPayload = await client.getMarketInfo();

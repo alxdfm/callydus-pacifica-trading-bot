@@ -2,6 +2,7 @@ export type WorkerEnvironment = {
   workerId: string;
   pacificaRestBaseUrl: string;
   pacificaSignatureExpiryWindowMs: number;
+  pacificaBuilderCode: string;
   credentialEncryptionKey: string;
   credentialEncryptionKeyId: string;
   marketOrderSlippagePercent: string;
@@ -32,6 +33,7 @@ export function createWorkerEnvironment(
       input.pacificaRestBaseUrl ?? "https://api.pacifica.fi",
     pacificaSignatureExpiryWindowMs:
       input.pacificaSignatureExpiryWindowMs ?? 30000,
+    pacificaBuilderCode: input.pacificaBuilderCode ?? "",
     credentialEncryptionKey: input.credentialEncryptionKey ?? "",
     credentialEncryptionKeyId: input.credentialEncryptionKeyId ?? "local-dev-v1",
     marketOrderSlippagePercent: input.marketOrderSlippagePercent ?? "0.5",
