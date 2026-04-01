@@ -1196,6 +1196,44 @@ a {
   box-shadow: none;
 }
 
+.disabled-tooltip-trigger {
+  position: relative;
+  display: inline-flex;
+}
+
+.disabled-tooltip-trigger::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 10px);
+  transform: translateX(-50%) translateY(4px);
+  min-width: 220px;
+  max-width: 280px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(6, 11, 20, 0.96);
+  border: 1px solid rgba(53, 80, 111, 0.9);
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: var(--shadow-soft);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 140ms ease;
+  z-index: 20;
+}
+
+.disabled-tooltip-trigger:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
 .account-state {
   display: grid;
   gap: 12px;

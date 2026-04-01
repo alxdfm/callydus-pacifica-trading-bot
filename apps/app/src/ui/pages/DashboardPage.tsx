@@ -28,11 +28,17 @@ export function DashboardPage() {
   } = useAppState();
   const { t } = useI18n();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const botActionBlocked = !canAccessProduct;
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
     t,
   );
+  const botStatusPresentation = getBotStatusPresentation(state.runtime.botStatus, t);
+  const resumeActionRequiresPreset =
+    botStatusPresentation.nextAction === "resume" && !state.presets.activePreset;
+  const botActionBlocked = !canAccessProduct || resumeActionRequiresPreset;
+  const botActionBlockedMessage = resumeActionRequiresPreset
+    ? t("dashboardResumeRequiresPresetTooltip")
+    : undefined;
   const currentTrades = state.runtime.currentTrades.slice(0, 2);
   const recentClosedTrades = state.runtime.closedTrades.slice(0, 3);
   const recentEvents = state.runtime.events.slice(0, 4);
@@ -44,7 +50,6 @@ export function DashboardPage() {
     (trade) => trade.realizedPnl >= 0,
   ).length;
   const losses = closedTodayCount - wins;
-  const botStatusPresentation = getBotStatusPresentation(state.runtime.botStatus, t);
   const runtimeSyncPresentation = getDashboardRuntimeSyncPresentation(
     state.runtime.syncStatus,
     state.runtime.exchangeSnapshotStatus,
@@ -245,14 +250,23 @@ export function DashboardPage() {
           >
             {t("dashboardReviewPresetAction")}
           </button>
-          <button
-            className="btn primary"
-            disabled={botActionBlocked}
-            onClick={() => void handleToggleBot()}
-            type="button"
+          <span
+            className={
+              botActionBlockedMessage
+                ? "disabled-tooltip-trigger"
+                : undefined
+            }
+            data-tooltip={botActionBlockedMessage}
           >
-            {botStatusPresentation.actionLabel}
-          </button>
+            <button
+              className="btn primary"
+              disabled={botActionBlocked}
+              onClick={() => void handleToggleBot()}
+              type="button"
+            >
+              {botStatusPresentation.actionLabel}
+            </button>
+          </span>
         </div>
       </section>
 

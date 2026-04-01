@@ -381,6 +381,8 @@ export const messages = {
     dashboardNoPresetTitle: "No active preset",
     dashboardNoPresetDescription:
       "Choose and activate a preset first. The dashboard reflects the active operational setup.",
+    dashboardResumeRequiresPresetTooltip:
+      "Activate a preset first before starting the bot.",
     dashboardSizeLabel: "Size",
     dashboardLongEnabled: "Long enabled",
     dashboardLongDisabled: "Long disabled",
