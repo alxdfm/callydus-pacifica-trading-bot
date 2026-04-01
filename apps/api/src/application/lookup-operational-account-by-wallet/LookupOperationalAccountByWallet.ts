@@ -9,12 +9,7 @@ export type LookupOperationalAccountByWalletOutput =
       ok: true;
       accountExists: true;
       walletAddress: string;
-      onboardingStatus:
-        | "wallet_pending"
-        | "credentials_pending"
-        | "credentials_validating"
-        | "ready"
-        | "blocked";
+      onboardingStatus: import("@pacifica/contracts").OnboardingStatus;
       credentialId: string | null;
       credentialAlias: string | null;
       agentWalletPublicKey: string | null;
@@ -64,12 +59,7 @@ export function createLookupOperationalAccountByWallet(
       ok: true,
       accountExists: true,
       walletAddress: account.walletAddress,
-      onboardingStatus: account.onboardingStatus as
-        | "wallet_pending"
-        | "credentials_pending"
-        | "credentials_validating"
-        | "ready"
-        | "blocked",
+      onboardingStatus: account.onboardingStatus,
       credentialId: account.credentialId,
       credentialAlias: account.credentialAlias,
       agentWalletPublicKey: account.agentWalletPublicKey,

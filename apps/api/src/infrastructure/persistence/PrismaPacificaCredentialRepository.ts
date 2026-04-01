@@ -460,6 +460,23 @@ export class PrismaPacificaCredentialRepository
         return null;
       }
 
+      if (operatorAccount.botRuntimeState?.botStatus === "paused") {
+        const existingCommand = await tx.botCommand.findFirst({
+          where: {
+            operatorAccountId: operatorAccount.id,
+            commandType: "pause_bot",
+          },
+          orderBy: {
+            requestedAt: "desc",
+          },
+        });
+
+        return existingCommand ? mapBotCommand(existingCommand) : null;
+      }
+
+      const runtimeVersionKey =
+        operatorAccount.botRuntimeState?.updatedAt?.toISOString() ?? "initial";
+
       const command = await tx.botCommand.create({
         data: {
           operatorAccountId: operatorAccount.id,
@@ -469,7 +486,7 @@ export class PrismaPacificaCredentialRepository
           payloadJson: Prisma.JsonNull,
           requestedBy: input.requestedBy,
           commandStatus: "completed",
-          idempotencyKey: input.idempotencyKey,
+          idempotencyKey: `pause-bot:${input.walletAddress}:${runtimeVersionKey}`,
           requestedAt: new Date(input.nowIso),
           startedAt: new Date(input.nowIso),
           finishedAt: new Date(input.nowIso),
@@ -514,6 +531,23 @@ export class PrismaPacificaCredentialRepository
         return null;
       }
 
+      if (operatorAccount.botRuntimeState?.botStatus === "active") {
+        const existingCommand = await tx.botCommand.findFirst({
+          where: {
+            operatorAccountId: operatorAccount.id,
+            commandType: "resume_bot",
+          },
+          orderBy: {
+            requestedAt: "desc",
+          },
+        });
+
+        return existingCommand ? mapBotCommand(existingCommand) : null;
+      }
+
+      const runtimeVersionKey =
+        operatorAccount.botRuntimeState?.updatedAt?.toISOString() ?? "initial";
+
       const command = await tx.botCommand.create({
         data: {
           operatorAccountId: operatorAccount.id,
@@ -523,7 +557,7 @@ export class PrismaPacificaCredentialRepository
           payloadJson: Prisma.JsonNull,
           requestedBy: input.requestedBy,
           commandStatus: "completed",
-          idempotencyKey: input.idempotencyKey,
+          idempotencyKey: `resume-bot:${input.walletAddress}:${runtimeVersionKey}`,
           requestedAt: new Date(input.nowIso),
           startedAt: new Date(input.nowIso),
           finishedAt: new Date(input.nowIso),

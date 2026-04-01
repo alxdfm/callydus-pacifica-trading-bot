@@ -30,6 +30,7 @@ export type GetOperationalSessionByWalletDependencies = {
   now?: () => Date;
   degradedAfterMs?: number;
   errorAfterMs?: number;
+  pacificaRefreshTtlMs?: number;
 };
 
 /**
@@ -51,6 +52,7 @@ export function createGetOperationalSessionByWallet(
   const getNow = dependencies.now ?? (() => new Date());
   const degradedAfterMs = dependencies.degradedAfterMs ?? 2 * 60 * 1000;
   const errorAfterMs = dependencies.errorAfterMs ?? 5 * 60 * 1000;
+  const pacificaRefreshTtlMs = dependencies.pacificaRefreshTtlMs ?? 30 * 1000;
 
   /**
    * Reads the current session snapshot for a wallet.
@@ -85,7 +87,19 @@ export function createGetOperationalSessionByWallet(
       };
     }
 
-    if (dependencies.synchronizePacificaAccountState) {
+    const exchangeSnapshotAgeMs =
+      session.runtime.exchangeLastSyncedAt === null
+        ? Number.POSITIVE_INFINITY
+        : getNow().getTime() -
+          new Date(session.runtime.exchangeLastSyncedAt).getTime();
+    const shouldRefreshPacificaSnapshot =
+      dependencies.synchronizePacificaAccountState !== undefined &&
+      !(
+        session.runtime.exchangeSnapshotStatus === "confirmed" &&
+        exchangeSnapshotAgeMs < pacificaRefreshTtlMs
+      );
+
+    if (shouldRefreshPacificaSnapshot && dependencies.synchronizePacificaAccountState) {
       await dependencies.synchronizePacificaAccountState({
         walletAddress: input.walletAddress,
       });

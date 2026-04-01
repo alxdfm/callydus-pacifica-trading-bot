@@ -1,3 +1,4 @@
+import type { OnboardingStatus } from "@pacifica/contracts";
 import type { PacificaCredential } from "./PacificaCredential";
 
 export type FindActiveCredentialInput = {
@@ -23,7 +24,7 @@ export type UpdateOperationalVerificationInput = {
 
 export type OperationalAccountLookup = {
   walletAddress: string;
-  onboardingStatus: string;
+  onboardingStatus: OnboardingStatus;
   credentialId: string | null;
   credentialAlias: string | null;
   agentWalletPublicKey: string | null;
