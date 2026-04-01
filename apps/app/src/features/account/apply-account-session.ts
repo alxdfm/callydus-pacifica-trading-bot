@@ -1,14 +1,21 @@
 import type {
   OperationalSessionSnapshotFound,
 } from "@pacifica/contracts";
+import type {
+  AppSessionState,
+  BuilderApprovalState,
+  CredentialState,
+  OperationalVerificationState,
+} from "../../state/app-state";
+import type { RuntimeState } from "../runtime/runtime-state";
 
 type ApplyAccountSessionDependencies = {
-  setBuilderApprovalState: (value: Record<string, unknown>) => void;
-  setCredentialState: (value: Record<string, unknown>) => void;
-  setOperationalState: (value: Record<string, unknown>) => void;
-  setPresetState: (value: Record<string, unknown>) => void;
-  setRuntimeState: (value: Record<string, unknown>) => void;
-  setOnboardingState?: (value: Record<string, unknown>) => void;
+  setBuilderApprovalState: (value: Partial<BuilderApprovalState>) => void;
+  setCredentialState: (value: Partial<CredentialState>) => void;
+  setOperationalState: (value: Partial<OperationalVerificationState>) => void;
+  setPresetState: (value: Partial<AppSessionState["presets"]>) => void;
+  setRuntimeState: (value: Partial<RuntimeState>) => void;
+  setOnboardingState?: (value: Partial<AppSessionState["onboarding"]>) => void;
 };
 
 export function applyAccountSessionSnapshot(

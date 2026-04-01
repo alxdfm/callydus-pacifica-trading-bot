@@ -98,6 +98,16 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
         errorCode: null,
       });
 
+      const hasExistingAccountSnapshot =
+        state.onboarding.accountLookupStatus === "existing_account" &&
+        state.onboarding.discoveredWalletAddress === mainWalletPublicKey;
+
+      // Preserve the canonical onboarding status received from the backend snapshot
+      // once this wallet has already been identified as an existing operational account.
+      if (hasExistingAccountSnapshot) {
+        return;
+      }
+
       if (
         state.credentials.validationStatus === "valid" &&
         state.operational.status === "verified"

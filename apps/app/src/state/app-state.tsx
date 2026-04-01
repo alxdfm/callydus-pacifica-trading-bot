@@ -42,7 +42,7 @@ import {
 import { createEmptyRuntimeState, type RuntimeState } from "../features/runtime/runtime-state";
 import { defaultLocale, type AppLocale } from "../shared/i18n/messages";
 
-type CredentialState = {
+export type CredentialState = {
   agentWalletPublicKey: string | null;
   agentWalletPrivateKey: string | null;
   credentialAlias: string | null;
@@ -55,7 +55,7 @@ type CredentialState = {
   retryable: boolean;
 };
 
-type BuilderApprovalState = {
+export type BuilderApprovalState = {
   approvalStatus: BuilderApprovalStatus;
   builderCode: string | null;
   approvedAt: string | null;
@@ -64,7 +64,7 @@ type BuilderApprovalState = {
   retryable: boolean;
 };
 
-type OperationalVerificationState = {
+export type OperationalVerificationState = {
   status: OperationalVerificationStatus;
   lastVerifiedAt: string | null;
   lastErrorCode: PacificaOperationalVerificationErrorCode | null;
@@ -102,7 +102,7 @@ export type AppSessionState = {
   runtime: RuntimeState;
 };
 
-type AppStateContextValue = {
+export type AppStateContextValue = {
   state: AppSessionState;
   canAccessProduct: boolean;
   setLocale: (locale: AppLocale) => void;
