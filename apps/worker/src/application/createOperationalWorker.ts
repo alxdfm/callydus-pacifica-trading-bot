@@ -770,6 +770,20 @@ export function createOperationalWorker(
           requestPayload,
         },
       });
+      logger.info("worker.order_submitted", {
+        operatorAccountId: signalDecision.operatorAccountId,
+        walletAddress: signalDecision.walletAddress,
+        signalDecisionId: signalDecision.signalDecisionId,
+        signalFingerprint: signalDecision.signalFingerprint,
+        presetActivationId: signalDecision.presetActivationId,
+        symbol: signalDecision.symbol,
+        marketSymbol: signalDecision.marketSymbol,
+        side: signalDecision.signalSide,
+        clientOrderId,
+        pacificaOrderId,
+        requestedNotionalUsd: targetNotionalUsd,
+        requestedQuantity: Number(normalizedOrder.amount),
+      });
       traceSignal("worker.execution_trace.execution_completed", {
         operatorAccountId: signalDecision.operatorAccountId,
         walletAddress: signalDecision.walletAddress,
@@ -986,6 +1000,13 @@ export function createOperationalWorker(
       if (runningLoops.has(candidate.operatorAccountId)) {
         continue;
       }
+
+      logger.info("worker.runtime_candidate_discovered", {
+        operatorAccountId: candidate.operatorAccountId,
+        walletAddress: candidate.walletAddress,
+        activePresetActivationId: candidate.activePresetActivationId,
+        workerId: dependencies.environment.workerId,
+      });
 
       const leaseAttemptedAt = now();
       const acquiredLease = await dependencies.repository.tryAcquireWorkerLease({
