@@ -19,6 +19,7 @@ import type {
   OpenTradeLifecycleSnapshot,
   OwnedRuntimeSnapshot,
   PauseRuntimeAfterExecutionFailureInput,
+  RequeueSignalDecisionInput,
   RecordOrderExecutionAttemptInput,
   ReleaseWorkerLeaseInput,
   SignalDecisionWriteResult,
@@ -46,6 +47,38 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
   async listRunnableRuntimeCandidates(nowIso: string): Promise<WorkerRuntimeCandidate[]> {
     const now = new Date(nowIso);
     const operatorAccounts = await this.prisma.operatorAccount.findMany({
+      where: {
+        presetActivations: {
+          some: {
+            activationStatus: "active",
+          },
+        },
+        OR: [
+          {
+            botRuntimeState: null,
+          },
+          {
+            botRuntimeState: {
+              botStatus: {
+                not: "paused",
+              },
+              OR: [
+                {
+                  workerOwnerId: null,
+                },
+                {
+                  workerLeaseExpiresAt: null,
+                },
+                {
+                  workerLeaseExpiresAt: {
+                    lte: now,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
       include: {
         botRuntimeState: true,
         presetActivations: {
@@ -514,6 +547,17 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       },
       data: {
         decisionStatus: "failed",
+      },
+    });
+  }
+
+  async requeueSignalDecision(input: RequeueSignalDecisionInput): Promise<void> {
+    await this.prisma.signalDecision.update({
+      where: {
+        id: input.signalDecisionId,
+      },
+      data: {
+        decisionStatus: "pending",
       },
     });
   }

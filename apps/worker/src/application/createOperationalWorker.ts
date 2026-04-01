@@ -809,9 +809,15 @@ export function createOperationalWorker(
         requestedAtIso,
         finishedAtIso: now().toISOString(),
       });
-      await dependencies.repository.failSignalDecision({
-        signalDecisionId: signalDecision.signalDecisionId,
-      });
+      if (failure.retryable && !failure.blocking) {
+        await dependencies.repository.requeueSignalDecision({
+          signalDecisionId: signalDecision.signalDecisionId,
+        });
+      } else {
+        await dependencies.repository.failSignalDecision({
+          signalDecisionId: signalDecision.signalDecisionId,
+        });
+      }
       await dependencies.repository.appendOperationalEvent({
         operatorAccountId: signalDecision.operatorAccountId,
         eventType: "order_execution",

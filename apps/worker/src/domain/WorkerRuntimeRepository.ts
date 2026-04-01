@@ -174,6 +174,10 @@ export type FailSignalDecisionInput = {
   signalDecisionId: string;
 };
 
+export type RequeueSignalDecisionInput = {
+  signalDecisionId: string;
+};
+
 export type CompleteSignalDecisionInput = {
   signalDecisionId: string;
 };
@@ -262,6 +266,7 @@ export interface WorkerRuntimeRepository {
     input: RecordOrderExecutionAttemptInput,
   ): Promise<void>;
   failSignalDecision(input: FailSignalDecisionInput): Promise<void>;
+  requeueSignalDecision(input: RequeueSignalDecisionInput): Promise<void>;
   completeSignalDecision(input: CompleteSignalDecisionInput): Promise<void>;
   cancelSignalDecision(input: CancelSignalDecisionInput): Promise<void>;
   createOpenTradeFromExecution(
