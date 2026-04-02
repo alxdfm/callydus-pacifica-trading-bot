@@ -7,9 +7,13 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "dotenv-cli": "^8.0.0"
+    "dotenv-cli": "^8.0.0",
+    "jsdom": "^29.0.1",
+    "vitest": "^1.6.1"
   }
 }
