@@ -178,7 +178,7 @@ export function createInitialAppSessionState(): AppSessionState {
   };
 }
 
-function parseStoredState(rawValue: string | null): AppSessionState {
+export function parseStoredState(rawValue: string | null): AppSessionState {
   if (!rawValue) {
     return createInitialAppSessionState();
   }
@@ -372,7 +372,7 @@ function runtimeScreenStatus(value: unknown): RuntimeState["screenStatus"] {
   return value === "loading" || value === "ready" || value === "error" ? value : "idle";
 }
 
-function deriveCanAccessProduct(state: AppSessionState) {
+export function deriveCanAccessProduct(state: AppSessionState) {
   return (
     state.wallet.sessionStatus === "connected" &&
     state.builderApproval.approvalStatus === "approved" &&
@@ -383,7 +383,7 @@ function deriveCanAccessProduct(state: AppSessionState) {
   );
 }
 
-function sanitizeStateForPersistence(state: AppSessionState): AppSessionState {
+export function sanitizeStateForPersistence(state: AppSessionState): AppSessionState {
   return {
     ...state,
     credentials: {
@@ -393,7 +393,10 @@ function sanitizeStateForPersistence(state: AppSessionState): AppSessionState {
   };
 }
 
-function areObjectsShallowEqual<T extends Record<string, unknown>>(left: T, right: T) {
+export function areObjectsShallowEqual<T extends Record<string, unknown>>(
+  left: T,
+  right: T,
+) {
   const leftKeys = Object.keys(left) as Array<keyof T>;
   const rightKeys = Object.keys(right) as Array<keyof T>;
 

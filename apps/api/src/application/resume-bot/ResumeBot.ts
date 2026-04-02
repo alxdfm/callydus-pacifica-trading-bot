@@ -41,7 +41,7 @@ export function createResumeBot(dependencies: ResumeBotDependencies) {
       walletAddress: input.walletAddress,
       requestedBy: "app",
       nowIso,
-      idempotencyKey: `resume-bot:${input.walletAddress}:${nowIso}`,
+      idempotencyKey: `resume-bot:${input.walletAddress}`,
     });
 
     if (!command) {

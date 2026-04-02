@@ -41,7 +41,7 @@ export function createPauseBot(dependencies: PauseBotDependencies) {
       walletAddress: input.walletAddress,
       requestedBy: "app",
       nowIso,
-      idempotencyKey: `pause-bot:${input.walletAddress}:${nowIso}`,
+      idempotencyKey: `pause-bot:${input.walletAddress}`,
     });
 
     if (!command) {

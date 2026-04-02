@@ -65,6 +65,103 @@ const defaultLogger: WorkerLogger = {
   },
 };
 
+export function buildLeaseExpiryIso(reference: Date, leaseDurationMs: number) {
+  return new Date(reference.getTime() + leaseDurationMs).toISOString();
+}
+
+export function shouldEvaluateSignals(
+  lastSignalEvaluationAt: string | null,
+  tickAt: Date,
+  analysisIntervalMs: number,
+) {
+  const lastEvaluationAt = lastSignalEvaluationAt
+    ? new Date(lastSignalEvaluationAt)
+    : null;
+
+  return (
+    lastEvaluationAt === null ||
+    tickAt.getTime() - lastEvaluationAt.getTime() >= analysisIntervalMs
+  );
+}
+
+export function calculateTargetNotionalUsd(input: {
+  latestBalanceSnapshot: {
+    availableBalance: number;
+  } | null;
+  positionSizeType: "fixed_amount" | "balance_percent";
+  positionSizeValue: number;
+}) {
+  if (input.positionSizeType === "fixed_amount") {
+    return input.positionSizeValue;
+  }
+
+  const availableBalance = input.latestBalanceSnapshot?.availableBalance ?? 0;
+  return availableBalance * (input.positionSizeValue / 100);
+}
+
+export function calculateUnrealizedPnl(input: {
+  side: "long" | "short";
+  entryPrice: number;
+  currentPrice: number;
+  quantity: number;
+}) {
+  const priceDelta =
+    input.side === "long"
+      ? input.currentPrice - input.entryPrice
+      : input.entryPrice - input.currentPrice;
+
+  return priceDelta * input.quantity;
+}
+
+export function resolveAutomaticClose(input: {
+  side: "long" | "short";
+  stopLossPrice: number;
+  takeProfitPrice: number;
+  candleHigh: number;
+  candleLow: number;
+}) {
+  if (input.side === "long") {
+    if (input.candleLow <= input.stopLossPrice) {
+      return {
+        closeReason: "stop_loss" as const,
+        exitPrice: input.stopLossPrice,
+      };
+    }
+
+    if (input.candleHigh >= input.takeProfitPrice) {
+      return {
+        closeReason: "take_profit" as const,
+        exitPrice: input.takeProfitPrice,
+      };
+    }
+
+    return null;
+  }
+
+  if (input.candleHigh >= input.stopLossPrice) {
+    return {
+      closeReason: "stop_loss" as const,
+      exitPrice: input.stopLossPrice,
+    };
+  }
+
+  if (input.candleLow <= input.takeProfitPrice) {
+    return {
+      closeReason: "take_profit" as const,
+      exitPrice: input.takeProfitPrice,
+    };
+  }
+
+  return null;
+}
+
+export function formatProtectedPrice(value: number, tickSize: string) {
+  const fraction = tickSize.split(".")[1] ?? "";
+  const decimals = fraction.length;
+
+  return value.toFixed(decimals);
+}
+
 /**
  * Creates the continuous operational worker for active presets.
  *
@@ -93,12 +190,6 @@ export function createOperationalWorker(
   const runningLoops = new Map<string, AbortController>();
   let scanAbortController: AbortController | null = null;
 
-  function buildLeaseExpiryIso(reference: Date) {
-    return new Date(
-      reference.getTime() + dependencies.environment.leaseDurationMs,
-    ).toISOString();
-  }
-
   function traceSignal(
     message: string,
     payload?: Record<string, unknown>,
@@ -108,23 +199,6 @@ export function createOperationalWorker(
     }
 
     logger.info(message, payload);
-  }
-
-  function shouldEvaluateSignals(
-    snapshot: Awaited<
-      ReturnType<WorkerRuntimeRepository["readOwnedRuntimeSnapshot"]>
-    >,
-    tickAt: Date,
-  ) {
-    const lastEvaluationAt = snapshot?.lastSignalEvaluationAt
-      ? new Date(snapshot.lastSignalEvaluationAt)
-      : null;
-
-    return (
-      lastEvaluationAt === null ||
-      tickAt.getTime() - lastEvaluationAt.getTime() >=
-        dependencies.environment.analysisIntervalMs
-    );
   }
 
   /**
@@ -349,84 +423,6 @@ export function createOperationalWorker(
     return {
       signalFingerprint,
     };
-  }
-
-  function calculateTargetNotionalUsd(input: {
-    latestBalanceSnapshot: {
-      availableBalance: number;
-    } | null;
-    positionSizeType: "fixed_amount" | "balance_percent";
-    positionSizeValue: number;
-  }) {
-    if (input.positionSizeType === "fixed_amount") {
-      return input.positionSizeValue;
-    }
-
-    const availableBalance = input.latestBalanceSnapshot?.availableBalance ?? 0;
-    return availableBalance * (input.positionSizeValue / 100);
-  }
-
-  function calculateUnrealizedPnl(input: {
-    side: "long" | "short";
-    entryPrice: number;
-    currentPrice: number;
-    quantity: number;
-  }) {
-    const priceDelta =
-      input.side === "long"
-        ? input.currentPrice - input.entryPrice
-        : input.entryPrice - input.currentPrice;
-
-    return priceDelta * input.quantity;
-  }
-
-  function resolveAutomaticClose(input: {
-    side: "long" | "short";
-    stopLossPrice: number;
-    takeProfitPrice: number;
-    candleHigh: number;
-    candleLow: number;
-  }) {
-    if (input.side === "long") {
-      if (input.candleLow <= input.stopLossPrice) {
-        return {
-          closeReason: "stop_loss" as const,
-          exitPrice: input.stopLossPrice,
-        };
-      }
-
-      if (input.candleHigh >= input.takeProfitPrice) {
-        return {
-          closeReason: "take_profit" as const,
-          exitPrice: input.takeProfitPrice,
-        };
-      }
-
-      return null;
-    }
-
-    if (input.candleHigh >= input.stopLossPrice) {
-      return {
-        closeReason: "stop_loss" as const,
-        exitPrice: input.stopLossPrice,
-      };
-    }
-
-    if (input.candleLow <= input.takeProfitPrice) {
-      return {
-        closeReason: "take_profit" as const,
-        exitPrice: input.takeProfitPrice,
-      };
-    }
-
-    return null;
-  }
-
-  function formatProtectedPrice(value: number, tickSize: string) {
-    const fraction = tickSize.split(".")[1] ?? "";
-    const decimals = fraction.length;
-
-    return value.toFixed(decimals);
   }
 
   /**
@@ -914,8 +910,17 @@ export function createOperationalWorker(
         const tickAt = now();
         let signalFingerprint: string | null | undefined;
 
-        if (shouldEvaluateSignals(snapshot, tickAt)) {
-          const evaluationResult = await evaluateOwnedPreset(lease, snapshot, tickAt);
+        const shouldRunSignalEvaluation = shouldEvaluateSignals(
+          snapshot.lastSignalEvaluationAt,
+          tickAt,
+          dependencies.environment.analysisIntervalMs,
+        );
+        if (shouldRunSignalEvaluation) {
+          const evaluationResult = await evaluateOwnedPreset(
+            lease,
+            snapshot,
+            tickAt,
+          );
           signalFingerprint = evaluationResult.signalFingerprint;
         }
 
@@ -925,7 +930,10 @@ export function createOperationalWorker(
           operatorAccountId: lease.operatorAccountId,
           workerId: dependencies.environment.workerId,
           nowIso: tickAt.toISOString(),
-          leaseExpiresAtIso: buildLeaseExpiryIso(tickAt),
+          leaseExpiresAtIso: buildLeaseExpiryIso(
+            tickAt,
+            dependencies.environment.leaseDurationMs,
+          ),
           botStatus: "active",
           syncStatus: "healthy",
           pacificaConnectionStatus: "connected",
@@ -961,7 +969,10 @@ export function createOperationalWorker(
           operatorAccountId: lease.operatorAccountId,
           workerId: dependencies.environment.workerId,
           nowIso: tickAt.toISOString(),
-          leaseExpiresAtIso: buildLeaseExpiryIso(tickAt),
+          leaseExpiresAtIso: buildLeaseExpiryIso(
+            tickAt,
+            dependencies.environment.leaseDurationMs,
+          ),
           botStatus: "active",
           syncStatus: "degraded",
           pacificaConnectionStatus: "degraded",
@@ -1013,7 +1024,10 @@ export function createOperationalWorker(
         operatorAccountId: candidate.operatorAccountId,
         workerId: dependencies.environment.workerId,
         nowIso: leaseAttemptedAt.toISOString(),
-        leaseExpiresAtIso: buildLeaseExpiryIso(leaseAttemptedAt),
+        leaseExpiresAtIso: buildLeaseExpiryIso(
+          leaseAttemptedAt,
+          dependencies.environment.leaseDurationMs,
+        ),
       });
 
       if (!acquiredLease) {
@@ -1115,7 +1129,7 @@ export function createOperationalWorker(
   };
 }
 
-function extractPacificaErrorMessage(body: unknown, fallback: string): string {
+export function extractPacificaErrorMessage(body: unknown, fallback: string): string {
   const apiMessage = (body as { error?: unknown } | null)?.error;
 
   if (typeof apiMessage === "string" && apiMessage.trim()) {

@@ -59,7 +59,7 @@ export async function validateAgentWalletLocally(
 
   await new Promise((resolve) => window.setTimeout(resolve, 700));
 
-  if (!submission.mainWalletPublicKey) {
+  if (!submission.mainWalletPublicKey.trim()) {
     return buildErrorResponse({
       status: "error",
       code: "wallet_not_connected",
