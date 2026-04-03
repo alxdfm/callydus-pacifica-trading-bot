@@ -11,6 +11,7 @@ import {
   presetActivationSchema,
   presetEditableConfigSchema,
   syncStatusSchema,
+  walletProviderSchema,
   walletSessionStatusSchema,
   closedTradeSchema,
   type BalanceSnapshot,
@@ -27,6 +28,7 @@ import {
   type PresetActivation,
   type PresetEditableConfig,
   type SyncStatus,
+  type WalletProvider,
   type WalletSession,
   type ClosedTrade,
 } from "@pacifica/contracts";
@@ -192,6 +194,7 @@ export function parseStoredState(rawValue: string | null): AppSessionState {
       wallet: {
         ...baseState.wallet,
         ...parsed.wallet,
+        provider: walletProviderValue(parsed.wallet?.provider),
         sessionStatus: walletSessionStatus(parsed.wallet?.sessionStatus),
       },
       builderApproval: {
@@ -243,6 +246,15 @@ export function parseStoredState(rawValue: string | null): AppSessionState {
   } catch {
     return createInitialAppSessionState();
   }
+}
+
+function walletProviderValue(value: unknown): WalletProvider | null {
+  if (value == null) {
+    return null;
+  }
+
+  const result = walletProviderSchema.safeParse(value);
+  return result.success ? result.data : null;
 }
 
 function walletSessionStatus(value: unknown): WalletSession["sessionStatus"] {
@@ -384,12 +396,73 @@ export function deriveCanAccessProduct(state: AppSessionState) {
 }
 
 export function sanitizeStateForPersistence(state: AppSessionState): AppSessionState {
+  const builderApproval =
+    state.builderApproval.approvalStatus === "approving"
+      ? {
+          ...state.builderApproval,
+          approvalStatus: "pending" as const,
+          lastErrorCode: null,
+          lastMessage: null,
+          retryable: false,
+        }
+      : state.builderApproval;
+  const credentials =
+    state.credentials.validationStatus === "validating"
+      ? {
+          ...state.credentials,
+          validationStatus: "pending" as const,
+          credentialId: null,
+          keyFingerprint: null,
+          lastValidatedAt: null,
+          lastErrorCode: null,
+          lastValidationMessage: null,
+          retryable: false,
+        }
+      : state.credentials;
+  const operational =
+    state.operational.status === "verifying"
+      ? {
+          ...state.operational,
+          status: "pending" as const,
+          lastVerifiedAt: null,
+          lastErrorCode: null,
+          lastMessage: null,
+          retryable: false,
+          probeSymbol: null,
+          probeClientOrderId: null,
+        }
+      : state.operational;
+  const walletSession =
+    state.wallet.sessionStatus === "reconnecting"
+      ? {
+          ...state.wallet,
+          sessionStatus: "disconnected" as const,
+          errorCode: null,
+        }
+      : state.wallet;
+  const onboarding =
+    state.onboarding.status === "credentials_validating"
+      ? {
+          ...state.onboarding,
+          status: "credentials_pending" as const,
+          accountReady: false,
+          showCompletionModal: false,
+        }
+      : {
+          ...state.onboarding,
+          showCompletionModal: false,
+        };
+
   return {
     ...state,
+    wallet: walletSession,
+    builderApproval,
     credentials: {
-      ...state.credentials,
+      ...credentials,
       agentWalletPrivateKey: null,
     },
+    operational,
+    onboarding,
   };
 }
 

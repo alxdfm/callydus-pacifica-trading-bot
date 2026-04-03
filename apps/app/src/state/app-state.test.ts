@@ -20,6 +20,7 @@ describe("app-state pure logic", () => {
     const state = parseStoredState(
       JSON.stringify({
         wallet: {
+          provider: "random-wallet",
           sessionStatus: "unknown",
         },
         credentials: {
@@ -30,6 +31,7 @@ describe("app-state pure logic", () => {
     );
 
     expect(state.wallet.sessionStatus).toBe("disconnected");
+    expect(state.wallet.provider).toBeNull();
     expect(state.credentials.validationStatus).toBe("pending");
     expect(state.credentials.agentWalletPrivateKey).toBeNull();
   });
@@ -72,6 +74,33 @@ describe("app-state pure logic", () => {
     state.credentials.agentWalletPrivateKey = "secret";
 
     expect(sanitizeStateForPersistence(state).credentials.agentWalletPrivateKey).toBeNull();
+  });
+
+  it("não reidrata estados transitórios que deixam o onboarding travado", () => {
+    const state = createInitialAppSessionState();
+
+    state.wallet.sessionStatus = "connected";
+    state.builderApproval.approvalStatus = "approving";
+    state.builderApproval.lastMessage = "Requesting wallet signature for builder approval.";
+    state.credentials.validationStatus = "validating";
+    state.credentials.agentWalletPrivateKey = "secret";
+    state.operational.status = "verifying";
+    state.onboarding.status = "credentials_validating";
+    state.onboarding.accountLookupStatus = "new_account";
+    state.onboarding.showCompletionModal = true;
+
+    const persistedState = sanitizeStateForPersistence(state);
+    const rehydratedState = parseStoredState(JSON.stringify(persistedState));
+
+    expect(rehydratedState.wallet.sessionStatus).toBe("connected");
+    expect(rehydratedState.builderApproval.approvalStatus).toBe("pending");
+    expect(rehydratedState.builderApproval.lastMessage).toBeNull();
+    expect(rehydratedState.credentials.validationStatus).toBe("pending");
+    expect(rehydratedState.credentials.agentWalletPrivateKey).toBeNull();
+    expect(rehydratedState.operational.status).toBe("pending");
+    expect(rehydratedState.onboarding.status).toBe("credentials_pending");
+    expect(rehydratedState.onboarding.accountLookupStatus).toBe("new_account");
+    expect(rehydratedState.onboarding.showCompletionModal).toBe(false);
   });
 
   it("compara objetos rasos de forma estável", () => {
