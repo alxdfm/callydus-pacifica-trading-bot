@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PropsWithChildren } from "react";
+import type { WalletProvider } from "@pacifica/contracts";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createEmptyRuntimeState } from "../../runtime/runtime-state";
@@ -7,6 +8,20 @@ import { useSolanaWalletPort } from "./SolanaWalletEnvironment";
 import { lookupOperationalAccountViaBackend } from "../../onboarding/backend-operational-account-lookup";
 import { readAccountSessionViaBackend } from "../../account/backend-account-session";
 import { applyAccountSessionSnapshot } from "../../account/apply-account-session";
+
+function mapAdapterNameToWalletProvider(
+  providerName: string | null,
+): WalletProvider | null {
+  if (providerName === "Phantom") {
+    return "phantom";
+  }
+
+  if (providerName === "Backpack") {
+    return "backpack";
+  }
+
+  return null;
+}
 
 export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   const {
@@ -35,7 +50,7 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   useEffect(() => {
     const mainWalletPublicKey = publicKey?.toBase58() ?? null;
     const providerName = selectedProviderName ?? wallet?.adapter.name ?? null;
-    const provider = providerName === "Phantom" ? "phantom" : null;
+    const provider = mapAdapterNameToWalletProvider(providerName);
     const walletChanged =
       Boolean(mainWalletPublicKey) &&
       Boolean(state.wallet.mainWalletPublicKey) &&

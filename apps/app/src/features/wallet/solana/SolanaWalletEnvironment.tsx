@@ -1,6 +1,7 @@
 import { clusterApiUrl } from "@solana/web3.js";
 import { WalletProvider, ConnectionProvider } from "@solana/wallet-adapter-react";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 import {
   createContext,
   type PropsWithChildren,
@@ -9,22 +10,29 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { WalletErrorCode } from "@pacifica/contracts";
+import type {
+  WalletErrorCode,
+  WalletProvider as SupportedWalletProvider,
+} from "@pacifica/contracts";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletReadyState, type WalletName } from "@solana/wallet-adapter-base";
 
 export type SolanaWalletPort = {
   selectedProviderName: string | null;
   lastErrorCode: WalletErrorCode | null;
-  connectWallet: () => Promise<void>;
+  connectWallet: (provider?: SupportedWalletProvider) => Promise<void>;
   disconnectWallet: () => Promise<void>;
   canSignMessages: boolean;
   signWalletMessage: (message: Uint8Array) => Promise<Uint8Array>;
 };
 
-const phantomWalletName = "Phantom";
+const providerAdapterNames: Record<SupportedWalletProvider, string> = {
+  phantom: "Phantom",
+  backpack: "Backpack",
+};
+const supportedWalletNames = Object.values(providerAdapterNames) as string[];
 const endpoint = clusterApiUrl("mainnet-beta");
-const wallets = [new PhantomWalletAdapter()];
+const wallets = [new PhantomWalletAdapter(), new BackpackWalletAdapter()];
 const SolanaWalletPortContext = createContext<SolanaWalletPort | null>(null);
 
 function mapWalletError(error: unknown): WalletErrorCode {
@@ -55,29 +63,57 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
   } = useWallet();
   const [lastErrorCode, setLastErrorCode] = useState<WalletErrorCode | null>(null);
 
-  const connectWallet = useCallback(async () => {
-    const phantomWallet = availableWallets.find(
-      (candidate) => candidate.adapter.name === phantomWalletName,
+  const connectWallet = useCallback(async (provider?: SupportedWalletProvider) => {
+    const requestedAdapterName = provider ? providerAdapterNames[provider] : null;
+    const selectedWallet =
+      wallet &&
+      supportedWalletNames.includes(wallet.adapter.name)
+        ? wallet
+        : null;
+    const matchingWallets = requestedAdapterName
+      ? availableWallets.filter(
+          (candidate) => candidate.adapter.name === requestedAdapterName,
+        )
+      : availableWallets;
+    const candidateWallets = selectedWallet && !requestedAdapterName
+      ? [
+          ...matchingWallets.filter(
+            (candidate) => candidate.adapter.name === selectedWallet.adapter.name,
+          ),
+          ...matchingWallets.filter(
+            (candidate) => candidate.adapter.name !== selectedWallet.adapter.name,
+          ),
+        ]
+      : matchingWallets;
+    const supportedWallet = candidateWallets.find((candidate) => {
+      if (!supportedWalletNames.includes(candidate.adapter.name)) {
+        return false;
+      }
+
+      return (
+        candidate.readyState === WalletReadyState.Installed ||
+        candidate.readyState === WalletReadyState.Loadable
+      );
+    });
+    const hasSupportedWallet = availableWallets.some((candidate) =>
+      supportedWalletNames.includes(candidate.adapter.name),
     );
 
-    if (!phantomWallet || phantomWallet.readyState === WalletReadyState.Unsupported) {
-      setLastErrorCode("wallet_unsupported");
+    if (!hasSupportedWallet) {
+      setLastErrorCode("wallet_provider_missing");
       return;
     }
 
-    if (
-      phantomWallet.readyState !== WalletReadyState.Installed &&
-      phantomWallet.readyState !== WalletReadyState.Loadable
-    ) {
-      setLastErrorCode("wallet_provider_missing");
+    if (!supportedWallet) {
+      setLastErrorCode("wallet_unsupported");
       return;
     }
 
     try {
       setLastErrorCode(null);
 
-      if (!wallet || wallet.adapter.name !== phantomWalletName) {
-        select(phantomWalletName as WalletName);
+      if (!wallet || wallet.adapter.name !== supportedWallet.adapter.name) {
+        select(supportedWallet.adapter.name as WalletName);
         return;
       }
 

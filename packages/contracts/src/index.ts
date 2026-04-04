@@ -39,7 +39,7 @@ export const walletSessionStatusSchema = z.enum([
   "error",
 ]);
 
-export const walletProviderSchema = z.enum(["phantom"]);
+export const walletProviderSchema = z.enum(["phantom", "backpack"]);
 
 export const walletErrorCodeSchema = z.enum([
   "wallet_provider_missing",
