@@ -9,6 +9,7 @@ import type {
   PacificaCredentialSubmission,
   PacificaCredentialValidationResponse,
   PacificaOperationalVerificationResponse,
+  WalletProvider,
   WalletSession,
 } from "@pacifica/contracts";
 import { approveBuilderCodeViaBackend } from "../../features/onboarding/backend-builder-approval";
@@ -50,6 +51,18 @@ function shortenPublicKey(value: string | null) {
   }
 
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
+}
+
+function formatWalletProvider(value: string | null) {
+  if (value === "phantom") {
+    return "Phantom";
+  }
+
+  if (value === "backpack") {
+    return "Backpack";
+  }
+
+  return value;
 }
 
 function mapCredentialFormState(
@@ -427,6 +440,8 @@ export function OnboardingPage() {
   const { t } = useI18n();
   const [fieldErrors, setFieldErrors] = useState<FormFieldErrors>({});
   const [selectedStepIndex, setSelectedStepIndex] = useState(0);
+  const [selectedWalletProvider, setSelectedWalletProvider] =
+    useState<WalletProvider>("phantom");
   const previousRevealAdditionalStepsRef = useRef(false);
   const previousCurrentStepIndexRef = useRef(0);
 
@@ -550,6 +565,12 @@ export function OnboardingPage() {
   const isOperationalStepCurrent = progressSteps[3]?.status === "current";
   const isOperationalStepDone = progressSteps[3]?.status === "done";
   const isOperationalStepLocked = progressSteps[3]?.status === "locked";
+
+  useEffect(() => {
+    if (state.wallet.provider) {
+      setSelectedWalletProvider(state.wallet.provider);
+    }
+  }, [state.wallet.provider]);
 
   useEffect(() => {
     if (!revealAdditionalSteps && selectedStepIndex > 0) {
@@ -1198,7 +1219,10 @@ export function OnboardingPage() {
               <div>
                 <strong>
                   {walletConnected
-                    ? `${valueOrFallback(state.wallet.provider, "Phantom")} wallet`
+                    ? `${valueOrFallback(
+                        formatWalletProvider(state.wallet.provider),
+                        "Phantom",
+                      )} wallet`
                     : t("onboardingWalletAction")}
                 </strong>
                 <p>{walletMicrocopy}</p>
@@ -1211,27 +1235,53 @@ export function OnboardingPage() {
                     : t("onboardingWalletActionHint")}
                 </small>
               </div>
-              {isWalletStepDone ? (
-                <button
-                  className="btn secondary small"
-                  onClick={() => void handleEditWalletStep()}
-                  type="button"
-                >
-                  {t("onboardingEditAction")}
-                </button>
-              ) : (
-                <button
-                  className="btn secondary"
-                  onClick={() =>
-                    void (walletConnected ? disconnectWallet() : connectWallet())
-                  }
-                  type="button"
-                >
-                  {walletConnected
-                    ? t("onboardingWalletActionDisconnect")
-                    : t("onboardingWalletAction")}
-                </button>
-              )}
+              <div className="form-stack">
+                {!walletConnected ? (
+                  <label className="onboarding-form__field">
+                    <span>{t("onboardingProviderSelectLabel")}</span>
+                    <select
+                      className="onboarding-form__input"
+                      onChange={(event) =>
+                        setSelectedWalletProvider(
+                          event.target.value as WalletProvider,
+                        )
+                      }
+                      value={selectedWalletProvider}
+                    >
+                      <option value="phantom">
+                        {t("onboardingProviderOptionPhantom")}
+                      </option>
+                      <option value="backpack">
+                        {t("onboardingProviderOptionBackpack")}
+                      </option>
+                    </select>
+                    <small>{t("onboardingWalletSelectionHint")}</small>
+                  </label>
+                ) : null}
+                {isWalletStepDone ? (
+                  <button
+                    className="btn secondary small"
+                    onClick={() => void handleEditWalletStep()}
+                    type="button"
+                  >
+                    {t("onboardingEditAction")}
+                  </button>
+                ) : (
+                  <button
+                    className="btn secondary"
+                    onClick={() =>
+                      void (walletConnected
+                        ? disconnectWallet()
+                        : connectWallet(selectedWalletProvider))
+                    }
+                    type="button"
+                  >
+                    {walletConnected
+                      ? t("onboardingWalletActionDisconnect")
+                      : t("onboardingWalletAction")}
+                  </button>
+                )}
+              </div>
             </div>
 
             {state.wallet.errorCode ? (

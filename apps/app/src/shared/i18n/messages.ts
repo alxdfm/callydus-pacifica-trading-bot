@@ -76,6 +76,9 @@ export const messages = {
     onboardingReadonlyFieldLabel: "Readonly",
     onboardingEditableFieldLabel: "Expected input",
     onboardingProviderLabel: "Provider",
+    onboardingProviderSelectLabel: "Wallet to connect",
+    onboardingProviderOptionPhantom: "Phantom",
+    onboardingProviderOptionBackpack: "Backpack",
     onboardingMainWalletLabel: "Main wallet public key",
     onboardingWalletErrorLabel: "Wallet issue",
     onboardingAgentWalletPublicLabel: "Agent Wallet public key",
@@ -165,8 +168,8 @@ export const messages = {
       "Complete the fields and validate before continuing.",
     onboardingCredentialFormActionReady:
       "The Agent Wallet is valid and product access can be unlocked.",
-    onboardingWalletMicrocopyPending: "Connect Phantom to continue.",
-    onboardingWalletMicrocopyConnecting: "Connecting to Phantom...",
+    onboardingWalletMicrocopyPending: "Connect Phantom or Backpack to continue.",
+    onboardingWalletMicrocopyConnecting: "Connecting to wallet...",
     onboardingWalletMicrocopyConnected: "Wallet connected and ready.",
     onboardingWalletMicrocopyError: "Could not connect wallet.",
     onboardingBuilderMicrocopyPending: "Approve the builder code with the connected wallet.",
@@ -199,15 +202,15 @@ export const messages = {
     onboardingOperationalVerifiedMessage:
       "The controlled order check succeeded and the account is ready to operate.",
     onboardingWalletErrorProviderMissing:
-      "Phantom is not installed in this browser. Install the extension and try again.",
+      "Phantom or Backpack is not available in this browser. Install one of them and try again.",
     onboardingWalletErrorRejected:
-      "The wallet connection request was rejected. Open Phantom and approve the connection.",
+      "The wallet connection request was rejected. Open the selected wallet and approve the connection.",
     onboardingWalletErrorFailed:
-      "Could not connect to Phantom right now. Try again in a moment.",
+      "Could not connect to the wallet right now. Try again in a moment.",
     onboardingWalletErrorSessionLost:
       "The wallet session was lost. Connect the wallet again to continue.",
     onboardingWalletErrorUnsupported:
-      "This wallet is outside the Sprint 1 scope. Use Phantom to continue.",
+      "This wallet is outside the supported scope. Use Phantom or Backpack to continue.",
     onboardingCredentialMicrocopyEmpty: "Enter your Agent Wallet details.",
     onboardingCredentialMicrocopyFilled: "Ready to validate Agent Wallet.",
     onboardingCredentialMicrocopyValidating: "Validating Agent Wallet...",
@@ -216,9 +219,11 @@ export const messages = {
     onboardingCredentialMicrocopyRetry: "Validation is temporarily unavailable. Try again.",
     onboardingWalletAction: "Connect wallet",
     onboardingWalletActionDisconnect: "Change wallet",
-    onboardingWalletActionHint: "Connect Phantom to continue with account setup.",
+    onboardingWalletActionHint: "Connect Phantom or Backpack to continue with account setup.",
     onboardingWalletActionHintConnected:
       "The connected wallet now drives the readonly main wallet field and unlocks the next stage.",
+    onboardingWalletSelectionHint:
+      "Choose which supported wallet should open when you start the connection.",
     onboardingCredentialAction: "Validate and Continue",
     onboardingClearAction: "Clear",
     onboardingCredentialActionHint:

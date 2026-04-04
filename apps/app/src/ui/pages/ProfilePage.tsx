@@ -25,6 +25,18 @@ function formatRelativeValidation(value: string | null, fallback: string) {
   });
 }
 
+function formatWalletProvider(value: string | null) {
+  if (value === "phantom") {
+    return "Phantom";
+  }
+
+  if (value === "backpack") {
+    return "Backpack";
+  }
+
+  return value ?? "Phantom";
+}
+
 function deriveAgentWalletBadgeState(
   hasCredentialKeyChanges: boolean,
   validationStatus: ReturnType<
@@ -341,7 +353,7 @@ export function ProfilePage() {
               <input
                 className="onboarding-form__input"
                 readOnly
-                value={state.wallet.provider ?? "phantom"}
+                value={formatWalletProvider(state.wallet.provider)}
               />
             </label>
             <label className="onboarding-form__field">
