@@ -5,9 +5,9 @@ import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { getNavigationItems } from "./navigation";
 
-function NavigationLinks({ showOnboarding }: { showOnboarding: boolean }) {
+function NavigationLinks() {
   const { t } = useI18n();
-  const navigationItems = getNavigationItems(showOnboarding);
+  const navigationItems = getNavigationItems();
 
   return (
     <>
@@ -32,7 +32,6 @@ export function AppLayout() {
   const location = useLocation();
   const { setLocale, state } = useAppState();
   const { isReady, t } = useI18n();
-  const showOnboarding = !state.onboarding.accountReady;
   const isOnboardingRoute = location.pathname === "/onboarding";
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
@@ -66,7 +65,7 @@ export function AppLayout() {
           </div>
         </div>
         <nav className="shell-nav shell-nav--desktop">
-          <NavigationLinks showOnboarding={showOnboarding} />
+          <NavigationLinks />
         </nav>
         <div className="nav-card shell-side-card">
           <span
@@ -109,7 +108,7 @@ export function AppLayout() {
           aria-label={t("mobileMenuLabel")}
           className="shell-nav shell-nav--mobile"
         >
-          <NavigationLinks showOnboarding={showOnboarding} />
+          <NavigationLinks />
         </nav>
 
         <main className="shell-content">

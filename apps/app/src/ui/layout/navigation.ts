@@ -6,8 +6,6 @@ const baseNavigationItems = [
   { to: "/profile", labelKey: "navProfile" },
 ] as const;
 
-export function getNavigationItems(showOnboarding: boolean) {
-  return showOnboarding
-    ? ([{ to: "/onboarding", labelKey: "navOnboarding" }, ...baseNavigationItems] as const)
-    : baseNavigationItems;
+export function getNavigationItems() {
+  return baseNavigationItems;
 }
