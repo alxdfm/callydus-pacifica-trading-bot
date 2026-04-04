@@ -105,12 +105,28 @@ pnpm db:down
 
 1. Rode `pnpm --filter @pacifica/app dev`
 2. Abra `http://localhost:5173`
-3. Tenha a extensão `Phantom` instalada no navegador
-4. Clique em `Connect wallet`
-5. Clique em `Approve builder code` e aprove a assinatura na wallet principal
-6. Preencha `Agent Wallet public key` e `Agent Wallet private key`
-7. Use a private key no mesmo formato `base58` entregue pela Pacifica
-8. Clique em `Validate and Continue`
+3. Tenha a extensão `Phantom` ou `Backpack` instalada no navegador
+4. No card de wallet, escolha `Phantom` ou `Backpack` no dropdown `Wallet to connect`
+5. Clique em `Connect wallet`
+6. Clique em `Approve builder code` e aprove a assinatura na wallet principal
+7. Preencha `Agent Wallet public key` e `Agent Wallet private key`
+8. Use a private key no mesmo formato `base58` entregue pela Pacifica
+9. Clique em `Validate and Continue`
+
+### Seleção de wallet no onboarding
+
+O onboarding agora aceita duas wallets Solana suportadas:
+- `Phantom`
+- `Backpack`
+
+Comportamento atual:
+- a escolha é feita no dropdown `Wallet to connect` antes de clicar em `Connect wallet`
+- a wallet conectada passa a definir a `Main wallet` da sessão
+- `Change wallet` desconecta a sessão atual e permite escolher outro provider
+- o `Profile` exibe o provider conectado como `Phantom` ou `Backpack`
+
+Observação técnica:
+- o suporte ao `Backpack` usa o adapter `@solana/wallet-adapter-backpack`, que hoje está marcado como `deprecated` no npm, mas permanece como a integração compatível com a stack atual do app
 
 ## Estrutura
 
