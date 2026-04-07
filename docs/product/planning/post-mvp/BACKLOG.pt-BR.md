@@ -34,6 +34,12 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 | BG-020 | DONE | implementacao | P0 | profile | implementar remapeamento funcional do `Profile` para logout, bloqueio de edicao critica e revalidacao operacional da `Agent Wallet` | concluido no app; backlog residual segue separado em `BG-019` e `BG-022` |
 | BG-021 | DONE | ajuste de UX | P0 | profile | revisar UX do `Profile` para refletir manutencao recorrente, impacto de bloqueio e revalidacao critica da `Agent Wallet` | concluido com copy, estados e fluxo final aplicados no `Profile` real |
 | BG-022 | TODO | bug | P1 | profile | corrigir alias desatualizado ao reutilizar credencial antiga `replaced` no fluxo de `Replace Agent Wallet` | refinar regra de produto para alias em credencial reaproveitada antes de ajustar `/validate` ou persistencia |
+| BG-023 | DONE | implementacao | P1 | market data / runtime | centralizar market data publico da Pacifica com snapshots persistidos, refresher local, consumo pela API e integracao do worker | concluido em modo local-first; backlog residual de producao e validacao real segue em `BG-024` a `BG-027` |
+| BG-024 | TODO | implementacao | P1 | market data / infraestrutura | promover o scheduler local de market data para execucao de producao com `Lambda + EventBridge Scheduler` | criar entrypoint de producao, configurar agenda externa e fechar timeout/memoria/envs |
+| BG-025 | TODO | melhoria | P2 | market data / api | expor metadados de frescor (`fresh/stale/unavailable`) nas respostas de leitura de mercado quando fizer sentido | decidir contrato visivel da API sem quebrar consumidores atuais |
+| BG-026 | TODO | melhoria | P1 | market data / observabilidade | medir impacto real da centralizacao em `429`, volume de chamadas externas e tempo medio de refresh | instrumentar comparativos no ambiente real e validar reducao de pressao na Pacifica |
+| BG-027 | TODO | implementacao | P1 | market data / operacao | automatizar politica de retencao e cleanup operacional fora do uso manual local | acoplar rotina recorrente de limpeza ao modo de execucao final e validar retencao em ambiente real |
+| BG-028 | DONE | implementacao | P1 | presets / strategy preview | exibir preview de backtest abaixo do preset-showcase com simulacao efemera, comparacao vs hold e drawdown | concluido com endpoint on-demand, engine compartilhada e periodo fixo de 7 dias |
 
 ## Cards
 - [BG-001 Card](./cards/BG-001_CARD.pt-BR.md)
@@ -58,6 +64,12 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 - [BG-020 Card](./cards/BG-020_CARD.pt-BR.md)
 - [BG-021 Card](./cards/BG-021_CARD.pt-BR.md)
 - [BG-022 Card](./cards/BG-022_CARD.pt-BR.md)
+- [BG-023 Card](./cards/BG-023_CARD.pt-BR.md)
+- [BG-024 Card](./cards/BG-024_CARD.pt-BR.md)
+- [BG-025 Card](./cards/BG-025_CARD.pt-BR.md)
+- [BG-026 Card](./cards/BG-026_CARD.pt-BR.md)
+- [BG-027 Card](./cards/BG-027_CARD.pt-BR.md)
+- [BG-028 Card](./cards/BG-028_CARD.pt-BR.md)
 
 ## Debt Arquitetural
 Trilha separada para refatoracoes estruturais, consolidacao de fluxo, fortalecimento de boundaries e cobertura automatizada. Esses itens nao competem diretamente com backlog funcional/UX e devem ser puxados quando o slice correspondente estiver funcionalmente estavel.
