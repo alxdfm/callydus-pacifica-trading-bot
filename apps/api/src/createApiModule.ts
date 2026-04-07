@@ -56,6 +56,10 @@ import {
   type PauseBotDependencies,
 } from "./application/pause-bot/PauseBot";
 import {
+  createPreviewPresetBacktest,
+  type PreviewPresetBacktestDependencies,
+} from "./application/preview-preset-backtest/PreviewPresetBacktest";
+import {
   createReconcileRuntime,
   type ReconcileRuntimeDependencies,
 } from "./application/reconcile-runtime/ReconcileRuntime";
@@ -108,6 +112,7 @@ type CreateApiModuleInput = {
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
   getMarketInfoDependencies?: Partial<GetMarketInfoDependencies>;
+  previewPresetBacktestDependencies?: Partial<PreviewPresetBacktestDependencies>;
   heartbeatRuntimeDependencies?: Partial<HeartbeatRuntimeDependencies>;
   lookupOperationalAccountByWalletDependencies?: Partial<
     LookupOperationalAccountByWalletDependencies
@@ -166,6 +171,10 @@ export function createApiModule(input: CreateApiModuleInput) {
   const getMarketInfo = createGetMarketInfo({
     marketInfo:
       input.getMarketInfoDependencies?.marketInfo ?? startBotReadinessGateway,
+  });
+  const previewPresetBacktest = createPreviewPresetBacktest({
+    marketData:
+      input.previewPresetBacktestDependencies?.marketData ?? marketDataGateway,
   });
 
   const activatePreset = createActivatePreset({
@@ -348,6 +357,7 @@ export function createApiModule(input: CreateApiModuleInput) {
       getMarketCandles,
       getMarketInfo,
       getMarketPrices,
+      previewPresetBacktest,
       heartbeatRuntime,
       lookupOperationalAccountByWallet,
       pauseBot,

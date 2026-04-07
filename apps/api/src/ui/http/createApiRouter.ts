@@ -10,6 +10,8 @@ import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute"
 import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
 import { createGetMarketInfoRoute } from "./routes/createGetMarketInfoRoute";
 import type { GetMarketInfoHandler } from "./routes/createGetMarketInfoRoute";
+import { createPreviewPresetBacktestRoute } from "./routes/createPreviewPresetBacktestRoute";
+import type { PreviewPresetBacktestHandler } from "./routes/createPreviewPresetBacktestRoute";
 import { createPauseBotRoute } from "./routes/createPauseBotRoute";
 import type { PauseBotHandler } from "./routes/createPauseBotRoute";
 import { createHeartbeatRuntimeRoute } from "./routes/createHeartbeatRuntimeRoute";
@@ -37,6 +39,7 @@ type ApiRouterDependencies = {
   getMarketCandles: GetMarketCandlesHandler;
   getMarketInfo: GetMarketInfoHandler;
   getMarketPrices: GetMarketPricesHandler;
+  previewPresetBacktest: PreviewPresetBacktestHandler;
   heartbeatRuntime: HeartbeatRuntimeHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
   pauseBot: PauseBotHandler;
@@ -63,6 +66,9 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     getMarketInfo: createGetMarketInfoRoute(dependencies.getMarketInfo),
     getMarketPrices: createGetMarketPricesRoute(
       dependencies.getMarketPrices,
+    ),
+    previewPresetBacktest: createPreviewPresetBacktestRoute(
+      dependencies.previewPresetBacktest,
     ),
     heartbeatRuntime: createHeartbeatRuntimeRoute(
       dependencies.heartbeatRuntime,
