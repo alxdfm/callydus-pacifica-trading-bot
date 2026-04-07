@@ -3,6 +3,7 @@ import type { MarketCandleRequest } from "@pacifica/contracts";
 import type { AesCredentialEncryptionService } from "@pacifica/credential-crypto";
 import { PacificaApiError } from "@pacifica/pacifica-market-data";
 import {
+  calculateTargetPositionSizing,
   findMarketInfo,
   normalizeMarketOrderInput,
   PacificaClient,
@@ -90,13 +91,14 @@ export function calculateTargetNotionalUsd(input: {
   } | null;
   positionSizeType: "fixed_amount" | "balance_percent";
   positionSizeValue: number;
+  leverage: number | null;
 }) {
-  if (input.positionSizeType === "fixed_amount") {
-    return input.positionSizeValue;
-  }
-
-  const availableBalance = input.latestBalanceSnapshot?.availableBalance ?? 0;
-  return availableBalance * (input.positionSizeValue / 100);
+  return calculateTargetPositionSizing({
+    availableBalance: input.latestBalanceSnapshot?.availableBalance ?? 0,
+    positionSizeType: input.positionSizeType,
+    positionSizeValue: input.positionSizeValue,
+    leverage: input.leverage ?? 1,
+  }).targetNotionalUsd;
 }
 
 export function calculateUnrealizedPnl(input: {
@@ -602,6 +604,7 @@ export function createOperationalWorker(
       latestBalanceSnapshot: signalDecision.latestBalanceSnapshot,
       positionSizeType: signalDecision.activation.positionSizeType,
       positionSizeValue: signalDecision.activation.positionSizeValue,
+      leverage: signalDecision.activation.leverage,
     });
 
     traceSignal("worker.execution_trace.execution_started", {

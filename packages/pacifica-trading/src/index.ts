@@ -40,6 +40,28 @@ export type PacificaClientInput = {
   expiryWindowMs: number;
 };
 
+export function calculateTargetPositionSizing(input: {
+  availableBalance: number;
+  positionSizeType: "fixed_amount" | "balance_percent";
+  positionSizeValue: number;
+  leverage: number;
+}) {
+  if (input.positionSizeType === "fixed_amount") {
+    return {
+      targetInitialMarginUsd: input.positionSizeValue / input.leverage,
+      targetNotionalUsd: input.positionSizeValue,
+    };
+  }
+
+  const targetInitialMarginUsd =
+    input.availableBalance * (input.positionSizeValue / 100);
+
+  return {
+    targetInitialMarginUsd,
+    targetNotionalUsd: targetInitialMarginUsd * input.leverage,
+  };
+}
+
 export type PacificaMarketInfo = {
   symbol: string;
   tickSize: string;
