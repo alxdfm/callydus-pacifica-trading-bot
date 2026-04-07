@@ -137,6 +137,30 @@ Observação técnica:
 - `packages/database`: schema Prisma e base de dados
 - `docker-compose.yml`: PostgreSQL local para desenvolvimento
 
+## Preview de backtest dos presets
+
+A tela de presets agora exibe um preview de backtest logo abaixo do `preset-showcase`.
+
+Comportamento atual:
+- o preview é calculado sob demanda quando o preset é selecionado ou editado
+- o resultado nao é persistido em banco
+- o período é fixo em `ultimos 7 dias`
+- a UI exibe `strategy vs hold`, `max drawdown`, `win rate` e trades simulados
+
+Fidelidade com o runtime:
+- o preview reutiliza a mesma engine de sinal usada pelo bot
+- o contrato efetivo do preset considera `symbol`, `positionSizeValue`, `longEnabled` e `shortEnabled`
+- a entrada simulada ocorre na abertura do próximo candle após o sinal
+
+Endpoint:
+
+```txt
+POST /api/presets/backtest-preview
+```
+
+Referência técnica completa:
+- [docs/dev/PRESET_BACKTEST_PREVIEW_TECH_DESIGN.pt-BR.md](/home/dev/Projects/callydus-pacifica-trading-bot/docs/dev/PRESET_BACKTEST_PREVIEW_TECH_DESIGN.pt-BR.md)
+
 ## Worker
 
 No estado atual de `FM-013` + `FM-014`, o `worker`:
