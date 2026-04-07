@@ -8,6 +8,7 @@ import type {
   OperationalAlert,
   PacificaConnectionStatus,
   PresetActivation,
+  SymbolOperationalConfig,
   SyncStatus,
   BotStatus,
 } from "@pacifica/contracts";
@@ -21,6 +22,7 @@ export type OperationalRuntimeReadModel = {
   exchangeLastSyncedAt: string | null;
   exchangeSnapshotMessage: string | null;
   activePresetActivationId: string | null;
+  symbolOperationalConfigs: SymbolOperationalConfig[];
   lastHeartbeatAt: string | null;
   lastErrorMessage: string | null;
   currentTrades: OpenTrade[];

@@ -41,13 +41,15 @@ describe("createOperationalWorker pure rules", () => {
         },
         positionSizeType: "balance_percent",
         positionSizeValue: 5,
+        leverage: 10,
       }),
-    ).toBe(10);
+    ).toBe(100);
     expect(
       calculateTargetNotionalUsd({
         latestBalanceSnapshot: null,
         positionSizeType: "fixed_amount",
         positionSizeValue: 25,
+        leverage: 20,
       }),
     ).toBe(25);
   });

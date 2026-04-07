@@ -31,6 +31,8 @@ import {
   type WalletProvider,
   type WalletSession,
   type ClosedTrade,
+  type SymbolOperationalConfig,
+  symbolOperationalConfigSchema,
 } from "@pacifica/contracts";
 import {
   createContext,
@@ -226,6 +228,9 @@ export function parseStoredState(rawValue: string | null): AppSessionState {
         balance: balanceSnapshotValue(parsed.runtime?.balance),
         botStatus: botStatusValue(parsed.runtime?.botStatus),
         syncStatus: syncStatusValue(parsed.runtime?.syncStatus),
+        symbolOperationalConfigs: symbolOperationalConfigsValue(
+          parsed.runtime?.symbolOperationalConfigs,
+        ),
         currentTrades: openTradesValue(parsed.runtime?.currentTrades),
         closedTrades: closedTradesValue(parsed.runtime?.closedTrades),
         alerts: operationalAlertsValue(parsed.runtime?.alerts),
@@ -382,6 +387,17 @@ function operationalEventsValue(value: unknown): OperationalEvent[] {
 
 function runtimeScreenStatus(value: unknown): RuntimeState["screenStatus"] {
   return value === "loading" || value === "ready" || value === "error" ? value : "idle";
+}
+
+function symbolOperationalConfigsValue(value: unknown): SymbolOperationalConfig[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    const result = symbolOperationalConfigSchema.safeParse(item);
+    return result.success ? [result.data] : [];
+  });
 }
 
 export function deriveCanAccessProduct(state: AppSessionState) {

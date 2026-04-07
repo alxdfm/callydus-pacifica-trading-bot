@@ -131,6 +131,7 @@ export type ExecutableSignalDecision = {
   activation: {
     positionSizeType: "fixed_amount" | "balance_percent";
     positionSizeValue: number;
+    leverage: number | null;
     symbol: string;
     effectiveContract: PresetTechnicalContract;
   };

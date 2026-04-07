@@ -6,6 +6,7 @@ import type {
   OperationalEvent,
   OperationalAlert,
   OpenTrade,
+  SymbolOperationalConfig,
   SyncStatus,
 } from "@pacifica/contracts";
 
@@ -16,6 +17,7 @@ export type RuntimeState = {
   exchangeSnapshotStatus: ExchangeSnapshotStatus;
   exchangeLastSyncedAt: string | null;
   exchangeSnapshotMessage: string | null;
+  symbolOperationalConfigs: SymbolOperationalConfig[];
   currentTrades: OpenTrade[];
   closedTrades: ClosedTrade[];
   alerts: OperationalAlert[];
@@ -32,6 +34,7 @@ export function createEmptyRuntimeState(): RuntimeState {
     exchangeSnapshotStatus: "last_known",
     exchangeLastSyncedAt: null,
     exchangeSnapshotMessage: null,
+    symbolOperationalConfigs: [],
     currentTrades: [],
     closedTrades: [],
     alerts: [],

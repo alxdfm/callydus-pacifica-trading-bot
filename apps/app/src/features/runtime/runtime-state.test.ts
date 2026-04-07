@@ -10,6 +10,7 @@ describe("createEmptyRuntimeState", () => {
       exchangeSnapshotStatus: "last_known",
       exchangeLastSyncedAt: null,
       exchangeSnapshotMessage: null,
+      symbolOperationalConfigs: [],
       currentTrades: [],
       closedTrades: [],
       alerts: [],

@@ -63,6 +63,7 @@ export function applyAccountSessionSnapshot(
     exchangeSnapshotStatus: snapshot.runtime.exchangeSnapshotStatus,
     exchangeLastSyncedAt: snapshot.runtime.exchangeLastSyncedAt,
     exchangeSnapshotMessage: snapshot.runtime.exchangeSnapshotMessage,
+    symbolOperationalConfigs: snapshot.runtime.symbolOperationalConfigs,
     currentTrades: snapshot.runtime.currentTrades,
     closedTrades: snapshot.runtime.closedTrades,
     alerts: snapshot.runtime.activeAlerts,
