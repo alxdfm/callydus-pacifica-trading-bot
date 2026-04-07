@@ -210,6 +210,11 @@ export class PrismaPacificaCredentialRepository
           take: 1,
         },
         botRuntimeState: true,
+        symbolOperationalConfigs: {
+          orderBy: {
+            symbol: "asc",
+          },
+        },
         accountBalanceSnapshots: {
           orderBy: {
             capturedAt: "desc",
@@ -302,6 +307,9 @@ export class PrismaPacificaCredentialRepository
           runtime?.exchangeLastSyncedAt?.toISOString() ?? null,
         exchangeSnapshotMessage: runtime?.exchangeSnapshotMessage ?? null,
         activePresetActivationId: runtime?.activePresetActivationId ?? null,
+        symbolOperationalConfigs: mapSymbolOperationalConfigs(
+          operatorAccount.symbolOperationalConfigs,
+        ),
         lastHeartbeatAt: runtime?.lastHeartbeatAt?.toISOString() ?? null,
         lastErrorMessage: runtime?.lastErrorMessage ?? null,
         currentTrades: operatorAccount.openTrades.map(mapOpenTrade),
@@ -422,16 +430,16 @@ export class PrismaPacificaCredentialRepository
           operatorAccountId: operatorAccount.id,
         },
         update: {
-          botStatus: "active",
-          syncStatus: "syncing",
+          botStatus: "inactive",
+          syncStatus: "idle",
           activePresetActivationId: activation.id,
           lastErrorMessage: null,
         },
         create: {
           operatorAccountId: operatorAccount.id,
-          botStatus: "active",
+          botStatus: "inactive",
           pacificaConnectionStatus: "connected",
-          syncStatus: "syncing",
+          syncStatus: "idle",
           activePresetActivationId: activation.id,
           lastHeartbeatAt: null,
           lastErrorMessage: null,
@@ -513,6 +521,87 @@ export class PrismaPacificaCredentialRepository
       });
 
       return mapBotCommand(command);
+    });
+  }
+
+  async upsertSymbolOperationalConfig(input: {
+    walletAddress: string;
+    config: { symbol: string; leverage: number };
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+        include: {
+          botRuntimeState: true,
+        },
+      });
+
+      if (!operatorAccount) {
+        return null;
+      }
+
+      await tx.symbolOperationalConfig.upsert({
+        where: {
+          operatorAccountId_symbol: {
+            operatorAccountId: operatorAccount.id,
+            symbol: input.config.symbol,
+          },
+        },
+        update: {
+          leverage: new Prisma.Decimal(input.config.leverage),
+        },
+        create: {
+          operatorAccountId: operatorAccount.id,
+          symbol: input.config.symbol,
+          leverage: new Prisma.Decimal(input.config.leverage),
+        },
+      });
+
+      return input.config;
+    });
+  }
+
+  async replaceSymbolOperationalConfigs(input: {
+    walletAddress: string;
+    configs: Array<{ symbol: string; leverage: number }>;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+      });
+
+      if (!operatorAccount) {
+        return null;
+      }
+
+      await tx.symbolOperationalConfig.deleteMany({
+        where: {
+          operatorAccountId: operatorAccount.id,
+        },
+      });
+
+      if (input.configs.length > 0) {
+        await tx.symbolOperationalConfig.createMany({
+          data: input.configs.map((config) => ({
+            operatorAccountId: operatorAccount.id,
+            symbol: config.symbol,
+            leverage: new Prisma.Decimal(config.leverage),
+          })),
+        });
+      }
+
+      return input.configs
+        .filter(
+          (config) =>
+            config.symbol.trim().length > 0 &&
+            Number.isFinite(config.leverage) &&
+            config.leverage > 0,
+        )
+        .sort((left, right) => left.symbol.localeCompare(right.symbol));
     });
   }
 
@@ -1475,6 +1564,7 @@ function mapBotRuntimeState(runtime: {
   activePresetActivationId: string | null;
   lastHeartbeatAt: Date | null;
   lastErrorMessage: string | null;
+  symbolOperationalConfigs?: Array<{ symbol: string; leverage: Prisma.Decimal }>;
 }) {
   return botRuntimeStateSchema.parse({
     botStatus: runtime.botStatus,
@@ -1484,9 +1574,29 @@ function mapBotRuntimeState(runtime: {
     exchangeLastSyncedAt: runtime.exchangeLastSyncedAt?.toISOString() ?? null,
     exchangeSnapshotMessage: runtime.exchangeSnapshotMessage,
     activePresetActivationId: runtime.activePresetActivationId,
+    symbolOperationalConfigs: mapSymbolOperationalConfigs(
+      runtime.symbolOperationalConfigs ?? [],
+    ),
     lastHeartbeatAt: runtime.lastHeartbeatAt?.toISOString() ?? null,
     lastErrorMessage: runtime.lastErrorMessage,
   });
+}
+
+function mapSymbolOperationalConfigs(
+  configs: Array<{ symbol: string; leverage: Prisma.Decimal }>,
+) {
+  return configs
+    .map((config) => ({
+      symbol: config.symbol.trim(),
+      leverage: Number(config.leverage.toString()),
+    }))
+    .filter(
+      (config) =>
+        Boolean(config.symbol) &&
+        Number.isFinite(config.leverage) &&
+        config.leverage > 0,
+    )
+    .sort((left, right) => left.symbol.localeCompare(right.symbol));
 }
 
 function findMatchingExternalCloseEvent(

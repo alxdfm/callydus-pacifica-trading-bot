@@ -1,3 +1,4 @@
+import type { SymbolOperationalConfig } from "@pacifica/contracts";
 import type { OnboardingStatus } from "@pacifica/contracts";
 import type { PacificaCredential } from "./PacificaCredential";
 
@@ -48,4 +49,12 @@ export interface PacificaCredentialRepository {
   updateOperationalVerification(
     input: UpdateOperationalVerificationInput,
   ): Promise<PacificaCredential>;
+  upsertSymbolOperationalConfig(input: {
+    walletAddress: string;
+    config: SymbolOperationalConfig;
+  }): Promise<SymbolOperationalConfig | null>;
+  replaceSymbolOperationalConfigs(input: {
+    walletAddress: string;
+    configs: SymbolOperationalConfig[];
+  }): Promise<SymbolOperationalConfig[] | null>;
 }

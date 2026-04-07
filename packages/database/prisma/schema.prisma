@@ -168,6 +168,7 @@ model OperatorAccount {
   operationalEvents       OperationalEvent[]
   signalDecisions         SignalDecision[]
   orderExecutionAttempts  OrderExecutionAttempt[]
+  symbolOperationalConfigs SymbolOperationalConfig[]
 }
 
 model PacificaCredential {
@@ -263,6 +264,19 @@ model BotRuntimeState {
   activePresetActivation   PresetActivation?        @relation(fields: [activePresetActivationId], references: [id])
 
   @@index([workerOwnerId, workerLeaseExpiresAt])
+}
+
+model SymbolOperationalConfig {
+  id                String          @id @default(uuid()) @db.Uuid
+  operatorAccountId String          @db.Uuid
+  symbol            String
+  leverage          Decimal         @db.Decimal(12, 4)
+  createdAt         DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
+  operatorAccount   OperatorAccount @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([operatorAccountId, symbol])
+  @@index([operatorAccountId])
 }
 
 model SignalDecision {

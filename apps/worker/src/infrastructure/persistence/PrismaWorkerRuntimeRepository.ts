@@ -53,31 +53,24 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
             activationStatus: "active",
           },
         },
-        OR: [
-          {
-            botRuntimeState: null,
+        botRuntimeState: {
+          botStatus: {
+            in: ["active", "syncing"],
           },
-          {
-            botRuntimeState: {
-              botStatus: {
-                not: "paused",
-              },
-              OR: [
-                {
-                  workerOwnerId: null,
-                },
-                {
-                  workerLeaseExpiresAt: null,
-                },
-                {
-                  workerLeaseExpiresAt: {
-                    lte: now,
-                  },
-                },
-              ],
+          OR: [
+            {
+              workerOwnerId: null,
             },
-          },
-        ],
+            {
+              workerLeaseExpiresAt: null,
+            },
+            {
+              workerLeaseExpiresAt: {
+                lte: now,
+              },
+            },
+          ],
+        },
       },
       include: {
         botRuntimeState: true,
@@ -106,7 +99,7 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         return [];
       }
 
-      if (runtime?.botStatus === "paused") {
+      if (!runtime || (runtime.botStatus !== "active" && runtime.botStatus !== "syncing")) {
         return [];
       }
 
@@ -158,7 +151,7 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         return null;
       }
 
-      if (runtime?.botStatus === "paused") {
+      if (!runtime || (runtime.botStatus !== "active" && runtime.botStatus !== "syncing")) {
         return null;
       }
 
@@ -422,6 +415,12 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
                 },
                 take: 1,
               },
+              botRuntimeState: true,
+              symbolOperationalConfigs: {
+                orderBy: {
+                  symbol: "asc",
+                },
+              },
               pacificaCredentials: {
                 where: {
                   lifecycleStatus: "active",
@@ -493,6 +492,10 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         activation: {
           positionSizeType: decision.presetActivation.positionSizeType,
           positionSizeValue: decimalToNumber(decision.presetActivation.positionSizeValue),
+          leverage: parseSymbolOperationalLeverage(
+            decision.operatorAccount.symbolOperationalConfigs,
+            decision.presetActivation.symbol,
+          ),
           symbol: decision.presetActivation.symbol,
           effectiveContract: parseTechnicalContract(
             decision.presetActivation.effectiveContractJson,
@@ -743,6 +746,20 @@ function parseEditableConfig(value: Prisma.JsonValue | null) {
 
 function parseTechnicalContract(value: Prisma.JsonValue) {
   return presetTechnicalContractSchema.parse(value);
+}
+
+function parseSymbolOperationalLeverage(
+  value: Array<{ symbol: string; leverage: Prisma.Decimal }>,
+  symbol: string,
+) {
+  const match = value.find((item) => item.symbol.trim() === symbol);
+
+  if (!match) {
+    return null;
+  }
+
+  const leverage = Number(match.leverage.toString());
+  return Number.isFinite(leverage) && leverage > 0 ? leverage : null;
 }
 
 function toPrismaInputJsonValue(value: unknown): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
