@@ -76,9 +76,9 @@ describe("createActivatePreset", () => {
         deactivatedAt: null,
       },
       runtime: {
-        botStatus: "active",
+        botStatus: "inactive",
         pacificaConnectionStatus: "connected",
-        syncStatus: "syncing",
+        syncStatus: "idle",
         exchangeSnapshotStatus: "last_known",
         exchangeLastSyncedAt: null,
         exchangeSnapshotMessage: null,
