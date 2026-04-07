@@ -8,6 +8,8 @@ import type { EvaluatePresetSignalHandler } from "./routes/createEvaluatePresetS
 import type { GetMarketCandlesHandler } from "./routes/createGetMarketCandlesRoute";
 import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute";
 import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
+import { createGetMarketInfoRoute } from "./routes/createGetMarketInfoRoute";
+import type { GetMarketInfoHandler } from "./routes/createGetMarketInfoRoute";
 import { createPauseBotRoute } from "./routes/createPauseBotRoute";
 import type { PauseBotHandler } from "./routes/createPauseBotRoute";
 import { createHeartbeatRuntimeRoute } from "./routes/createHeartbeatRuntimeRoute";
@@ -33,6 +35,7 @@ export type ApiRouterDependencies = {
   closeTrade: CloseTradeHandler;
   evaluatePresetSignal: EvaluatePresetSignalHandler;
   getMarketCandles: GetMarketCandlesHandler;
+  getMarketInfo: GetMarketInfoHandler;
   getMarketPrices: GetMarketPricesHandler;
   heartbeatRuntime: HeartbeatRuntimeHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
@@ -57,6 +60,7 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     getMarketCandles: createGetMarketCandlesRoute(
       dependencies.getMarketCandles,
     ),
+    getMarketInfo: createGetMarketInfoRoute(dependencies.getMarketInfo),
     getMarketPrices: createGetMarketPricesRoute(
       dependencies.getMarketPrices,
     ),

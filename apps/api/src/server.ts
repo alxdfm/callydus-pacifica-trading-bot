@@ -200,6 +200,19 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "GET" &&
+    request.url === "/api/market/info"
+  ) {
+    const result = await api.router.getMarketInfo();
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "GET" &&
     request.url === "/api/market/prices"
   ) {
     const result = await api.router.getMarketPrices();

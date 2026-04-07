@@ -517,6 +517,32 @@ export const marketPriceSnapshotSchema = z.object({
   capturedAt: z.string().datetime(),
 });
 
+export const symbolOperationalConfigSchema = z.object({
+  symbol: z.string().min(1),
+  leverage: z.number().int().positive(),
+});
+
+export const marketInfoItemSchema = z.object({
+  symbol: z.string().min(1),
+  tickSize: z.string().min(1),
+  lotSize: z.string().min(1),
+  minOrderSize: z.string().min(1),
+  maxLeverage: z.number().int().positive(),
+});
+
+export const marketInfoResponseSchema = z.union([
+  z.object({
+    status: z.literal("success"),
+    markets: z.array(marketInfoItemSchema),
+  }),
+  z.object({
+    status: z.literal("error"),
+    code: z.enum(["provider_unavailable", "internal_error"]),
+    message: z.string().min(1),
+    retryable: z.boolean(),
+  }),
+]);
+
 export const marketCandleSchema = z.object({
   symbol: z.string().min(1),
   interval: marketCandleIntervalSchema,
@@ -703,6 +729,7 @@ export const operationalRuntimeSnapshotSchema = z.object({
   exchangeLastSyncedAt: z.string().datetime().nullable(),
   exchangeSnapshotMessage: z.string().nullable(),
   activePresetActivationId: z.string().uuid().nullable(),
+  symbolOperationalConfigs: z.array(symbolOperationalConfigSchema),
   lastHeartbeatAt: z.string().datetime().nullable(),
   lastErrorMessage: z.string().nullable(),
   currentTrades: z.array(openTradeSchema),
@@ -814,6 +841,7 @@ export const botRuntimeStateSchema = z.object({
   exchangeLastSyncedAt: z.string().datetime().nullable(),
   exchangeSnapshotMessage: z.string().nullable(),
   activePresetActivationId: z.string().uuid().nullable(),
+  symbolOperationalConfigs: z.array(symbolOperationalConfigSchema),
   lastHeartbeatAt: z.string().datetime().nullable(),
   lastErrorMessage: z.string().nullable(),
 });
@@ -1290,9 +1318,12 @@ export type ClosedTrade = z.infer<typeof closedTradeSchema>;
 export type OperationalAlert = z.infer<typeof operationalAlertSchema>;
 export type OperationalEvent = z.infer<typeof operationalEventSchema>;
 export type MarketPriceSnapshot = z.infer<typeof marketPriceSnapshotSchema>;
+export type SymbolOperationalConfig = z.infer<typeof symbolOperationalConfigSchema>;
+export type MarketInfoItem = z.infer<typeof marketInfoItemSchema>;
 export type MarketCandle = z.infer<typeof marketCandleSchema>;
 export type MarketCandleRequest = z.infer<typeof marketCandleRequestSchema>;
 export type MarketCandleResponse = z.infer<typeof marketCandleResponseSchema>;
+export type MarketInfoResponse = z.infer<typeof marketInfoResponseSchema>;
 export type MarketPricesResponse = z.infer<typeof marketPricesResponseSchema>;
 export type PresetSignalEvaluationErrorCode = z.infer<
   typeof presetSignalEvaluationErrorCodeSchema
