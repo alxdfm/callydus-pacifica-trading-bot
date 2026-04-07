@@ -415,6 +415,107 @@ export const presetSignalEvaluationResponseSchema = z.union([
   presetSignalEvaluationErrorSchema,
 ]);
 
+export const presetBacktestPreviewRequestSchema = z.object({
+  presetDefinitionId: z.string().uuid(),
+  editableConfig: z.lazy(() => presetEditableConfigSchema),
+  priceSource: marketPriceSourceSchema.default("market"),
+  startTime: z.number().int().nonnegative(),
+  endTime: z.number().int().positive(),
+  initialCapitalUsd: z.number().positive(),
+  leverage: z.number().positive().default(1),
+  feePercent: z.number().min(0).default(0),
+  slippagePercent: z.number().min(0).default(0),
+});
+
+export const presetBacktestTradeSchema = z.object({
+  id: z.string().min(1),
+  side: tradeSideSchema,
+  openedAt: z.string().datetime(),
+  closedAt: z.string().datetime(),
+  entryPrice: z.number().positive(),
+  exitPrice: z.number().positive(),
+  stopLossPrice: z.number().positive(),
+  takeProfitPrice: z.number().positive(),
+  quantity: z.number().positive(),
+  capitalAllocated: z.number().positive(),
+  leverageUsed: z.number().positive(),
+  entryFeeUsd: z.number().nonnegative(),
+  exitFeeUsd: z.number().nonnegative(),
+  realizedPnl: z.number(),
+  realizedPnlPercentOnCapital: z.number(),
+  closeReason: z.enum(["take_profit", "stop_loss", "signal_end_of_period"]),
+});
+
+export const presetBacktestCurvePointSchema = z.object({
+  time: z.string().datetime(),
+  equity: z.number(),
+});
+
+export const presetBacktestSummarySchema = z.object({
+  initialCapitalUsd: z.number().positive(),
+  endingEquityUsd: z.number(),
+  endingHoldEquityUsd: z.number(),
+  strategyReturnPercent: z.number(),
+  holdReturnPercent: z.number(),
+  alphaVsHoldPercent: z.number(),
+  maxDrawdownPercent: z.number().min(0),
+  winRatePercent: z.number().min(0),
+  profitFactor: z.number().nonnegative(),
+  totalTrades: z.number().int().nonnegative(),
+  wins: z.number().int().nonnegative(),
+  losses: z.number().int().nonnegative(),
+});
+
+export const presetBacktestAssumptionsSchema = z.object({
+  executionModel: z.string().min(1),
+  positionRule: z.string().min(1),
+  tpSlConflictRule: z.string().min(1),
+  feePercent: z.number().min(0),
+  slippagePercent: z.number().min(0),
+});
+
+export const presetBacktestPreviewSuccessSchema = z.object({
+  status: z.literal("success"),
+  presetDefinitionId: z.string().uuid(),
+  symbol: z.string().min(1),
+  marketSymbol: z.string().min(1),
+  timeframe: marketCandleIntervalSchema,
+  priceSource: marketPriceSourceSchema,
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+  candlesUsed: z.number().int().positive(),
+  summary: presetBacktestSummarySchema,
+  equityCurve: z.array(presetBacktestCurvePointSchema),
+  holdCurve: z.array(presetBacktestCurvePointSchema),
+  drawdownCurve: z.array(
+    z.object({
+      time: z.string().datetime(),
+      drawdownPercent: z.number().min(0),
+    }),
+  ),
+  trades: z.array(presetBacktestTradeSchema),
+  assumptions: presetBacktestAssumptionsSchema,
+});
+
+export const presetBacktestPreviewErrorSchema = z.object({
+  status: z.literal("error"),
+  code: z.enum([
+    "preset_not_found",
+    "unsupported_symbol",
+    "invalid_period",
+    "insufficient_market_data",
+    "provider_unavailable",
+    "internal_error",
+  ]),
+  message: z.string().min(1),
+  retryable: z.boolean(),
+});
+
+export const presetBacktestPreviewResponseSchema = z.union([
+  presetBacktestPreviewSuccessSchema,
+  presetBacktestPreviewErrorSchema,
+]);
+
 export const presetDefinitionSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
@@ -1339,6 +1440,26 @@ export type PresetSignalEvaluationError = z.infer<
 >;
 export type PresetSignalEvaluationResponse = z.infer<
   typeof presetSignalEvaluationResponseSchema
+>;
+export type PresetBacktestPreviewRequest = z.infer<
+  typeof presetBacktestPreviewRequestSchema
+>;
+export type PresetBacktestTrade = z.infer<typeof presetBacktestTradeSchema>;
+export type PresetBacktestCurvePoint = z.infer<
+  typeof presetBacktestCurvePointSchema
+>;
+export type PresetBacktestSummary = z.infer<typeof presetBacktestSummarySchema>;
+export type PresetBacktestAssumptions = z.infer<
+  typeof presetBacktestAssumptionsSchema
+>;
+export type PresetBacktestPreviewSuccess = z.infer<
+  typeof presetBacktestPreviewSuccessSchema
+>;
+export type PresetBacktestPreviewError = z.infer<
+  typeof presetBacktestPreviewErrorSchema
+>;
+export type PresetBacktestPreviewResponse = z.infer<
+  typeof presetBacktestPreviewResponseSchema
 >;
 export type WalletSession = z.infer<typeof walletSessionSchema>;
 export type PacificaCredentialSubmission = z.infer<typeof pacificaCredentialSubmissionSchema>;

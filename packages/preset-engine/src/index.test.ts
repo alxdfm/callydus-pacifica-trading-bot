@@ -5,6 +5,8 @@ import {
   evaluatePresetSignal,
   getIntervalDurationMs,
   getRequiredPeriod,
+  materializeEffectivePresetContract,
+  simulatePresetBacktest,
   toPacificaMarketSymbol,
 } from "./index";
 
@@ -271,5 +273,51 @@ describe("preset-engine", () => {
     expect(getIntervalDurationMs("1m")).toBe(60_000);
     expect(getIntervalDurationMs("15m")).toBe(900_000);
     expect(getIntervalDurationMs("1d")).toBe(86_400_000);
+  });
+
+  it("materializa o contrato efetivo a partir da configuração editável", () => {
+    const contract = createContract();
+
+    const result = materializeEffectivePresetContract(contract, {
+      symbol: "ETH/USDC",
+      positionSizeType: "balance_percent",
+      positionSizeValue: 12,
+      longEnabled: false,
+      shortEnabled: true,
+    });
+
+    expect(result.symbol).toBe("ETH/USDC");
+    expect(result.entry.long.enabled).toBe(false);
+    expect(result.entry.short.enabled).toBe(true);
+    expect(result.execution.positionSize.value).toBe(12);
+  });
+
+  it("simula a estratégia candle a candle com entrada no próximo candle", () => {
+    const contract = createContract();
+    const candles = [
+      createCandle(60_000, 100, 50),
+      createCandle(120_000, 102, 80),
+      createCandle(180_000, 104, 110),
+      createCandle(240_000, 105, 150),
+      {
+        ...createCandle(300_000, 125, 120, 130, 100),
+        open: 106,
+      },
+    ];
+
+    const result = simulatePresetBacktest({
+      technicalContract: contract,
+      candles,
+      initialCapitalUsd: 1000,
+      leverage: 1,
+      feePercent: 0,
+      slippagePercent: 0,
+    });
+
+    expect(result.trades).toHaveLength(1);
+    expect(result.trades[0]?.openedAt).toBe(new Date(240_000).toISOString());
+    expect(result.trades[0]?.closeReason).toBe("take_profit");
+    expect(result.summary.totalTrades).toBe(1);
+    expect(result.summary.endingEquityUsd).toBeGreaterThan(1000);
   });
 });

@@ -8,6 +8,7 @@ import {
   evaluatePresetSignal,
   getIntervalDurationMs,
   getRequiredPeriod,
+  materializeEffectivePresetContract,
   toPacificaMarketSymbol,
 } from "@pacifica/preset-engine";
 import { PacificaApiError } from "@pacifica/pacifica-market-data";
@@ -39,11 +40,11 @@ export function createEvaluatePresetSignal(
   return async function evaluateSignal(
     input: PresetSignalEvaluationRequest,
   ): Promise<PresetSignalEvaluationResponse> {
-    const technicalContract = getPresetTechnicalContractByDefinitionId(
+    const baseContract = getPresetTechnicalContractByDefinitionId(
       input.presetDefinitionId,
     );
 
-    if (!technicalContract) {
+    if (!baseContract) {
       return {
         status: "error",
         code: "preset_not_found",
@@ -51,6 +52,11 @@ export function createEvaluatePresetSignal(
         retryable: false,
       };
     }
+
+    const technicalContract = materializeEffectivePresetContract(
+      baseContract,
+      input.editableConfig,
+    );
 
     const marketSymbol = toPacificaMarketSymbol(input.editableConfig.symbol);
 

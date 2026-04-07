@@ -1,10 +1,12 @@
 import type {
   MarketCandle,
   MarketCandleInterval,
+  PresetEditableConfig,
   PresetRuleEvaluation,
   PresetSignal,
   PresetTechnicalContract,
   PresetTriggerRule,
+  TradeSide,
 } from "@pacifica/contracts";
 
 type IndicatorSeries = number[];
@@ -29,6 +31,67 @@ export type PresetRiskPlan = {
   stopLossPrice: number;
   takeProfitPrice: number;
   riskDistance: number;
+};
+
+export type SimulatedPresetTrade = {
+  id: string;
+  side: TradeSide;
+  openedAt: string;
+  closedAt: string;
+  entryPrice: number;
+  exitPrice: number;
+  stopLossPrice: number;
+  takeProfitPrice: number;
+  quantity: number;
+  capitalAllocated: number;
+  leverageUsed: number;
+  entryFeeUsd: number;
+  exitFeeUsd: number;
+  realizedPnl: number;
+  realizedPnlPercentOnCapital: number;
+  closeReason: "take_profit" | "stop_loss" | "signal_end_of_period";
+};
+
+export type SimulatedPresetCurvePoint = {
+  time: string;
+  equity: number;
+};
+
+export type SimulatedPresetDrawdownPoint = {
+  time: string;
+  drawdownPercent: number;
+};
+
+export type SimulatedPresetSummary = {
+  initialCapitalUsd: number;
+  endingEquityUsd: number;
+  endingHoldEquityUsd: number;
+  strategyReturnPercent: number;
+  holdReturnPercent: number;
+  alphaVsHoldPercent: number;
+  maxDrawdownPercent: number;
+  winRatePercent: number;
+  profitFactor: number;
+  totalTrades: number;
+  wins: number;
+  losses: number;
+};
+
+export type SimulatePresetBacktestInput = {
+  technicalContract: PresetTechnicalContract;
+  candles: MarketCandle[];
+  initialCapitalUsd: number;
+  leverage?: number;
+  feePercent?: number;
+  slippagePercent?: number;
+};
+
+export type SimulatePresetBacktestResult = {
+  summary: SimulatedPresetSummary;
+  equityCurve: SimulatedPresetCurvePoint[];
+  holdCurve: SimulatedPresetCurvePoint[];
+  drawdownCurve: SimulatedPresetDrawdownPoint[];
+  trades: SimulatedPresetTrade[];
 };
 
 /**
@@ -130,6 +193,243 @@ export function buildPresetRiskPlans(
         entryPrice - riskDistance * technicalContract.risk.takeProfit.multiple,
       riskDistance,
     },
+  };
+}
+
+export function materializeEffectivePresetContract(
+  baseContract: PresetTechnicalContract,
+  editableConfig: PresetEditableConfig,
+): PresetTechnicalContract {
+  return {
+    ...baseContract,
+    symbol: editableConfig.symbol,
+    entry: {
+      ...baseContract.entry,
+      long: {
+        ...baseContract.entry.long,
+        enabled: editableConfig.longEnabled,
+      },
+      short: {
+        ...baseContract.entry.short,
+        enabled: editableConfig.shortEnabled,
+      },
+    },
+    execution: {
+      ...baseContract.execution,
+      positionSize: {
+        ...baseContract.execution.positionSize,
+        value: editableConfig.positionSizeValue,
+      },
+    },
+  };
+}
+
+export function simulatePresetBacktest(
+  input: SimulatePresetBacktestInput,
+): SimulatePresetBacktestResult {
+  const leverage = input.leverage ?? 1;
+  const feeRate = (input.feePercent ?? 0) / 100;
+  const slippageRate = (input.slippagePercent ?? 0) / 100;
+  const requiredPeriod = getRequiredPeriod(input.technicalContract);
+  const trades: SimulatedPresetTrade[] = [];
+  const equityCurve: SimulatedPresetCurvePoint[] = [];
+  const holdCurve: SimulatedPresetCurvePoint[] = [];
+  const drawdownCurve: SimulatedPresetDrawdownPoint[] = [];
+  let equity = input.initialCapitalUsd;
+  let peakEquity = input.initialCapitalUsd;
+
+  const firstTradableCandle = input.candles[requiredPeriod];
+
+  if (!firstTradableCandle) {
+    return {
+      summary: createSimulationSummary({
+        initialCapitalUsd: input.initialCapitalUsd,
+        endingEquityUsd: equity,
+        endingHoldEquityUsd: input.initialCapitalUsd,
+        trades,
+        maxDrawdownPercent: 0,
+      }),
+      equityCurve,
+      holdCurve,
+      drawdownCurve,
+      trades,
+    };
+  }
+
+  const holdUnits = input.initialCapitalUsd / firstTradableCandle.open;
+  let openPosition: {
+    id: string;
+    side: TradeSide;
+    entryPrice: number;
+    stopLossPrice: number;
+    takeProfitPrice: number;
+    quantity: number;
+    capitalAllocated: number;
+    leverageUsed: number;
+    entryFeeUsd: number;
+    openedAt: string;
+  } | null = null;
+
+  for (let index = requiredPeriod; index < input.candles.length; index += 1) {
+    const currentCandle = input.candles[index];
+
+    if (!currentCandle) {
+      continue;
+    }
+
+    if (openPosition) {
+      const closedTrade = maybeClosePosition({
+        candle: currentCandle,
+        position: openPosition,
+        feeRate,
+        slippageRate,
+      });
+
+      if (closedTrade) {
+        trades.push(closedTrade.trade);
+        equity += closedTrade.trade.realizedPnl;
+        openPosition = null;
+      }
+    }
+
+    if (!openPosition) {
+      const nextCandle = input.candles[index + 1];
+      const candleWindow = input.candles.slice(0, index + 1);
+      const evaluation = evaluatePresetSignal(input.technicalContract, candleWindow);
+
+      if (evaluation.signal !== "none" && nextCandle) {
+        const riskPlans = buildPresetRiskPlans(
+          input.technicalContract,
+          evaluation.indicators,
+          currentCandle.close,
+        );
+        const capitalAllocated = resolveCapitalAllocation(
+          input.technicalContract,
+          equity,
+        );
+        const notionalUsd = capitalAllocated * leverage;
+        const entryPrice = applyAdverseSlippage(
+          nextCandle.open,
+          evaluation.signal,
+          slippageRate,
+          "entry",
+        );
+        const quantity = notionalUsd / entryPrice;
+        const entryFeeUsd = notionalUsd * feeRate;
+
+        openPosition = {
+          id: `${currentCandle.closeTime}-${evaluation.signal}`,
+          side: evaluation.signal,
+          entryPrice,
+          stopLossPrice:
+            evaluation.signal === "long"
+              ? riskPlans.long.stopLossPrice
+              : riskPlans.short.stopLossPrice,
+          takeProfitPrice:
+            evaluation.signal === "long"
+              ? riskPlans.long.takeProfitPrice
+              : riskPlans.short.takeProfitPrice,
+          quantity,
+          capitalAllocated,
+          leverageUsed: leverage,
+          entryFeeUsd,
+          openedAt: new Date(nextCandle.openTime).toISOString(),
+        };
+      }
+    }
+
+    const markedEquity =
+      openPosition === null
+        ? equity
+        : equity +
+          markOpenPositionToMarket({
+            position: openPosition,
+            markPrice: currentCandle.close,
+          });
+    const holdEquity = holdUnits * currentCandle.close;
+    peakEquity = Math.max(peakEquity, markedEquity);
+    const drawdownPercent =
+      peakEquity <= 0 ? 0 : ((peakEquity - markedEquity) / peakEquity) * 100;
+    const isoTime = new Date(currentCandle.closeTime).toISOString();
+
+    equityCurve.push({
+      time: isoTime,
+      equity: roundTo(markedEquity),
+    });
+    holdCurve.push({
+      time: isoTime,
+      equity: roundTo(holdEquity),
+    });
+    drawdownCurve.push({
+      time: isoTime,
+      drawdownPercent: roundTo(drawdownPercent, 4),
+    });
+  }
+
+  if (openPosition) {
+    const lastCandle = input.candles[input.candles.length - 1];
+
+    if (lastCandle) {
+      const exitPrice = applyAdverseSlippage(
+        lastCandle.close,
+        openPosition.side,
+        slippageRate,
+        "exit",
+      );
+      const exitNotional = openPosition.quantity * exitPrice;
+      const exitFeeUsd = exitNotional * feeRate;
+      const realizedPnl =
+        calculateDirectionalPnl(openPosition.side, openPosition.entryPrice, exitPrice) *
+          openPosition.quantity -
+        openPosition.entryFeeUsd -
+        exitFeeUsd;
+
+      const trade: SimulatedPresetTrade = {
+        id: openPosition.id,
+        side: openPosition.side,
+        openedAt: openPosition.openedAt,
+        closedAt: new Date(lastCandle.closeTime).toISOString(),
+        entryPrice: roundTo(openPosition.entryPrice),
+        exitPrice: roundTo(exitPrice),
+        stopLossPrice: roundTo(openPosition.stopLossPrice),
+        takeProfitPrice: roundTo(openPosition.takeProfitPrice),
+        quantity: roundTo(openPosition.quantity, 8),
+        capitalAllocated: roundTo(openPosition.capitalAllocated),
+        leverageUsed: roundTo(openPosition.leverageUsed, 4),
+        entryFeeUsd: roundTo(openPosition.entryFeeUsd),
+        exitFeeUsd: roundTo(exitFeeUsd),
+        realizedPnl: roundTo(realizedPnl),
+        realizedPnlPercentOnCapital: roundTo(
+          openPosition.capitalAllocated <= 0
+            ? 0
+            : (realizedPnl / openPosition.capitalAllocated) * 100,
+          4,
+        ),
+        closeReason: "signal_end_of_period",
+      };
+
+      trades.push(trade);
+      equity += trade.realizedPnl;
+      openPosition = null;
+    }
+  }
+
+  return {
+    summary: createSimulationSummary({
+      initialCapitalUsd: input.initialCapitalUsd,
+      endingEquityUsd: equity,
+      endingHoldEquityUsd: holdCurve.at(-1)?.equity ?? input.initialCapitalUsd,
+      trades,
+      maxDrawdownPercent:
+        drawdownCurve.reduce(
+          (max, point) => Math.max(max, point.drawdownPercent),
+          0,
+        ) ?? 0,
+    }),
+    equityCurve,
+    holdCurve,
+    drawdownCurve,
+    trades,
   };
 }
 
@@ -263,6 +563,197 @@ function buildIndicatorSeriesMap(
   });
 
   return cache;
+}
+
+function maybeClosePosition(input: {
+  candle: MarketCandle;
+  position: {
+    id: string;
+    side: TradeSide;
+    entryPrice: number;
+    stopLossPrice: number;
+    takeProfitPrice: number;
+    quantity: number;
+    capitalAllocated: number;
+    leverageUsed: number;
+    entryFeeUsd: number;
+    openedAt: string;
+  };
+  feeRate: number;
+  slippageRate: number;
+}) {
+  const stopHit =
+    input.position.side === "long"
+      ? input.candle.low <= input.position.stopLossPrice
+      : input.candle.high >= input.position.stopLossPrice;
+  const takeProfitHit =
+    input.position.side === "long"
+      ? input.candle.high >= input.position.takeProfitPrice
+      : input.candle.low <= input.position.takeProfitPrice;
+
+  if (!stopHit && !takeProfitHit) {
+    return null;
+  }
+
+  const closeReason = stopHit ? "stop_loss" : "take_profit";
+  const rawExitPrice =
+    closeReason === "stop_loss"
+      ? input.position.stopLossPrice
+      : input.position.takeProfitPrice;
+  const exitPrice = applyAdverseSlippage(
+    rawExitPrice,
+    input.position.side,
+    input.slippageRate,
+    "exit",
+  );
+  const exitNotional = input.position.quantity * exitPrice;
+  const exitFeeUsd = exitNotional * input.feeRate;
+  const realizedPnl =
+    calculateDirectionalPnl(
+      input.position.side,
+      input.position.entryPrice,
+      exitPrice,
+    ) *
+      input.position.quantity -
+    input.position.entryFeeUsd -
+    exitFeeUsd;
+
+  return {
+    trade: {
+      id: input.position.id,
+      side: input.position.side,
+      openedAt: input.position.openedAt,
+      closedAt: new Date(input.candle.closeTime).toISOString(),
+      entryPrice: roundTo(input.position.entryPrice),
+      exitPrice: roundTo(exitPrice),
+      stopLossPrice: roundTo(input.position.stopLossPrice),
+      takeProfitPrice: roundTo(input.position.takeProfitPrice),
+      quantity: roundTo(input.position.quantity, 8),
+      capitalAllocated: roundTo(input.position.capitalAllocated),
+      leverageUsed: roundTo(input.position.leverageUsed, 4),
+      entryFeeUsd: roundTo(input.position.entryFeeUsd),
+      exitFeeUsd: roundTo(exitFeeUsd),
+      realizedPnl: roundTo(realizedPnl),
+      realizedPnlPercentOnCapital: roundTo(
+        input.position.capitalAllocated <= 0
+          ? 0
+          : (realizedPnl / input.position.capitalAllocated) * 100,
+        4,
+      ),
+      closeReason,
+    } satisfies SimulatedPresetTrade,
+  };
+}
+
+function createSimulationSummary(input: {
+  initialCapitalUsd: number;
+  endingEquityUsd: number;
+  endingHoldEquityUsd: number;
+  trades: SimulatedPresetTrade[];
+  maxDrawdownPercent: number;
+}): SimulatedPresetSummary {
+  const wins = input.trades.filter((trade) => trade.realizedPnl >= 0).length;
+  const losses = input.trades.length - wins;
+  const grossProfit = input.trades
+    .filter((trade) => trade.realizedPnl > 0)
+    .reduce((sum, trade) => sum + trade.realizedPnl, 0);
+  const grossLoss = Math.abs(
+    input.trades
+      .filter((trade) => trade.realizedPnl < 0)
+      .reduce((sum, trade) => sum + trade.realizedPnl, 0),
+  );
+  const strategyReturnPercent =
+    ((input.endingEquityUsd - input.initialCapitalUsd) / input.initialCapitalUsd) *
+    100;
+  const holdReturnPercent =
+    ((input.endingHoldEquityUsd - input.initialCapitalUsd) /
+      input.initialCapitalUsd) *
+    100;
+
+  return {
+    initialCapitalUsd: roundTo(input.initialCapitalUsd),
+    endingEquityUsd: roundTo(input.endingEquityUsd),
+    endingHoldEquityUsd: roundTo(input.endingHoldEquityUsd),
+    strategyReturnPercent: roundTo(strategyReturnPercent, 4),
+    holdReturnPercent: roundTo(holdReturnPercent, 4),
+    alphaVsHoldPercent: roundTo(strategyReturnPercent - holdReturnPercent, 4),
+    maxDrawdownPercent: roundTo(input.maxDrawdownPercent, 4),
+    winRatePercent: roundTo(
+      input.trades.length === 0 ? 0 : (wins / input.trades.length) * 100,
+      4,
+    ),
+    profitFactor: roundTo(
+      grossLoss === 0 ? grossProfit : grossProfit / grossLoss,
+      4,
+    ),
+    totalTrades: input.trades.length,
+    wins,
+    losses,
+  };
+}
+
+function resolveCapitalAllocation(
+  technicalContract: PresetTechnicalContract,
+  equity: number,
+) {
+  switch (technicalContract.execution.positionSize.type) {
+    case "fixedPercent":
+      return equity * (technicalContract.execution.positionSize.value / 100);
+  }
+}
+
+function calculateDirectionalPnl(
+  side: TradeSide,
+  entryPrice: number,
+  exitPrice: number,
+) {
+  return side === "long" ? exitPrice - entryPrice : entryPrice - exitPrice;
+}
+
+function markOpenPositionToMarket(input: {
+  position: {
+    side: TradeSide;
+    entryPrice: number;
+    quantity: number;
+    entryFeeUsd: number;
+  };
+  markPrice: number;
+}) {
+  return (
+    calculateDirectionalPnl(
+      input.position.side,
+      input.position.entryPrice,
+      input.markPrice,
+    ) *
+      input.position.quantity -
+    input.position.entryFeeUsd
+  );
+}
+
+function applyAdverseSlippage(
+  price: number,
+  side: TradeSide,
+  slippageRate: number,
+  phase: "entry" | "exit",
+) {
+  if (slippageRate <= 0) {
+    return price;
+  }
+
+  if (phase === "entry") {
+    return side === "long"
+      ? price * (1 + slippageRate)
+      : price * (1 - slippageRate);
+  }
+
+  return side === "long"
+    ? price * (1 - slippageRate)
+    : price * (1 + slippageRate);
+}
+
+function roundTo(value: number, decimals = 2) {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
 }
 
 /**

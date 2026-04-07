@@ -3,6 +3,7 @@ import {
   type PresetActivationRequest,
   type PresetActivationResponse,
 } from "@pacifica/contracts";
+import { materializeEffectivePresetContract } from "@pacifica/preset-engine";
 import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
 import type { PacificaCredentialRepository } from "../../domain/pacifica-credentials/PacificaCredentialRepository";
 import type { PresetActivationRepository } from "../../domain/preset-activations/PresetActivationRepository";
@@ -77,28 +78,10 @@ export function createActivatePreset(
       };
     }
 
-    const effectiveContract = {
-      ...baseContract,
-      symbol: input.editableConfig.symbol,
-      entry: {
-        ...baseContract.entry,
-        long: {
-          ...baseContract.entry.long,
-          enabled: input.editableConfig.longEnabled,
-        },
-        short: {
-          ...baseContract.entry.short,
-          enabled: input.editableConfig.shortEnabled,
-        },
-      },
-      execution: {
-        ...baseContract.execution,
-        positionSize: {
-          ...baseContract.execution.positionSize,
-          value: input.editableConfig.positionSizeValue,
-        },
-      },
-    } as const;
+    const effectiveContract = materializeEffectivePresetContract(
+      baseContract,
+      input.editableConfig,
+    );
 
     const activatedPreset =
       await dependencies.presetActivationRepository.activatePreset({
