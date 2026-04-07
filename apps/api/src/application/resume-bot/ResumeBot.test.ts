@@ -7,6 +7,7 @@ describe("createResumeBot", () => {
       commandRepository: {
         resumeBot: vi.fn(),
       } as never,
+      startBotReadinessCheck: vi.fn(),
     });
 
     await expect(resumeBot({ walletAddress: " " })).resolves.toEqual({
@@ -23,8 +24,15 @@ describe("createResumeBot", () => {
         id: "command-1",
       }),
     };
+    const startBotReadinessCheck = vi.fn().mockResolvedValue({
+      status: "success",
+      readinessStatus: "passed",
+      message: "ok",
+      result: {},
+    });
     const resumeBot = createResumeBot({
       commandRepository: repository as never,
+      startBotReadinessCheck,
       now: () => new Date("2026-04-01T10:00:00.000Z"),
     });
 
@@ -37,6 +45,9 @@ describe("createResumeBot", () => {
       nowIso: "2026-04-01T10:00:00.000Z",
       idempotencyKey: "resume-bot:wallet-1",
     });
+    expect(startBotReadinessCheck).toHaveBeenCalledWith({
+      walletAddress: "wallet-1",
+    });
   });
 
   it("deveria usar chave de idempotência estável por intenção, não por timestamp", async () => {
@@ -45,8 +56,15 @@ describe("createResumeBot", () => {
         id: "command-1",
       }),
     };
+    const startBotReadinessCheck = vi.fn().mockResolvedValue({
+      status: "success",
+      readinessStatus: "passed",
+      message: "ok",
+      result: {},
+    });
     const resumeBot = createResumeBot({
       commandRepository: repository as never,
+      startBotReadinessCheck,
       now: () => new Date("2026-04-01T10:00:00.000Z"),
     });
 
@@ -55,5 +73,29 @@ describe("createResumeBot", () => {
     expect(repository.resumeBot.mock.calls[0]?.[0].idempotencyKey).toBe(
       "resume-bot:wallet-1",
     );
+  });
+
+  it("bloqueia resume quando o readiness check falha por regra de negocio", async () => {
+    const repository = {
+      resumeBot: vi.fn(),
+    };
+    const resumeBot = createResumeBot({
+      commandRepository: repository as never,
+      startBotReadinessCheck: vi.fn().mockResolvedValue({
+        status: "error",
+        readinessStatus: "blocked",
+        code: "trade_below_market_minimum",
+        message: "Trade below market minimum.",
+        retryable: false,
+      }),
+    });
+
+    await expect(resumeBot({ walletAddress: "wallet-1" })).resolves.toEqual({
+      status: "error",
+      code: "account_not_ready",
+      message: "Trade below market minimum.",
+      retryable: false,
+    });
+    expect(repository.resumeBot).not.toHaveBeenCalled();
   });
 });
