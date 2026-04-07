@@ -27,6 +27,9 @@ export type GetOperationalSessionByWalletDependencies = {
   synchronizePacificaAccountState?: (input: {
     walletAddress: string;
   }) => Promise<void>;
+  synchronizePacificaSymbolOperationalConfigs?: (input: {
+    walletAddress: string;
+  }) => Promise<void>;
   now?: () => Date;
   degradedAfterMs?: number;
   errorAfterMs?: number;
@@ -115,6 +118,37 @@ export function createGetOperationalSessionByWallet(
           walletAddress: input.walletAddress,
         };
       }
+    }
+
+    if (dependencies.synchronizePacificaSymbolOperationalConfigs) {
+      try {
+        await dependencies.synchronizePacificaSymbolOperationalConfigs({
+          walletAddress: input.walletAddress,
+        });
+        session =
+          await dependencies.operationalSessionRepository.findByWalletAddress(
+            input.walletAddress,
+          );
+
+        if (!session) {
+          return {
+            ok: true,
+            accountExists: false,
+            walletAddress: input.walletAddress,
+          };
+        }
+      } catch {
+        // Keep serving the last known session snapshot when Pacifica settings
+        // are temporarily unavailable.
+      }
+    }
+
+    if (!session) {
+      return {
+        ok: true,
+        accountExists: false,
+        walletAddress: input.walletAddress,
+      };
     }
 
     return {
