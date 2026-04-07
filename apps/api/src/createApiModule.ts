@@ -32,6 +32,10 @@ import {
   type GetMarketPricesDependencies,
 } from "./application/get-market-prices/GetMarketPrices";
 import {
+  createGetMarketInfo,
+  type GetMarketInfoDependencies,
+} from "./application/get-market-info/GetMarketInfo";
+import {
   createHeartbeatRuntime,
   type HeartbeatRuntimeDependencies,
 } from "./application/heartbeat-runtime/HeartbeatRuntime";
@@ -60,6 +64,10 @@ import {
   type ResumeBotDependencies,
 } from "./application/resume-bot/ResumeBot";
 import {
+  createStartBotReadinessCheck,
+  type StartBotReadinessCheckDependencies,
+} from "./application/start-bot-readiness-check/StartBotReadinessCheck";
+import {
   createVerifyPacificaOperational,
   type VerifyPacificaOperationalDependencies,
 } from "./application/verify-pacifica-operational/VerifyPacificaOperational";
@@ -77,6 +85,7 @@ import { PacificaAccountStateGateway } from "./infrastructure/pacifica/PacificaA
 import { PacificaCredentialValidationGateway } from "./infrastructure/pacifica/PacificaCredentialValidationGateway";
 import { PacificaMarketDataGateway } from "./infrastructure/pacifica/PacificaMarketDataGateway";
 import { PacificaOperationalVerificationGateway } from "./infrastructure/pacifica/PacificaOperationalVerificationGateway";
+import { PacificaStartBotReadinessGateway } from "./infrastructure/pacifica/PacificaStartBotReadinessGateway";
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
 
@@ -98,6 +107,7 @@ export type CreateApiModuleInput = {
   evaluatePresetSignalDependencies?: Partial<EvaluatePresetSignalDependencies>;
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
+  getMarketInfoDependencies?: Partial<GetMarketInfoDependencies>;
   heartbeatRuntimeDependencies?: Partial<HeartbeatRuntimeDependencies>;
   lookupOperationalAccountByWalletDependencies?: Partial<
     LookupOperationalAccountByWalletDependencies
@@ -111,6 +121,7 @@ export type CreateApiModuleInput = {
   pauseBotDependencies?: Partial<PauseBotDependencies>;
   reconcileRuntimeDependencies?: Partial<ReconcileRuntimeDependencies>;
   resumeBotDependencies?: Partial<ResumeBotDependencies>;
+  startBotReadinessCheckDependencies?: Partial<StartBotReadinessCheckDependencies>;
   verifyPacificaOperationalDependencies?: Partial<
     VerifyPacificaOperationalDependencies
   >;
@@ -131,6 +142,9 @@ export function createApiModule(input: CreateApiModuleInput) {
     input.prisma,
   );
   const marketDataGateway = new PacificaMarketDataGateway(environment);
+  const startBotReadinessGateway = new PacificaStartBotReadinessGateway(
+    environment,
+  );
   const getMarketCandles = createGetMarketCandles({
     marketData:
       input.getMarketCandlesDependencies?.marketData ?? marketDataGateway,
@@ -148,6 +162,10 @@ export function createApiModule(input: CreateApiModuleInput) {
   const getMarketPrices = createGetMarketPrices({
     marketData:
       input.getMarketPricesDependencies?.marketData ?? marketDataGateway,
+  });
+  const getMarketInfo = createGetMarketInfo({
+    marketInfo:
+      input.getMarketInfoDependencies?.marketInfo ?? startBotReadinessGateway,
   });
 
   const activatePreset = createActivatePreset({
@@ -174,10 +192,28 @@ export function createApiModule(input: CreateApiModuleInput) {
       ? { now: input.pauseBotDependencies.now }
       : {}),
   });
+  const credentialEncryption =
+    input.validatePacificaCredentialsDependencies?.credentialEncryption ??
+    new AesCredentialEncryptionService(
+      environment.credentialEncryptionKey,
+      environment.credentialEncryptionKeyId,
+    );
+  const startBotReadinessCheck = createStartBotReadinessCheck({
+    sessionRepository: defaultCredentialRepository,
+    credentialRepository: defaultCredentialRepository,
+    credentialEncryption,
+    startBotReadiness:
+      input.startBotReadinessCheckDependencies?.startBotReadiness ??
+      startBotReadinessGateway,
+    eventRepository:
+      input.startBotReadinessCheckDependencies?.eventRepository ??
+      defaultCredentialRepository,
+  });
   const resumeBot = createResumeBot({
     commandRepository:
       input.resumeBotDependencies?.commandRepository ??
       defaultCredentialRepository,
+    startBotReadinessCheck,
     eventRepository:
       input.resumeBotDependencies?.eventRepository ??
       defaultCredentialRepository,
@@ -260,14 +296,18 @@ export function createApiModule(input: CreateApiModuleInput) {
         }
       : {}),
     synchronizePacificaAccountState,
-  });
-  const credentialEncryption =
-    input.validatePacificaCredentialsDependencies?.credentialEncryption ??
-    new AesCredentialEncryptionService(
-      environment.credentialEncryptionKey,
-      environment.credentialEncryptionKeyId,
-    );
+    synchronizePacificaSymbolOperationalConfigs: async ({ walletAddress }) => {
+      const configs =
+        await startBotReadinessGateway.listEffectiveSymbolOperationalConfigs(
+          walletAddress,
+        );
 
+      await defaultCredentialRepository.replaceSymbolOperationalConfigs({
+        walletAddress,
+        configs,
+      });
+    },
+  });
   const verifyPacificaOperational = createVerifyPacificaOperational({
     credentialRepository:
       input.verifyPacificaOperationalDependencies?.credentialRepository ??
@@ -306,6 +346,7 @@ export function createApiModule(input: CreateApiModuleInput) {
       closeTrade,
       evaluatePresetSignal,
       getMarketCandles,
+      getMarketInfo,
       getMarketPrices,
       heartbeatRuntime,
       lookupOperationalAccountByWallet,

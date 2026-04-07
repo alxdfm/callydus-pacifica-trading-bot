@@ -4,9 +4,13 @@ import type {
 } from "@pacifica/contracts";
 import type { BotCommandRepository } from "../../domain/bot-commands/BotCommandRepository";
 import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
+import type { StartBotReadinessCheckResponse } from "../start-bot-readiness-check/StartBotReadinessCheck";
 
 export type ResumeBotDependencies = {
   commandRepository: BotCommandRepository;
+  startBotReadinessCheck: (
+    input: BotRuntimeCommandRequest,
+  ) => Promise<StartBotReadinessCheckResponse>;
   eventRepository?: OperationalEventRepository;
   now?: () => Date;
 };
@@ -33,6 +37,37 @@ export function createResumeBot(dependencies: ResumeBotDependencies) {
         code: "wallet_not_connected",
         message: "Connect the main wallet before resuming the bot.",
         retryable: false,
+      };
+    }
+
+    const readinessResult = await dependencies.startBotReadinessCheck(input);
+
+    if (readinessResult.status === "error") {
+      const mappedCode =
+        readinessResult.readinessStatus === "blocked"
+          ? "account_not_ready"
+          : "internal_error";
+
+      await dependencies.eventRepository?.appendOperationalEvent({
+        walletAddress: input.walletAddress,
+        eventType: "bot_command",
+        severity:
+          readinessResult.readinessStatus === "blocked" ? "warning" : "error",
+        title: "Resume bot blocked by readiness check",
+        message: readinessResult.message,
+        payloadJson: {
+          commandType: "resume_bot",
+          readinessStatus: readinessResult.readinessStatus,
+          readinessCode: readinessResult.code,
+          result: readinessResult.result ?? null,
+        },
+      });
+
+      return {
+        status: "error",
+        code: mappedCode,
+        message: readinessResult.message,
+        retryable: readinessResult.retryable,
       };
     }
 
