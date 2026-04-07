@@ -142,9 +142,15 @@ function normalizePrices(payload: unknown): MarketPriceSnapshot[] {
 
   return rows.flatMap((row) => {
     const symbol = String((row as { symbol?: unknown } | null)?.symbol ?? "").trim();
-    const markPrice = toNumber((row as { mark_price?: unknown } | null)?.mark_price);
-    const indexPrice = toNumber((row as { oracle_price?: unknown } | null)?.oracle_price);
-    const lastPrice = toNumber((row as { last_price?: unknown } | null)?.last_price);
+    const markPrice =
+      toNumber((row as { mark?: unknown } | null)?.mark) ??
+      toNumber((row as { mark_price?: unknown } | null)?.mark_price);
+    const indexPrice =
+      toNumber((row as { oracle?: unknown } | null)?.oracle) ??
+      toNumber((row as { oracle_price?: unknown } | null)?.oracle_price);
+    const lastPrice =
+      toNumber((row as { mid?: unknown } | null)?.mid) ??
+      toNumber((row as { last_price?: unknown } | null)?.last_price);
     const volume24h = toNumber((row as { volume_24h?: unknown } | null)?.volume_24h);
     const openInterest = toNumber(
       (row as { open_interest?: unknown } | null)?.open_interest,
