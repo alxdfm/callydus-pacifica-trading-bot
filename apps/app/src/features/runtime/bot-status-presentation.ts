@@ -1,6 +1,6 @@
 import type { BotStatus } from "@pacifica/contracts";
 
-export type BotStatusPresentation = {
+type BotStatusPresentation = {
   badgeTone: "neutral" | "info" | "warning" | "danger" | "success";
   badgeLabel: string;
   actionLabel: string;

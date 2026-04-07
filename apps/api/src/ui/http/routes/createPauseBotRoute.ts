@@ -5,7 +5,7 @@ import {
   type BotRuntimeCommandRequest,
 } from "@pacifica/contracts";
 
-export type PauseBotHttpRequest = {
+type PauseBotHttpRequest = {
   body: BotRuntimeCommandRequest;
 };
 

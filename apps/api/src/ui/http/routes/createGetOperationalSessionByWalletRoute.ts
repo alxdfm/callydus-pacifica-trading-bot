@@ -8,7 +8,7 @@ import type {
   GetOperationalSessionByWalletOutput,
 } from "../../../application/get-operational-session-by-wallet/GetOperationalSessionByWallet";
 
-export type GetOperationalSessionByWalletHttpRequest = {
+type GetOperationalSessionByWalletHttpRequest = {
   body: GetOperationalSessionByWalletInput;
 };
 

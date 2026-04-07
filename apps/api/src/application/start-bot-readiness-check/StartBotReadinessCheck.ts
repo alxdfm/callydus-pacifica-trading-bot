@@ -3,7 +3,7 @@ import type { OperationalEventRepository } from "../../domain/operational-events
 import type { PacificaCredentialRepository } from "../../domain/pacifica-credentials/PacificaCredentialRepository";
 import type { OperationalSessionRepository } from "../../domain/operational-session/OperationalSession";
 
-export type StartBotReadinessCheckInput = {
+type StartBotReadinessCheckInput = {
   walletAddress: string;
 };
 

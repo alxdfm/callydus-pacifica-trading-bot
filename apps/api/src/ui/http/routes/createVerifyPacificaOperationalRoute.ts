@@ -8,7 +8,7 @@ import type {
   VerifyPacificaOperationalOutput,
 } from "../../../application/verify-pacifica-operational/VerifyPacificaOperational";
 
-export type VerifyPacificaOperationalHttpRequest = {
+type VerifyPacificaOperationalHttpRequest = {
   body: VerifyPacificaOperationalInput;
 };
 

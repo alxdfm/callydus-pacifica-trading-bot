@@ -29,7 +29,7 @@ import type { GetOperationalSessionByWalletHandler } from "./routes/createGetOpe
 import { createValidatePacificaCredentialsRoute } from "./routes/createValidatePacificaCredentialsRoute";
 import type { ValidatePacificaCredentialsHandler } from "./routes/createValidatePacificaCredentialsRoute";
 
-export type ApiRouterDependencies = {
+type ApiRouterDependencies = {
   activatePreset: ActivatePresetHandler;
   approvePacificaBuilder: ApprovePacificaBuilderHandler;
   closeTrade: CloseTradeHandler;

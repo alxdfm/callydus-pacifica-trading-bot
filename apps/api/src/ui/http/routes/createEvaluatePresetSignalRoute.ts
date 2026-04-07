@@ -5,7 +5,7 @@ import {
   type PresetSignalEvaluationResponse,
 } from "@pacifica/contracts";
 
-export type EvaluatePresetSignalHttpRequest = {
+type EvaluatePresetSignalHttpRequest = {
   body: PresetSignalEvaluationRequest;
 };
 

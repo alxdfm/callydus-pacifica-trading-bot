@@ -5,7 +5,7 @@ import {
   type PresetActivationResponse,
 } from "@pacifica/contracts";
 
-export type ActivatePresetHttpRequest = {
+type ActivatePresetHttpRequest = {
   body: PresetActivationRequest;
 };
 

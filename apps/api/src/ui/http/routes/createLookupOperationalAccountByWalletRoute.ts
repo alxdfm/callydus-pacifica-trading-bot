@@ -8,7 +8,7 @@ import type {
   LookupOperationalAccountByWalletOutput,
 } from "../../../application/lookup-operational-account-by-wallet/LookupOperationalAccountByWallet";
 
-export type LookupOperationalAccountByWalletHttpRequest = {
+type LookupOperationalAccountByWalletHttpRequest = {
   body: LookupOperationalAccountByWalletInput;
 };
 

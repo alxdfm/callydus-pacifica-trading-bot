@@ -8,7 +8,7 @@ import type {
   ApprovePacificaBuilderOutput,
 } from "../../../application/approve-pacifica-builder/ApprovePacificaBuilder";
 
-export type ApprovePacificaBuilderHttpRequest = {
+type ApprovePacificaBuilderHttpRequest = {
   body: ApprovePacificaBuilderInput;
 };
 

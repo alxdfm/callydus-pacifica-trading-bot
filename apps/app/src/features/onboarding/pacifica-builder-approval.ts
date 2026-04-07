@@ -13,14 +13,6 @@ const defaultExpiryWindow = parseExpiryWindow(
   import.meta.env.VITE_PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS,
 );
 
-export function getBuilderApprovalConfig() {
-  return {
-    builderCode,
-    maxFeeRate,
-    expiryWindow: defaultExpiryWindow,
-  };
-}
-
 export async function createSignedBuilderApprovalSubmission(input: {
   mainWalletPublicKey: string;
   signMessage: (message: Uint8Array) => Promise<Uint8Array>;

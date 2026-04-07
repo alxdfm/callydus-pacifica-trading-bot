@@ -21,13 +21,13 @@ import type {
   WorkerRuntimeRepository,
 } from "../domain/WorkerRuntimeRepository";
 
-export type WorkerLogger = {
+type WorkerLogger = {
   info: (message: string, payload?: Record<string, unknown>) => void;
   warn: (message: string, payload?: Record<string, unknown>) => void;
   error: (message: string, payload?: Record<string, unknown>) => void;
 };
 
-export type OperationalWorkerDependencies = {
+type OperationalWorkerDependencies = {
   environment: WorkerEnvironment;
   repository: WorkerRuntimeRepository;
   credentialEncryption: Pick<

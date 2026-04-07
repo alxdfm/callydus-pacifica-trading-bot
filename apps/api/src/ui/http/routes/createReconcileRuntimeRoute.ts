@@ -5,7 +5,7 @@ import {
   type RuntimeReconcileResponse,
 } from "@pacifica/contracts";
 
-export type ReconcileRuntimeHttpRequest = {
+type ReconcileRuntimeHttpRequest = {
   body: RuntimeReconcileRequest;
 };
 

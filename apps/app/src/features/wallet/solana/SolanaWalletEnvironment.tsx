@@ -17,7 +17,7 @@ import type {
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletReadyState, type WalletName } from "@solana/wallet-adapter-base";
 
-export type SolanaWalletPort = {
+type SolanaWalletPort = {
   selectedProviderName: string | null;
   lastErrorCode: WalletErrorCode | null;
   connectWallet: (provider?: SupportedWalletProvider) => Promise<void>;

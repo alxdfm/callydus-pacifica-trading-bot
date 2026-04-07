@@ -5,7 +5,7 @@ import {
   type MarketCandleResponse,
 } from "@pacifica/contracts";
 
-export type GetMarketCandlesHttpRequest = {
+type GetMarketCandlesHttpRequest = {
   body: MarketCandleRequest;
 };
 

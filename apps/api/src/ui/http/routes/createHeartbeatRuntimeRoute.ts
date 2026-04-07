@@ -5,7 +5,7 @@ import {
   type RuntimeHeartbeatResponse,
 } from "@pacifica/contracts";
 
-export type HeartbeatRuntimeHttpRequest = {
+type HeartbeatRuntimeHttpRequest = {
   body: RuntimeHeartbeatRequest;
 };
 

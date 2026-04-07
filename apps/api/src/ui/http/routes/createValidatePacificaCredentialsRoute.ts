@@ -8,7 +8,7 @@ import {
   type PacificaCredentialValidationResponse,
 } from "@pacifica/contracts";
 
-export type ValidatePacificaCredentialsHttpRequest = {
+type ValidatePacificaCredentialsHttpRequest = {
   body: ValidatePacificaCredentialsInput;
 };
 

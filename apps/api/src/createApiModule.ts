@@ -89,14 +89,14 @@ import { PacificaStartBotReadinessGateway } from "./infrastructure/pacifica/Paci
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
 
-export type ApiReadModels = {
+type ApiReadModels = {
   onboarding: OnboardingContract;
   dashboard: DashboardContract;
   presets: PresetCatalogContract;
   history: HistoryContract;
 };
 
-export type CreateApiModuleInput = {
+type CreateApiModuleInput = {
   environment?: Partial<ApiEnvironment>;
   prisma: PrismaClient;
   approvePacificaBuilderDependencies?: Partial<

@@ -106,7 +106,7 @@ export type AppSessionState = {
   runtime: RuntimeState;
 };
 
-export type AppStateContextValue = {
+type AppStateContextValue = {
   state: AppSessionState;
   canAccessProduct: boolean;
   setLocale: (locale: AppLocale) => void;

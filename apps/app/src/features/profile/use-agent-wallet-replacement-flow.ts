@@ -19,7 +19,7 @@ type FieldErrors = {
 
 type ModalFeedbackTone = "danger" | "success" | "info";
 
-export type ValidatedDraftState = {
+type ValidatedDraftState = {
   credentialId: string;
   keyFingerprint: string;
   validatedAt: string;

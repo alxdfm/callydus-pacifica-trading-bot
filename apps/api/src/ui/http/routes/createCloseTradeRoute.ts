@@ -5,7 +5,7 @@ import {
   type CloseTradeCommandRequest,
 } from "@pacifica/contracts";
 
-export type CloseTradeHttpRequest = {
+type CloseTradeHttpRequest = {
   body: CloseTradeCommandRequest;
 };
 

@@ -12,7 +12,7 @@ import {
 } from "@pacifica/contracts";
 import type { MessageKey } from "../../shared/i18n/messages";
 
-export type PresetRiskTone = "success" | "warning" | "danger";
+type PresetRiskTone = "success" | "warning" | "danger";
 
 type TranslationFn = (key: MessageKey) => string;
 
@@ -40,7 +40,7 @@ type PresetCatalogRawItem = {
   technicalContract: PresetTechnicalContract;
 };
 
-export type PresetCatalogItem = {
+type PresetCatalogItem = {
   definition: PresetDefinition;
   timeframeLabel: string;
   priorities: string[];

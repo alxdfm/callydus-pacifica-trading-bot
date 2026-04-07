@@ -1,6 +1,6 @@
 import type { ExchangeSnapshotStatus, SyncStatus } from "@pacifica/contracts";
 
-export type RuntimeSyncPresentation = {
+type RuntimeSyncPresentation = {
   show: boolean;
   tone: "neutral" | "warning" | "danger";
   title: string;
