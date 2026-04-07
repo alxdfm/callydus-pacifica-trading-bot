@@ -1,5 +1,5 @@
-import { presetActivationRequestSchema } from "@pacifica/contracts";
-import { useMemo, useState } from "react";
+import { presetActivationRequestSchema, type MarketInfoItem } from "@pacifica/contracts";
+import { useEffect, useMemo, useState } from "react";
 import { activatePreset } from "../../features/presets/preset-activation";
 import {
   allowedPresetSymbols,
@@ -7,6 +7,9 @@ import {
   getPresetCatalog,
   getPresetCatalogItemByDefinitionId,
 } from "../../features/presets/preset-catalog";
+import {
+  getMarketInfoViaBackend,
+} from "../../features/runtime/backend-runtime-config";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
@@ -16,6 +19,7 @@ export function PresetsPage() {
   const { canAccessProduct, setPresetState, setRuntimeState, state } = useAppState();
   const presets = getPresetCatalog(t);
   const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
+  const [marketInfo, setMarketInfo] = useState<MarketInfoItem[]>([]);
   const selectedPreset = getPresetCatalogItemByDefinitionId(
     state.presets.selectedPresetDefinitionId,
     t,
@@ -43,6 +47,30 @@ export function PresetsPage() {
     selectedPreset && draftConfig
       ? selectedPreset.activationSummary(draftConfig)
       : t("presetActivationSummaryEmpty");
+
+  const selectedMarketInfo = useMemo(
+    () => marketInfo.find((item) => item.symbol === draftConfig?.symbol.split("/")[0]),
+    [draftConfig?.symbol, marketInfo],
+  );
+  const selectedSymbolConfig = useMemo(
+    () =>
+      state.runtime.symbolOperationalConfigs.find(
+        (config) => config.symbol === draftConfig?.symbol,
+      ) ?? null,
+    [draftConfig?.symbol, state.runtime.symbolOperationalConfigs],
+  );
+  const selectedLeverage =
+    selectedSymbolConfig?.leverage ?? selectedMarketInfo?.maxLeverage ?? null;
+
+  useEffect(() => {
+    void (async () => {
+      const result = await getMarketInfoViaBackend();
+
+      if (result.status === "success") {
+        setMarketInfo(result.markets);
+      }
+    })();
+  }, []);
 
   function handleSelectPreset(presetDefinitionId: string) {
     setPresetState({
@@ -304,6 +332,14 @@ export function PresetsPage() {
                     />
                     <span className="position-size-suffix">%</span>
                   </div>
+                </label>
+
+                <label className="onboarding-form__field">
+                  <span>{t("presetReviewLeverageLabel")}</span>
+                  <div className="onboarding-form__input" aria-readonly="true">
+                    {selectedLeverage ? `${selectedLeverage}x` : "-"}
+                  </div>
+                  <small>{t("presetReviewLeverageHint")}</small>
                 </label>
               </div>
 

@@ -317,6 +317,9 @@ export const messages = {
     presetReviewSymbolLabel: "Symbol",
     presetReviewSymbolHint: "Choose from the symbols currently supported by the MVP.",
     presetReviewPositionSizeLabel: "Position size",
+    presetReviewLeverageLabel: "Leverage",
+    presetReviewLeverageHint:
+      "This value comes from the current leverage configured on Pacifica for the selected symbol.",
     presetReviewLongLabel: "Long",
     presetReviewShortLabel: "Short",
     presetReviewHint:

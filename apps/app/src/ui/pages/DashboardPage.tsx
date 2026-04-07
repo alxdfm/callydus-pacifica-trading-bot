@@ -160,10 +160,12 @@ export function DashboardPage() {
 
   async function handleToggleBot() {
     const walletAddress = state.wallet.mainWalletPublicKey;
+    const isEnteringOperationalState =
+      botStatusPresentation.nextAction !== "pause";
     const nextBotStatus =
-      botStatusPresentation.nextAction === "pause" ? "paused" : "active";
+      isEnteringOperationalState ? "active" : "paused";
     const nextSyncStatus =
-      botStatusPresentation.nextAction === "pause" ? "idle" : "syncing";
+      isEnteringOperationalState ? "syncing" : "idle";
 
     if (!walletAddress) {
       return;
@@ -175,9 +177,9 @@ export function DashboardPage() {
     });
 
     const commandResult =
-      botStatusPresentation.nextAction === "pause"
-        ? await pauseBotViaBackend({ walletAddress })
-        : await resumeBotViaBackend({ walletAddress });
+      isEnteringOperationalState
+        ? await resumeBotViaBackend({ walletAddress })
+        : await pauseBotViaBackend({ walletAddress });
 
     if (commandResult.status === "error") {
       setRuntimeState({
