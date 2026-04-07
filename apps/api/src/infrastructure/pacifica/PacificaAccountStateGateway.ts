@@ -95,16 +95,30 @@ function normalizeBalanceSnapshot(payload: unknown, fallbackNowIso: string) {
     "free_collateral",
     "available",
   ]);
-  const aggregatedPnl = pickNumber(record, [
+  const realizedOrBaseBalance = pickNumber(record, [
+    "balance",
+    "wallet_balance",
+    "account_balance",
+    "cash_balance",
+  ]);
+  const aggregatedPnlDirect = pickNumber(record, [
     "unrealized_pnl",
+    "unrealised_pnl",
     "pnl",
     "account_unrealized_pnl",
+    "account_unrealised_pnl",
   ]);
+  const aggregatedPnl =
+    aggregatedPnlDirect ??
+    (totalBalance !== null && realizedOrBaseBalance !== null
+      ? totalBalance - realizedOrBaseBalance
+      : null);
   const capitalInUse = pickNumber(record, [
     "margin_used",
     "used_margin",
     "total_margin_used",
     "capital_in_use",
+    "margin",
   ]);
 
   if (
