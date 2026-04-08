@@ -164,6 +164,13 @@ export function formatProtectedPrice(value: number, tickSize: string) {
   return value.toFixed(decimals);
 }
 
+function alignToLastClosedCandleEndTime(
+  referenceTimeMs: number,
+  intervalMs: number,
+) {
+  return Math.floor(referenceTimeMs / intervalMs) * intervalMs;
+}
+
 /**
  * Creates the continuous operational worker for active presets.
  *
@@ -226,11 +233,15 @@ export function createOperationalWorker(
 
     const requiredPeriod = getRequiredPeriod(snapshot.activePreset.effectiveContract);
     const candleLimit = Math.max(120, requiredPeriod * 5);
-    const endTime = tickAt.getTime();
+    const timeframeIntervalMs = getIntervalDurationMs(
+      snapshot.activePreset.effectiveContract.timeframe,
+    );
+    const endTime = alignToLastClosedCandleEndTime(
+      tickAt.getTime(),
+      timeframeIntervalMs,
+    );
     const startTime =
-      endTime -
-      candleLimit *
-        getIntervalDurationMs(snapshot.activePreset.effectiveContract.timeframe);
+      endTime - candleLimit * timeframeIntervalMs;
 
     traceSignal("worker.signal_trace.fetch_candles_started", {
       operatorAccountId: snapshot.operatorAccountId,

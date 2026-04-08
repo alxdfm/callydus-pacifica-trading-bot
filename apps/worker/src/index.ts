@@ -3,6 +3,7 @@ import { AesCredentialEncryptionService } from "@pacifica/credential-crypto";
 import { PacificaMarketDataGateway } from "@pacifica/pacifica-market-data";
 import { createOperationalWorker } from "./application/createOperationalWorker";
 import { createWorkerEnvironment } from "./infrastructure/config/createWorkerEnvironment";
+import { PersistedWorkerMarketDataGateway } from "./infrastructure/market-data/PersistedWorkerMarketDataGateway";
 import { PrismaWorkerRuntimeRepository } from "./infrastructure/persistence/PrismaWorkerRuntimeRepository";
 
 const prisma = new PrismaClient();
@@ -46,9 +47,12 @@ const environment = createWorkerEnvironment({
 const worker = createOperationalWorker({
   environment,
   repository: new PrismaWorkerRuntimeRepository(prisma),
-  marketData: new PacificaMarketDataGateway({
-    pacificaRestBaseUrl: environment.pacificaRestBaseUrl,
-  }),
+  marketData: new PersistedWorkerMarketDataGateway(
+    prisma,
+    new PacificaMarketDataGateway({
+      pacificaRestBaseUrl: environment.pacificaRestBaseUrl,
+    }),
+  ),
   credentialEncryption: new AesCredentialEncryptionService(
     environment.credentialEncryptionKey,
     environment.credentialEncryptionKeyId,
