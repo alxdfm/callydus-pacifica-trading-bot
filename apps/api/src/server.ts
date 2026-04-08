@@ -2,6 +2,11 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PrismaClient } from "@prisma/client";
 import { createApiModule } from "./createApiModule";
+import { createActivePresetMarketDataRequestResolver } from "./infrastructure/market-data/ActivePresetMarketDataRequestResolver";
+import {
+  readLocalMarketDataRefreshSchedulerConfigFromEnv,
+  startLocalMarketDataRefreshScheduler,
+} from "./infrastructure/market-data/startLocalMarketDataRefreshScheduler";
 
 const prisma = new PrismaClient();
 const api = createApiModule({
@@ -33,6 +38,15 @@ const api = createApiModule({
       process.env.CREDENTIAL_ENCRYPTION_KEY_ID ?? "local-dev-v1",
   },
   prisma,
+});
+const resolveActivePresetMarketDataRequests =
+  createActivePresetMarketDataRequestResolver({
+    prisma,
+  });
+const localMarketDataRefreshScheduler = startLocalMarketDataRefreshScheduler({
+  config: readLocalMarketDataRefreshSchedulerConfigFromEnv(process.env),
+  refreshMarketData: api.services.refreshMarketData,
+  resolveCandleRequests: resolveActivePresetMarketDataRequests,
 });
 
 const port = Number(process.env.PORT ?? "3000");
@@ -242,6 +256,22 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "POST" &&
+    request.url === "/api/internal/market/refresh"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.refreshMarketData({
+      body: body as never,
+    });
+
+    response.writeHead(200, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
     request.url === "/api/onboarding/account/lookup"
   ) {
     const body = await readJsonBody(request);
@@ -311,6 +341,12 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 server.listen(port, () => {
   console.log(`Pacifica API listening on http://localhost:${port}`);
 });
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    localMarketDataRefreshScheduler.stop();
+  });
+}
 
 function applyCorsHeaders(response: ServerResponse) {
   response.setHeader("Access-Control-Allow-Origin", allowedOrigin);

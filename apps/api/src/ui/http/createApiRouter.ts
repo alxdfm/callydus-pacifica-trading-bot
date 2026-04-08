@@ -30,6 +30,8 @@ import { createGetOperationalSessionByWalletRoute } from "./routes/createGetOper
 import type { GetOperationalSessionByWalletHandler } from "./routes/createGetOperationalSessionByWalletRoute";
 import { createValidatePacificaCredentialsRoute } from "./routes/createValidatePacificaCredentialsRoute";
 import type { ValidatePacificaCredentialsHandler } from "./routes/createValidatePacificaCredentialsRoute";
+import { createRefreshMarketDataRoute } from "./routes/createRefreshMarketDataRoute";
+import type { RefreshMarketDataHandler } from "./routes/createRefreshMarketDataRoute";
 
 type ApiRouterDependencies = {
   activatePreset: ActivatePresetHandler;
@@ -46,6 +48,7 @@ type ApiRouterDependencies = {
   reconcileRuntime: ReconcileRuntimeHandler;
   resumeBot: ResumeBotHandler;
   getOperationalSessionByWallet: GetOperationalSessionByWalletHandler;
+  refreshMarketData: RefreshMarketDataHandler;
   validatePacificaCredentials: ValidatePacificaCredentialsHandler;
   verifyPacificaOperational: VerifyPacificaOperationalHandler;
 };
@@ -83,6 +86,9 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     resumeBot: createResumeBotRoute(dependencies.resumeBot),
     getOperationalSessionByWallet: createGetOperationalSessionByWalletRoute(
       dependencies.getOperationalSessionByWallet,
+    ),
+    refreshMarketData: createRefreshMarketDataRoute(
+      dependencies.refreshMarketData,
     ),
     verifyPacificaOperational: createVerifyPacificaOperationalRoute(
       dependencies.verifyPacificaOperational,

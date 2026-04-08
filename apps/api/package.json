@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "cleanup:market-data": "dotenv -e ../../.env -- tsx src/scripts/cleanupMarketData.ts",
     "dev": "dotenv -e ../../.env -- tsx watch src/server.ts",
+    "refresh:market-data": "dotenv -e ../../.env -- tsx src/scripts/refreshMarketData.ts",
     "start": "dotenv -e ../../.env -- tsx src/server.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

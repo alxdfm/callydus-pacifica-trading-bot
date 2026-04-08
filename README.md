@@ -57,6 +57,11 @@ pnpm --filter @pacifica/app dev
 
 O `app`, a `api`, o `worker` e o `database` carregam o `.env` da raiz automaticamente.
 
+Quando a `api` sobe em desenvolvimento, o scheduler local de market data:
+- refresca `prices` e `market info` a cada `1 minuto`
+- deriva os `candles` a partir dos presets ativos no banco
+- deduplica automaticamente as combinacoes `symbol + timeframe` necessarias para o `worker` e para a simulacao de presets
+
 O Vite deve abrir em algo como:
 
 ```txt

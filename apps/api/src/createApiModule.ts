@@ -36,6 +36,14 @@ import {
   type GetMarketInfoDependencies,
 } from "./application/get-market-info/GetMarketInfo";
 import {
+  createMarketDataRefresher,
+  type RefreshMarketDataDependencies,
+} from "./application/refresh-market-data/RefreshMarketData";
+import {
+  createRefreshMarketDataManually,
+  type RefreshMarketDataManuallyDependencies,
+} from "./application/refresh-market-data/RefreshMarketDataManually";
+import {
   createHeartbeatRuntime,
   type HeartbeatRuntimeDependencies,
 } from "./application/heartbeat-runtime/HeartbeatRuntime";
@@ -90,6 +98,8 @@ import { PacificaCredentialValidationGateway } from "./infrastructure/pacifica/P
 import { PacificaMarketDataGateway } from "./infrastructure/pacifica/PacificaMarketDataGateway";
 import { PacificaOperationalVerificationGateway } from "./infrastructure/pacifica/PacificaOperationalVerificationGateway";
 import { PacificaStartBotReadinessGateway } from "./infrastructure/pacifica/PacificaStartBotReadinessGateway";
+import { PersistedMarketDataGateway } from "./infrastructure/market-data/PersistedMarketDataGateway";
+import { PrismaMarketDataSnapshotRepository } from "./infrastructure/persistence/PrismaMarketDataSnapshotRepository";
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
 
@@ -112,6 +122,10 @@ type CreateApiModuleInput = {
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
   getMarketInfoDependencies?: Partial<GetMarketInfoDependencies>;
+  refreshMarketDataDependencies?: Partial<RefreshMarketDataDependencies>;
+  refreshMarketDataManuallyDependencies?: Partial<
+    RefreshMarketDataManuallyDependencies
+  >;
   previewPresetBacktestDependencies?: Partial<PreviewPresetBacktestDependencies>;
   heartbeatRuntimeDependencies?: Partial<HeartbeatRuntimeDependencies>;
   lookupOperationalAccountByWalletDependencies?: Partial<
@@ -146,17 +160,42 @@ export function createApiModule(input: CreateApiModuleInput) {
   const defaultCredentialRepository = new PrismaPacificaCredentialRepository(
     input.prisma,
   );
+  const marketDataSnapshotRepository = new PrismaMarketDataSnapshotRepository(
+    input.prisma,
+  );
   const marketDataGateway = new PacificaMarketDataGateway(environment);
   const startBotReadinessGateway = new PacificaStartBotReadinessGateway(
     environment,
   );
+  const marketDataRefresher = createMarketDataRefresher({
+    marketData:
+      input.refreshMarketDataDependencies?.marketData ?? marketDataGateway,
+    marketInfo:
+      input.refreshMarketDataDependencies?.marketInfo ??
+      startBotReadinessGateway,
+    repository:
+      input.refreshMarketDataDependencies?.repository ??
+      marketDataSnapshotRepository,
+    ...(input.refreshMarketDataDependencies?.now
+      ? { now: input.refreshMarketDataDependencies.now }
+      : {}),
+    ...(input.refreshMarketDataDependencies?.source
+      ? { source: input.refreshMarketDataDependencies.source }
+      : {}),
+  });
+  const persistedMarketDataGateway = new PersistedMarketDataGateway({
+    repository: marketDataSnapshotRepository,
+    refresher: marketDataRefresher,
+  });
   const getMarketCandles = createGetMarketCandles({
     marketData:
-      input.getMarketCandlesDependencies?.marketData ?? marketDataGateway,
+      input.getMarketCandlesDependencies?.marketData ??
+      persistedMarketDataGateway,
   });
   const evaluatePresetSignal = createEvaluatePresetSignal({
     marketData:
-      input.evaluatePresetSignalDependencies?.marketData ?? marketDataGateway,
+      input.evaluatePresetSignalDependencies?.marketData ??
+      persistedMarketDataGateway,
     eventRepository:
       input.evaluatePresetSignalDependencies?.eventRepository ??
       defaultCredentialRepository,
@@ -166,15 +205,22 @@ export function createApiModule(input: CreateApiModuleInput) {
   });
   const getMarketPrices = createGetMarketPrices({
     marketData:
-      input.getMarketPricesDependencies?.marketData ?? marketDataGateway,
+      input.getMarketPricesDependencies?.marketData ??
+      persistedMarketDataGateway,
   });
   const getMarketInfo = createGetMarketInfo({
     marketInfo:
-      input.getMarketInfoDependencies?.marketInfo ?? startBotReadinessGateway,
+      input.getMarketInfoDependencies?.marketInfo ?? persistedMarketDataGateway,
   });
   const previewPresetBacktest = createPreviewPresetBacktest({
     marketData:
-      input.previewPresetBacktestDependencies?.marketData ?? marketDataGateway,
+      input.previewPresetBacktestDependencies?.marketData ??
+      persistedMarketDataGateway,
+  });
+  const refreshMarketData = createRefreshMarketDataManually({
+    refresher:
+      input.refreshMarketDataManuallyDependencies?.refresher ??
+      marketDataRefresher,
   });
 
   const activatePreset = createActivatePreset({
@@ -357,6 +403,7 @@ export function createApiModule(input: CreateApiModuleInput) {
       getMarketCandles,
       getMarketInfo,
       getMarketPrices,
+      refreshMarketData,
       previewPresetBacktest,
       heartbeatRuntime,
       lookupOperationalAccountByWallet,
@@ -367,5 +414,9 @@ export function createApiModule(input: CreateApiModuleInput) {
       verifyPacificaOperational,
       validatePacificaCredentials,
     }),
+    services: {
+      refreshMarketData,
+      marketDataRefresher,
+    },
   };
 }
