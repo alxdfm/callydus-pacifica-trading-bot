@@ -80,7 +80,6 @@ describe("preset-catalog", () => {
       "BTC/USDC",
       "ETH/USDC",
       "SOL/USDC",
-      "ARB/USDC",
     ]);
   });
 });

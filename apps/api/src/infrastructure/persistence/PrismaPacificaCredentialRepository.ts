@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import { botRuntimeStateSchema } from "@pacifica/contracts";
+import { botRuntimeStateSchema, type PresetSymbol } from "@pacifica/contracts";
 import type { PacificaCredential } from "../../domain/pacifica-credentials/PacificaCredential";
 import type {
   FindActiveCredentialInput,
@@ -1538,7 +1538,7 @@ function mapPresetActivation(
       | "stopped"
       | "failed",
     editableConfig: {
-      symbol: activation.symbol,
+      symbol: activation.symbol as PresetSymbol,
       positionSizeType: activation.positionSizeType,
       positionSizeValue: decimalToNumber(activation.positionSizeValue),
       longEnabled: activation.longEnabled,

@@ -3,6 +3,7 @@ import type {
   PresetActivation,
   PresetDefinition,
   PresetEditableConfig,
+  PresetSymbol,
 } from "@pacifica/contracts";
 import {
   BALANCED_PRESET_DEFINITION_ID,
@@ -159,6 +160,8 @@ function translatePreset(
   item: PresetCatalogRawItem,
   t: TranslationFn,
 ): PresetCatalogItem {
+  const symbol = toPresetSymbol(item.technicalContract.symbol);
+
   return {
     definition: {
       id: item.definition.id,
@@ -188,7 +191,7 @@ function translatePreset(
       }),
     riskTone: item.riskTone,
     defaultEditableConfig: {
-      symbol: item.technicalContract.symbol,
+      symbol,
       positionSizeType: "balance_percent",
       positionSizeValue: item.technicalContract.execution.positionSize.value,
       longEnabled: item.technicalContract.entry.long.enabled,
@@ -236,7 +239,7 @@ export function getEditableConfigForPreset(
   }
 
   return {
-    symbol: preset.technicalContract.symbol,
+    symbol: toPresetSymbol(preset.technicalContract.symbol),
     positionSizeType: "balance_percent",
     positionSizeValue: preset.technicalContract.execution.positionSize.value,
     longEnabled: preset.technicalContract.entry.long.enabled,
@@ -254,4 +257,12 @@ export function getPresetTechnicalContractByDefinitionId(
   );
 }
 
-export const allowedPresetSymbols = ["BTC/USDC", "ETH/USDC", "SOL/USDC", "ARB/USDC"] as const;
+export const allowedPresetSymbols = ["BTC/USDC", "ETH/USDC", "SOL/USDC"] as const;
+
+function toPresetSymbol(value: string): PresetSymbol {
+  if (value === "BTC/USDC" || value === "ETH/USDC" || value === "SOL/USDC") {
+    return value;
+  }
+
+  throw new Error(`Unsupported preset symbol: ${value}`);
+}

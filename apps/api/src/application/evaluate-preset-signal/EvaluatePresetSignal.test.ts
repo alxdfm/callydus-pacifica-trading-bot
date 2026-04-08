@@ -50,7 +50,7 @@ describe("createEvaluatePresetSignal", () => {
       createRequest({
         editableConfig: {
           ...createRequest().editableConfig,
-          symbol: "BTC/USD",
+          symbol: "BTC/USD" as never,
         },
       }),
     );

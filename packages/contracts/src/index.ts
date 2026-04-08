@@ -200,6 +200,7 @@ export const marketCandleIntervalSchema = z.enum([
 ]);
 
 export const marketPriceSourceSchema = z.enum(["market", "mark"]);
+export const presetSymbolSchema = z.enum(["BTC/USDC", "ETH/USDC", "SOL/USDC"]);
 
 export const presetTriggerScopeSchema = z.enum([
   "previousCandle",
@@ -528,7 +529,7 @@ export const presetDefinitionSchema = z.object({
 });
 
 export const presetEditableConfigSchema = z.object({
-  symbol: z.string().min(1),
+  symbol: presetSymbolSchema,
   positionSizeType: positionSizeTypeSchema,
   positionSizeValue: z.number().positive(),
   longEnabled: z.boolean(),
@@ -1399,6 +1400,7 @@ export type OperationalEventType = z.infer<typeof operationalEventTypeSchema>;
 export type AlertType = z.infer<typeof alertTypeSchema>;
 export type MarketCandleInterval = z.infer<typeof marketCandleIntervalSchema>;
 export type MarketPriceSource = z.infer<typeof marketPriceSourceSchema>;
+export type PresetSymbol = z.infer<typeof presetSymbolSchema>;
 export type PresetTriggerScope = z.infer<typeof presetTriggerScopeSchema>;
 export type PresetThresholdOperator = z.infer<typeof presetThresholdOperatorSchema>;
 export type PresetCrossOperator = z.infer<typeof presetCrossOperatorSchema>;

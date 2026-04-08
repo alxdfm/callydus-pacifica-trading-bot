@@ -4,6 +4,7 @@ import {
   type PresetBacktestCurvePoint,
   type PresetBacktestPreviewResponse,
   type PresetBacktestPreviewSuccess,
+  type PresetEditableConfig,
 } from "@pacifica/contracts";
 import { useEffect, useMemo, useState } from "react";
 import { activatePreset } from "../../features/presets/preset-activation";
@@ -153,9 +154,12 @@ export function PresetsPage() {
     });
   }
 
-  function updateDraftConfig(
-    field: "symbol" | "positionSizeValue" | "longEnabled" | "shortEnabled",
-    value: string | number | boolean,
+  function updateDraftConfig<K extends keyof Pick<
+    PresetEditableConfig,
+    "symbol" | "positionSizeValue" | "longEnabled" | "shortEnabled"
+  >>(
+    field: K,
+    value: PresetEditableConfig[K],
   ) {
     if (!draftConfig) {
       return;
@@ -574,7 +578,12 @@ export function PresetsPage() {
                   <span>{t("presetReviewSymbolLabel")}</span>
                   <select
                     className="onboarding-form__input"
-                    onChange={(event) => updateDraftConfig("symbol", event.target.value)}
+                    onChange={(event) =>
+                      updateDraftConfig(
+                        "symbol",
+                        event.target.value as PresetEditableConfig["symbol"],
+                      )
+                    }
                     value={draftConfig.symbol}
                   >
                     {allowedPresetSymbols.map((symbol) => (
