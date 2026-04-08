@@ -151,45 +151,56 @@ enum OrderExecutionStatus {
   failed
 }
 
+enum MarketSnapshotStatus {
+  confirmed
+  stale
+  unavailable
+}
+
+enum MarketPriceSource {
+  market
+  mark
+}
+
 model OperatorAccount {
-  id                      String                   @id @default(uuid()) @db.Uuid
-  walletAddress           String                   @unique
-  onboardingStatus        OnboardingStatus
-  createdAt               DateTime                 @default(now()) @db.Timestamptz(6)
-  updatedAt               DateTime                 @updatedAt @db.Timestamptz(6)
-  pacificaCredentials     PacificaCredential[]
-  presetActivations       PresetActivation[]
-  botRuntimeState         BotRuntimeState?
-  botCommands             BotCommand[]
-  openTrades              OpenTrade[]
-  closedTrades            ClosedTrade[]
-  accountBalanceSnapshots AccountBalanceSnapshot[]
-  operationalAlerts       OperationalAlert[]
-  operationalEvents       OperationalEvent[]
-  signalDecisions         SignalDecision[]
-  orderExecutionAttempts  OrderExecutionAttempt[]
+  id                       String                    @id @default(uuid()) @db.Uuid
+  walletAddress            String                    @unique
+  onboardingStatus         OnboardingStatus
+  createdAt                DateTime                  @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime                  @updatedAt @db.Timestamptz(6)
+  pacificaCredentials      PacificaCredential[]
+  presetActivations        PresetActivation[]
+  botRuntimeState          BotRuntimeState?
+  botCommands              BotCommand[]
+  openTrades               OpenTrade[]
+  closedTrades             ClosedTrade[]
+  accountBalanceSnapshots  AccountBalanceSnapshot[]
+  operationalAlerts        OperationalAlert[]
+  operationalEvents        OperationalEvent[]
+  signalDecisions          SignalDecision[]
+  orderExecutionAttempts   OrderExecutionAttempt[]
   symbolOperationalConfigs SymbolOperationalConfig[]
 }
 
 model PacificaCredential {
-  id                      String                     @id @default(uuid()) @db.Uuid
-  operatorAccountId       String?                    @db.Uuid
-  walletAddress           String?
-  credentialAlias         String?
-  publicKey               String
-  encryptedPrivateKeyRef  String
-  keyFingerprint          String
-  validationStatus        CredentialValidationStatus
-  lifecycleStatus         CredentialLifecycleStatus  @default(pending)
-  operationallyVerified   Boolean                    @default(false)
-  lastValidatedAt         DateTime?                  @db.Timestamptz(6)
-  lastValidationErrorCode String?
-  lastOperationalVerifiedAt DateTime?                @db.Timestamptz(6)
-  lastOperationalErrorCode String?
-  lastOperationalProbeJson Json?
-  createdAt               DateTime                   @default(now()) @db.Timestamptz(6)
-  updatedAt               DateTime                   @updatedAt @db.Timestamptz(6)
-  operatorAccount         OperatorAccount?           @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  id                        String                     @id @default(uuid()) @db.Uuid
+  operatorAccountId         String?                    @db.Uuid
+  walletAddress             String?
+  credentialAlias           String?
+  publicKey                 String
+  encryptedPrivateKeyRef    String
+  keyFingerprint            String
+  validationStatus          CredentialValidationStatus
+  lifecycleStatus           CredentialLifecycleStatus  @default(pending)
+  operationallyVerified     Boolean                    @default(false)
+  lastValidatedAt           DateTime?                  @db.Timestamptz(6)
+  lastValidationErrorCode   String?
+  lastOperationalVerifiedAt DateTime?                  @db.Timestamptz(6)
+  lastOperationalErrorCode  String?
+  lastOperationalProbeJson  Json?
+  createdAt                 DateTime                   @default(now()) @db.Timestamptz(6)
+  updatedAt                 DateTime                   @updatedAt @db.Timestamptz(6)
+  operatorAccount           OperatorAccount?           @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
 
   @@index([operatorAccountId])
   @@index([walletAddress])
@@ -212,28 +223,28 @@ model PresetDefinition {
 }
 
 model PresetActivation {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  operatorAccountId     String                 @db.Uuid
-  presetDefinitionId    String                 @db.Uuid
-  activationStatus      PresetActivationStatus
-  symbol                String
-  positionSizeType      PositionSizeType
-  positionSizeValue     Decimal                @db.Decimal(24, 8)
-  longEnabled           Boolean
-  shortEnabled          Boolean
-  editableConfigJson    Json?
-  effectiveContractJson Json
-  activatedAt           DateTime?              @db.Timestamptz(6)
-  deactivatedAt         DateTime?              @db.Timestamptz(6)
-  createdBy             String
-  createdAt             DateTime               @default(now()) @db.Timestamptz(6)
-  updatedAt             DateTime               @updatedAt @db.Timestamptz(6)
-  operatorAccount       OperatorAccount        @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
-  presetDefinition      PresetDefinition       @relation(fields: [presetDefinitionId], references: [id])
-  openTrades            OpenTrade[]
-  closedTrades          ClosedTrade[]
-  activeInRuntime       BotRuntimeState[]
-  signalDecisions       SignalDecision[]
+  id                     String                  @id @default(uuid()) @db.Uuid
+  operatorAccountId      String                  @db.Uuid
+  presetDefinitionId     String                  @db.Uuid
+  activationStatus       PresetActivationStatus
+  symbol                 String
+  positionSizeType       PositionSizeType
+  positionSizeValue      Decimal                 @db.Decimal(24, 8)
+  longEnabled            Boolean
+  shortEnabled           Boolean
+  editableConfigJson     Json?
+  effectiveContractJson  Json
+  activatedAt            DateTime?               @db.Timestamptz(6)
+  deactivatedAt          DateTime?               @db.Timestamptz(6)
+  createdBy              String
+  createdAt              DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime                @updatedAt @db.Timestamptz(6)
+  operatorAccount        OperatorAccount         @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  presetDefinition       PresetDefinition        @relation(fields: [presetDefinitionId], references: [id])
+  openTrades             OpenTrade[]
+  closedTrades           ClosedTrade[]
+  activeInRuntime        BotRuntimeState[]
+  signalDecisions        SignalDecision[]
   orderExecutionAttempts OrderExecutionAttempt[]
 
   @@index([operatorAccountId])
@@ -247,8 +258,8 @@ model BotRuntimeState {
   botStatus                BotStatus
   pacificaConnectionStatus PacificaConnectionStatus
   syncStatus               SyncStatus
-  exchangeSnapshotStatus   ExchangeSnapshotStatus     @default(last_known)
-  exchangeLastSyncedAt     DateTime?                  @db.Timestamptz(6)
+  exchangeSnapshotStatus   ExchangeSnapshotStatus   @default(last_known)
+  exchangeLastSyncedAt     DateTime?                @db.Timestamptz(6)
   exchangeSnapshotMessage  String?
   activePresetActivationId String?                  @db.Uuid
   workerOwnerId            String?
@@ -280,28 +291,28 @@ model SymbolOperationalConfig {
 }
 
 model SignalDecision {
-  id                  String               @id @default(uuid()) @db.Uuid
-  operatorAccountId   String               @db.Uuid
-  presetActivationId  String               @db.Uuid
-  signalFingerprint   String
-  decisionStatus      SignalDecisionStatus
-  signalSide          TradeSide
-  symbol              String
-  marketSymbol        String
-  timeframe           String
-  priceSource         String
-  candleOpenTime      DateTime             @db.Timestamptz(6)
-  candleCloseTime     DateTime             @db.Timestamptz(6)
-  entryReferencePrice Decimal              @db.Decimal(24, 8)
-  stopLossPrice       Decimal              @db.Decimal(24, 8)
-  takeProfitPrice     Decimal              @db.Decimal(24, 8)
-  riskDistance        Decimal              @db.Decimal(24, 8)
-  payloadJson         Json?
-  requestedAt         DateTime             @db.Timestamptz(6)
-  createdAt           DateTime             @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime             @updatedAt @db.Timestamptz(6)
-  operatorAccount     OperatorAccount      @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
-  presetActivation    PresetActivation     @relation(fields: [presetActivationId], references: [id], onDelete: Cascade)
+  id                     String                  @id @default(uuid()) @db.Uuid
+  operatorAccountId      String                  @db.Uuid
+  presetActivationId     String                  @db.Uuid
+  signalFingerprint      String
+  decisionStatus         SignalDecisionStatus
+  signalSide             TradeSide
+  symbol                 String
+  marketSymbol           String
+  timeframe              String
+  priceSource            String
+  candleOpenTime         DateTime                @db.Timestamptz(6)
+  candleCloseTime        DateTime                @db.Timestamptz(6)
+  entryReferencePrice    Decimal                 @db.Decimal(24, 8)
+  stopLossPrice          Decimal                 @db.Decimal(24, 8)
+  takeProfitPrice        Decimal                 @db.Decimal(24, 8)
+  riskDistance           Decimal                 @db.Decimal(24, 8)
+  payloadJson            Json?
+  requestedAt            DateTime                @db.Timestamptz(6)
+  createdAt              DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime                @updatedAt @db.Timestamptz(6)
+  operatorAccount        OperatorAccount         @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  presetActivation       PresetActivation        @relation(fields: [presetActivationId], references: [id], onDelete: Cascade)
   orderExecutionAttempts OrderExecutionAttempt[]
 
   @@index([decisionStatus])
@@ -311,32 +322,32 @@ model SignalDecision {
 }
 
 model OrderExecutionAttempt {
-  id                  String               @id @default(uuid()) @db.Uuid
-  operatorAccountId   String               @db.Uuid
-  presetActivationId  String               @db.Uuid
-  signalDecisionId    String               @db.Uuid
-  executionStatus     OrderExecutionStatus
-  clientOrderId       String               @unique
-  signalFingerprint   String
-  symbol              String
-  marketSymbol        String
-  orderSide           TradeSide
-  requestedNotionalUsd Decimal             @db.Decimal(24, 8)
-  requestedQuantity   Decimal              @db.Decimal(24, 8)
-  entryReferencePrice Decimal              @db.Decimal(24, 8)
-  slippagePercent     Decimal              @db.Decimal(24, 8)
-  requestJson         Json?
-  responseJson        Json?
-  failureReason       String?
-  retryableFailure    Boolean              @default(false)
-  pacificaOrderId     String?
-  requestedAt         DateTime             @db.Timestamptz(6)
-  finishedAt          DateTime?            @db.Timestamptz(6)
-  createdAt           DateTime             @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime             @updatedAt @db.Timestamptz(6)
-  operatorAccount     OperatorAccount      @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
-  presetActivation    PresetActivation     @relation(fields: [presetActivationId], references: [id], onDelete: Cascade)
-  signalDecision      SignalDecision       @relation(fields: [signalDecisionId], references: [id], onDelete: Cascade)
+  id                   String               @id @default(uuid()) @db.Uuid
+  operatorAccountId    String               @db.Uuid
+  presetActivationId   String               @db.Uuid
+  signalDecisionId     String               @db.Uuid
+  executionStatus      OrderExecutionStatus
+  clientOrderId        String               @unique
+  signalFingerprint    String
+  symbol               String
+  marketSymbol         String
+  orderSide            TradeSide
+  requestedNotionalUsd Decimal              @db.Decimal(24, 8)
+  requestedQuantity    Decimal              @db.Decimal(24, 8)
+  entryReferencePrice  Decimal              @db.Decimal(24, 8)
+  slippagePercent      Decimal              @db.Decimal(24, 8)
+  requestJson          Json?
+  responseJson         Json?
+  failureReason        String?
+  retryableFailure     Boolean              @default(false)
+  pacificaOrderId      String?
+  requestedAt          DateTime             @db.Timestamptz(6)
+  finishedAt           DateTime?            @db.Timestamptz(6)
+  createdAt            DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime             @updatedAt @db.Timestamptz(6)
+  operatorAccount      OperatorAccount      @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+  presetActivation     PresetActivation     @relation(fields: [presetActivationId], references: [id], onDelete: Cascade)
+  signalDecision       SignalDecision       @relation(fields: [signalDecisionId], references: [id], onDelete: Cascade)
 
   @@index([operatorAccountId, requestedAt(sort: Desc)])
   @@index([signalDecisionId, requestedAt(sort: Desc)])
@@ -473,4 +484,75 @@ model OperationalEvent {
   @@index([operatorAccountId, createdAt(sort: Desc)])
   @@index([walletAddress, createdAt(sort: Desc)])
   @@index([eventType, createdAt(sort: Desc)])
+}
+
+model MarketPriceCurrent {
+  symbol         String               @id
+  markPrice      Decimal              @db.Decimal(24, 8)
+  indexPrice     Decimal?             @db.Decimal(24, 8)
+  lastPrice      Decimal?             @db.Decimal(24, 8)
+  volume24h      Decimal?             @db.Decimal(24, 8)
+  openInterest   Decimal?             @db.Decimal(24, 8)
+  fundingRate    Decimal?             @db.Decimal(18, 12)
+  capturedAt     DateTime             @db.Timestamptz(6)
+  fetchedAt      DateTime             @db.Timestamptz(6)
+  snapshotStatus MarketSnapshotStatus @default(confirmed)
+  source         String
+  createdAt      DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime             @updatedAt @db.Timestamptz(6)
+
+  @@index([fetchedAt(sort: Desc)])
+}
+
+model MarketCandleSnapshot {
+  id             String               @id @default(uuid()) @db.Uuid
+  symbol         String
+  interval       String
+  priceSource    MarketPriceSource
+  openTime       DateTime             @db.Timestamptz(6)
+  closeTime      DateTime             @db.Timestamptz(6)
+  open           Decimal              @db.Decimal(24, 8)
+  high           Decimal              @db.Decimal(24, 8)
+  low            Decimal              @db.Decimal(24, 8)
+  close          Decimal              @db.Decimal(24, 8)
+  volume         Decimal              @db.Decimal(24, 8)
+  fetchedAt      DateTime             @db.Timestamptz(6)
+  snapshotStatus MarketSnapshotStatus @default(confirmed)
+  source         String
+  createdAt      DateTime             @default(now()) @db.Timestamptz(6)
+
+  @@unique([symbol, interval, priceSource, openTime])
+  @@index([symbol, interval, priceSource, openTime(sort: Desc)])
+  @@index([fetchedAt(sort: Desc)])
+}
+
+model MarketInfoCurrent {
+  symbol         String               @id
+  tickSize       Decimal              @db.Decimal(24, 8)
+  lotSize        Decimal              @db.Decimal(24, 8)
+  minOrderSize   Decimal              @db.Decimal(24, 8)
+  maxOrderSize   Decimal?             @db.Decimal(24, 8)
+  maxLeverage    Decimal?             @db.Decimal(18, 8)
+  fetchedAt      DateTime             @db.Timestamptz(6)
+  snapshotStatus MarketSnapshotStatus @default(confirmed)
+  source         String
+  createdAt      DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime             @updatedAt @db.Timestamptz(6)
+
+  @@index([fetchedAt(sort: Desc)])
+}
+
+model MarketRefreshLog {
+  id             String    @id @default(uuid()) @db.Uuid
+  refreshType    String
+  refreshKey     String
+  startedAt      DateTime  @db.Timestamptz(6)
+  finishedAt     DateTime? @db.Timestamptz(6)
+  status         String
+  errorMessage   String?
+  recordsWritten Int       @default(0)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([refreshType, startedAt(sort: Desc)])
+  @@index([refreshKey, startedAt(sort: Desc)])
 }
