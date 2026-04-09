@@ -225,7 +225,7 @@ O PostgreSQL do projeto sobe por `docker compose` na porta local `55432` por pad
 ## Validacao de credenciais
 
 Para o fluxo do `FM-002`, o app espera:
-- `VITE_APP_API_BASE_URL=http://localhost:3000`
+- `VITE_APP_API_BASE_URL=http://localhost:3003`
 - `APP_ORIGIN=http://localhost:5173`
 - `VITE_PACIFICA_BUILDER_CODE` e `VITE_PACIFICA_BUILDER_MAX_FEE_RATE` iguais aos valores configurados na API
 - API local em execucao

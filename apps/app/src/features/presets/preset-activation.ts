@@ -5,7 +5,7 @@ import {
 } from "@pacifica/contracts";
 import { parseJsonResponse } from "../onboarding/backend-response";
 
-const defaultApiBaseUrl = "http://localhost:3000";
+const defaultApiBaseUrl = "http://localhost:3003";
 
 export async function activatePreset(
   request: PresetActivationRequest,

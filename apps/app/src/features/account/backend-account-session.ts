@@ -7,7 +7,7 @@ import {
 import { parseSchemaOrFallback } from "../onboarding/backend-response";
 
 const apiBaseUrl =
-  import.meta.env.VITE_APP_API_BASE_URL?.trim() || "http://localhost:3000";
+  import.meta.env.VITE_APP_API_BASE_URL?.trim() || "http://localhost:3003";
 
 export async function readAccountSessionViaBackend(
   rawRequest: OperationalSessionSnapshotRequest,

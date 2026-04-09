@@ -855,7 +855,7 @@ Com candle especifico:
 
 Via endpoint interno:
 ```bash
-curl -X POST http://localhost:3000/api/internal/market/refresh \
+curl -X POST http://localhost:3003/api/internal/market/refresh \
   -H 'Content-Type: application/json' \
   -d '{
     "refreshPrices": true,
