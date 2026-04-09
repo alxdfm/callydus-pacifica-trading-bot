@@ -6,7 +6,7 @@
 - prioridade: `P0`
 - owner: `Dev`
 - trilha: `Functional MVP`
-- ultima atualizacao: `2026-03-30`
+- ultima atualizacao: `2026-03-31`
 
 ## Objetivo
 Transformar o `worker` em consumidor operacional continuo do runtime, por conta/preset ativo, com `heartbeat`, retomada segura e protecao contra dupla execucao.

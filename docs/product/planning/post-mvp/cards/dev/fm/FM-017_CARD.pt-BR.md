@@ -29,9 +29,9 @@ Implementar reconciliacao externa com a Pacifica e consolidar a exchange como fo
 - [x] restart ou drift externo nao deixam runtime/trades permanentemente inconsistentes
 
 ## Dependencias
-- [ ] FM-015 concluida
-- [ ] FM-016 concluida
-- [ ] FM-009 concluida
+- [x] baseline implementada em `FM-015`
+- [x] baseline implementada em `FM-016`
+- [x] baseline implementada em `FM-009`
 
 ## Critérios de Aceite da Task
 - [x] reconciliacao externa existe e corrige estado relevante

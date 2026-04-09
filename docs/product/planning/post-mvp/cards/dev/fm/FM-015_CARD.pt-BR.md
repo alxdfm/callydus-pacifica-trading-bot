@@ -6,7 +6,7 @@
 - prioridade: `P0`
 - owner: `Dev`
 - trilha: `Functional MVP`
-- ultima atualizacao: `2026-03-30`
+- ultima atualizacao: `2026-03-31`
 
 ## Objetivo
 Executar ordens reais na Pacifica a partir das decisoes do loop, usando `market order` como politica de entrada do MVP final, com idempotencia, persistencia e politica de erro alinhada ao produto.

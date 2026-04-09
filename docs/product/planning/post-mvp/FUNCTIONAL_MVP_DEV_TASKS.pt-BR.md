@@ -9,15 +9,19 @@ Transformar o estado atual do produto, hoje majoritariamente local/mockado, em u
 - schema inicial de persistencia em `packages/database/prisma/schema.prisma`
 - catalogo de presets com contrato tecnico fechado
 - telas e UX do MVP ja consolidadas
+- validacao real de credenciais e readiness operacional mediadas por backend
+- ativacao real de preset, comandos reais de runtime e sessao operacional reidratada do backend
+- market data real da Pacifica com snapshots persistidos compartilhados entre API e worker
+- `worker` com loop continuo, avaliacao real de sinais, execucao real de `market order` e lifecycle local de trades em `IN_REVIEW`
+- reconciliacao externa inicial com a Pacifica via `account/session`, usando `confirmed` vs `last_known`
 
 ## O que ainda nao existe
-- validacao real de credenciais Pacifica via backend
-- fonte real de mercado/candles para analise
-- motor real de indicadores e gatilhos
-- ativacao real de preset ligada ao runtime
-- comandos reais de pause, resume e close trade
-- dashboard, trades e history alimentados por backend
-- reconciliacao minima e recuperacao apos falha
+- endurecimento final do `worker` e do lifecycle real como baseline comprovada
+- `Start bot readiness check` contextual ao preset/saldo antes do `resume`
+- reconciliacao externa mais desacoplada da leitura de sessao e mais robusta em ambiente real
+- operacao de market data em topologia final de producao
+- observabilidade quantitativa e cleanup automatizado da trilha de market data
+- fechamento de QA e documentacao executiva sem diagnosticos antigos conflitantes
 
 ## Tasks
 

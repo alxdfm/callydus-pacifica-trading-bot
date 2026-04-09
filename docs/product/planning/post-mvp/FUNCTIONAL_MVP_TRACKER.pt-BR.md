@@ -5,15 +5,15 @@ Organizar a transicao do MVP demonstravel/mockado para um MVP funcional real, co
 
 ## Diagnostico Atual
 - wallet Phantom ja tem integracao real no frontend
-- validacao de credenciais ainda e local/simulada
-- ativacao de preset ainda e local/simulada
-- runtime operacional ainda precisa consolidar leitura real em todas as telas, mas o `demo-runtime` ja foi removido como dependencia comportamental do app
-- API ainda nao implementa integracao funcional com Pacifica
-- contratos e esquema de banco ja existem como base para a proxima fase
+- validacao de credenciais, `builder approval` e readiness operacional ja passam pelo backend
+- ativacao de preset, comandos de runtime e sessao operacional ja sao persistidos e lidos do backend
+- runtime operacional ja roda com `worker` continuo, loop de sinais, execucao real de ordens e lifecycle local em `IN_REVIEW`
+- API ja implementa integracao funcional relevante com a Pacifica para conta, mercado, ordens e reconciliacao externa
+- market data publico passou a operar em modo local-first com snapshots persistidos compartilhados entre API e worker
 
 ## Resumo de Prioridade
-- foco principal: fechar integracao Pacifica + analise real dos presets + read models reais do produto
-- bloqueio principal: falta contrato tecnico real da Pacifica e runtime de mercado/indicadores
+- foco principal: endurecer a operacao real ponta a ponta, reduzindo ambiguidades entre lifecycle local e verdade externa da Pacifica
+- bloqueio principal: promover o que ja esta em `IN_REVIEW` para baseline comprovada, fechar readiness de `Start bot` e consolidar observabilidade/operacao de mercado em ambiente real
 
 ## Nota Operacional
 - `FM-003` a `FM-010` continuam em `IN_REVIEW` por sincronizacao e validacao manual final, mas ja formam a baseline implementada que destrava a trilha `FM-013` a `FM-017`

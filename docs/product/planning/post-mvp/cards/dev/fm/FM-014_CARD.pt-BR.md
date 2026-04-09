@@ -6,7 +6,7 @@
 - prioridade: `P0`
 - owner: `Dev`
 - trilha: `Functional MVP`
-- ultima atualizacao: `2026-03-30`
+- ultima atualizacao: `2026-03-31`
 
 ## Objetivo
 Executar mercado, indicadores e gatilhos dos presets em loop real no `worker`, respeitando a cadencia e as regras finais fechadas por PO.
