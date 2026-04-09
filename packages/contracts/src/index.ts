@@ -517,6 +517,107 @@ export const presetBacktestPreviewResponseSchema = z.union([
   presetBacktestPreviewErrorSchema,
 ]);
 
+export const yourStrategyTimeframeSchema = z.enum(["3m", "5m", "15m"]);
+
+export const yourStrategyActivationBlockerSchema = z.enum([
+  "take_profit_missing",
+  "unsupported_position_size_type",
+]);
+
+export const yourStrategyDraftSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80).default("YOUR Strategy"),
+    symbol: presetSymbolSchema,
+    timeframe: yourStrategyTimeframeSchema,
+    indicators: z.record(z.string().min(1), presetIndicatorConfigSchema),
+    entry: z.object({
+      long: presetEntrySideSchema,
+      short: presetEntrySideSchema,
+    }),
+    risk: z.object({
+      stopLoss: presetStopLossConfigSchema,
+      takeProfit: presetTakeProfitConfigSchema.nullable(),
+    }),
+    positionSizeType: positionSizeTypeSchema,
+    positionSizeValue: z.number().positive(),
+  })
+  .superRefine((draft, context) => {
+    if (!draft.entry.long.enabled && !draft.entry.short.enabled) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one entry side must be enabled.",
+        path: ["entry"],
+      });
+    }
+  });
+
+export const yourStrategySchema = z.object({
+  id: z.string().uuid(),
+  operatorAccountId: z.string().uuid(),
+  walletAddress: z.string().min(1),
+  draft: yourStrategyDraftSchema,
+  materializedTechnicalContract: presetTechnicalContractSchema.nullable(),
+  activationBlockers: z.array(yourStrategyActivationBlockerSchema),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const getYourStrategyRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+});
+
+export const getYourStrategyFoundSchema = z.object({
+  status: z.literal("found"),
+  strategy: yourStrategySchema,
+});
+
+export const getYourStrategyNotFoundSchema = z.object({
+  status: z.literal("not_found"),
+  walletAddress: z.string().min(1),
+});
+
+export const getYourStrategyErrorSchema = z.object({
+  status: z.literal("error"),
+  code: z.enum(["account_not_ready", "internal_error"]),
+  message: z.string().min(1),
+  retryable: z.boolean(),
+});
+
+export const getYourStrategyResponseSchema = z.union([
+  getYourStrategyFoundSchema,
+  getYourStrategyNotFoundSchema,
+  getYourStrategyErrorSchema,
+]);
+
+export const saveYourStrategyRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+  draft: yourStrategyDraftSchema,
+});
+
+export const saveYourStrategyErrorCodeSchema = z.enum([
+  "account_not_ready",
+  "editing_blocked_while_bot_running",
+  "internal_error",
+]);
+
+export const saveYourStrategySuccessSchema = z.object({
+  status: z.literal("success"),
+  strategy: yourStrategySchema,
+  message: z.string().min(1),
+});
+
+export const saveYourStrategyErrorSchema = z.object({
+  status: z.literal("error"),
+  code: saveYourStrategyErrorCodeSchema,
+  message: z.string().min(1),
+  retryable: z.boolean(),
+});
+
+export const saveYourStrategyResponseSchema = z.union([
+  saveYourStrategySuccessSchema,
+  saveYourStrategyErrorSchema,
+]);
+
 export const presetDefinitionSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
@@ -1412,6 +1513,12 @@ export type PresetTechnicalContract = z.infer<typeof presetTechnicalContractSche
 export type PresetIndicatorSnapshot = z.infer<typeof presetIndicatorSnapshotSchema>;
 export type PresetRuleEvaluation = z.infer<typeof presetRuleEvaluationSchema>;
 export type PresetSignal = z.infer<typeof presetSignalSchema>;
+export type YourStrategyTimeframe = z.infer<typeof yourStrategyTimeframeSchema>;
+export type YourStrategyActivationBlocker = z.infer<
+  typeof yourStrategyActivationBlockerSchema
+>;
+export type YourStrategyDraft = z.infer<typeof yourStrategyDraftSchema>;
+export type YourStrategy = z.infer<typeof yourStrategySchema>;
 export type PresetDefinition = z.infer<typeof presetDefinitionSchema>;
 export type PresetEditableConfig = z.infer<typeof presetEditableConfigSchema>;
 export type PresetActivation = z.infer<typeof presetActivationSchema>;
@@ -1463,6 +1570,13 @@ export type PresetBacktestPreviewError = z.infer<
 export type PresetBacktestPreviewResponse = z.infer<
   typeof presetBacktestPreviewResponseSchema
 >;
+export type GetYourStrategyRequest = z.infer<typeof getYourStrategyRequestSchema>;
+export type GetYourStrategyResponse = z.infer<typeof getYourStrategyResponseSchema>;
+export type SaveYourStrategyRequest = z.infer<typeof saveYourStrategyRequestSchema>;
+export type SaveYourStrategyErrorCode = z.infer<
+  typeof saveYourStrategyErrorCodeSchema
+>;
+export type SaveYourStrategyResponse = z.infer<typeof saveYourStrategyResponseSchema>;
 export type WalletSession = z.infer<typeof walletSessionSchema>;
 export type PacificaCredentialSubmission = z.infer<typeof pacificaCredentialSubmissionSchema>;
 export type PacificaCredentialValidationSuccess = z.infer<typeof pacificaCredentialValidationSuccessSchema>;

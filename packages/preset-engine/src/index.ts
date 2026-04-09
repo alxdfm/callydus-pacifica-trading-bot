@@ -7,6 +7,8 @@ import type {
   PresetTechnicalContract,
   PresetTriggerRule,
   TradeSide,
+  YourStrategyActivationBlocker,
+  YourStrategyDraft,
 } from "@pacifica/contracts";
 
 type IndicatorSeries = number[];
@@ -92,6 +94,11 @@ export type SimulatePresetBacktestResult = {
   holdCurve: SimulatedPresetCurvePoint[];
   drawdownCurve: SimulatedPresetDrawdownPoint[];
   trades: SimulatedPresetTrade[];
+};
+
+export type MaterializedYourStrategy = {
+  technicalContract: PresetTechnicalContract | null;
+  activationBlockers: YourStrategyActivationBlocker[];
 };
 
 /**
@@ -221,6 +228,70 @@ export function materializeEffectivePresetContract(
         value: editableConfig.positionSizeValue,
       },
     },
+  };
+}
+
+/**
+ * Converts the persisted YOUR Strategy draft into the current canonical
+ * technical contract whenever the current runtime can execute it safely.
+ *
+ * Responsibility:
+ * - normalize the custom strategy into the same contract family used by the engine
+ * - expose blockers when the draft is valid for persistence but not yet executable
+ *
+ * Non-responsibility:
+ * - it does not persist the draft
+ * - it does not run preview, activation or readiness checks
+ */
+export function materializeYourStrategyTechnicalContract(
+  draft: YourStrategyDraft,
+): MaterializedYourStrategy {
+  const activationBlockers: YourStrategyActivationBlocker[] = [];
+  const takeProfit = draft.risk.takeProfit;
+
+  if (draft.positionSizeType !== "balance_percent") {
+    activationBlockers.push("unsupported_position_size_type");
+  }
+
+  if (takeProfit === null) {
+    activationBlockers.push("take_profit_missing");
+
+    return {
+      technicalContract: null,
+      activationBlockers,
+    };
+  }
+
+  if (activationBlockers.length > 0) {
+    return {
+      technicalContract: null,
+      activationBlockers,
+    };
+  }
+
+  return {
+    technicalContract: {
+      name: draft.name,
+      version: 1,
+      timeframe: draft.timeframe,
+      symbol: draft.symbol,
+      indicators: draft.indicators,
+      entry: draft.entry,
+      risk: {
+        stopLoss: draft.risk.stopLoss,
+        takeProfit,
+      },
+      execution: {
+        positionSize: {
+          type: "fixedPercent",
+          value: draft.positionSizeValue,
+        },
+        onePositionPerSymbol: true,
+        manualCloseAllowed: true,
+        closeOppositePositionOnSignal: false,
+      },
+    },
+    activationBlockers,
   };
 }
 

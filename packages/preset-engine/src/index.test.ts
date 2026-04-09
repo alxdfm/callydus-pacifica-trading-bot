@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
-import type { MarketCandle, PresetTechnicalContract } from "@pacifica/contracts";
+import type {
+  MarketCandle,
+  PresetTechnicalContract,
+  YourStrategyDraft,
+} from "@pacifica/contracts";
 import {
   buildPresetRiskPlans,
   evaluatePresetSignal,
   getIntervalDurationMs,
   getRequiredPeriod,
   materializeEffectivePresetContract,
+  materializeYourStrategyTechnicalContract,
   simulatePresetBacktest,
   toPacificaMarketSymbol,
 } from "./index";
@@ -95,6 +100,65 @@ function createContract(
       manualCloseAllowed: true,
       closeOppositePositionOnSignal: true,
     },
+    ...overrides,
+  };
+}
+
+function createYourStrategyDraft(
+  overrides: Partial<YourStrategyDraft> = {},
+): YourStrategyDraft {
+  return {
+    name: "YOUR Strategy",
+    symbol: "BTC/USDC",
+    timeframe: "5m",
+    indicators: {
+      volume: { type: "volume" },
+    },
+    entry: {
+      long: {
+        enabled: true,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "threshold",
+              indicator: "volume",
+              operator: "above",
+              value: 100,
+            },
+          ],
+        },
+      },
+      short: {
+        enabled: false,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "threshold",
+              indicator: "volume",
+              operator: "below",
+              value: 50,
+            },
+          ],
+        },
+      },
+    },
+    risk: {
+      stopLoss: {
+        mode: "static",
+        unit: "percent",
+        value: 3,
+      },
+      takeProfit: {
+        mode: "rr",
+        multiple: 2,
+      },
+    },
+    positionSizeType: "balance_percent",
+    positionSizeValue: 5,
     ...overrides,
   };
 }
@@ -319,5 +383,42 @@ describe("preset-engine", () => {
     expect(result.trades[0]?.closeReason).toBe("take_profit");
     expect(result.summary.totalTrades).toBe(1);
     expect(result.summary.endingEquityUsd).toBeGreaterThan(1000);
+  });
+
+  it("materializa YOUR Strategy em contrato técnico quando o draft é executável", () => {
+    const result = materializeYourStrategyTechnicalContract(
+      createYourStrategyDraft(),
+    );
+
+    expect(result.activationBlockers).toEqual([]);
+    expect(result.technicalContract?.name).toBe("YOUR Strategy");
+    expect(result.technicalContract?.symbol).toBe("BTC/USDC");
+    expect(result.technicalContract?.timeframe).toBe("5m");
+    expect(result.technicalContract?.risk.takeProfit).toEqual({
+      mode: "rr",
+      multiple: 2,
+    });
+    expect(result.technicalContract?.execution.positionSize).toEqual({
+      type: "fixedPercent",
+      value: 5,
+    });
+  });
+
+  it("expõe blockers quando o draft ainda não pode ser ativado", () => {
+    const result = materializeYourStrategyTechnicalContract(
+      createYourStrategyDraft({
+        risk: {
+          stopLoss: {
+            mode: "static",
+            unit: "percent",
+            value: 3,
+          },
+          takeProfit: null,
+        },
+      }),
+    );
+
+    expect(result.activationBlockers).toEqual(["take_profit_missing"]);
+    expect(result.technicalContract).toBeNull();
   });
 });
