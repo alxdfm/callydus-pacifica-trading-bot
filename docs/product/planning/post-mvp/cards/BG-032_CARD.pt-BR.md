@@ -80,3 +80,4 @@ Antes da UI completa do wizard, implementar:
 - `2026-04-09`: card criado a partir do fechamento de produto da feature `YOUR Strategy`.
 - `2026-04-09`: analise inicial de dev concluiu que o caminho correto e reaproveitar `contracts + preset-engine + preview existente`, focando primeiro em persistencia do registro custom, ownership por conta e geracao do `PresetTechnicalContract` custom antes de fechar a UI do wizard.
 - `2026-04-09`: primeiro corte backend implementado com tabela `YourStrategy`, schema de draft em `packages/contracts`, materializacao para `PresetTechnicalContract`, casos de uso `get/save` e rotas HTTP dedicadas.
+- `2026-04-09`: segundo corte backend implementado com preview/backtest dedicado de `YOUR Strategy`, aceitando `draft` inline ou strategy salva por wallet, sem alterar o contrato de preview dos presets padrao.

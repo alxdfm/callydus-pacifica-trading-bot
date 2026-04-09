@@ -119,7 +119,7 @@ Implementar nesta ordem:
 ### API
 - [x] criar `getYourStrategy`
 - [x] criar `saveYourStrategy`
-- [ ] decidir se `preview` usa endpoint novo ou reaproveita o atual
+- [x] decidir se `preview` usa endpoint novo ou reaproveita o atual
 - [ ] decidir como a ativacao referencia a strategy custom no backend
 
 ### App / UX
@@ -148,9 +148,9 @@ O primeiro corte entregue neste momento cobre:
 - schema canonico do draft em `packages/contracts`
 - materializacao do draft para `PresetTechnicalContract`
 - blockers explicitos quando o draft ainda nao pode ser ativado
+- preview/backtest dedicado de `YOUR Strategy` com `draft` inline opcional
 
 O que ainda nao entrou neste corte:
-- integracao do preview/backtest com o registro custom salvo
 - ativacao da strategy custom no fluxo operacional existente
 - wizard/UX no frontend
 - limite estrutural de grupos `AND/OR`
