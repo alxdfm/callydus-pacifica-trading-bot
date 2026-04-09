@@ -72,6 +72,10 @@ import {
   type PreviewPresetBacktestDependencies,
 } from "./application/preview-preset-backtest/PreviewPresetBacktest";
 import {
+  createPreviewYourStrategyBacktest,
+  type PreviewYourStrategyBacktestDependencies,
+} from "./application/preview-your-strategy-backtest/PreviewYourStrategyBacktest";
+import {
   createReconcileRuntime,
   type ReconcileRuntimeDependencies,
 } from "./application/reconcile-runtime/ReconcileRuntime";
@@ -136,6 +140,9 @@ type CreateApiModuleInput = {
     RefreshMarketDataManuallyDependencies
   >;
   previewPresetBacktestDependencies?: Partial<PreviewPresetBacktestDependencies>;
+  previewYourStrategyBacktestDependencies?: Partial<
+    PreviewYourStrategyBacktestDependencies
+  >;
   heartbeatRuntimeDependencies?: Partial<HeartbeatRuntimeDependencies>;
   lookupOperationalAccountByWalletDependencies?: Partial<
     LookupOperationalAccountByWalletDependencies
@@ -231,6 +238,20 @@ export function createApiModule(input: CreateApiModuleInput) {
     marketData:
       input.previewPresetBacktestDependencies?.marketData ??
       persistedMarketDataGateway,
+    refresher:
+      input.previewPresetBacktestDependencies?.refresher ??
+      marketDataRefresher,
+  });
+  const previewYourStrategyBacktest = createPreviewYourStrategyBacktest({
+    marketData:
+      input.previewYourStrategyBacktestDependencies?.marketData ??
+      persistedMarketDataGateway,
+    repository:
+      input.previewYourStrategyBacktestDependencies?.repository ??
+      defaultCredentialRepository,
+    refresher:
+      input.previewYourStrategyBacktestDependencies?.refresher ??
+      marketDataRefresher,
   });
   const refreshMarketData = createRefreshMarketDataManually({
     refresher:
@@ -426,6 +447,7 @@ export function createApiModule(input: CreateApiModuleInput) {
       getYourStrategy,
       refreshMarketData,
       previewPresetBacktest,
+      previewYourStrategyBacktest,
       heartbeatRuntime,
       lookupOperationalAccountByWallet,
       pauseBot,

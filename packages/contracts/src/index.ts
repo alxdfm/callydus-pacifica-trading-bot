@@ -562,6 +562,62 @@ export const yourStrategySchema = z.object({
   updatedAt: z.string().datetime(),
 });
 
+export const yourStrategyBacktestPreviewRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+  draft: yourStrategyDraftSchema.optional(),
+  priceSource: marketPriceSourceSchema.default("market"),
+  startTime: z.number().int().nonnegative(),
+  endTime: z.number().int().positive(),
+  initialCapitalUsd: z.number().positive(),
+  leverage: z.number().positive().default(1),
+  feePercent: z.number().min(0).default(0),
+  slippagePercent: z.number().min(0).default(0),
+});
+
+export const yourStrategyBacktestPreviewSuccessSchema = z.object({
+  status: z.literal("success"),
+  strategyId: z.string().uuid().nullable(),
+  symbol: z.string().min(1),
+  marketSymbol: z.string().min(1),
+  timeframe: marketCandleIntervalSchema,
+  priceSource: marketPriceSourceSchema,
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+  candlesUsed: z.number().int().positive(),
+  summary: presetBacktestSummarySchema,
+  equityCurve: z.array(presetBacktestCurvePointSchema),
+  holdCurve: z.array(presetBacktestCurvePointSchema),
+  drawdownCurve: z.array(
+    z.object({
+      time: z.string().datetime(),
+      drawdownPercent: z.number().min(0),
+    }),
+  ),
+  trades: z.array(presetBacktestTradeSchema),
+  assumptions: presetBacktestAssumptionsSchema,
+});
+
+export const yourStrategyBacktestPreviewErrorSchema = z.object({
+  status: z.literal("error"),
+  code: z.enum([
+    "strategy_not_found",
+    "strategy_not_executable",
+    "unsupported_symbol",
+    "invalid_period",
+    "insufficient_market_data",
+    "provider_unavailable",
+    "internal_error",
+  ]),
+  message: z.string().min(1),
+  retryable: z.boolean(),
+  activationBlockers: z.array(yourStrategyActivationBlockerSchema).optional(),
+});
+
+export const yourStrategyBacktestPreviewResponseSchema = z.union([
+  yourStrategyBacktestPreviewSuccessSchema,
+  yourStrategyBacktestPreviewErrorSchema,
+]);
+
 export const getYourStrategyRequestSchema = z.object({
   walletAddress: z.string().min(1),
 });
@@ -1553,6 +1609,9 @@ export type PresetSignalEvaluationResponse = z.infer<
 export type PresetBacktestPreviewRequest = z.infer<
   typeof presetBacktestPreviewRequestSchema
 >;
+export type YourStrategyBacktestPreviewRequest = z.infer<
+  typeof yourStrategyBacktestPreviewRequestSchema
+>;
 export type PresetBacktestTrade = z.infer<typeof presetBacktestTradeSchema>;
 export type PresetBacktestCurvePoint = z.infer<
   typeof presetBacktestCurvePointSchema
@@ -1564,11 +1623,20 @@ export type PresetBacktestAssumptions = z.infer<
 export type PresetBacktestPreviewSuccess = z.infer<
   typeof presetBacktestPreviewSuccessSchema
 >;
+export type YourStrategyBacktestPreviewSuccess = z.infer<
+  typeof yourStrategyBacktestPreviewSuccessSchema
+>;
 export type PresetBacktestPreviewError = z.infer<
   typeof presetBacktestPreviewErrorSchema
 >;
+export type YourStrategyBacktestPreviewError = z.infer<
+  typeof yourStrategyBacktestPreviewErrorSchema
+>;
 export type PresetBacktestPreviewResponse = z.infer<
   typeof presetBacktestPreviewResponseSchema
+>;
+export type YourStrategyBacktestPreviewResponse = z.infer<
+  typeof yourStrategyBacktestPreviewResponseSchema
 >;
 export type GetYourStrategyRequest = z.infer<typeof getYourStrategyRequestSchema>;
 export type GetYourStrategyResponse = z.infer<typeof getYourStrategyResponseSchema>;

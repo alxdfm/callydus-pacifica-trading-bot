@@ -1,25 +1,29 @@
-import {
-  getPresetTechnicalContractByDefinitionId,
-  type PresetBacktestPreviewRequest,
-  type PresetBacktestPreviewResponse,
+import type {
+  YourStrategyBacktestPreviewRequest,
+  YourStrategyBacktestPreviewResponse,
+  YourStrategyDraft,
 } from "@pacifica/contracts";
 import {
   getIntervalDurationMs,
   getRequiredPeriod,
-  materializeEffectivePresetContract,
+  materializeYourStrategyTechnicalContract,
   simulatePresetBacktest,
   toPacificaMarketSymbol,
 } from "@pacifica/preset-engine";
 import { PacificaApiError } from "../../infrastructure/pacifica/PacificaClient";
 import type { MarketDataPort } from "../../domain/market-data/MarketDataPort";
+import type { YourStrategyRepository } from "../../domain/your-strategy/YourStrategyRepository";
 
-export type PreviewPresetBacktestDependencies = {
+export type PreviewYourStrategyBacktestDependencies = {
   marketData: MarketDataPort;
+  repository: YourStrategyRepository;
   refresher?: {
     refreshCandles(input: {
       requests: Array<{
         symbol: string;
-        interval: "1m" | "3m" | "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "6h" | "12h" | "1d";
+        interval: YourStrategyBacktestPreviewRequest["draft"] extends never
+          ? never
+          : "3m" | "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "6h" | "12h" | "1d" | "1m";
         priceSource: "market" | "mark";
         startTime: number;
         endTime: number;
@@ -29,25 +33,27 @@ export type PreviewPresetBacktestDependencies = {
   };
 };
 
-export function createPreviewPresetBacktest(
-  dependencies: PreviewPresetBacktestDependencies,
+/**
+ * Creates the backtest preview use case for the account-scoped YOUR Strategy.
+ *
+ * Responsibility:
+ * - resolve the draft from the request or from persisted account state
+ * - materialize the custom draft into the canonical technical contract
+ * - run the same simulation model already used by preset preview
+ *
+ * Non-responsibility:
+ * - it does not persist changes to the strategy draft
+ * - it does not activate the strategy
+ */
+export function createPreviewYourStrategyBacktest(
+  dependencies: PreviewYourStrategyBacktestDependencies,
 ) {
-  return async function previewPresetBacktest(
-    input: PresetBacktestPreviewRequest,
-  ): Promise<PresetBacktestPreviewResponse> {
-    const baseContract = getPresetTechnicalContractByDefinitionId(
-      input.presetDefinitionId,
-    );
-
-    if (!baseContract) {
-      return {
-        status: "error",
-        code: "preset_not_found",
-        message: "Preset technical contract not found.",
-        retryable: false,
-      };
-    }
-
+  /**
+   * Simulates the current YOUR Strategy over the requested market window.
+   */
+  return async function previewYourStrategyBacktest(
+    input: YourStrategyBacktestPreviewRequest,
+  ): Promise<YourStrategyBacktestPreviewResponse> {
     if (input.endTime <= input.startTime) {
       return {
         status: "error",
@@ -57,17 +63,43 @@ export function createPreviewPresetBacktest(
       };
     }
 
-    const technicalContract = materializeEffectivePresetContract(
-      baseContract,
-      input.editableConfig,
-    );
+    const persistedStrategy =
+      input.draft === undefined
+        ? await dependencies.repository.findYourStrategyByWalletAddress(
+            input.walletAddress,
+          )
+        : null;
+    const draft: YourStrategyDraft | null = input.draft ?? persistedStrategy?.draft ?? null;
+
+    if (!draft) {
+      return {
+        status: "error",
+        code: "strategy_not_found",
+        message: "YOUR Strategy was not found for this wallet.",
+        retryable: false,
+      };
+    }
+
+    const materialized = materializeYourStrategyTechnicalContract(draft);
+
+    if (materialized.technicalContract === null) {
+      return {
+        status: "error",
+        code: "strategy_not_executable",
+        message: "YOUR Strategy must be executable before running backtest preview.",
+        retryable: false,
+        activationBlockers: materialized.activationBlockers,
+      };
+    }
+
+    const technicalContract = materialized.technicalContract;
     const marketSymbol = toPacificaMarketSymbol(technicalContract.symbol);
 
     if (!marketSymbol) {
       return {
         status: "error",
         code: "unsupported_symbol",
-        message: "Unsupported preset symbol for Pacifica market data.",
+        message: "Unsupported YOUR Strategy symbol for Pacifica market data.",
         retryable: false,
       };
     }
@@ -118,7 +150,8 @@ export function createPreviewPresetBacktest(
         return {
           status: "error",
           code: "insufficient_market_data",
-          message: "Not enough market candles were returned to simulate this preset.",
+          message:
+            "Not enough market candles were returned to simulate this YOUR Strategy.",
           retryable: true,
         };
       }
@@ -141,7 +174,7 @@ export function createPreviewPresetBacktest(
           message:
             error instanceof Error && error.message.trim()
               ? error.message
-              : "Not enough market candles were returned to simulate this preset.",
+              : "Not enough market candles were returned to simulate this YOUR Strategy.",
           retryable: true,
         };
       }
@@ -160,14 +193,15 @@ export function createPreviewPresetBacktest(
         return {
           status: "error",
           code: "insufficient_market_data",
-          message: "Not enough market candles were returned to simulate this preset.",
+          message:
+            "Not enough market candles were returned to simulate this YOUR Strategy.",
           retryable: true,
         };
       }
 
       return {
         status: "success",
-        presetDefinitionId: input.presetDefinitionId,
+        strategyId: persistedStrategy?.id ?? null,
         symbol: technicalContract.symbol,
         marketSymbol,
         timeframe: technicalContract.timeframe,
@@ -245,7 +279,7 @@ export function createPreviewPresetBacktest(
       return {
         status: "error",
         code: "internal_error",
-        message: "Preset backtest preview is temporarily unavailable.",
+        message: "YOUR Strategy backtest preview is temporarily unavailable.",
         retryable: false,
       };
     }
@@ -270,7 +304,7 @@ function extractPacificaErrorMessage(body: unknown, fallback: string): string {
 
 async function loadCandlesWithPreviewFallback(input: {
   marketData: MarketDataPort;
-  refresher?: PreviewPresetBacktestDependencies["refresher"];
+  refresher?: PreviewYourStrategyBacktestDependencies["refresher"];
   request: {
     symbol: string;
     interval: "1m" | "3m" | "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "6h" | "12h" | "1d";
@@ -297,7 +331,7 @@ async function loadCandlesWithPreviewFallback(input: {
 
 async function refreshAndReloadCandlesForPreview(input: {
   marketData: MarketDataPort;
-  refresher?: PreviewPresetBacktestDependencies["refresher"];
+  refresher?: PreviewYourStrategyBacktestDependencies["refresher"];
   request: {
     symbol: string;
     interval: "1m" | "3m" | "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "6h" | "12h" | "1d";

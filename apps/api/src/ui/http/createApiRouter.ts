@@ -14,6 +14,8 @@ import { createGetYourStrategyRoute } from "./routes/createGetYourStrategyRoute"
 import type { GetYourStrategyHandler } from "./routes/createGetYourStrategyRoute";
 import { createPreviewPresetBacktestRoute } from "./routes/createPreviewPresetBacktestRoute";
 import type { PreviewPresetBacktestHandler } from "./routes/createPreviewPresetBacktestRoute";
+import { createPreviewYourStrategyBacktestRoute } from "./routes/createPreviewYourStrategyBacktestRoute";
+import type { PreviewYourStrategyBacktestHandler } from "./routes/createPreviewYourStrategyBacktestRoute";
 import { createPauseBotRoute } from "./routes/createPauseBotRoute";
 import type { PauseBotHandler } from "./routes/createPauseBotRoute";
 import { createHeartbeatRuntimeRoute } from "./routes/createHeartbeatRuntimeRoute";
@@ -47,6 +49,7 @@ type ApiRouterDependencies = {
   getMarketPrices: GetMarketPricesHandler;
   getYourStrategy: GetYourStrategyHandler;
   previewPresetBacktest: PreviewPresetBacktestHandler;
+  previewYourStrategyBacktest: PreviewYourStrategyBacktestHandler;
   heartbeatRuntime: HeartbeatRuntimeHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
   pauseBot: PauseBotHandler;
@@ -81,6 +84,9 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     ),
     previewPresetBacktest: createPreviewPresetBacktestRoute(
       dependencies.previewPresetBacktest,
+    ),
+    previewYourStrategyBacktest: createPreviewYourStrategyBacktestRoute(
+      dependencies.previewYourStrategyBacktest,
     ),
     heartbeatRuntime: createHeartbeatRuntimeRoute(
       dependencies.heartbeatRuntime,

@@ -246,6 +246,22 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "POST" &&
+    request.url === "/api/strategies/your/backtest-preview"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.previewYourStrategyBacktest({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
     request.url === "/api/market/candles"
   ) {
     const body = await readJsonBody(request);
