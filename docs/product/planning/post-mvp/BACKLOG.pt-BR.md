@@ -42,6 +42,10 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 | BG-028 | DONE | implementacao | P1 | presets / strategy preview | exibir preview de backtest abaixo do preset-showcase com simulacao efemera, comparacao vs hold e drawdown | concluido com endpoint on-demand, engine compartilhada e periodo fixo de 7 dias |
 | BG-029 | TODO | decisao em aberto | P0 | runtime / start bot | formalizar o `Start bot readiness check` como gate operacional de produto antes do `resume` | consolidar handoff de PO em cima dos docs tecnicos e fechar criterios visiveis de bloqueio e mensagem |
 | BG-030 | DONE | ajuste de UX | P1 | presets / mercados | restringir os pares editaveis dos presets para `BTC/USDC`, `ETH/USDC` e `SOL/USDC` | concluido no contrato compartilhado e no fluxo real de presets, removendo `ARB/USDC` do escopo atual |
+| BG-031 | TODO | mudanca de escopo | P0 | presets / strategy builder | introduzir `YOUR Strategy` como estrategia custom criada do zero pelo usuario final | desdobrar a feature em trilhas separadas de dev, design e QA |
+| BG-032 | TODO | implementacao | P0 | presets / strategy builder | implementar o fluxo funcional de `YOUR Strategy`, com registro unico por conta, builder, backtest e ativacao real | mapear primeiro o modelo do registro custom e o contrato gerado |
+| BG-033 | IN_REVIEW | ajuste de UX | P0 | presets / strategy builder | desenhar a UX guiada de `YOUR Strategy` com `wizard`, warning e preview final | validar a leitura do wizard e o encaixe visual do quarto card antes do front definitivo |
+| BG-034 | TODO | qualidade | P1 | presets / strategy builder | validar `YOUR Strategy` em usabilidade, regras de negocio e fluxo operacional real | preparar roteiro de QA cobrindo criacao, save, ativacao e bloqueios operacionais |
 
 ## Cards
 - [BG-001 Card](./cards/BG-001_CARD.pt-BR.md)
@@ -74,6 +78,10 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 - [BG-028 Card](./cards/BG-028_CARD.pt-BR.md)
 - [BG-029 Card](./cards/BG-029_CARD.pt-BR.md)
 - [BG-030 Card](./cards/BG-030_CARD.pt-BR.md)
+- [BG-031 Card](./cards/BG-031_CARD.pt-BR.md)
+- [BG-032 Card](./cards/BG-032_CARD.pt-BR.md)
+- [BG-033 Card](./cards/BG-033_CARD.pt-BR.md)
+- [BG-034 Card](./cards/BG-034_CARD.pt-BR.md)
 
 ## Debt Arquitetural
 Trilha separada para refatoracoes estruturais, consolidacao de fluxo, fortalecimento de boundaries e cobertura automatizada. Esses itens nao competem diretamente com backlog funcional/UX e devem ser puxados quando o slice correspondente estiver funcionalmente estavel.
