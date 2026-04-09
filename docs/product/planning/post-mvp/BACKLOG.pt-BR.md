@@ -40,6 +40,8 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 | BG-026 | TODO | melhoria | P1 | market data / observabilidade | medir impacto real da centralizacao em `429`, volume de chamadas externas e tempo medio de refresh | instrumentar comparativos no ambiente real e validar reducao de pressao na Pacifica |
 | BG-027 | TODO | implementacao | P1 | market data / operacao | automatizar politica de retencao e cleanup operacional fora do uso manual local | acoplar rotina recorrente de limpeza ao modo de execucao final e validar retencao em ambiente real |
 | BG-028 | DONE | implementacao | P1 | presets / strategy preview | exibir preview de backtest abaixo do preset-showcase com simulacao efemera, comparacao vs hold e drawdown | concluido com endpoint on-demand, engine compartilhada e periodo fixo de 7 dias |
+| BG-029 | TODO | decisao em aberto | P0 | runtime / start bot | formalizar o `Start bot readiness check` como gate operacional de produto antes do `resume` | consolidar handoff de PO em cima dos docs tecnicos e fechar criterios visiveis de bloqueio e mensagem |
+| BG-030 | DONE | ajuste de UX | P1 | presets / mercados | restringir os pares editaveis dos presets para `BTC/USDC`, `ETH/USDC` e `SOL/USDC` | concluido no contrato compartilhado e no fluxo real de presets, removendo `ARB/USDC` do escopo atual |
 
 ## Cards
 - [BG-001 Card](./cards/BG-001_CARD.pt-BR.md)
@@ -70,6 +72,8 @@ Centralizar melhorias, ajustes de UX e mudancas de escopo identificadas apos o f
 - [BG-026 Card](./cards/BG-026_CARD.pt-BR.md)
 - [BG-027 Card](./cards/BG-027_CARD.pt-BR.md)
 - [BG-028 Card](./cards/BG-028_CARD.pt-BR.md)
+- [BG-029 Card](./cards/BG-029_CARD.pt-BR.md)
+- [BG-030 Card](./cards/BG-030_CARD.pt-BR.md)
 
 ## Debt Arquitetural
 Trilha separada para refatoracoes estruturais, consolidacao de fluxo, fortalecimento de boundaries e cobertura automatizada. Esses itens nao competem diretamente com backlog funcional/UX e devem ser puxados quando o slice correspondente estiver funcionalmente estavel.
