@@ -72,7 +72,9 @@ Consolidar a base visual aprovada do MVP em uma referência prática para desenv
   - `Safer`
   - `Balanced`
   - `More active`
+  - `YOUR Strategy`
 - comparacao, revisao e ativacao de presets devem seguir [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
+- o wizard de `YOUR Strategy` deve seguir [YOUR_STRATEGY_REFERENCE.pt-BR.md](./YOUR_STRATEGY_REFERENCE.pt-BR.md)
 - dashboard deve seguir [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
 - trades atuais e histórico devem seguir [OPERATIONS_REFERENCE.pt-BR.md](./OPERATIONS_REFERENCE.pt-BR.md)
 - `Profile` deve seguir [PROFILE_REFERENCE.pt-BR.md](./PROFILE_REFERENCE.pt-BR.md)
@@ -94,6 +96,13 @@ QA deve validar:
 - clareza da ação `Close trade`
 - distinção visual entre `Current trades` e `History`
 - separação clara entre manutenção de conta em `Profile` e setup inicial em `Onboarding`
+- distinção clara entre presets padrão e `YOUR Strategy`
+- warning forte e compreensível quando `YOUR Strategy` estiver sem `take profit`
+- confirmação explícita com checkbox antes de salvar/ativar sem `take profit`
+- estado bloqueado de edição de `YOUR Strategy` perceptível com bot rodando
+- os 6 steps do wizard claramente materializados, incluindo `Position sizing`
+- gate visível de backtest válido antes da ativação de `YOUR Strategy`
+- `AND/OR` e aninhamento legíveis sem expor semântica técnica crua
 
 ## Regras Específicas de Onboarding
 - o onboarding tem 4 etapas: wallet, `builder approval`, `Agent Wallet` e `operational verification`

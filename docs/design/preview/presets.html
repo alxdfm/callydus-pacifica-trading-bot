@@ -30,7 +30,7 @@
         <div class="nav-card">
           <span class="badge info">Guided setup</span>
           <strong>Minimal editing</strong>
-          <p>The choice comes first, editing comes second, activation comes last.</p>
+          <p>The choice comes first. YOUR Strategy opens a guided builder before backtest and activation.</p>
         </div>
       </aside>
 
@@ -39,10 +39,10 @@
           <div>
             <p class="eyebrow">Presets</p>
             <h2>Choose a strategy shape</h2>
-            <p class="subtle">This screen should feel guided, not technical. Risk and frequency stay visible before activation.</p>
+            <p class="subtle">Presets stay available, and YOUR Strategy adds a guided builder for users who want to define their own logic.</p>
           </div>
           <div class="topbar-actions">
-            <span class="badge neutral">SL/TP always on</span>
+            <span class="badge info">Backtest before activation</span>
             <button class="btn secondary">Back to dashboard</button>
           </div>
         </header>
@@ -54,7 +54,7 @@
                 <p class="panel-label">Preset choice</p>
                 <h3>Compare before editing</h3>
               </div>
-              <span class="badge info">3 presets</span>
+              <span class="badge info">4 options</span>
             </div>
 
             <div class="preset-showcase">
@@ -74,7 +74,7 @@
                 <button class="btn secondary small">Select preset</button>
               </article>
 
-              <article class="preset-card-lite featured">
+              <article class="preset-card-lite">
                 <div class="row-between align-start">
                   <div>
                     <h4>Balanced</h4>
@@ -87,7 +87,7 @@
                   <span class="chip">Controlled entries</span>
                   <span class="chip">15m</span>
                 </div>
-                <button class="btn primary small">Selected</button>
+                <button class="btn secondary small">Select preset</button>
               </article>
 
               <article class="preset-card-lite">
@@ -105,92 +105,224 @@
                 </div>
                 <button class="btn secondary small">Select preset</button>
               </article>
+
+              <article class="preset-card-lite featured your-strategy-card">
+                <div class="row-between align-start">
+                  <div>
+                    <h4>YOUR Strategy</h4>
+                    <p>Create your own logic with guided steps and backtest preview.</p>
+                  </div>
+                  <span class="badge info">Custom</span>
+                </div>
+                <div class="chip-row compact">
+                  <span class="chip">Wizard flow</span>
+                  <span class="chip">1 per account</span>
+                  <span class="chip">Backtest before activation</span>
+                </div>
+                <button class="btn primary small">Editing</button>
+                <p class="subtle blocked-note">When the bot is running, editing is blocked until operation is paused.</p>
+              </article>
             </div>
           </section>
 
           <section class="panel compare-panel">
             <div class="row-between align-start section-gap">
               <div>
-                <p class="panel-label">Quick comparison</p>
-                <h3>Simple language only</h3>
+                <p class="panel-label">Builder progress</p>
+                <h3>One decision per step</h3>
+                <p class="subtle">YOUR Strategy replaces the quick comparison with a guided flow when selected.</p>
               </div>
+              <span class="badge info">Step 2 of 6</span>
             </div>
 
-            <div class="compare-grid">
-              <div class="compare-cell head">Preset</div>
-              <div class="compare-cell head">Risk</div>
-              <div class="compare-cell head">Frequency</div>
-              <div class="compare-cell head">Entry style</div>
-              <div class="compare-cell head">Stop</div>
-              <div class="compare-cell head">Take profit</div>
+            <div class="profile-flow">
+              <article class="profile-flow-step panel-step done">
+                <div class="panel-step__header">
+                  <div>
+                    <p class="panel-label">Step 1</p>
+                    <h4>Market and direction</h4>
+                  </div>
+                  <span class="step-meta done">Done</span>
+                </div>
+                <p class="panel-step__summary subtle">BTC/USDC on 5m, with both long and short enabled.</p>
+              </article>
 
-              <div class="compare-cell">Safer</div>
-              <div class="compare-cell">Lower</div>
-              <div class="compare-cell">Lower</div>
-              <div class="compare-cell">Selective</div>
-              <div class="compare-cell">Tighter</div>
-              <div class="compare-cell">Earlier</div>
+              <article class="profile-flow-step panel-step current">
+                <div class="panel-step__header">
+                  <div>
+                    <p class="panel-label">Step 2</p>
+                    <h4>Entry rules</h4>
+                  </div>
+                  <span class="step-meta current">Current</span>
+                </div>
+                <p class="panel-step__summary subtle">Build your trigger with `All of these` and nested `Any of these` groups.</p>
+              </article>
 
-              <div class="compare-cell active">Balanced</div>
-              <div class="compare-cell active">Medium</div>
-              <div class="compare-cell active">Moderate</div>
-              <div class="compare-cell active">Controlled</div>
-              <div class="compare-cell active">Balanced</div>
-              <div class="compare-cell active">Balanced</div>
+              <article class="profile-flow-step panel-step locked">
+                <div class="panel-step__header">
+                  <div>
+                    <p class="panel-label">Step 3</p>
+                    <h4>Stop loss</h4>
+                  </div>
+                  <span class="step-meta locked">Locked</span>
+                </div>
+                <p class="panel-step__summary subtle">Required before preview and activation.</p>
+              </article>
 
-              <div class="compare-cell">More active</div>
-              <div class="compare-cell">Higher</div>
-              <div class="compare-cell">Higher</div>
-              <div class="compare-cell">Opportunistic</div>
-              <div class="compare-cell">Wider</div>
-              <div class="compare-cell">Later</div>
+              <article class="profile-flow-step panel-step locked">
+                <div class="panel-step__header">
+                  <div>
+                    <p class="panel-label">Step 4</p>
+                    <h4>Take profit</h4>
+                  </div>
+                  <span class="step-meta locked">Locked</span>
+                </div>
+                <p class="panel-step__summary subtle">Optional, but saving without it requires explicit confirmation.</p>
+              </article>
+
+              <article class="profile-flow-step panel-step locked">
+                <div class="panel-step__header">
+                  <div>
+                    <p class="panel-label">Step 5</p>
+                    <h4>Position sizing</h4>
+                  </div>
+                  <span class="step-meta locked">Locked</span>
+                </div>
+                <p class="panel-step__summary subtle">Define exposure before the final preview and activation step.</p>
+              </article>
+
+              <article class="profile-flow-step panel-step locked">
+                <div class="panel-step__header">
+                  <div>
+                    <p class="panel-label">Step 6</p>
+                    <h4>Preview and backtest</h4>
+                  </div>
+                  <span class="step-meta locked">Locked</span>
+                </div>
+                <p class="panel-step__summary subtle">Backtest and final activation stay at the end of the journey.</p>
+              </article>
             </div>
           </section>
 
           <section class="panel review-panel-wide">
             <div class="row-between align-start section-gap">
               <div>
-                <p class="panel-label">Review selected preset</p>
-                <h3>Balanced</h3>
-                <p class="subtle">A balanced operating mode with moderate activity and controlled entries.</p>
+                <p class="panel-label">Current step</p>
+                <h3>Entry rules</h3>
+                <p class="subtle">Use readable rule groups instead of raw technical syntax. Keep each condition easy to scan.</p>
               </div>
-              <span class="badge warning">Medium risk</span>
+              <span class="badge info">AND / OR</span>
             </div>
 
-            <div class="form-split">
-              <div class="form-stack">
-                <label>
-                  <span>Symbol</span>
-                  <input value="BTC/USDT" />
-                </label>
-                <label>
-                  <span>Position size</span>
-                  <input value="12%" />
-                </label>
+            <div class="form-stack">
+              <div class="review rule-group-card">
+                <div class="row-between align-start">
+                  <div>
+                    <p class="panel-label">Main group</p>
+                    <h4>All of these must happen</h4>
+                  </div>
+                  <span class="badge success">2 conditions</span>
+                </div>
+                <div class="chip-row compact">
+                  <span class="chip">Up to 3 AND groups</span>
+                  <span class="chip">Up to 3 OR groups</span>
+                </div>
+                <div class="history-list">
+                  <div class="history-row">
+                    <div>
+                      <strong>EMA 9 crosses above EMA 21</strong>
+                      <p>Cross between two indicators from the current catalog.</p>
+                    </div>
+                    <strong>Cross</strong>
+                  </div>
+                  <div class="history-row">
+                    <div>
+                      <strong>Nested group</strong>
+                      <p>Any of these can happen: RSI 14 below 30 or Price above EMA 50.</p>
+                    </div>
+                    <strong class="up">OR</strong>
+                  </div>
+                </div>
+                <div class="action-row">
+                  <button class="btn secondary small">Clear builder</button>
+                  <button class="btn secondary small">Add condition</button>
+                  <button class="btn secondary small">Add group</button>
+                </div>
               </div>
-              <div class="toggle-box">
-                <div class="toggle-row">
-                  <span>Long</span>
-                  <span class="toggle on"></span>
+
+              <div class="done-note">
+                <strong>Complexity guardrail</strong>
+                <p>V1 supports nested `AND/OR` groups, but the builder keeps the structure readable, avoids raw expression syntax and stays inside the `3 AND / 3 OR` limit.</p>
+              </div>
+
+              <div class="done-note">
+                <strong>Clear builder resets only the front</strong>
+                <p>This action restarts the current builder state without changing the saved YOUR Strategy until a new save happens.</p>
+              </div>
+
+              <div class="status-row blocked-surface">
+                <span class="status-dot neutral-dot"></span>
+                <div>
+                  <strong>Blocked state when the bot is running</strong>
+                  <p>Editing is blocked while operation is active. The builder switches to a locked state with `Pause bot first` as the main action.</p>
                 </div>
-                <div class="toggle-row">
-                  <span>Short</span>
-                  <span class="toggle off"></span>
-                </div>
-                <p class="subtle">Only the allowed fields can change. Logic, indicators and timeframe stay locked.</p>
               </div>
             </div>
           </section>
 
           <section class="panel activation-panel">
             <div>
-              <p class="panel-label">Activation</p>
-              <h3>Ready to activate</h3>
-              <p class="subtle">Balanced on BTC/USDT with size 12%, long enabled and short disabled.</p>
+              <p class="panel-label">Preview and backtest</p>
+              <h3>YOUR Strategy on BTC/USDC</h3>
+              <p class="subtle">Long and short enabled on 5m. Stop loss is configured. Take profit is still missing and needs explicit confirmation if you save or activate.</p>
             </div>
+
+            <div class="history-list">
+              <div class="history-row">
+                <div>
+                  <strong>Backtest preview</strong>
+                  <p>Strategy return +8.4%, hold +5.1%, max drawdown -4.2% over the last 7 days.</p>
+                </div>
+                <strong class="up">Preview</strong>
+              </div>
+              <div class="history-row">
+                <div>
+                  <strong>No take profit configured</strong>
+                  <p>This strategy can stay open until stop loss or another exit condition closes it.</p>
+                </div>
+                <strong class="down">Warning</strong>
+              </div>
+              <div class="history-row">
+                <div>
+                  <strong>Activation gate</strong>
+                  <p>Activation stays blocked until a valid backtest is available for the current builder state.</p>
+                </div>
+                <strong>Required</strong>
+              </div>
+            </div>
+
+            <div class="done-note warning-note">
+              <strong>Continue without take profit?</strong>
+              <p>This strategy can keep positions open without a fixed profit target. Saving or activating without take profit requires explicit confirmation from the trader.</p>
+            </div>
+
+            <div class="done-note">
+              <strong>Backtest required before activation</strong>
+              <p>Run a valid backtest first. The activation CTA stays disabled until this step is completed for the current strategy version.</p>
+            </div>
+
+            <div class="toggle-box confirm-box">
+              <div class="toggle-row">
+                <span>I understand this strategy can stay open without a fixed profit target.</span>
+                <span class="toggle on"></span>
+              </div>
+              <p class="subtle">This confirmation is required before `Save without take profit` or `Activate without take profit`.</p>
+            </div>
+
             <div class="action-row">
-              <button class="btn secondary">Cancel</button>
-              <button class="btn primary">Activate preset</button>
+              <button class="btn secondary">Save without take profit</button>
+              <button class="btn secondary">Run backtest</button>
+              <button class="btn primary" disabled>Activate without take profit</button>
             </div>
           </section>
         </section>

@@ -54,21 +54,29 @@ Orientação de i18n:
 - header, métricas, alertas e preset ativo devem seguir [DASHBOARD_REFERENCE.pt-BR.md](./DASHBOARD_REFERENCE.pt-BR.md)
 
 ## Presets
-Referências: [preview/presets.html](./preview/presets.html), [PRESETS_STRUCTURE.pt-BR.md](./PRESETS_STRUCTURE.pt-BR.md), [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
+Referências: [preview/presets.html](./preview/presets.html), [PRESETS_STRUCTURE.pt-BR.md](./PRESETS_STRUCTURE.pt-BR.md), [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md), [YOUR_STRATEGY_REFERENCE.pt-BR.md](./YOUR_STRATEGY_REFERENCE.pt-BR.md)
 
 Prioridades:
 - comparação vem antes da edição
 - preset selecionado tem destaque inequívoco
 - revisão e ativação ficam separadas da grade de escolha
 - risco permanece visível até o clique final
+- `YOUR Strategy` aparece como quarto card fixo, sem substituir presets padrão
+- o wizard de `YOUR Strategy` precisa parecer guiado, não técnico
+- o progresso do wizard deve explicitar os 6 steps completos
+- a ação de reset do builder deve ficar explícita e sem sugerir persistência automática
+- o limite de complexidade da V1 precisa ficar visível como `3 AND / 3 OR`
+- a ativação deve aparecer bloqueada até backtest válido
+- `take profit` ausente exige warning forte e confirmação explícita
+- edição deve ficar bloqueada se o bot estiver rodando
 
 Comportamento Mobile:
 - abaixo de `860px`, presets e comparador colapsam para uma coluna
-- a ordem vertical deve preservar: cards, comparador, revisão, ativação
+- a ordem vertical deve preservar: cards, comparador ou progresso do wizard, revisão ou step atual, preview final, ativação
 - a tela não pode depender de scroll lateral para comparação
 
 Orientação de i18n:
-- nomes oficiais dos presets permanecem `Safer`, `Balanced` e `More active`
+- nomes oficiais dos presets permanecem `Safer`, `Balanced`, `More active` e `YOUR Strategy`
 - labels e resumos devem ser curtos e tolerar tradução sem redesenho
 - estados e textos principais de revisão e ativação devem seguir [PRESETS_REFERENCE.pt-BR.md](./PRESETS_REFERENCE.pt-BR.md)
 
