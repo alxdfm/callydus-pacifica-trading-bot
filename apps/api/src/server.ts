@@ -49,7 +49,7 @@ const localMarketDataRefreshScheduler = startLocalMarketDataRefreshScheduler({
   resolveCandleRequests: resolveActivePresetMarketDataRequests,
 });
 
-const port = Number(process.env.PORT ?? "3000");
+const port = Number(process.env.PORT ?? "3003");
 const allowedOrigin =
   process.env.APP_ORIGIN ??
   process.env.VITE_APP_API_BASE_URL?.replace(/:\d+$/, ":5173") ??
@@ -202,6 +202,38 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
   ) {
     const body = await readJsonBody(request);
     const result = await api.router.previewPresetBacktest({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "success" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/strategies/your/get"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.getYourStrategy({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "error" ? 400 : 200, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/strategies/your/save"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.saveYourStrategy({
       body: body as never,
     });
 

@@ -36,6 +36,10 @@ import {
   type GetMarketInfoDependencies,
 } from "./application/get-market-info/GetMarketInfo";
 import {
+  createGetYourStrategy,
+  type GetYourStrategyDependencies,
+} from "./application/get-your-strategy/GetYourStrategy";
+import {
   createMarketDataRefresher,
   type RefreshMarketDataDependencies,
 } from "./application/refresh-market-data/RefreshMarketData";
@@ -80,6 +84,10 @@ import {
   type StartBotReadinessCheckDependencies,
 } from "./application/start-bot-readiness-check/StartBotReadinessCheck";
 import {
+  createSaveYourStrategy,
+  type SaveYourStrategyDependencies,
+} from "./application/save-your-strategy/SaveYourStrategy";
+import {
   createVerifyPacificaOperational,
   type VerifyPacificaOperationalDependencies,
 } from "./application/verify-pacifica-operational/VerifyPacificaOperational";
@@ -122,6 +130,7 @@ type CreateApiModuleInput = {
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
   getMarketInfoDependencies?: Partial<GetMarketInfoDependencies>;
+  getYourStrategyDependencies?: Partial<GetYourStrategyDependencies>;
   refreshMarketDataDependencies?: Partial<RefreshMarketDataDependencies>;
   refreshMarketDataManuallyDependencies?: Partial<
     RefreshMarketDataManuallyDependencies
@@ -140,6 +149,7 @@ type CreateApiModuleInput = {
   pauseBotDependencies?: Partial<PauseBotDependencies>;
   reconcileRuntimeDependencies?: Partial<ReconcileRuntimeDependencies>;
   resumeBotDependencies?: Partial<ResumeBotDependencies>;
+  saveYourStrategyDependencies?: Partial<SaveYourStrategyDependencies>;
   startBotReadinessCheckDependencies?: Partial<StartBotReadinessCheckDependencies>;
   verifyPacificaOperationalDependencies?: Partial<
     VerifyPacificaOperationalDependencies
@@ -212,6 +222,11 @@ export function createApiModule(input: CreateApiModuleInput) {
     marketInfo:
       input.getMarketInfoDependencies?.marketInfo ?? persistedMarketDataGateway,
   });
+  const getYourStrategy = createGetYourStrategy({
+    repository:
+      input.getYourStrategyDependencies?.repository ??
+      defaultCredentialRepository,
+  });
   const previewPresetBacktest = createPreviewPresetBacktest({
     marketData:
       input.previewPresetBacktestDependencies?.marketData ??
@@ -262,6 +277,11 @@ export function createApiModule(input: CreateApiModuleInput) {
       startBotReadinessGateway,
     eventRepository:
       input.startBotReadinessCheckDependencies?.eventRepository ??
+      defaultCredentialRepository,
+  });
+  const saveYourStrategy = createSaveYourStrategy({
+    repository:
+      input.saveYourStrategyDependencies?.repository ??
       defaultCredentialRepository,
   });
   const resumeBot = createResumeBot({
@@ -403,6 +423,7 @@ export function createApiModule(input: CreateApiModuleInput) {
       getMarketCandles,
       getMarketInfo,
       getMarketPrices,
+      getYourStrategy,
       refreshMarketData,
       previewPresetBacktest,
       heartbeatRuntime,
@@ -410,6 +431,7 @@ export function createApiModule(input: CreateApiModuleInput) {
       pauseBot,
       reconcileRuntime,
       resumeBot,
+      saveYourStrategy,
       getOperationalSessionByWallet,
       verifyPacificaOperational,
       validatePacificaCredentials,

@@ -10,6 +10,8 @@ import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute"
 import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
 import { createGetMarketInfoRoute } from "./routes/createGetMarketInfoRoute";
 import type { GetMarketInfoHandler } from "./routes/createGetMarketInfoRoute";
+import { createGetYourStrategyRoute } from "./routes/createGetYourStrategyRoute";
+import type { GetYourStrategyHandler } from "./routes/createGetYourStrategyRoute";
 import { createPreviewPresetBacktestRoute } from "./routes/createPreviewPresetBacktestRoute";
 import type { PreviewPresetBacktestHandler } from "./routes/createPreviewPresetBacktestRoute";
 import { createPauseBotRoute } from "./routes/createPauseBotRoute";
@@ -32,6 +34,8 @@ import { createValidatePacificaCredentialsRoute } from "./routes/createValidateP
 import type { ValidatePacificaCredentialsHandler } from "./routes/createValidatePacificaCredentialsRoute";
 import { createRefreshMarketDataRoute } from "./routes/createRefreshMarketDataRoute";
 import type { RefreshMarketDataHandler } from "./routes/createRefreshMarketDataRoute";
+import { createSaveYourStrategyRoute } from "./routes/createSaveYourStrategyRoute";
+import type { SaveYourStrategyHandler } from "./routes/createSaveYourStrategyRoute";
 
 type ApiRouterDependencies = {
   activatePreset: ActivatePresetHandler;
@@ -41,6 +45,7 @@ type ApiRouterDependencies = {
   getMarketCandles: GetMarketCandlesHandler;
   getMarketInfo: GetMarketInfoHandler;
   getMarketPrices: GetMarketPricesHandler;
+  getYourStrategy: GetYourStrategyHandler;
   previewPresetBacktest: PreviewPresetBacktestHandler;
   heartbeatRuntime: HeartbeatRuntimeHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
@@ -49,6 +54,7 @@ type ApiRouterDependencies = {
   resumeBot: ResumeBotHandler;
   getOperationalSessionByWallet: GetOperationalSessionByWalletHandler;
   refreshMarketData: RefreshMarketDataHandler;
+  saveYourStrategy: SaveYourStrategyHandler;
   validatePacificaCredentials: ValidatePacificaCredentialsHandler;
   verifyPacificaOperational: VerifyPacificaOperationalHandler;
 };
@@ -70,6 +76,9 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     getMarketPrices: createGetMarketPricesRoute(
       dependencies.getMarketPrices,
     ),
+    getYourStrategy: createGetYourStrategyRoute(
+      dependencies.getYourStrategy,
+    ),
     previewPresetBacktest: createPreviewPresetBacktestRoute(
       dependencies.previewPresetBacktest,
     ),
@@ -89,6 +98,9 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     ),
     refreshMarketData: createRefreshMarketDataRoute(
       dependencies.refreshMarketData,
+    ),
+    saveYourStrategy: createSaveYourStrategyRoute(
+      dependencies.saveYourStrategy,
     ),
     verifyPacificaOperational: createVerifyPacificaOperationalRoute(
       dependencies.verifyPacificaOperational,

@@ -180,6 +180,7 @@ model OperatorAccount {
   signalDecisions          SignalDecision[]
   orderExecutionAttempts   OrderExecutionAttempt[]
   symbolOperationalConfigs SymbolOperationalConfig[]
+  yourStrategy             YourStrategy?
 }
 
 model PacificaCredential {
@@ -287,6 +288,19 @@ model SymbolOperationalConfig {
   operatorAccount   OperatorAccount @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
 
   @@unique([operatorAccountId, symbol])
+  @@index([operatorAccountId])
+}
+
+model YourStrategy {
+  id                        String          @id @default(uuid()) @db.Uuid
+  operatorAccountId         String          @unique @db.Uuid
+  draftJson                 Json
+  materializedContractJson  Json?
+  activationBlockersJson    Json?
+  createdAt                 DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt                 DateTime        @updatedAt @db.Timestamptz(6)
+  operatorAccount           OperatorAccount @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)
+
   @@index([operatorAccountId])
 }
 

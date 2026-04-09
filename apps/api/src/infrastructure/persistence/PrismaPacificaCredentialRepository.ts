@@ -1,5 +1,13 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import { botRuntimeStateSchema, type PresetSymbol } from "@pacifica/contracts";
+import {
+  botRuntimeStateSchema,
+  yourStrategyDraftSchema,
+  yourStrategySchema,
+  type PresetSymbol,
+  type PresetTechnicalContract,
+  type YourStrategy,
+  type YourStrategyActivationBlocker,
+} from "@pacifica/contracts";
 import type { PacificaCredential } from "../../domain/pacifica-credentials/PacificaCredential";
 import type {
   FindActiveCredentialInput,
@@ -34,6 +42,11 @@ import type {
   AppendOperationalEventInput,
   OperationalEventRepository,
 } from "../../domain/operational-events/OperationalEventRepository";
+import type {
+  SaveYourStrategyRepositoryInput,
+  SaveYourStrategyRepositoryResult,
+  YourStrategyRepository,
+} from "../../domain/your-strategy/YourStrategyRepository";
 
 export class PrismaPacificaCredentialRepository
   implements
@@ -42,7 +55,8 @@ export class PrismaPacificaCredentialRepository
     PresetActivationRepository,
     BotCommandRepository,
     RuntimeMaintenanceRepository,
-    OperationalEventRepository
+    OperationalEventRepository,
+    YourStrategyRepository
 {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -176,6 +190,86 @@ export class PrismaPacificaCredentialRepository
       keyFingerprint: latestCredential?.keyFingerprint ?? null,
       operationallyVerified: latestCredential?.operationallyVerified ?? false,
     };
+  }
+
+  async findYourStrategyByWalletAddress(
+    walletAddress: string,
+  ): Promise<YourStrategy | null> {
+    const strategy = await this.prisma.yourStrategy.findFirst({
+      where: {
+        operatorAccount: {
+          walletAddress,
+        },
+      },
+      include: {
+        operatorAccount: true,
+      },
+    });
+
+    return strategy ? mapYourStrategy(strategy) : null;
+  }
+
+  async saveYourStrategy(
+    input: SaveYourStrategyRepositoryInput,
+  ): Promise<SaveYourStrategyRepositoryResult> {
+    return this.prisma.$transaction(async (tx) => {
+      const operatorAccount = await tx.operatorAccount.findUnique({
+        where: {
+          walletAddress: input.walletAddress,
+        },
+        include: {
+          botRuntimeState: true,
+        },
+      });
+
+      if (!operatorAccount) {
+        return {
+          ok: false,
+          code: "account_not_ready",
+        };
+      }
+
+      if (
+        operatorAccount.botRuntimeState?.botStatus === "active" ||
+        operatorAccount.botRuntimeState?.botStatus === "syncing"
+      ) {
+        return {
+          ok: false,
+          code: "editing_blocked_while_bot_running",
+        };
+      }
+
+      const strategy = await tx.yourStrategy.upsert({
+        where: {
+          operatorAccountId: operatorAccount.id,
+        },
+        update: {
+          draftJson: input.draft,
+          materializedContractJson:
+            input.materializedTechnicalContract === null
+              ? Prisma.JsonNull
+              : input.materializedTechnicalContract,
+          activationBlockersJson: input.activationBlockers,
+        },
+        create: {
+          operatorAccountId: operatorAccount.id,
+          draftJson: input.draft,
+          materializedContractJson:
+            input.materializedTechnicalContract === null
+              ? Prisma.JsonNull
+              : input.materializedTechnicalContract,
+          activationBlockersJson: input.activationBlockers,
+        },
+        include: {
+          operatorAccount: true,
+        },
+      });
+
+      return {
+        ok: true,
+        strategy: mapYourStrategy(strategy),
+      };
+    });
   }
 
   async findById(credentialId: string): Promise<PacificaCredential | null> {
@@ -1547,6 +1641,32 @@ function mapPresetActivation(
     activatedAt: activation.activatedAt?.toISOString() ?? null,
     deactivatedAt: activation.deactivatedAt?.toISOString() ?? null,
   };
+}
+
+function mapYourStrategy(strategy: {
+  id: string;
+  operatorAccountId: string;
+  draftJson: Prisma.JsonValue;
+  materializedContractJson: Prisma.JsonValue | null;
+  activationBlockersJson: Prisma.JsonValue | null;
+  createdAt: Date;
+  updatedAt: Date;
+  operatorAccount: {
+    walletAddress: string;
+  };
+}): YourStrategy {
+  return yourStrategySchema.parse({
+    id: strategy.id,
+    operatorAccountId: strategy.operatorAccountId,
+    walletAddress: strategy.operatorAccount.walletAddress,
+    draft: yourStrategyDraftSchema.parse(strategy.draftJson),
+    materializedTechnicalContract: strategy.materializedContractJson,
+    activationBlockers: Array.isArray(strategy.activationBlockersJson)
+      ? strategy.activationBlockersJson
+      : [],
+    createdAt: strategy.createdAt.toISOString(),
+    updatedAt: strategy.updatedAt.toISOString(),
+  });
 }
 
 function mapBotRuntimeState(runtime: {
