@@ -860,30 +860,30 @@ export class PrismaPacificaCredentialRepository
         },
       });
 
-      await tx.closedTrade.create({
+      await tx.openTrade.update({
+        where: {
+          id: trade.id,
+        },
         data: {
-          operatorAccountId: trade.operatorAccountId,
-          pacificaTradeId: trade.pacificaTradeId,
-          presetActivationId: trade.presetActivationId,
-          symbol: trade.symbol,
-          side: trade.side,
-          entryPrice: trade.entryPrice,
-          exitPrice: trade.currentPrice,
-          quantity: trade.quantity,
-          capitalAllocated: trade.capitalAllocated,
-          realizedPnl: trade.unrealizedPnl,
-          closeReason: "manual",
-          openedAt: trade.openedAt,
-          closedAt: new Date(input.nowIso),
-          isPlatformTrade: trade.isPlatformTrade,
-          closedByCommandId: command.id,
-          lastSyncedAt: new Date(input.nowIso),
+          tradeStatus: "close_requested",
+          closeRequestedAt: new Date(input.nowIso),
+          closeReasonPending: "manual",
         },
       });
 
-      await tx.openTrade.delete({
-        where: {
-          id: trade.id,
+      await tx.operationalEvent.create({
+        data: {
+          operatorAccountId: trade.operatorAccountId,
+          eventType: "bot_command",
+          severity: "info",
+          title: "Trade close queued",
+          message: `Manual close requested for ${trade.symbol}.`,
+          payloadJson: toPrismaInputJsonValue({
+            tradeId: trade.id,
+            commandId: command.id,
+            commandType: "close_trade",
+            symbol: trade.symbol,
+          }),
         },
       });
 
@@ -1250,7 +1250,11 @@ export class PrismaPacificaCredentialRepository
                 position.entryPrice * position.quantity,
               ),
               unrealizedPnl: new Prisma.Decimal(position.unrealizedPnl),
-              tradeStatus: "open",
+              tradeStatus:
+                existingTrade.closeRequestedAt !== null &&
+                existingTrade.closeReasonPending === "manual"
+                  ? "close_requested"
+                  : "open",
               isPlatformTrade:
                 existingTrade.isPlatformTrade || position.isPlatformTrade,
               lastSyncedAt: new Date(input.snapshot.fetchedAtIso),

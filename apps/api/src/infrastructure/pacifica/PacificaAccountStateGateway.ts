@@ -255,6 +255,14 @@ function normalizePositionSide(
     return value;
   }
 
+  if (value === "bid") {
+    return "long";
+  }
+
+  if (value === "ask") {
+    return "short";
+  }
+
   if (amount === null) {
     return null;
   }
