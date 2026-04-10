@@ -108,7 +108,7 @@ Implementar nesta ordem:
 - [x] validar `stop loss` obrigatorio
 - [x] validar `take profit` opcional com warning/confirmacao
 - [x] validar limites de `symbol` e `timeframe`
-- [ ] validar limite estrutural de grupos `AND/OR`
+- [ ] validar limite estrutural de grupos `AND/OR` (`follow-up`, sem urgencia operacional)
 
 ### Materializacao e engine
 - [x] criar funcao de materializacao `draft -> PresetTechnicalContract`
@@ -124,22 +124,22 @@ Implementar nesta ordem:
 
 ### App / UX
 - [x] encaixar `YOUR Strategy` como quarto card fixo
-- [ ] bloquear edicao com bot rodando
+- [x] bloquear edicao com bot rodando
 - [x] suportar limpar builder sem persistencia automatica
 - [x] mostrar preview/backtest antes da ativacao
 - [x] exigir backtest antes da ativacao
 
 ### Runtime operacional
-- [ ] garantir que a strategy custom ativa produz contrato consumivel pelo runtime
-- [ ] garantir que `Start bot readiness check` continua igual
-- [ ] garantir que worker/runtime nao precisem de branch especial para strategy custom
+- [x] garantir que a strategy custom ativa produz contrato consumivel pelo runtime
+- [x] garantir que `Start bot readiness check` continua igual
+- [x] garantir que worker/runtime nao precisem de branch especial para strategy custom
 
 ### Testes
 - [x] testes unitarios da materializacao
-- [ ] testes unitarios das validacoes do draft
-- [ ] testes de persistencia por conta
-- [ ] testes de preview usando contrato custom
-- [ ] testes de ativacao com gate de backtest
+- [x] testes unitarios das validacoes do draft
+- [x] testes de persistencia por conta
+- [x] testes de preview usando contrato custom
+- [x] testes de ativacao com gate de backtest
 
 ## Estado Atual do Primeiro Corte
 O primeiro corte entregue neste momento cobre:
@@ -275,6 +275,79 @@ A trilha operacional consolidada ficou assim:
 - worker executa o fechamento real com `reduce_only`
 - API e UI reconciliam o lado correto da posicao (`bid/ask`)
 - reconciliacao preserva pendencias de fechamento manual ate o worker consumir
+
+## Decisao de Fluxo: Ativacao vs Readiness
+Para manter consistencia com o restante do produto, `YOUR Strategy` segue a mesma separacao usada pelos presets padrao:
+
+- `Activate YOUR Strategy`
+  - ativa o preset/contrato salvo
+  - atualiza o runtime para apontar o preset ativo
+  - deixa o bot em estado `inactive`
+  - nao executa `startBotReadinessCheck`
+
+- `Resume bot`
+  - executa `startBotReadinessCheck`
+  - so permite o bot ficar `running` quando o readiness passa
+
+Conclusao pratica:
+- o readiness acontece antes do bot operar de fato
+- mas nao acontece no momento da ativacao do preset
+- isso e intencional e hoje esta alinhado com o fluxo dos outros presets
+
+## Proximos Tickets Tecnicos Priorizados
+### P0 - Robustez minima para fechamento do BG-032
+1. Cobrir validacoes do draft com testes unitarios
+- validar regras por contexto (`PRICE`, `EMA`, `SMA`, `RSI`, `Volume`, `ATR`)
+- validar range de `RSI`
+- validar obrigatoriedade de `long` ou `short`
+- validar `stop loss` obrigatorio e `take profit` opcional
+ - status: `feito`
+
+2. Cobrir persistencia por conta
+- garantir `1 YOUR Strategy` por conta
+- garantir update idempotente do mesmo registro
+- garantir isolamento entre contas
+ - status: `feito`
+
+3. Cobrir preview e ativacao com testes dedicados
+- preview de strategy custom salva
+- preview com `draft` inline
+- gate de `backtest_required`
+- ativacao apenas quando o fingerprint salvo tiver preview valido
+ - status: `feito`
+
+4. Fechar validacao do runtime sem branch especial
+- confirmar por teste que o runtime consome a strategy custom pelo mesmo trilho de preset ativado
+- confirmar que `Start bot readiness check` continua inalterado nesse fluxo
+ - status: `feito` (`validacao manual ponta a ponta`)
+
+### P1 - Guardrails e consistencia de builder
+5. Refinar mensagens de erro e orientacao
+- manter instrucoes objetivas no wizard
+- revisar se todos os blockers devolvem exatamente o que corrigir
+ - status: `feito`
+
+### P2 - Follow-up de complexidade e expansao funcional
+6. Limitar estruturalmente grupos `AND/OR`
+- aplicar o limite fechado de produto quando virar prioridade real de UX
+- impedir explosao de complexidade no front e no contrato
+
+7. Expandir modos de `take profit`
+- hoje o backend esta essencialmente em `RR` ou desligado
+- avaliar se a V1 exige mais modos ou se isso vira follow-up pos-BG-032
+
+8. Consolidar testes operacionais de exchange integration
+- abertura
+- protecao
+- reconcile de posicao
+- manual close
+- sessao refletindo `currentTrades`
+
+## Recomendacao de Sequencia
+- `P0` esta fechado
+- `P1` agora ficou reduzido a refinamentos leves de UX/copy ja resolvidos nesta rodada
+- `AND/OR` estrutural pode ficar para `P2`, junto com evolucoes de complexidade controlada
+- `take profit` mais rico continua como decisao separada de escopo
 
 ## Checklist de Decisoes em Aberto
 - [ ] onde persistir o draft do wizard: tabela propria ou JSON no registro custom

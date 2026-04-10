@@ -3,7 +3,7 @@
 ## Status
 - status: `IN_PROGRESS`
 - tipo: `implementacao`
-- prioridade: `P0`
+- prioridade: `P1`
 - owner: `Dev`
 - area: `presets / strategy builder`
 - ultima atualizacao: `2026-04-10`
@@ -52,6 +52,13 @@ Implementar a trilha funcional de `YOUR Strategy`, incluindo persistencia do reg
 ## Proximo Passo Recomendado
 Dev mapear primeiro o modelo do registro custom e o contrato gerado, antes de entrar forte na UI do wizard.
 
+## Proximos Tickets Tecnicos
+- `P0`: fechado
+- `P1`: revisao final das mensagens de erro e blockers do wizard
+- `P2`: limite estrutural de grupos `AND/OR`
+- `P2`: endurecimento adicional de complexidade do builder, se o UX pedir
+- `P2`: decidir se modos adicionais de `take profit` entram na V1
+
 ## Analise Tecnica Inicial
 O repositorio ja possui uma base forte que reduz retrabalho para `BG-032`:
 - o contrato tecnico de preset/estrategia ja existe em `packages/contracts`
@@ -87,3 +94,6 @@ Antes da UI completa do wizard, implementar:
 - `2026-04-10`: segunda rodada de refinamento resolveu inconsistencias de contexto entre preco/volume/RSI/ATR, removeu o raw JSON da experiencia final, adicionou resumo legivel da estrategia e passou a expor mensagens de correcao objetivas para o usuario dentro do wizard.
 - `2026-04-10`: terceira rodada de refinamento fechou o gate de `long/short` no passo inicial, tornou os passos de entrada condicionais aos lados ativos e ampliou o contrato das regras para suportar referencia `PRICE`, threshold com referencia e cross numerico de RSI sem misturar contextos de calculo.
 - `2026-04-10`: validacao ponta a ponta com Pacifica real revelou uma trilha de bugs operacionais fora do wizard. Foram corrigidos o fluxo de abertura + protecao, a observabilidade de falha do client, a atualizacao automatica de `currentTrades`, a delegacao correta de `Close trade` para o worker, o processamento de fechamento manual com bot pausado, o mapeamento de `bid/ask` para `long/short` no snapshot externo e a preservacao de `close_requested` durante a reconciliacao.
+- `2026-04-10`: ficou documentado que `YOUR Strategy` segue a mesma separacao de fluxo dos presets padrao: ativacao do preset nao roda readiness; o `startBotReadinessCheck` continua sendo executado no `Resume bot`, imediatamente antes do bot voltar a operar.
+- `2026-04-10`: `P0` foi considerado fechado apos validacao de draft, persistencia, preview, ativacao e runtime real sem branch especial. O item de limite estrutural de grupos `AND/OR` foi rebaixado para `P2`, por nao ser bloqueador operacional neste momento.
+- `2026-04-10`: mensagens e blockers do wizard foram revisados para devolver instrucoes mais objetivas sobre o que corrigir em cada inconsistencia.
