@@ -6,7 +6,7 @@
 - prioridade: `P0`
 - owner: `Dev`
 - area: `presets / strategy builder`
-- ultima atualizacao: `2026-04-09`
+- ultima atualizacao: `2026-04-10`
 
 ## Objetivo
 Implementar a trilha funcional de `YOUR Strategy`, incluindo persistencia do registro custom por conta, builder guiado, geracao de contrato compatível, backtest preview e ativacao real.
@@ -44,10 +44,10 @@ Implementar a trilha funcional de `YOUR Strategy`, incluindo persistencia do reg
 ## Critérios de Aceite Iniciais
 - [x] existe registro custom unico por conta
 - [x] o builder gera contrato compativel com o motor atual
-- [ ] o save nao exige backtest obrigatorio
+- [x] o save nao exige backtest obrigatorio
 - [x] a ativacao exige backtest obrigatorio
 - [x] a ativacao segue o mesmo fluxo operacional dos presets padrao
-- [ ] edicao fica bloqueada com bot rodando
+- [x] edicao fica bloqueada com bot rodando
 
 ## Proximo Passo Recomendado
 Dev mapear primeiro o modelo do registro custom e o contrato gerado, antes de entrar forte na UI do wizard.
@@ -82,3 +82,8 @@ Antes da UI completa do wizard, implementar:
 - `2026-04-09`: primeiro corte backend implementado com tabela `YourStrategy`, schema de draft em `packages/contracts`, materializacao para `PresetTechnicalContract`, casos de uso `get/save` e rotas HTTP dedicadas.
 - `2026-04-09`: segundo corte backend implementado com preview/backtest dedicado de `YOUR Strategy`, aceitando `draft` inline ou strategy salva por wallet, sem alterar o contrato de preview dos presets padrao.
 - `2026-04-09`: terceiro corte backend implementado com ativacao dedicada de `YOUR Strategy`, exigindo backtest previo por fingerprint do draft salvo e reutilizando o fluxo operacional de ativacao de preset.
+- `2026-04-10`: primeiro corte frontend implementado na pagina de presets com quarto card fixo de `YOUR Strategy`, editor do draft salvo via JSON validado em contrato, acoes de `save`, `reload`, `backtest preview` e `activate`, sem quebrar os 3 presets padrao.
+- `2026-04-10`: follow-up de validacao manual identificou gaps no wizard inicial e levou a uma segunda rodada de frontend: `YOUR Strategy` foi movida para modal dedicado, o wizard passou a fechar `preview/activation` apenas no ultimo passo, o builder ganhou configuracao real de `stop loss`, step proprio de `take profit`, naming consistente de indicadores e suporte automatico a `ATR` no contrato materializado para evitar falha de preview.
+- `2026-04-10`: segunda rodada de refinamento resolveu inconsistencias de contexto entre preco/volume/RSI/ATR, removeu o raw JSON da experiencia final, adicionou resumo legivel da estrategia e passou a expor mensagens de correcao objetivas para o usuario dentro do wizard.
+- `2026-04-10`: terceira rodada de refinamento fechou o gate de `long/short` no passo inicial, tornou os passos de entrada condicionais aos lados ativos e ampliou o contrato das regras para suportar referencia `PRICE`, threshold com referencia e cross numerico de RSI sem misturar contextos de calculo.
+- `2026-04-10`: validacao ponta a ponta com Pacifica real revelou uma trilha de bugs operacionais fora do wizard. Foram corrigidos o fluxo de abertura + protecao, a observabilidade de falha do client, a atualizacao automatica de `currentTrades`, a delegacao correta de `Close trade` para o worker, o processamento de fechamento manual com bot pausado, o mapeamento de `bid/ask` para `long/short` no snapshot externo e a preservacao de `close_requested` durante a reconciliacao.
