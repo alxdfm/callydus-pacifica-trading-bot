@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import {
+  YOUR_STRATEGY_PRESET_DEFINITION_ID,
   botRuntimeStateSchema,
   yourStrategyDraftSchema,
   yourStrategySchema,
@@ -250,6 +251,8 @@ export class PrismaPacificaCredentialRepository
               ? Prisma.JsonNull
               : input.materializedTechnicalContract,
           activationBlockersJson: input.activationBlockers,
+          lastBacktestPreviewedAt: null,
+          lastBacktestPreviewFingerprint: null,
         },
         create: {
           operatorAccountId: operatorAccount.id,
@@ -259,6 +262,8 @@ export class PrismaPacificaCredentialRepository
               ? Prisma.JsonNull
               : input.materializedTechnicalContract,
           activationBlockersJson: input.activationBlockers,
+          lastBacktestPreviewedAt: null,
+          lastBacktestPreviewFingerprint: null,
         },
         include: {
           operatorAccount: true,
@@ -269,6 +274,35 @@ export class PrismaPacificaCredentialRepository
         ok: true,
         strategy: mapYourStrategy(strategy),
       };
+    });
+  }
+
+  async recordSuccessfulYourStrategyBacktestPreview(input: {
+    walletAddress: string;
+    fingerprint: string;
+    previewedAtIso: string;
+  }): Promise<void> {
+    const operatorAccount = await this.prisma.operatorAccount.findUnique({
+      where: {
+        walletAddress: input.walletAddress,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!operatorAccount) {
+      return;
+    }
+
+    await this.prisma.yourStrategy.updateMany({
+      where: {
+        operatorAccountId: operatorAccount.id,
+      },
+      data: {
+        lastBacktestPreviewedAt: new Date(input.previewedAtIso),
+        lastBacktestPreviewFingerprint: input.fingerprint,
+      },
     });
   }
 
@@ -1649,6 +1683,8 @@ function mapYourStrategy(strategy: {
   draftJson: Prisma.JsonValue;
   materializedContractJson: Prisma.JsonValue | null;
   activationBlockersJson: Prisma.JsonValue | null;
+  lastBacktestPreviewedAt: Date | null;
+  lastBacktestPreviewFingerprint: string | null;
   createdAt: Date;
   updatedAt: Date;
   operatorAccount: {
@@ -1664,6 +1700,9 @@ function mapYourStrategy(strategy: {
     activationBlockers: Array.isArray(strategy.activationBlockersJson)
       ? strategy.activationBlockersJson
       : [],
+    lastBacktestPreviewedAt:
+      strategy.lastBacktestPreviewedAt?.toISOString() ?? null,
+    lastBacktestPreviewFingerprint: strategy.lastBacktestPreviewFingerprint,
     createdAt: strategy.createdAt.toISOString(),
     updatedAt: strategy.updatedAt.toISOString(),
   });
@@ -1813,6 +1852,15 @@ function getPresetDefinitionRecord(presetDefinitionId: string) {
         riskLabel: "Higher activity",
         frequencyLabel: "Higher frequency",
         description: "More opportunities with looser selection rules.",
+      };
+    case YOUR_STRATEGY_PRESET_DEFINITION_ID:
+      return {
+        name: "YOUR Strategy",
+        slug: "your-strategy",
+        version: 1,
+        riskLabel: "Custom",
+        frequencyLabel: "Custom",
+        description: "Account-owned custom strategy activated from the YOUR builder.",
       };
     default:
       return null;

@@ -1,7 +1,8 @@
-import type {
-  YourStrategyBacktestPreviewRequest,
-  YourStrategyBacktestPreviewResponse,
-  YourStrategyDraft,
+import {
+  createYourStrategyDraftFingerprint,
+  type YourStrategyBacktestPreviewRequest,
+  type YourStrategyBacktestPreviewResponse,
+  type YourStrategyDraft,
 } from "@pacifica/contracts";
 import {
   getIntervalDurationMs,
@@ -199,7 +200,7 @@ export function createPreviewYourStrategyBacktest(
         };
       }
 
-      return {
+      const response: YourStrategyBacktestPreviewResponse = {
         status: "success",
         strategyId: persistedStrategy?.id ?? null,
         symbol: technicalContract.symbol,
@@ -260,6 +261,16 @@ export function createPreviewYourStrategyBacktest(
           slippagePercent: roundTo(input.slippagePercent, 4),
         },
       };
+
+      if (persistedStrategy?.id) {
+        await dependencies.repository.recordSuccessfulYourStrategyBacktestPreview({
+          walletAddress: input.walletAddress,
+          fingerprint: createYourStrategyDraftFingerprint(draft),
+          previewedAtIso: new Date().toISOString(),
+        });
+      }
+
+      return response;
     } catch (error) {
       if (error instanceof PacificaApiError) {
         return {

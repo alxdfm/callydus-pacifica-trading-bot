@@ -27,4 +27,9 @@ export interface YourStrategyRepository {
   saveYourStrategy(
     input: SaveYourStrategyRepositoryInput,
   ): Promise<SaveYourStrategyRepositoryResult>;
+  recordSuccessfulYourStrategyBacktestPreview(input: {
+    walletAddress: string;
+    fingerprint: string;
+    previewedAtIso: string;
+  }): Promise<void>;
 }

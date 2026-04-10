@@ -558,6 +558,8 @@ export const yourStrategySchema = z.object({
   draft: yourStrategyDraftSchema,
   materializedTechnicalContract: presetTechnicalContractSchema.nullable(),
   activationBlockers: z.array(yourStrategyActivationBlockerSchema),
+  lastBacktestPreviewedAt: z.string().datetime().nullable(),
+  lastBacktestPreviewFingerprint: z.string().min(1).nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -672,6 +674,39 @@ export const saveYourStrategyErrorSchema = z.object({
 export const saveYourStrategyResponseSchema = z.union([
   saveYourStrategySuccessSchema,
   saveYourStrategyErrorSchema,
+]);
+
+export const activateYourStrategyRequestSchema = z.object({
+  walletAddress: z.string().min(1),
+});
+
+export const activateYourStrategyErrorCodeSchema = z.enum([
+  "wallet_not_connected",
+  "account_not_ready",
+  "strategy_not_found",
+  "strategy_not_executable",
+  "backtest_required",
+  "internal_error",
+]);
+
+export const activateYourStrategySuccessSchema = z.object({
+  status: z.literal("success"),
+  activation: z.lazy(() => presetActivationSchema),
+  runtime: z.lazy(() => botRuntimeStateSchema),
+  message: z.string().min(1),
+});
+
+export const activateYourStrategyErrorSchema = z.object({
+  status: z.literal("error"),
+  code: activateYourStrategyErrorCodeSchema,
+  message: z.string().min(1),
+  retryable: z.boolean(),
+  activationBlockers: z.array(yourStrategyActivationBlockerSchema).optional(),
+});
+
+export const activateYourStrategyResponseSchema = z.union([
+  activateYourStrategySuccessSchema,
+  activateYourStrategyErrorSchema,
 ]);
 
 export const presetDefinitionSchema = z.object({
@@ -1059,6 +1094,12 @@ export function serializePacificaSigningPayload(payload: unknown): string {
   return JSON.stringify(sortKeysDeep(payload));
 }
 
+export function createYourStrategyDraftFingerprint(
+  draft: YourStrategyDraft,
+): string {
+  return serializePacificaSigningPayload(draft);
+}
+
 function sortKeysDeep(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map((item) => sortKeysDeep(item));
@@ -1263,6 +1304,8 @@ export const BALANCED_PRESET_DEFINITION_ID =
   "54663f73-b1e9-4384-9057-48d68ba689b2";
 export const MORE_ACTIVE_PRESET_DEFINITION_ID =
   "1242f0f9-7a5b-44ea-b32d-368ceba95a93";
+export const YOUR_STRATEGY_PRESET_DEFINITION_ID =
+  "0f7f0d67-1b51-43b1-a7d0-9c7a4d7f9123";
 
 export const presetTechnicalContractCatalog: Record<string, PresetTechnicalContract> = {
   [SAFER_PRESET_DEFINITION_ID]: presetTechnicalContractSchema.parse({
@@ -1645,6 +1688,15 @@ export type SaveYourStrategyErrorCode = z.infer<
   typeof saveYourStrategyErrorCodeSchema
 >;
 export type SaveYourStrategyResponse = z.infer<typeof saveYourStrategyResponseSchema>;
+export type ActivateYourStrategyRequest = z.infer<
+  typeof activateYourStrategyRequestSchema
+>;
+export type ActivateYourStrategyErrorCode = z.infer<
+  typeof activateYourStrategyErrorCodeSchema
+>;
+export type ActivateYourStrategyResponse = z.infer<
+  typeof activateYourStrategyResponseSchema
+>;
 export type WalletSession = z.infer<typeof walletSessionSchema>;
 export type PacificaCredentialSubmission = z.infer<typeof pacificaCredentialSubmissionSchema>;
 export type PacificaCredentialValidationSuccess = z.infer<typeof pacificaCredentialValidationSuccessSchema>;

@@ -297,6 +297,8 @@ model YourStrategy {
   draftJson                 Json
   materializedContractJson  Json?
   activationBlockersJson    Json?
+  lastBacktestPreviewedAt   DateTime?       @db.Timestamptz(6)
+  lastBacktestPreviewFingerprint String?
   createdAt                 DateTime        @default(now()) @db.Timestamptz(6)
   updatedAt                 DateTime        @updatedAt @db.Timestamptz(6)
   operatorAccount           OperatorAccount @relation(fields: [operatorAccountId], references: [id], onDelete: Cascade)

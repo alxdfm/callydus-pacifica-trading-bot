@@ -16,6 +16,10 @@ import {
   type ActivatePresetDependencies,
 } from "./application/activate-preset/ActivatePreset";
 import {
+  createActivateYourStrategy,
+  type ActivateYourStrategyDependencies,
+} from "./application/activate-your-strategy/ActivateYourStrategy";
+import {
   createCloseTrade,
   type CloseTradeDependencies,
 } from "./application/close-trade/CloseTrade";
@@ -129,6 +133,7 @@ type CreateApiModuleInput = {
     ApprovePacificaBuilderDependencies
   >;
   activatePresetDependencies?: Partial<ActivatePresetDependencies>;
+  activateYourStrategyDependencies?: Partial<ActivateYourStrategyDependencies>;
   closeTradeDependencies?: Partial<CloseTradeDependencies>;
   evaluatePresetSignalDependencies?: Partial<EvaluatePresetSignalDependencies>;
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
@@ -271,6 +276,23 @@ export function createApiModule(input: CreateApiModuleInput) {
       defaultCredentialRepository,
     ...(input.activatePresetDependencies?.now
       ? { now: input.activatePresetDependencies.now }
+      : {}),
+  });
+  const activateYourStrategy = createActivateYourStrategy({
+    credentialRepository:
+      input.activateYourStrategyDependencies?.credentialRepository ??
+      defaultCredentialRepository,
+    yourStrategyRepository:
+      input.activateYourStrategyDependencies?.yourStrategyRepository ??
+      defaultCredentialRepository,
+    presetActivationRepository:
+      input.activateYourStrategyDependencies?.presetActivationRepository ??
+      defaultCredentialRepository,
+    eventRepository:
+      input.activateYourStrategyDependencies?.eventRepository ??
+      defaultCredentialRepository,
+    ...(input.activateYourStrategyDependencies?.now
+      ? { now: input.activateYourStrategyDependencies.now }
       : {}),
   });
   const pauseBot = createPauseBot({
@@ -439,6 +461,7 @@ export function createApiModule(input: CreateApiModuleInput) {
     router: createApiRouter({
       approvePacificaBuilder,
       activatePreset,
+      activateYourStrategy,
       closeTrade,
       evaluatePresetSignal,
       getMarketCandles,

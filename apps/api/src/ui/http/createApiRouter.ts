@@ -1,5 +1,7 @@
 import { createActivatePresetRoute } from "./routes/createActivatePresetRoute";
 import type { ActivatePresetHandler } from "./routes/createActivatePresetRoute";
+import { createActivateYourStrategyRoute } from "./routes/createActivateYourStrategyRoute";
+import type { ActivateYourStrategyHandler } from "./routes/createActivateYourStrategyRoute";
 import { createCloseTradeRoute } from "./routes/createCloseTradeRoute";
 import type { CloseTradeHandler } from "./routes/createCloseTradeRoute";
 import { createGetMarketCandlesRoute } from "./routes/createGetMarketCandlesRoute";
@@ -41,6 +43,7 @@ import type { SaveYourStrategyHandler } from "./routes/createSaveYourStrategyRou
 
 type ApiRouterDependencies = {
   activatePreset: ActivatePresetHandler;
+  activateYourStrategy: ActivateYourStrategyHandler;
   approvePacificaBuilder: ApprovePacificaBuilderHandler;
   closeTrade: CloseTradeHandler;
   evaluatePresetSignal: EvaluatePresetSignalHandler;
@@ -65,6 +68,9 @@ type ApiRouterDependencies = {
 export function createApiRouter(dependencies: ApiRouterDependencies) {
   return {
     activatePreset: createActivatePresetRoute(dependencies.activatePreset),
+    activateYourStrategy: createActivateYourStrategyRoute(
+      dependencies.activateYourStrategy,
+    ),
     approvePacificaBuilder: createApprovePacificaBuilderRoute(
       dependencies.approvePacificaBuilder,
     ),
