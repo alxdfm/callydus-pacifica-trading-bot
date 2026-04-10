@@ -92,6 +92,65 @@ function createStrategy() {
 }
 
 describe("createActivateYourStrategy", () => {
+  it("retorna account_not_ready quando a conta ainda nao esta operacional", async () => {
+    const activateYourStrategy = createActivateYourStrategy({
+      credentialRepository: {
+        findOperationalAccountByWalletAddress: vi.fn().mockResolvedValue({
+          onboardingStatus: "pending",
+          operationallyVerified: false,
+        }),
+      } as never,
+      yourStrategyRepository: {
+        findYourStrategyByWalletAddress: vi.fn(),
+      } as never,
+      presetActivationRepository: {
+        activatePreset: vi.fn(),
+      } as never,
+    });
+
+    await expect(
+      activateYourStrategy({ walletAddress: "wallet-1" }),
+    ).resolves.toEqual({
+      status: "error",
+      code: "account_not_ready",
+      message:
+        "The account is not operationally ready to activate YOUR Strategy yet.",
+      retryable: false,
+    });
+  });
+
+  it("retorna strategy_not_executable quando ha blockers no draft salvo", async () => {
+    const strategy = createStrategy();
+    const activateYourStrategy = createActivateYourStrategy({
+      credentialRepository: {
+        findOperationalAccountByWalletAddress: vi.fn().mockResolvedValue({
+          onboardingStatus: "ready",
+          operationallyVerified: true,
+        }),
+      } as never,
+      yourStrategyRepository: {
+        findYourStrategyByWalletAddress: vi.fn().mockResolvedValue({
+          ...strategy,
+          materializedTechnicalContract: null,
+          activationBlockers: ["take_profit_missing"],
+        }),
+      } as never,
+      presetActivationRepository: {
+        activatePreset: vi.fn(),
+      } as never,
+    });
+
+    await expect(
+      activateYourStrategy({ walletAddress: "wallet-1" }),
+    ).resolves.toEqual({
+      status: "error",
+      code: "strategy_not_executable",
+      message: "YOUR Strategy must be executable before activation.",
+      retryable: false,
+      activationBlockers: ["take_profit_missing"],
+    });
+  });
+
   it("exige backtest bem-sucedido do draft salvo atual", async () => {
     const strategy = createStrategy();
     const activateYourStrategy = createActivateYourStrategy({

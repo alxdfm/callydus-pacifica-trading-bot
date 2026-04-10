@@ -252,4 +252,71 @@ describe("createPreviewYourStrategyBacktest", () => {
     expect(getCandles).toHaveBeenCalledTimes(2);
     expect(result.status).toBe("success");
   });
+
+  it("usa a strategy persistida e registra o fingerprint do preview bem-sucedido", async () => {
+    const findYourStrategyByWalletAddress = vi.fn().mockResolvedValue({
+      id: "strategy-1",
+      operatorAccountId: "operator-1",
+      walletAddress: "wallet-1",
+      draft: createDraft(),
+      materializedTechnicalContract: {
+        name: "YOUR Strategy",
+        version: 1,
+        timeframe: "5m",
+        symbol: "BTC/USDC",
+        indicators: createDraft().indicators,
+        entry: createDraft().entry,
+        risk: createDraft().risk,
+        execution: {
+          positionSize: {
+            type: "fixedPercent",
+            value: 5,
+          },
+          onePositionPerSymbol: true,
+          manualCloseAllowed: true,
+          closeOppositePositionOnSignal: false,
+        },
+      },
+      activationBlockers: [],
+      lastBacktestPreviewedAt: null,
+      lastBacktestPreviewFingerprint: null,
+      createdAt: "2026-04-09T00:00:00.000Z",
+      updatedAt: "2026-04-09T00:00:00.000Z",
+    });
+    const recordSuccessfulYourStrategyBacktestPreview = vi
+      .fn()
+      .mockResolvedValue(undefined);
+    const preview = createPreviewYourStrategyBacktest({
+      repository: {
+        findYourStrategyByWalletAddress,
+        recordSuccessfulYourStrategyBacktestPreview,
+      } as never,
+      marketData: {
+        getCandles: vi.fn().mockResolvedValue([
+          createCandle(300_000, 100, 80),
+          createCandle(600_000, 102, 90),
+          createCandle(900_000, 104, 110),
+          createCandle(1_200_000, 105, 150),
+          createCandle(1_500_000, 125, 120),
+          createCandle(1_800_000, 126, 130),
+          createCandle(2_100_000, 127, 140),
+        ]),
+      } as never,
+    });
+
+    const result = await preview({
+      walletAddress: "wallet-1",
+      priceSource: "market",
+      startTime: 1_000_000,
+      endTime: 2_200_000,
+      initialCapitalUsd: 1000,
+      leverage: 1,
+      feePercent: 0,
+      slippagePercent: 0,
+    });
+
+    expect(result.status).toBe("success");
+    expect(findYourStrategyByWalletAddress).toHaveBeenCalledWith("wallet-1");
+    expect(recordSuccessfulYourStrategyBacktestPreview).toHaveBeenCalledTimes(1);
+  });
 });
