@@ -45,8 +45,8 @@ Implementar a trilha funcional de `YOUR Strategy`, incluindo persistencia do reg
 - [x] existe registro custom unico por conta
 - [x] o builder gera contrato compativel com o motor atual
 - [ ] o save nao exige backtest obrigatorio
-- [ ] a ativacao exige backtest obrigatorio
-- [ ] a ativacao segue o mesmo fluxo operacional dos presets padrao
+- [x] a ativacao exige backtest obrigatorio
+- [x] a ativacao segue o mesmo fluxo operacional dos presets padrao
 - [ ] edicao fica bloqueada com bot rodando
 
 ## Proximo Passo Recomendado
@@ -81,3 +81,4 @@ Antes da UI completa do wizard, implementar:
 - `2026-04-09`: analise inicial de dev concluiu que o caminho correto e reaproveitar `contracts + preset-engine + preview existente`, focando primeiro em persistencia do registro custom, ownership por conta e geracao do `PresetTechnicalContract` custom antes de fechar a UI do wizard.
 - `2026-04-09`: primeiro corte backend implementado com tabela `YourStrategy`, schema de draft em `packages/contracts`, materializacao para `PresetTechnicalContract`, casos de uso `get/save` e rotas HTTP dedicadas.
 - `2026-04-09`: segundo corte backend implementado com preview/backtest dedicado de `YOUR Strategy`, aceitando `draft` inline ou strategy salva por wallet, sem alterar o contrato de preview dos presets padrao.
+- `2026-04-09`: terceiro corte backend implementado com ativacao dedicada de `YOUR Strategy`, exigindo backtest previo por fingerprint do draft salvo e reutilizando o fluxo operacional de ativacao de preset.

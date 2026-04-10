@@ -120,7 +120,7 @@ Implementar nesta ordem:
 - [x] criar `getYourStrategy`
 - [x] criar `saveYourStrategy`
 - [x] decidir se `preview` usa endpoint novo ou reaproveita o atual
-- [ ] decidir como a ativacao referencia a strategy custom no backend
+- [x] decidir como a ativacao referencia a strategy custom no backend
 
 ### App / UX
 - [ ] encaixar `YOUR Strategy` como quarto card fixo
@@ -149,9 +149,9 @@ O primeiro corte entregue neste momento cobre:
 - materializacao do draft para `PresetTechnicalContract`
 - blockers explicitos quando o draft ainda nao pode ser ativado
 - preview/backtest dedicado de `YOUR Strategy` com `draft` inline opcional
+- ativacao dedicada da `YOUR Strategy` com gate de backtest por fingerprint do draft salvo
 
 O que ainda nao entrou neste corte:
-- ativacao da strategy custom no fluxo operacional existente
 - wizard/UX no frontend
 - limite estrutural de grupos `AND/OR`
 
