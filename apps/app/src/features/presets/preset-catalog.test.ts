@@ -3,6 +3,7 @@ import {
   BALANCED_PRESET_DEFINITION_ID,
   MORE_ACTIVE_PRESET_DEFINITION_ID,
   SAFER_PRESET_DEFINITION_ID,
+  YOUR_STRATEGY_PRESET_DEFINITION_ID,
 } from "@pacifica/contracts";
 import {
   allowedPresetSymbols,
@@ -73,6 +74,16 @@ describe("preset-catalog", () => {
         shortEnabled: false,
       }),
     ).toContain("BTC/USDC");
+  });
+
+  it("resolve o item de catálogo da YOUR Strategy pelo definition id", () => {
+    const item = getPresetCatalogItemByDefinitionId(
+      YOUR_STRATEGY_PRESET_DEFINITION_ID,
+      t,
+    );
+
+    expect(item?.definition.name).toBe("YOUR Strategy");
+    expect(item?.defaultEditableConfig.symbol).toBe("BTC/USDC");
   });
 
   it("expõe a whitelist de símbolos editáveis do produto", () => {

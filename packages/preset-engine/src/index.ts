@@ -248,6 +248,7 @@ export function materializeYourStrategyTechnicalContract(
 ): MaterializedYourStrategy {
   const activationBlockers: YourStrategyActivationBlocker[] = [];
   const takeProfit = draft.risk.takeProfit;
+  const indicators = ensureRiskSupportIndicators(draft);
 
   if (draft.positionSizeType !== "balance_percent") {
     activationBlockers.push("unsupported_position_size_type");
@@ -255,11 +256,6 @@ export function materializeYourStrategyTechnicalContract(
 
   if (takeProfit === null) {
     activationBlockers.push("take_profit_missing");
-
-    return {
-      technicalContract: null,
-      activationBlockers,
-    };
   }
 
   if (activationBlockers.length > 0) {
@@ -275,11 +271,15 @@ export function materializeYourStrategyTechnicalContract(
       version: 1,
       timeframe: draft.timeframe,
       symbol: draft.symbol,
-      indicators: draft.indicators,
+      indicators,
       entry: draft.entry,
       risk: {
         stopLoss: draft.risk.stopLoss,
-        takeProfit,
+        takeProfit:
+          takeProfit ?? {
+            mode: "rr",
+            multiple: 99,
+          },
       },
       execution: {
         positionSize: {
@@ -293,6 +293,26 @@ export function materializeYourStrategyTechnicalContract(
     },
     activationBlockers,
   };
+}
+
+function ensureRiskSupportIndicators(draft: YourStrategyDraft) {
+  const indicators = { ...draft.indicators };
+
+  if (draft.risk.stopLoss.mode === "atr") {
+    const atrPeriod = draft.risk.stopLoss.period;
+    const atrAlreadyExists = Object.values(indicators).some(
+      (indicator) => indicator.type === "atr" && indicator.period === atrPeriod,
+    );
+
+    if (!atrAlreadyExists) {
+      indicators[`ATR_AUTO_${atrPeriod}`] = {
+        type: "atr",
+        period: atrPeriod,
+      };
+    }
+  }
+
+  return indicators;
 }
 
 export function simulatePresetBacktest(
@@ -584,7 +604,9 @@ function buildIndicatorSeriesMap(
   const highSeries = candles.map((candle) => candle.high);
   const lowSeries = candles.map((candle) => candle.low);
   const volumeSeries = candles.map((candle) => candle.volume);
-  const cache: Record<string, IndicatorSeries> = {};
+  const cache: Record<string, IndicatorSeries> = {
+    PRICE: closeSeries.slice(),
+  };
 
   function getIndicatorSeries(indicatorName: string): IndicatorSeries {
     if (cache[indicatorName]) {
@@ -599,9 +621,16 @@ function buildIndicatorSeriesMap(
     }
 
     switch (config.type) {
-      case "ema":
-        cache[indicatorName] = calculateEma(closeSeries, config.period);
+      case "ema": {
+        const sourceSeries =
+          config.source === "volume"
+            ? volumeSeries
+            : config.source === "close" || config.source === undefined
+              ? closeSeries
+              : getIndicatorSeries(config.source);
+        cache[indicatorName] = calculateEma(sourceSeries, config.period);
         break;
+      }
       case "rsi":
         cache[indicatorName] = calculateRsi(closeSeries, config.period);
         break;
@@ -620,7 +649,9 @@ function buildIndicatorSeriesMap(
         const sourceSeries =
           config.source === "volume"
             ? volumeSeries
-            : getIndicatorSeries(config.source);
+            : config.source === "close"
+              ? closeSeries
+              : getIndicatorSeries(config.source);
         cache[indicatorName] = calculateSma(sourceSeries, config.period);
         break;
       }
@@ -854,9 +885,14 @@ function evaluateRule(
   if (rule.type === "threshold") {
     const series = indicatorSeries[rule.indicator] ?? [];
     const currentValue = getScopedValue(series, rule.scope);
+    const targetValue =
+      rule.ref !== undefined
+        ? getScopedValue(indicatorSeries[rule.ref] ?? [], rule.scope)
+        : rule.value;
     const satisfied =
       currentValue !== null &&
-      compareThreshold(currentValue, rule.operator, rule.value);
+      targetValue !== null &&
+      compareThreshold(currentValue, rule.operator, targetValue);
 
     return {
       direction,
@@ -865,10 +901,10 @@ function evaluateRule(
       type: rule.type,
       indicator: rule.indicator,
       operator: rule.operator,
-      ref: null,
-      value: rule.value,
+      ref: rule.ref ?? null,
+      value: rule.value ?? null,
       satisfied,
-      explanation: `${groupType.toUpperCase()} rule ${ruleIndex + 1}: ${rule.indicator} ${rule.operator} ${rule.value}`,
+      explanation: `${groupType.toUpperCase()} rule ${ruleIndex + 1}: ${rule.indicator} ${rule.operator} ${rule.ref ?? rule.value}`,
     };
   }
 
@@ -876,10 +912,20 @@ function evaluateRule(
     indicatorSeries[rule.indicator] ?? [],
     rule.scope,
   );
-  const referenceValues = getScopedCrossValues(
-    indicatorSeries[rule.ref] ?? [],
-    rule.scope,
-  );
+  const referenceValues =
+    rule.ref !== undefined
+      ? getScopedCrossValues(indicatorSeries[rule.ref] ?? [], rule.scope)
+      : (() => {
+          const numericValue = rule.value;
+          if (numericValue === undefined) {
+            return null;
+          }
+
+          return {
+            previous: numericValue,
+            current: numericValue,
+          };
+        })();
   const satisfied =
     indicatorValues !== null &&
     referenceValues !== null &&
@@ -898,10 +944,10 @@ function evaluateRule(
     type: rule.type,
     indicator: rule.indicator,
     operator: rule.operator,
-    ref: rule.ref,
-    value: null,
+    ref: rule.ref ?? null,
+    value: rule.value ?? null,
     satisfied,
-    explanation: `${groupType.toUpperCase()} rule ${ruleIndex + 1}: ${rule.indicator} ${rule.operator} ${rule.ref}`,
+    explanation: `${groupType.toUpperCase()} rule ${ruleIndex + 1}: ${rule.indicator} ${rule.operator} ${rule.ref ?? rule.value}`,
   };
 }
 

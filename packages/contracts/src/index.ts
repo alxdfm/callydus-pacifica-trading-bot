@@ -225,6 +225,7 @@ export const presetTriggerGroupTypeSchema = z.enum(["all", "any"]);
 export const presetIndicatorEmaSchema = z.object({
   type: z.literal("ema"),
   period: z.number().int().positive(),
+  source: z.string().min(1).optional(),
 });
 
 export const presetIndicatorRsiSchema = z.object({
@@ -255,25 +256,47 @@ export const presetIndicatorConfigSchema = z.discriminatedUnion("type", [
   presetIndicatorSmaSchema,
 ]);
 
-export const presetThresholdRuleSchema = z.object({
+export const presetThresholdValueRuleSchema = z.object({
   scope: presetTriggerScopeSchema,
   type: z.literal("threshold"),
   indicator: z.string().min(1),
   operator: presetThresholdOperatorSchema,
   value: z.number(),
+  ref: z.undefined().optional(),
 });
 
-export const presetCrossRuleSchema = z.object({
+export const presetThresholdReferenceRuleSchema = z.object({
+  scope: presetTriggerScopeSchema,
+  type: z.literal("threshold"),
+  indicator: z.string().min(1),
+  operator: presetThresholdOperatorSchema,
+  ref: z.string().min(1),
+  value: z.undefined().optional(),
+});
+
+export const presetCrossReferenceRuleSchema = z.object({
   scope: presetTriggerScopeSchema,
   type: z.literal("cross"),
   indicator: z.string().min(1),
   operator: presetCrossOperatorSchema,
   ref: z.string().min(1),
+  value: z.undefined().optional(),
 });
 
-export const presetTriggerRuleSchema = z.discriminatedUnion("type", [
-  presetThresholdRuleSchema,
-  presetCrossRuleSchema,
+export const presetCrossValueRuleSchema = z.object({
+  scope: presetTriggerScopeSchema,
+  type: z.literal("cross"),
+  indicator: z.string().min(1),
+  operator: presetCrossOperatorSchema,
+  value: z.number(),
+  ref: z.undefined().optional(),
+});
+
+export const presetTriggerRuleSchema = z.union([
+  presetThresholdValueRuleSchema,
+  presetThresholdReferenceRuleSchema,
+  presetCrossReferenceRuleSchema,
+  presetCrossValueRuleSchema,
 ]);
 
 export const presetTriggerGroupSchema = z.object({

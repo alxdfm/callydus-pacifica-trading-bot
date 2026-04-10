@@ -9,11 +9,12 @@ import {
   BALANCED_PRESET_DEFINITION_ID,
   MORE_ACTIVE_PRESET_DEFINITION_ID,
   SAFER_PRESET_DEFINITION_ID,
+  YOUR_STRATEGY_PRESET_DEFINITION_ID,
   getPresetTechnicalContractByDefinitionId as getSharedPresetTechnicalContractByDefinitionId,
 } from "@pacifica/contracts";
 import type { MessageKey } from "../../shared/i18n/messages";
 
-type PresetRiskTone = "success" | "warning" | "danger";
+type PresetRiskTone = "success" | "warning" | "danger" | "info";
 
 type TranslationFn = (key: MessageKey) => string;
 
@@ -133,6 +134,91 @@ const presetCatalogRaw: PresetCatalogRawItem[] = [
   },
 ];
 
+const yourStrategyCatalogRaw: PresetCatalogRawItem = {
+  definition: {
+    id: YOUR_STRATEGY_PRESET_DEFINITION_ID,
+    name: "YOUR Strategy",
+    slug: "your-strategy",
+    version: 1,
+    isActive: true,
+    riskLabelKey: "yourStrategyRiskLabel",
+    frequencyLabelKey: "yourStrategyFrequencyLabel",
+    descriptionKey: "yourStrategyDescription",
+  },
+  prioritiesKeys: ["yourStrategyPriorityOne", "yourStrategyPriorityTwo"],
+  triggerDetailsKeys: {
+    buy: "yourStrategyTriggerBuy",
+    sell: "yourStrategyTriggerSell",
+    stopLoss: "yourStrategyTriggerStopLoss",
+    takeProfit: "yourStrategyTriggerTakeProfit",
+  },
+  reviewSummaryKey: "yourStrategyReviewSummary",
+  activationSummaryKey: "yourStrategyActivationSummary",
+  riskTone: "info",
+  technicalContract: {
+    name: "YOUR Strategy",
+    version: 1,
+    timeframe: "5m",
+    symbol: "BTC/USDC",
+    indicators: {
+      emaFast: { type: "ema", period: 9 },
+      emaSlow: { type: "ema", period: 21 },
+    },
+    entry: {
+      long: {
+        enabled: true,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "emaFast",
+              operator: "crossesAbove",
+              ref: "emaSlow",
+            },
+          ],
+        },
+      },
+      short: {
+        enabled: false,
+        trigger: {
+          type: "all",
+          rules: [
+            {
+              scope: "currentCandle",
+              type: "cross",
+              indicator: "emaFast",
+              operator: "crossesBelow",
+              ref: "emaSlow",
+            },
+          ],
+        },
+      },
+    },
+    risk: {
+      stopLoss: {
+        mode: "static",
+        unit: "percent",
+        value: 3,
+      },
+      takeProfit: {
+        mode: "rr",
+        multiple: 2,
+      },
+    },
+    execution: {
+      positionSize: {
+        type: "fixedPercent",
+        value: 5,
+      },
+      onePositionPerSymbol: true,
+      manualCloseAllowed: true,
+      closeOppositePositionOnSignal: false,
+    },
+  },
+};
+
 function interpolate(template: string, variables: Record<string, string>) {
   return Object.entries(variables).reduce(
     (current, [key, value]) => current.replaceAll(`{${key}}`, value),
@@ -206,6 +292,10 @@ function getPresetCatalogRawItemByDefinitionId(
 ) {
   if (!presetDefinitionId) {
     return null;
+  }
+
+  if (presetDefinitionId === YOUR_STRATEGY_PRESET_DEFINITION_ID) {
+    return yourStrategyCatalogRaw;
   }
 
   return presetCatalogRaw.find((item) => item.definition.id === presetDefinitionId) ?? null;

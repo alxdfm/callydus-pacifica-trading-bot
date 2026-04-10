@@ -1485,6 +1485,16 @@ a {
   gap: 10px;
 }
 
+.compare-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.profile-flow {
+  display: grid;
+  gap: 14px;
+}
+
 .compare-cell {
   min-height: 56px;
   display: flex;
@@ -1522,11 +1532,108 @@ a {
   gap: 14px;
 }
 
+.your-strategy-builder {
+  display: grid;
+  gap: 16px;
+}
+
+.your-strategy-inline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.your-strategy-card-block {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.your-strategy-raw-editor {
+  min-height: 280px;
+  font-family: "SFMono-Regular", "Consolas", monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.wizard-group-select {
+  width: auto;
+  min-width: 180px;
+}
+
+.rule-group-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border-radius: var(--radius-sm);
+  background: rgba(20, 34, 56, 0.64);
+  border: 1px solid rgba(53, 80, 111, 0.72);
+}
+
+.warning-note {
+  border-color: rgba(240, 166, 58, 0.24);
+  background: rgba(58, 42, 19, 0.42);
+}
+
+.blocked-surface {
+  border-color: rgba(229, 107, 97, 0.24);
+}
+
+.compare-panel .panel-step {
+  width: 100%;
+  border: 1px solid rgba(53, 80, 111, 0.72);
+  border-radius: var(--radius-sm);
+  background: rgba(20, 34, 56, 0.64);
+  padding: 18px;
+  text-align: left;
+  color: var(--text);
+}
+
+.compare-panel .panel-step:disabled {
+  cursor: default;
+}
+
+.your-strategy-modal {
+  width: min(100%, 1120px);
+}
+
+.your-strategy-toggle-panel {
+  width: min(100%, 320px);
+  align-self: start;
+}
+
+.your-strategy-toggle-label {
+  font-weight: 700;
+}
+
+.your-strategy-toggle-label--long {
+  color: #b7f0d5;
+}
+
+.your-strategy-toggle-label--short {
+  color: #ffc0ba;
+}
+
+.your-strategy-side-header {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(53, 80, 111, 0.72);
+}
+
+.your-strategy-side-header--long {
+  background: linear-gradient(180deg, rgba(16, 45, 35, 0.72), rgba(20, 34, 56, 0.64));
+  border-color: rgba(39, 192, 125, 0.24);
+}
+
+.your-strategy-side-header--short {
+  background: linear-gradient(180deg, rgba(60, 29, 33, 0.72), rgba(20, 34, 56, 0.64));
+  border-color: rgba(229, 107, 97, 0.24);
+}
+
 .position-size-field {
   position: relative;
 }
 
 .position-size-field input {
+  width: 100%;
   padding-right: 42px;
 }
 
@@ -1537,6 +1644,7 @@ a {
   transform: translateY(-50%);
   color: var(--text-soft);
   font-weight: 700;
+  pointer-events: none;
 }
 
 .toggle-box {
@@ -1553,6 +1661,33 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.volume-dependency-note {
+  border-color: rgba(103, 168, 255, 0.24);
+  background: rgba(22, 44, 72, 0.42);
+}
+
+.your-strategy-rule-context-note {
+  grid-column: 1 / -1;
+}
+
+.your-strategy-side-note {
+  align-self: start;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.summary-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--text-soft);
+  display: grid;
+  gap: 8px;
 }
 
 .toggle {
@@ -1628,6 +1763,8 @@ a {
   .onboarding-grid,
   .preset-showcase,
   .form-split,
+  .your-strategy-inline-grid,
+  .summary-grid,
   .dashboard-grid,
   .trade-screen-grid,
   .history-screen-grid,
