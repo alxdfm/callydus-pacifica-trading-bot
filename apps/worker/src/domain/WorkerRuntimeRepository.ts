@@ -12,12 +12,14 @@ export type WorkerRuntimeCandidate = {
   operatorAccountId: string;
   walletAddress: string;
   activePresetActivationId: string;
+  hasPendingManualClose: boolean;
 };
 
 export type AcquiredWorkerLease = {
   operatorAccountId: string;
   walletAddress: string;
   activePresetActivationId: string;
+  hasPendingManualClose: boolean;
 };
 
 export type OwnedRuntimeSnapshot = {
@@ -26,6 +28,11 @@ export type OwnedRuntimeSnapshot = {
   activePresetActivationId: string | null;
   botStatus: BotStatus;
   lastSignalEvaluationAt: string | null;
+  hasPendingManualClose: boolean;
+  activeCredential: {
+    publicKey: string;
+    encryptedPrivateKeyRef: string;
+  } | null;
   activePreset:
     | {
         id: string;
@@ -202,6 +209,8 @@ export type OpenTradeLifecycleSnapshot = {
   presetActivationId: string | null;
   pacificaTradeId: string;
   isPlatformTrade: boolean;
+  closeRequestedAt: string | null;
+  closeReasonPending: "take_profit" | "stop_loss" | "manual" | "system" | "error" | null;
 };
 
 export type CreateOpenTradeFromExecutionInput = {
@@ -233,6 +242,12 @@ export type CloseOpenTradeInput = {
   realizedPnl: number;
   closeReason: "take_profit" | "stop_loss" | "manual" | "system" | "error";
   closedAtIso: string;
+};
+
+export type MarkOpenTradeClosingInput = {
+  tradeId: string;
+  closeRequestedAtIso: string;
+  closeReasonPending: "take_profit" | "stop_loss" | "manual" | "system" | "error";
 };
 
 export type PauseRuntimeAfterExecutionFailureInput = {
@@ -278,6 +293,7 @@ export interface WorkerRuntimeRepository {
     input: UpdateOpenTradeMarketSnapshotInput,
   ): Promise<void>;
   closeOpenTrade(input: CloseOpenTradeInput): Promise<void>;
+  markOpenTradeClosing(input: MarkOpenTradeClosingInput): Promise<void>;
   pauseRuntimeAfterExecutionFailure(
     input: PauseRuntimeAfterExecutionFailureInput,
   ): Promise<void>;

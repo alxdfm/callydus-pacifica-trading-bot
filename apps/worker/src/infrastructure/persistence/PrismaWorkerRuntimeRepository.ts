@@ -16,6 +16,7 @@ import type {
   ExecutableSignalDecision,
   FailSignalDecisionInput,
   HeartbeatOwnedRuntimeInput,
+  MarkOpenTradeClosingInput,
   OpenTradeLifecycleSnapshot,
   OwnedRuntimeSnapshot,
   PauseRuntimeAfterExecutionFailureInput,
@@ -54,9 +55,6 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
           },
         },
         botRuntimeState: {
-          botStatus: {
-            in: ["active", "syncing"],
-          },
           OR: [
             {
               workerOwnerId: null,
@@ -74,6 +72,17 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       },
       include: {
         botRuntimeState: true,
+        openTrades: {
+          where: {
+            closeRequestedAt: {
+              not: null,
+            },
+            closeReasonPending: "manual",
+          },
+          select: {
+            id: true,
+          },
+        },
         presetActivations: {
           where: {
             activationStatus: "active",
@@ -99,7 +108,16 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         return [];
       }
 
-      if (!runtime || (runtime.botStatus !== "active" && runtime.botStatus !== "syncing")) {
+      const hasPendingManualClose = operatorAccount.openTrades.length > 0;
+
+      if (
+        !runtime ||
+        (
+          runtime.botStatus !== "active" &&
+          runtime.botStatus !== "syncing" &&
+          !hasPendingManualClose
+        )
+      ) {
         return [];
       }
 
@@ -112,6 +130,7 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
           operatorAccountId: operatorAccount.id,
           walletAddress: operatorAccount.walletAddress,
           activePresetActivationId: activePreset.id,
+          hasPendingManualClose,
         },
       ];
     });
@@ -127,6 +146,17 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         },
         include: {
           botRuntimeState: true,
+          openTrades: {
+            where: {
+              closeRequestedAt: {
+                not: null,
+              },
+              closeReasonPending: "manual",
+            },
+            select: {
+              id: true,
+            },
+          },
           presetActivations: {
             where: {
               activationStatus: "active",
@@ -151,7 +181,16 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         return null;
       }
 
-      if (!runtime || (runtime.botStatus !== "active" && runtime.botStatus !== "syncing")) {
+      const hasPendingManualClose = operatorAccount.openTrades.length > 0;
+
+      if (
+        !runtime ||
+        (
+          runtime.botStatus !== "active" &&
+          runtime.botStatus !== "syncing" &&
+          !hasPendingManualClose
+        )
+      ) {
         return null;
       }
 
@@ -196,6 +235,7 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         operatorAccountId: operatorAccount.id,
         walletAddress: operatorAccount.walletAddress,
         activePresetActivationId: activePreset.id,
+        hasPendingManualClose,
       };
     });
   }
@@ -210,6 +250,27 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       },
       include: {
         botRuntimeState: true,
+        openTrades: {
+          where: {
+            closeRequestedAt: {
+              not: null,
+            },
+            closeReasonPending: "manual",
+          },
+          select: {
+            id: true,
+          },
+        },
+        pacificaCredentials: {
+          where: {
+            validationStatus: "valid",
+            lifecycleStatus: "active",
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
         presetActivations: {
           where: {
             activationStatus: "active",
@@ -233,6 +294,14 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       botStatus: operatorAccount.botRuntimeState.botStatus,
       lastSignalEvaluationAt:
         operatorAccount.botRuntimeState.lastSignalEvaluationAt?.toISOString() ?? null,
+      hasPendingManualClose: operatorAccount.openTrades.length > 0,
+      activeCredential: operatorAccount.pacificaCredentials[0]
+        ? {
+            publicKey: operatorAccount.pacificaCredentials[0].publicKey,
+            encryptedPrivateKeyRef:
+              operatorAccount.pacificaCredentials[0].encryptedPrivateKeyRef,
+          }
+        : null,
       activePreset: operatorAccount.presetActivations[0]
         ? {
             id: operatorAccount.presetActivations[0].id,
@@ -647,6 +716,8 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       presetActivationId: trade.presetActivationId,
       pacificaTradeId: trade.pacificaTradeId,
       isPlatformTrade: trade.isPlatformTrade,
+      closeRequestedAt: trade.closeRequestedAt?.toISOString() ?? null,
+      closeReasonPending: trade.closeReasonPending,
     }));
   }
 
@@ -703,6 +774,19 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
           id: trade.id,
         },
       });
+    });
+  }
+
+  async markOpenTradeClosing(input: MarkOpenTradeClosingInput): Promise<void> {
+    await this.prisma.openTrade.update({
+      where: {
+        id: input.tradeId,
+      },
+      data: {
+        tradeStatus: "close_requested",
+        closeRequestedAt: new Date(input.closeRequestedAtIso),
+        closeReasonPending: input.closeReasonPending,
+      },
     });
   }
 

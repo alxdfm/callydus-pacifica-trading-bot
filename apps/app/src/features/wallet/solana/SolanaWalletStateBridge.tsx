@@ -9,6 +9,8 @@ import { lookupOperationalAccountViaBackend } from "../../onboarding/backend-ope
 import { readAccountSessionViaBackend } from "../../account/backend-account-session";
 import { applyAccountSessionSnapshot } from "../../account/apply-account-session";
 
+const ACCOUNT_SESSION_POLL_MS = 10_000;
+
 function mapAdapterNameToWalletProvider(
   providerName: string | null,
 ): WalletProvider | null {
@@ -432,6 +434,58 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
       if (sessionHydrationInFlightWalletRef.current === mainWalletPublicKey) {
         sessionHydrationInFlightWalletRef.current = null;
       }
+    };
+  }, [
+    canAccessProduct,
+    connected,
+    publicKey,
+    setBuilderApprovalState,
+    setCredentialState,
+    setOnboardingState,
+    setOperationalState,
+    setPresetState,
+    setRuntimeState,
+    state.onboarding.accountLookupStatus,
+  ]);
+
+  useEffect(() => {
+    const mainWalletPublicKey = publicKey?.toBase58() ?? null;
+    const canPollExistingAccount =
+      canAccessProduct || state.onboarding.accountLookupStatus === "existing_account";
+
+    if (!connected || !mainWalletPublicKey || !canPollExistingAccount) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const refreshSession = async () => {
+      const sessionSnapshot = await readAccountSessionViaBackend({
+        walletAddress: mainWalletPublicKey,
+      });
+
+      if (isCancelled || sessionSnapshot.status !== "found") {
+        return;
+      }
+
+      applyAccountSessionSnapshot(sessionSnapshot, {
+        setBuilderApprovalState,
+        setCredentialState,
+        setOperationalState,
+        setPresetState,
+        setRuntimeState,
+        setOnboardingState,
+      });
+      hydratedSessionWalletRef.current = mainWalletPublicKey;
+    };
+
+    const intervalId = window.setInterval(() => {
+      void refreshSession();
+    }, ACCOUNT_SESSION_POLL_MS);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
     };
   }, [
     canAccessProduct,

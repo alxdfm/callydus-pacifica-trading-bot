@@ -164,11 +164,80 @@ export function formatProtectedPrice(value: number, tickSize: string) {
   return value.toFixed(decimals);
 }
 
+function validateProtectionLevels(input: {
+  side: "long" | "short";
+  entryReferencePrice: number;
+  stopLossPrice: number;
+  takeProfitPrice: number;
+}) {
+  if (input.side === "long") {
+    if (input.stopLossPrice >= input.entryReferencePrice) {
+      throw new Error(
+        "Invalid stop loss for long trade: stop loss must be below the entry price.",
+      );
+    }
+
+    if (input.takeProfitPrice <= input.entryReferencePrice) {
+      throw new Error(
+        "Invalid take profit for long trade: take profit must be above the entry price.",
+      );
+    }
+
+    return;
+  }
+
+  if (input.stopLossPrice <= input.entryReferencePrice) {
+    throw new Error(
+      "Invalid stop loss for short trade: stop loss must be above the entry price.",
+    );
+  }
+
+  if (input.takeProfitPrice >= input.entryReferencePrice) {
+    throw new Error(
+      "Invalid take profit for short trade: take profit must be below the entry price.",
+    );
+  }
+}
+
 function alignToLastClosedCandleEndTime(
   referenceTimeMs: number,
   intervalMs: number,
 ) {
   return Math.floor(referenceTimeMs / intervalMs) * intervalMs;
+}
+
+function shouldRetryProtectionSetup(error: unknown) {
+  if (!(error instanceof PacificaApiError)) {
+    return false;
+  }
+
+  return error.details.status === 400 && error.details.body === null;
+}
+
+function hasMatchingOpenPosition(input: {
+  positions: Array<{
+    symbol: string;
+    side: "bid" | "ask";
+    amount: string;
+  }>;
+  symbol: string;
+  side: "bid" | "ask";
+  minimumAmount: string;
+}) {
+  const expectedSymbol = input.symbol.trim().toUpperCase();
+  const minimumAmount = Number(input.minimumAmount);
+
+  return input.positions.some((position) => {
+    const amount = Number(position.amount);
+
+    return (
+      position.symbol.trim().toUpperCase() === expectedSymbol &&
+      position.side === input.side &&
+      Number.isFinite(amount) &&
+      amount > 0 &&
+      (!Number.isFinite(minimumAmount) || amount >= minimumAmount)
+    );
+  });
 }
 
 /**
@@ -535,6 +604,107 @@ export function createOperationalWorker(
     }
   }
 
+  async function processRequestedTradeClosures(
+    lease: AcquiredWorkerLease,
+    snapshot: NonNullable<
+      Awaited<ReturnType<WorkerRuntimeRepository["readOwnedRuntimeSnapshot"]>>
+    >,
+  ) {
+    if (!snapshot.activeCredential) {
+      return;
+    }
+
+    const openTrades = await dependencies.repository.listOpenTrades(
+      snapshot.operatorAccountId,
+    );
+    const requestedTrades = openTrades.filter(
+      (trade) =>
+        trade.closeRequestedAt !== null &&
+        trade.closeReasonPending === "manual",
+    );
+
+    if (requestedTrades.length === 0) {
+      return;
+    }
+
+    const decryptedPrivateKey =
+      await dependencies.credentialEncryption.decryptAgentWalletPrivateKey({
+        encryptedPrivateKeyRef: snapshot.activeCredential.encryptedPrivateKeyRef,
+      });
+    const client = new PacificaClient({
+      apiBaseUrl: dependencies.environment.pacificaRestBaseUrl,
+      account: snapshot.walletAddress,
+      privateKey: decryptedPrivateKey,
+      agentWallet: snapshot.activeCredential.publicKey,
+      builderCode: dependencies.environment.pacificaBuilderCode,
+      expiryWindowMs: dependencies.environment.pacificaSignatureExpiryWindowMs,
+    });
+
+    for (const trade of requestedTrades) {
+      const clientOrderId = randomUUID();
+      const side: "bid" | "ask" = trade.side === "long" ? "ask" : "bid";
+
+      try {
+        const response = await client.createMarketOrder({
+          symbol: toPacificaMarketSymbol(trade.symbol) ?? trade.symbol,
+          side,
+          amount: String(trade.quantity),
+          slippagePercent: dependencies.environment.marketOrderSlippagePercent,
+          clientOrderId,
+          reduceOnly: true,
+        });
+
+        await dependencies.repository.closeOpenTrade({
+          tradeId: trade.tradeId,
+          exitPrice: trade.currentPrice,
+          realizedPnl: calculateUnrealizedPnl({
+            side: trade.side,
+            entryPrice: trade.entryPrice,
+            currentPrice: trade.currentPrice,
+            quantity: trade.quantity,
+          }),
+          closeReason: "manual",
+          closedAtIso: now().toISOString(),
+        });
+        await dependencies.repository.appendOperationalEvent({
+          operatorAccountId: snapshot.operatorAccountId,
+          eventType: "order_execution",
+          severity: "info",
+          title: "Trade closed manually",
+          message: `Manual close submitted for ${trade.symbol}.`,
+          payloadJson: {
+            tradeId: trade.tradeId,
+            clientOrderId,
+            response,
+          },
+        });
+      } catch (error) {
+        const failure = classifyOrderExecutionFailure(error);
+        await dependencies.repository.appendOperationalEvent({
+          operatorAccountId: snapshot.operatorAccountId,
+          eventType: "order_execution",
+          severity: "error",
+          title: "Manual close failed",
+          message: failure.message,
+          payloadJson: {
+            tradeId: trade.tradeId,
+            clientOrderId,
+            responseBody: failure.responseBody,
+          },
+        });
+        logger.error("worker.manual_close_error", {
+          operatorAccountId: snapshot.operatorAccountId,
+          walletAddress: lease.walletAddress,
+          tradeId: trade.tradeId,
+          symbol: trade.symbol,
+          clientOrderId,
+          errorMessage: failure.message,
+          responseBody: failure.responseBody,
+        });
+      }
+    }
+  }
+
   function classifyOrderExecutionFailure(error: unknown) {
     if (error instanceof PacificaApiError) {
       const status = error.details.status;
@@ -617,6 +787,10 @@ export function createOperationalWorker(
       positionSizeValue: signalDecision.activation.positionSizeValue,
       leverage: signalDecision.activation.leverage,
     });
+    let marketInfoSnapshot: unknown = null;
+    let normalizedOrderSnapshot: unknown = null;
+    let requestPayloadSnapshot: Record<string, unknown> | null = null;
+    let protectionPayloadSnapshot: Record<string, unknown> | null = null;
 
     traceSignal("worker.execution_trace.execution_started", {
       operatorAccountId: signalDecision.operatorAccountId,
@@ -643,6 +817,7 @@ export function createOperationalWorker(
       });
       const marketInfoPayload = await client.getMarketInfo();
       const marketInfo = findMarketInfo(marketInfoPayload, signalDecision.marketSymbol);
+      marketInfoSnapshot = marketInfoPayload;
 
       if (!marketInfo) {
         throw new Error("Market info not found for the signal symbol.");
@@ -656,6 +831,14 @@ export function createOperationalWorker(
         minOrderSize: marketInfo.minOrderSize,
         targetNotionalUsd,
       });
+      normalizedOrderSnapshot = normalizedOrder;
+
+      validateProtectionLevels({
+        side: signalDecision.signalSide,
+        entryReferencePrice: signalDecision.entryReferencePrice,
+        stopLossPrice: signalDecision.stopLossPrice,
+        takeProfitPrice: signalDecision.takeProfitPrice,
+      });
 
       const requestPayload = {
         symbol: normalizedOrder.symbol,
@@ -663,26 +846,37 @@ export function createOperationalWorker(
         amount: normalizedOrder.amount,
         slippagePercent: dependencies.environment.marketOrderSlippagePercent,
         clientOrderId,
-        takeProfit: {
-          stopPrice: formatProtectedPrice(
-            signalDecision.takeProfitPrice,
-            marketInfo.tickSize,
-          ),
-          clientOrderId: `${clientOrderId}:tp`,
-        },
-        stopLoss: {
-          stopPrice: formatProtectedPrice(
-            signalDecision.stopLossPrice,
-            marketInfo.tickSize,
-          ),
-          clientOrderId: `${clientOrderId}:sl`,
-        },
       };
+      requestPayloadSnapshot = requestPayload;
+      const protectionPayload = {
+        symbol: normalizedOrder.symbol,
+        side,
+        takeProfit: formatProtectedPrice(
+          signalDecision.takeProfitPrice,
+          marketInfo.tickSize,
+        ),
+        stopLoss: formatProtectedPrice(
+          signalDecision.stopLossPrice,
+          marketInfo.tickSize,
+        ),
+      };
+      protectionPayloadSnapshot = protectionPayload;
 
       const response = await client.createMarketOrder(requestPayload);
       const pacificaOrderId =
-        (response as { order_id?: unknown } | null)?.order_id !== undefined
-          ? String((response as { order_id: unknown }).order_id)
+        (response &&
+        typeof response === "object" &&
+        "data" in response &&
+        (response as { data?: { order_id?: unknown } }).data?.order_id !==
+          undefined
+          ? String(
+              (response as { data: { order_id: unknown } }).data.order_id,
+            )
+          : (response as { order_id?: unknown } | null)?.order_id !== undefined)
+          ? String(
+              (response as { order_id?: unknown }).order_id ??
+                (response as { data: { order_id: unknown } }).data.order_id,
+            )
           : null;
 
       await dependencies.repository.recordOrderExecutionAttempt({
@@ -766,20 +960,110 @@ export function createOperationalWorker(
         return;
       }
 
-      await dependencies.repository.appendOperationalEvent({
-        operatorAccountId: signalDecision.operatorAccountId,
-        eventType: "order_execution",
-        severity: "info",
-        title: "Market order submitted",
-        message: `${signalDecision.signalSide} market order submitted for ${signalDecision.symbol} with stop-loss and take-profit protection.`,
-        payloadJson: {
+      try {
+        let protectionResponse: unknown = null;
+        let protectionAttempt = 0;
+        let positionVisible = false;
+
+        for (let visibilityAttempt = 0; visibilityAttempt < 5; visibilityAttempt += 1) {
+          const positions = await client.getPositions();
+
+          if (
+            hasMatchingOpenPosition({
+              positions,
+              symbol: normalizedOrder.symbol,
+              side,
+              minimumAmount: normalizedOrder.amount,
+            })
+          ) {
+            positionVisible = true;
+            break;
+          }
+
+          await sleep(750);
+        }
+
+        if (!positionVisible) {
+          throw new Error(
+            "Pacifica position was not visible yet after market order submission.",
+          );
+        }
+
+        while (protectionAttempt < 3) {
+          try {
+            protectionResponse = await client.setPositionTpsl(protectionPayload);
+            break;
+          } catch (protectionError) {
+            protectionAttempt += 1;
+
+            if (
+              protectionAttempt >= 3 ||
+              !shouldRetryProtectionSetup(protectionError)
+            ) {
+              throw protectionError;
+            }
+
+            await sleep(750);
+          }
+        }
+
+        await dependencies.repository.appendOperationalEvent({
+          operatorAccountId: signalDecision.operatorAccountId,
+          eventType: "order_execution",
+          severity: "info",
+          title: "Market order submitted",
+          message: `${signalDecision.signalSide} market order submitted for ${signalDecision.symbol} with stop-loss and take-profit protection.`,
+          payloadJson: {
+            signalDecisionId: signalDecision.signalDecisionId,
+            signalFingerprint: signalDecision.signalFingerprint,
+            clientOrderId,
+            pacificaOrderId,
+            requestPayload,
+            protectionPayload,
+            protectionResponse,
+            protectionAttempts: protectionAttempt + 1,
+          },
+        });
+      } catch (protectionError) {
+        const protectionFailure = classifyOrderExecutionFailure(protectionError);
+
+        await dependencies.repository.appendOperationalEvent({
+          operatorAccountId: signalDecision.operatorAccountId,
+          eventType: "order_execution",
+          severity: "error",
+          title: "Trade protection setup failed",
+          message: `The market order for ${signalDecision.symbol} was submitted, but stop-loss/take-profit could not be configured on Pacifica.`,
+          payloadJson: {
+            signalDecisionId: signalDecision.signalDecisionId,
+            signalFingerprint: signalDecision.signalFingerprint,
+            clientOrderId,
+            pacificaOrderId,
+            requestPayload,
+            protectionPayload,
+            responseBody: protectionFailure.responseBody,
+          },
+        });
+        await dependencies.repository.pauseRuntimeAfterExecutionFailure({
+          operatorAccountId: signalDecision.operatorAccountId,
+          workerId: dependencies.environment.workerId,
+          nowIso: now().toISOString(),
+          message: protectionFailure.message,
+        });
+        logger.error("worker.order_protection_error", {
+          operatorAccountId: signalDecision.operatorAccountId,
+          walletAddress: signalDecision.walletAddress,
           signalDecisionId: signalDecision.signalDecisionId,
           signalFingerprint: signalDecision.signalFingerprint,
           clientOrderId,
           pacificaOrderId,
+          errorMessage: protectionFailure.message,
           requestPayload,
-        },
-      });
+          protectionPayload,
+          responseBody: protectionFailure.responseBody,
+        });
+        return;
+      }
+
       logger.info("worker.order_submitted", {
         operatorAccountId: signalDecision.operatorAccountId,
         walletAddress: signalDecision.walletAddress,
@@ -804,6 +1088,18 @@ export function createOperationalWorker(
       });
     } catch (error) {
       const failure = classifyOrderExecutionFailure(error);
+      const requestFailurePayload = {
+        signalDecisionId: signalDecision.signalDecisionId,
+        signalFingerprint: signalDecision.signalFingerprint,
+        marketSymbol: signalDecision.marketSymbol,
+        signalSide: signalDecision.signalSide,
+        clientOrderId,
+        targetNotionalUsd,
+        marketInfoPayload: marketInfoSnapshot,
+        normalizedOrder: normalizedOrderSnapshot,
+        requestPayload: requestPayloadSnapshot,
+        protectionPayload: protectionPayloadSnapshot,
+      };
 
       await dependencies.repository.recordOrderExecutionAttempt({
         operatorAccountId: signalDecision.operatorAccountId,
@@ -820,12 +1116,7 @@ export function createOperationalWorker(
         slippagePercent: Number(
           dependencies.environment.marketOrderSlippagePercent,
         ),
-        requestJson: {
-          signalDecisionId: signalDecision.signalDecisionId,
-          signalFingerprint: signalDecision.signalFingerprint,
-          marketSymbol: signalDecision.marketSymbol,
-          signalSide: signalDecision.signalSide,
-        },
+        requestJson: requestFailurePayload,
         responseJson: failure.responseBody,
         executionStatus: "failed",
         failureReason: failure.message,
@@ -878,6 +1169,8 @@ export function createOperationalWorker(
         retryable: failure.retryable,
         blocking: failure.blocking,
         errorMessage: failure.message,
+        requestPayload: requestFailurePayload,
+        responseBody: failure.responseBody,
       });
     }
   }
@@ -913,7 +1206,7 @@ export function createOperationalWorker(
           return;
         }
 
-        if (snapshot.botStatus === "paused") {
+        if (snapshot.botStatus === "paused" && !snapshot.hasPendingManualClose) {
           await dependencies.repository.releaseWorkerLease({
             operatorAccountId: lease.operatorAccountId,
             workerId: dependencies.environment.workerId,
@@ -923,6 +1216,24 @@ export function createOperationalWorker(
 
         const tickAt = now();
         let signalFingerprint: string | null | undefined;
+
+        await processRequestedTradeClosures(lease, snapshot);
+
+        if (snapshot.botStatus === "paused") {
+          const refreshedSnapshot =
+            await dependencies.repository.readOwnedRuntimeSnapshot(
+              lease.operatorAccountId,
+              dependencies.environment.workerId,
+            );
+
+          if (!refreshedSnapshot || !refreshedSnapshot.hasPendingManualClose) {
+            await dependencies.repository.releaseWorkerLease({
+              operatorAccountId: lease.operatorAccountId,
+              workerId: dependencies.environment.workerId,
+            });
+            return;
+          }
+        }
 
         const shouldRunSignalEvaluation = shouldEvaluateSignals(
           snapshot.lastSignalEvaluationAt,

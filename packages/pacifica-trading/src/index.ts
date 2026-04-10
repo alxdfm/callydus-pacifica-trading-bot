@@ -69,6 +69,12 @@ export type PacificaMarketInfo = {
   minOrderSize: string;
 };
 
+export type PacificaPosition = {
+  symbol: string;
+  side: "bid" | "ask";
+  amount: string;
+};
+
 export class PacificaClient {
   private readonly apiBaseUrl: string;
   private readonly account: string;
@@ -159,16 +165,7 @@ export class PacificaClient {
     amount: string;
     slippagePercent: string;
     clientOrderId: string;
-    takeProfit?: {
-      stopPrice: string;
-      limitPrice?: string;
-      clientOrderId?: string;
-    };
-    stopLoss?: {
-      stopPrice: string;
-      limitPrice?: string;
-      clientOrderId?: string;
-    };
+    reduceOnly?: boolean;
   }): Promise<unknown> {
     return this.requestSigned({
       path: "/api/v1/orders/create_market",
@@ -178,36 +175,85 @@ export class PacificaClient {
         side: input.side,
         amount: input.amount,
         slippage_percent: input.slippagePercent,
-        reduce_only: false,
+        reduce_only: Boolean(input.reduceOnly),
         client_order_id: input.clientOrderId,
         ...(this.builderCode ? { builder_code: this.builderCode } : {}),
-        ...(input.takeProfit
-          ? {
-              take_profit: {
-                stop_price: input.takeProfit.stopPrice,
-                ...(input.takeProfit.limitPrice
-                  ? { limit_price: input.takeProfit.limitPrice }
-                  : {}),
-                ...(input.takeProfit.clientOrderId
-                  ? { client_order_id: input.takeProfit.clientOrderId }
-                  : {}),
-              },
-            }
-          : {}),
-        ...(input.stopLoss
-          ? {
-              stop_loss: {
-                stop_price: input.stopLoss.stopPrice,
-                ...(input.stopLoss.limitPrice
-                  ? { limit_price: input.stopLoss.limitPrice }
-                  : {}),
-                ...(input.stopLoss.clientOrderId
-                  ? { client_order_id: input.stopLoss.clientOrderId }
-                  : {}),
-              },
-            }
-          : {}),
       },
+    });
+  }
+
+  async setPositionTpsl(input: {
+    symbol: string;
+    side: "bid" | "ask";
+    takeProfit?: string | null;
+    stopLoss?: string | null;
+  }): Promise<unknown> {
+    return this.requestSigned({
+      path: "/api/v1/positions/tpsl",
+      operationType: "set_position_tpsl",
+      data: {
+        symbol: input.symbol,
+        side: input.side,
+        ...(input.takeProfit ? { take_profit: input.takeProfit } : {}),
+        ...(input.stopLoss ? { stop_loss: input.stopLoss } : {}),
+        ...(this.builderCode ? { builder_code: this.builderCode } : {}),
+      },
+    });
+  }
+
+  async getPositions(): Promise<PacificaPosition[]> {
+    const params = new URLSearchParams({ account: this.account });
+    const response = await fetch(
+      `${this.apiBaseUrl}/api/v1/positions?${params.toString()}`,
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      },
+    );
+    const payload = await parseResponseBody(response);
+
+    if (!response.ok) {
+      throw new PacificaApiError(
+        `Pacifica API request failed (${response.status}).`,
+        {
+          status: response.status,
+          body: payload,
+          retryable: response.status === 429 || response.status >= 500,
+        },
+      );
+    }
+
+    const data =
+      payload && typeof payload === "object" && "data" in payload
+        ? (payload as { data?: unknown }).data
+        : payload;
+
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data.flatMap((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return [];
+      }
+
+      const row = entry as Record<string, unknown>;
+      const symbol = String(row.symbol ?? "").trim();
+      const side = normalizePositionSide(
+        row.side,
+        row.position_side,
+        row.amount ?? row.size ?? row.position,
+      );
+      const amount = normalizePositionAmount(
+        row.amount ?? row.size ?? row.position,
+      );
+
+      if (!symbol || !side || !amount) {
+        return [];
+      }
+
+      return [{ symbol, side, amount }];
     });
   }
 
@@ -482,6 +528,42 @@ function normalizeOptionalString(rawValue: string | null | undefined) {
   return normalized ? normalized : null;
 }
 
+function normalizePositionSide(
+  sideValue: unknown,
+  positionSideValue: unknown,
+  amountValue: unknown,
+): "bid" | "ask" | null {
+  const directSide = String(sideValue ?? positionSideValue ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (directSide === "bid" || directSide === "long") {
+    return "bid";
+  }
+
+  if (directSide === "ask" || directSide === "short") {
+    return "ask";
+  }
+
+  const amount = Number(amountValue);
+
+  if (Number.isFinite(amount) && amount !== 0) {
+    return amount > 0 ? "bid" : "ask";
+  }
+
+  return null;
+}
+
+function normalizePositionAmount(amountValue: unknown) {
+  const amount = Number(amountValue);
+
+  if (!Number.isFinite(amount) || amount === 0) {
+    return null;
+  }
+
+  return String(Math.abs(amount));
+}
+
 function parsePrivateKey(rawPrivateKey: string) {
   const normalized = rawPrivateKey.trim();
 
@@ -569,11 +651,19 @@ function encodeBase58(buffer: Uint8Array) {
 
 async function parseResponseBody(response: Response): Promise<unknown> {
   const contentType = response.headers.get("content-type") ?? "";
+  const raw = await response.text();
 
   if (contentType.includes("application/json")) {
-    return response.json();
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return { raw };
+    }
   }
 
-  const raw = await response.text();
   return raw ? { raw } : null;
 }
