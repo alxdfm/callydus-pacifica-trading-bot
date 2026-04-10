@@ -100,6 +100,13 @@ export interface MarketDataSnapshotRepository {
     priceSource: MarketCandleRequest["priceSource"];
     limit: number;
   }): Promise<MarketDataCandleSnapshot[]>;
+  listCandlesInRange(input: {
+    symbol: string;
+    interval: MarketCandleRequest["interval"];
+    priceSource: MarketCandleRequest["priceSource"];
+    startTime: number;
+    endTime: number;
+  }): Promise<MarketDataCandleSnapshot[]>;
   insertCandles(input: {
     candles: MarketDataCandleWriteInput[];
   }): Promise<{

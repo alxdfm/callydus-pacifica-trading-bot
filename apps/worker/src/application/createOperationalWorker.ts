@@ -654,24 +654,18 @@ export function createOperationalWorker(
           reduceOnly: true,
         });
 
-        await dependencies.repository.closeOpenTrade({
+        await dependencies.repository.markOpenTradeClosing({
           tradeId: trade.tradeId,
-          exitPrice: trade.currentPrice,
-          realizedPnl: calculateUnrealizedPnl({
-            side: trade.side,
-            entryPrice: trade.entryPrice,
-            currentPrice: trade.currentPrice,
-            quantity: trade.quantity,
-          }),
-          closeReason: "manual",
-          closedAtIso: now().toISOString(),
+          closeRequestedAtIso: now().toISOString(),
+          closeReasonPending: "manual",
+          tradeStatus: "closing",
         });
         await dependencies.repository.appendOperationalEvent({
           operatorAccountId: snapshot.operatorAccountId,
           eventType: "order_execution",
           severity: "info",
-          title: "Trade closed manually",
-          message: `Manual close submitted for ${trade.symbol}.`,
+          title: "Manual close submitted",
+          message: `Manual close was accepted for ${trade.symbol} and is now waiting for exchange reconciliation.`,
           payloadJson: {
             tradeId: trade.tradeId,
             clientOrderId,

@@ -248,6 +248,7 @@ export type MarkOpenTradeClosingInput = {
   tradeId: string;
   closeRequestedAtIso: string;
   closeReasonPending: "take_profit" | "stop_loss" | "manual" | "system" | "error";
+  tradeStatus?: "close_requested" | "closing";
 };
 
 export type PauseRuntimeAfterExecutionFailureInput = {

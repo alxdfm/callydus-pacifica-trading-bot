@@ -130,4 +130,47 @@ describe("PersistedWorkerMarketDataGateway", () => {
     expect(upsert).toHaveBeenCalledTimes(1);
     expect(transaction).toHaveBeenCalledTimes(1);
   });
+
+  it("does not treat historical cached candles as stale just because they are old", async () => {
+    const fallback = {
+      getCandles: vi.fn(),
+    };
+    const prisma = {
+      marketCandleSnapshot: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            symbol: "BTC-PERP",
+            interval: "3m",
+            fetchedAt: new Date("2026-04-01T12:03:10.000Z"),
+            openTime: new Date("2026-04-01T12:00:00.000Z"),
+            closeTime: new Date("2026-04-01T12:03:00.000Z"),
+            open: new Prisma.Decimal("100"),
+            high: new Prisma.Decimal("101"),
+            low: new Prisma.Decimal("99"),
+            close: new Prisma.Decimal("100.5"),
+            volume: new Prisma.Decimal("10"),
+          },
+        ]),
+      },
+    } as never;
+
+    const gateway = new PersistedWorkerMarketDataGateway(
+      prisma,
+      fallback,
+      undefined,
+      () => new Date("2026-04-10T12:00:00.000Z"),
+    );
+
+    await expect(
+      gateway.getCandles({
+        symbol: "BTC-PERP",
+        interval: "3m",
+        priceSource: "market",
+        startTime: new Date("2026-04-01T12:00:00.000Z").getTime(),
+        endTime: new Date("2026-04-01T12:03:00.000Z").getTime(),
+      }),
+    ).resolves.toHaveLength(1);
+
+    expect(fallback.getCandles).not.toHaveBeenCalled();
+  });
 });

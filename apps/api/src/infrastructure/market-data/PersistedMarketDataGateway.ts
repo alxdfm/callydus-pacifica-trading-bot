@@ -86,47 +86,38 @@ export class PersistedMarketDataGateway
   }
 
   async getCandles(input: MarketCandleRequest): Promise<MarketCandle[]> {
-    const limit = resolveRequestedLimit(input);
     const referenceTime = this.now();
-    let candles = await this.dependencies.repository.listRecentCandles({
+    let candles = await this.dependencies.repository.listCandlesInRange({
       symbol: input.symbol,
       interval: input.interval,
       priceSource: input.priceSource,
-      limit,
+      startTime: input.startTime,
+      endTime: normalizeEndTime(input),
     });
-
-    candles = filterCandlesByRequest(candles, input);
-
-    const enoughCandles = candles.length > 0;
-    const freshCandles =
-      enoughCandles &&
-      candles.every((candle) =>
-        isFreshCandleSnapshot({
-          fetchedAtIso: candle.fetchedAt,
-          interval: candle.interval,
-          referenceTime,
-        }),
-      );
+    const enoughCandles = candles.length >= resolveRequestedLimit(input);
+    const freshCandles = areCandlesFreshEnough({
+      candles,
+      request: input,
+      referenceTime,
+    });
 
     if (!enoughCandles) {
       this.logger.warn("api.market_data_candles_cache_miss", {
         symbol: input.symbol,
         interval: input.interval,
         priceSource: input.priceSource,
-        requestedLimit: limit,
+        requestedLimit: resolveRequestedLimit(input),
       });
       await this.dependencies.refresher.refreshCandles({
         requests: [input],
       });
-      candles = filterCandlesByRequest(
-        await this.dependencies.repository.listRecentCandles({
-          symbol: input.symbol,
-          interval: input.interval,
-          priceSource: input.priceSource,
-          limit,
-        }),
-        input,
-      );
+      candles = await this.dependencies.repository.listCandlesInRange({
+        symbol: input.symbol,
+        interval: input.interval,
+        priceSource: input.priceSource,
+        startTime: input.startTime,
+        endTime: normalizeEndTime(input),
+      });
     } else if (!freshCandles) {
       this.logger.warn("api.market_data_candles_cache_stale", {
         symbol: input.symbol,
@@ -138,15 +129,13 @@ export class PersistedMarketDataGateway
         await this.dependencies.refresher.refreshCandles({
           requests: [input],
         });
-        candles = filterCandlesByRequest(
-          await this.dependencies.repository.listRecentCandles({
-            symbol: input.symbol,
-            interval: input.interval,
-            priceSource: input.priceSource,
-            limit,
-          }),
-          input,
-        );
+        candles = await this.dependencies.repository.listCandlesInRange({
+          symbol: input.symbol,
+          interval: input.interval,
+          priceSource: input.priceSource,
+          startTime: input.startTime,
+          endTime: normalizeEndTime(input),
+        });
       } catch {
         this.logger.warn("api.market_data_candles_stale_fallback_served", {
           symbol: input.symbol,
@@ -243,19 +232,34 @@ function normalizeEndTime(input: MarketCandleRequest): number {
   return input.startTime + intervalToMilliseconds(input.interval);
 }
 
-function filterCandlesByRequest(
-  candles: Array<
-    MarketCandle & {
-      fetchedAt: string;
-      snapshotStatus: MarketSnapshotStatus;
-      source: string;
-    }
-  >,
-  input: MarketCandleRequest,
-): MarketDataCandleSnapshot[] {
-  const endTime = normalizeEndTime(input);
+function areCandlesFreshEnough(input: {
+  candles: MarketDataCandleSnapshot[];
+  request: MarketCandleRequest;
+  referenceTime: Date;
+}) {
+  if (input.candles.length === 0) {
+    return false;
+  }
 
-  return candles.filter(
-    (candle) => candle.openTime >= input.startTime && candle.closeTime <= endTime,
-  );
+  if (!requestTouchesRecentWindow(input.request, input.referenceTime)) {
+    return true;
+  }
+
+  const latestCandle = input.candles.at(-1);
+  if (!latestCandle) {
+    return false;
+  }
+  return isFreshCandleSnapshot({
+    fetchedAtIso: latestCandle.fetchedAt,
+    interval: latestCandle.interval,
+    referenceTime: input.referenceTime,
+  });
+}
+
+function requestTouchesRecentWindow(
+  input: MarketCandleRequest,
+  referenceTime: Date,
+) {
+  const freshnessThresholdMs = intervalToMilliseconds(input.interval) + 60_000;
+  return normalizeEndTime(input) >= referenceTime.getTime() - freshnessThresholdMs;
 }

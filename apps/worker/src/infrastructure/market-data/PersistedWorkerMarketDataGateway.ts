@@ -46,24 +46,27 @@ export class PersistedWorkerMarketDataGateway {
           symbol: input.symbol,
           interval: input.interval,
           priceSource: input.priceSource,
+          openTime: {
+            gte: new Date(input.startTime),
+          },
+          closeTime: {
+            lte: new Date(normalizeEndTime(input)),
+          },
         },
         orderBy: {
-          openTime: "desc",
+          openTime: "asc",
         },
-        take: requestedLimit,
       }),
       input,
     );
 
     const freshEnough =
       candles.length >= requestedLimit &&
-      candles.every((candle) =>
-        isFreshCandleSnapshot({
-          fetchedAt: candle.fetchedAt,
-          interval: candle.interval,
-          referenceTime,
-        }),
-      );
+      areCandlesFreshEnough({
+        candles,
+        request: input,
+        referenceTime,
+      });
 
     if (freshEnough) {
       this.logger.info("worker.market_data_snapshot_cache_hit", {
@@ -220,6 +223,38 @@ function isFreshCandleSnapshot(input: {
     input.referenceTime.getTime() - new Date(input.fetchedAt).getTime() <=
     intervalToMilliseconds(input.interval) + 60_000
   );
+}
+
+function areCandlesFreshEnough(input: {
+  candles: Array<MarketCandle & { fetchedAt: string }>;
+  request: MarketCandleRequest;
+  referenceTime: Date;
+}) {
+  if (input.candles.length === 0) {
+    return false;
+  }
+
+  if (!requestTouchesRecentWindow(input.request, input.referenceTime)) {
+    return true;
+  }
+
+  const latestCandle = input.candles.at(-1);
+  if (!latestCandle) {
+    return false;
+  }
+  return isFreshCandleSnapshot({
+    fetchedAt: latestCandle.fetchedAt,
+    interval: latestCandle.interval,
+    referenceTime: input.referenceTime,
+  });
+}
+
+function requestTouchesRecentWindow(
+  input: MarketCandleRequest,
+  referenceTime: Date,
+) {
+  const freshnessThresholdMs = intervalToMilliseconds(input.interval) + 60_000;
+  return normalizeEndTime(input) >= referenceTime.getTime() - freshnessThresholdMs;
 }
 
 function intervalToMilliseconds(interval: MarketCandleRequest["interval"]) {

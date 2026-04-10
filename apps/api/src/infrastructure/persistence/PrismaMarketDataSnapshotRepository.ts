@@ -136,6 +136,33 @@ export class PrismaMarketDataSnapshotRepository
       .map(mapCandleSnapshot);
   }
 
+  async listCandlesInRange(input: {
+    symbol: string;
+    interval: MarketDataCandleWriteInput["interval"];
+    priceSource: MarketDataCandleWriteInput["priceSource"];
+    startTime: number;
+    endTime: number;
+  }): Promise<MarketDataCandleSnapshot[]> {
+    const rows = await this.prisma.marketCandleSnapshot.findMany({
+      where: {
+        symbol: input.symbol,
+        interval: input.interval,
+        priceSource: input.priceSource,
+        openTime: {
+          gte: new Date(input.startTime),
+        },
+        closeTime: {
+          lte: new Date(input.endTime),
+        },
+      },
+      orderBy: {
+        openTime: "asc",
+      },
+    });
+
+    return rows.map(mapCandleSnapshot);
+  }
+
   async insertCandles(input: {
     candles: MarketDataCandleWriteInput[];
   }): Promise<{

@@ -173,4 +173,57 @@ describe("PrismaMarketDataSnapshotRepository", () => {
     expect(upsert).toHaveBeenCalledTimes(1);
     expect(transaction).toHaveBeenCalledTimes(1);
   });
+
+  it("consulta candles por janela historica em vez de limitar aos mais recentes", async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        symbol: "BTC-PERP",
+        interval: "3m",
+        priceSource: "market",
+        openTime: new Date("2026-04-07T10:00:00.000Z"),
+        closeTime: new Date("2026-04-07T10:03:00.000Z"),
+        open: new Prisma.Decimal("100"),
+        high: new Prisma.Decimal("101"),
+        low: new Prisma.Decimal("99"),
+        close: new Prisma.Decimal("100.5"),
+        volume: new Prisma.Decimal("10"),
+        fetchedAt: new Date("2026-04-07T10:03:05.000Z"),
+        snapshotStatus: "confirmed",
+        source: "pacifica-lambda",
+      },
+    ]);
+    const prisma = {
+      marketCandleSnapshot: {
+        findMany,
+      },
+    } as never;
+
+    const repository = new PrismaMarketDataSnapshotRepository(prisma);
+
+    await expect(
+      repository.listCandlesInRange({
+        symbol: "BTC-PERP",
+        interval: "3m",
+        priceSource: "market",
+        startTime: new Date("2026-04-07T10:00:00.000Z").getTime(),
+        endTime: new Date("2026-04-07T10:03:00.000Z").getTime(),
+      }),
+    ).resolves.toHaveLength(1);
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          openTime: {
+            gte: new Date("2026-04-07T10:00:00.000Z"),
+          },
+          closeTime: {
+            lte: new Date("2026-04-07T10:03:00.000Z"),
+          },
+        }),
+        orderBy: {
+          openTime: "asc",
+        },
+      }),
+    );
+  });
 });

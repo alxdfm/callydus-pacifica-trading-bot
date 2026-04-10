@@ -783,7 +783,7 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
         id: input.tradeId,
       },
       data: {
-        tradeStatus: "close_requested",
+        tradeStatus: input.tradeStatus ?? "close_requested",
         closeRequestedAt: new Date(input.closeRequestedAtIso),
         closeReasonPending: input.closeReasonPending,
       },
