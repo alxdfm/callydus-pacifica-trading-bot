@@ -572,6 +572,8 @@ export const yourStrategyDraftSchema = z
         path: ["entry"],
       });
     }
+
+    validateYourStrategyEntryRules(draft, context);
   });
 
 export const yourStrategySchema = z.object({
@@ -1121,6 +1123,248 @@ export function createYourStrategyDraftFingerprint(
   draft: YourStrategyDraft,
 ): string {
   return serializePacificaSigningPayload(draft);
+}
+
+function validateYourStrategyEntryRules(
+  draft: z.infer<typeof yourStrategyDraftSchema>,
+  context: z.RefinementCtx,
+) {
+  validateYourStrategyEntrySide(draft, "long", context);
+  validateYourStrategyEntrySide(draft, "short", context);
+}
+
+function validateYourStrategyEntrySide(
+  draft: z.infer<typeof yourStrategyDraftSchema>,
+  side: "long" | "short",
+  context: z.RefinementCtx,
+) {
+  const rules = draft.entry[side].trigger.rules;
+
+  for (const [ruleIndex, rule] of rules.entries()) {
+    const path = ["entry", side, "trigger", "rules", ruleIndex] as const;
+    const indicator = draft.indicators[rule.indicator];
+
+    if (!indicator) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Indicator "${rule.indicator}" is not defined in this strategy.`,
+        path: [...path, "indicator"],
+      });
+      continue;
+    }
+
+    const indicatorContext = resolveYourStrategyIndicatorContext(
+      draft,
+      rule.indicator,
+    );
+
+    if (indicatorContext === "atr") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ATR can only be used for stop loss, not for entry rules.",
+        path: [...path, "indicator"],
+      });
+      continue;
+    }
+
+    if (indicatorContext === "unknown") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Indicator "${rule.indicator}" uses an unsupported source context.`,
+        path: [...path, "indicator"],
+      });
+      continue;
+    }
+
+    if (rule.ref === "PRICE" && indicatorContext !== "price") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Only price indicators can reference PRICE.",
+        path: [...path, "ref"],
+      });
+    }
+
+    if (rule.ref && rule.ref !== "PRICE" && !draft.indicators[rule.ref]) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Reference indicator "${rule.ref}" is not defined in this strategy.`,
+        path: [...path, "ref"],
+      });
+      continue;
+    }
+
+    switch (indicatorContext) {
+      case "price":
+        validatePriceRuleContext(draft, rule, path, context);
+        break;
+      case "rsi":
+        validateRsiRuleContext(rule, path, context);
+        break;
+      case "volume":
+        validateVolumeRuleContext(draft, rule, path, context);
+        break;
+    }
+  }
+}
+
+function validatePriceRuleContext(
+  draft: z.infer<typeof yourStrategyDraftSchema>,
+  rule: z.infer<typeof presetTriggerRuleSchema>,
+  path: readonly (string | number)[],
+  context: z.RefinementCtx,
+) {
+  if (rule.value !== undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Price indicators must compare against PRICE or another price indicator.",
+      path: [...path, "value"],
+    });
+  }
+
+  if (!rule.ref) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Price indicators must reference PRICE or another EMA/SMA indicator.",
+      path: [...path, "ref"],
+    });
+    return;
+  }
+
+  if (rule.ref === "PRICE") {
+    return;
+  }
+
+  const refContext = resolveYourStrategyIndicatorContext(draft, rule.ref);
+  if (refContext !== "price") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Price indicators can only reference PRICE, EMA or SMA on the price chart.",
+      path: [...path, "ref"],
+    });
+  }
+}
+
+function validateRsiRuleContext(
+  rule: z.infer<typeof presetTriggerRuleSchema>,
+  path: readonly (string | number)[],
+  context: z.RefinementCtx,
+) {
+  if (rule.ref !== undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "RSI rules must use a numeric level between 0 and 100.",
+      path: [...path, "ref"],
+    });
+  }
+
+  if (rule.value === undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "RSI rules must define a numeric level between 0 and 100.",
+      path: [...path, "value"],
+    });
+    return;
+  }
+
+  if (rule.value < 0 || rule.value > 100) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "RSI values must stay between 0 and 100.",
+      path: [...path, "value"],
+    });
+  }
+}
+
+function validateVolumeRuleContext(
+  draft: z.infer<typeof yourStrategyDraftSchema>,
+  rule: z.infer<typeof presetTriggerRuleSchema>,
+  path: readonly (string | number)[],
+  context: z.RefinementCtx,
+) {
+  if (rule.type !== "threshold") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Volume can only be used as a threshold confirmation against its own moving average.",
+      path: [...path, "type"],
+    });
+  }
+
+  if (rule.value !== undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Volume confirmation must compare current volume against its own moving average.",
+      path: [...path, "value"],
+    });
+  }
+
+  if (!rule.ref || rule.ref === "PRICE") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Volume confirmation must reference a SMA/EMA derived from the same volume indicator.",
+      path: [...path, "ref"],
+    });
+    return;
+  }
+
+  const refIndicator = draft.indicators[rule.ref];
+  if (!refIndicator) {
+    return;
+  }
+
+  const isVolumeAverage =
+    (refIndicator.type === "sma" || refIndicator.type === "ema") &&
+    refIndicator.source === rule.indicator;
+
+  if (!isVolumeAverage) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Volume can only reference a SMA/EMA derived from the same volume indicator.",
+      path: [...path, "ref"],
+    });
+  }
+}
+
+function resolveYourStrategyIndicatorContext(
+  draft: z.infer<typeof yourStrategyDraftSchema>,
+  indicatorKey: string,
+): "price" | "rsi" | "volume" | "atr" | "unknown" {
+  const indicator = draft.indicators[indicatorKey];
+
+  if (!indicator) {
+    return "unknown";
+  }
+
+  if (indicator.type === "rsi") {
+    return "rsi";
+  }
+
+  if (indicator.type === "atr") {
+    return "atr";
+  }
+
+  if (indicator.type === "volume") {
+    return "volume";
+  }
+
+  if (indicator.type === "ema" || indicator.type === "sma") {
+    if (!indicator.source || indicator.source === "price") {
+      return "price";
+    }
+
+    const sourceIndicator = draft.indicators[indicator.source];
+    if (sourceIndicator?.type === "volume") {
+      return "volume";
+    }
+  }
+
+  return "unknown";
 }
 
 function sortKeysDeep(value: unknown): unknown {

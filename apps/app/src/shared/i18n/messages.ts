@@ -461,7 +461,7 @@ export const messages = {
     yourStrategyActivationConfirmDescription:
       "This will activate YOUR Strategy on {symbol} and refresh the operational screens.",
     yourStrategyActivationNeedsPreview:
-      "Run a successful backtest preview for the saved draft before activation.",
+      "Run a successful backtest preview for the current saved draft in the final step before activation.",
     yourStrategyBacktestErrorTitle: "Could not simulate YOUR Strategy",
     yourStrategyNameLabel: "Strategy name",
     yourStrategyTimeframeLabel: "Timeframe",
@@ -526,7 +526,7 @@ export const messages = {
     yourStrategyNextStepAction: "Next step",
     yourStrategyEditingBlockedTitle: "Pause bot first",
     yourStrategyEditingBlockedDescription:
-      "Editing stays blocked while the bot is active or syncing. Pause the bot before changing the strategy draft.",
+      "Editing stays blocked while the bot is active or syncing. Pause the bot first, then change and save the draft.",
     yourStrategyPreviewPanelEyebrow: "Preview and activation",
     yourStrategyActivationChecklistTitle: "Backtest gate",
     yourStrategyActivationChecklistReady:
@@ -542,7 +542,7 @@ export const messages = {
     yourStrategyChecklistOpenBadge: "Open",
     yourStrategyPreviewSummaryTitle: "Current preview state",
     yourStrategyPreviewSummaryReady:
-      "The latest preview for this session returned {value} strategy performance over the sampled period.",
+      "The latest preview for this session returned {value} strategy return over the sampled period.",
     yourStrategySummaryEyebrow: "Strategy summary",
     yourStrategySummaryTitle: "Review everything before preview and activation",
     yourStrategySummaryIndicatorsTitle: "Indicators",
@@ -556,27 +556,27 @@ export const messages = {
     yourStrategyIssuePanelTitle: "Fix these points before relying on the strategy",
     yourStrategyIssueEnableOneSideTitle: "Choose at least one side",
     yourStrategyIssueEnableOneSide:
-      "Enable at least one execution side before saving or previewing the strategy.",
+      "Enable Long or Short before moving forward with save, preview or activation.",
     yourStrategyIssueMissingRules:
-      "{side} is enabled, but no entry rule is configured.",
+      "{side} is enabled, but no entry rule is configured yet. Add at least one rule for this side.",
     yourStrategyIssueMissingIndicator:
-      "{side} rule {rule} references {indicator}, but this indicator does not exist anymore.",
+      "{side} rule {rule} references {indicator}, but this indicator does not exist anymore. Pick another indicator or remove the rule.",
     yourStrategyIssueMissingReference:
-      "{side} rule {rule} references {indicator}, but this reference indicator does not exist anymore.",
+      "{side} rule {rule} references {indicator}, but this reference indicator does not exist anymore. Choose a valid reference.",
     yourStrategyIssueCrossContextMismatch:
-      "{side} rule {rule} mixes {left} with {right}. Cross rules must stay inside the same calculation context.",
+      "{side} rule {rule} mixes {left} with {right}. Cross rules must stay inside the same calculation context. Keep price with price, RSI with RSI, and volume with its own moving average.",
     yourStrategyIssueThresholdContextMismatch:
-      "{side} rule {rule} mixes {left} with {right}. Threshold rules must stay inside the same calculation context.",
+      "{side} rule {rule} mixes {left} with {right}. Threshold rules must stay inside the same calculation context. Keep price with price, RSI with numeric levels, and volume with its own moving average.",
     yourStrategyIssueVolumeThreshold:
-      "{side} rule {rule} uses raw volume with a numeric threshold. Compare volume against a volume moving average instead.",
+      "{side} rule {rule} uses raw volume with a numeric threshold. Compare current volume against its own moving average instead.",
     yourStrategyIssueRsiRange:
-      "{side} rule {rule} uses RSI outside the valid 0 to 100 range.",
+      "{side} rule {rule} uses RSI outside the valid 0 to 100 range. Keep RSI values between 0 and 100.",
     yourStrategyIssueAtrUsage:
-      "{side} rule {rule} still references ATR. ATR is reserved for stop loss only.",
+      "{side} rule {rule} still references ATR. ATR is reserved for stop loss only, so remove it from entry rules.",
     yourStrategyIssueTakeProfitMissing:
-      "Take profit is disabled. Saving is allowed, but activation stays blocked and preview results become only indicative.",
+      "Take profit is disabled. Saving is allowed, but activation stays blocked and preview results stay only indicative until you configure a take profit or accept that limitation for draft work only.",
     yourStrategyIssueUnsupportedPositionSize:
-      "Only balance percent sizing is supported in YOUR Strategy right now.",
+      "Only balance percent sizing is supported in YOUR Strategy right now. Use Step 5 to keep position size as balance percent.",
     presetDisclosureInfoAction: "Preset details",
     presetDisclosureBuyLabel: "Buy trigger",
     presetDisclosureSellLabel: "Sell trigger",
