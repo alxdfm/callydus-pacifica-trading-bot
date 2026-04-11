@@ -91,3 +91,39 @@
 - execucao real, protecao e fechamento manual precisam ser validados contra a exchange, nao apenas contra o read model local
 - reconciliacao externa nunca pode apagar a intencao operacional pendente do produto
 - o mapeamento de `side` da Pacifica (`bid/ask`) precisa permanecer coberto por teste automatizado
+
+## 2026-04-11 - `create_market_order` com TP/SL embutido falhando por `client_order_id` invalido
+
+### Sintoma
+- `create_market_order` com `take_profit` e `stop_loss` embutidos passou a falhar com `400`
+- a mesma abertura sem protecao ou com readiness basico continuava funcionando
+- `responseBody` podia continuar `null`, tornando o erro opaco
+
+### Causa mapeada
+- o payload embutido de protecao enviava:
+  - `take_profit.client_order_id = <uuid>:tp`
+  - `stop_loss.client_order_id = <uuid>:sl`
+- a Pacifica documenta `client_order_id` desses objetos como opcional, mas quando enviado deve ser um UUID valido
+- os suffixes `:tp` e `:sl` quebravam esse contrato
+
+### Evidencia
+- o `client_order_id` raiz da ordem funcionava normalmente como UUID puro
+- o fluxo passou a funcionar imediatamente apos remover os `client_order_id` internos de `take_profit` e `stop_loss`
+- a abertura continuou com:
+  - `client_order_id` raiz valido
+  - `take_profit` e `stop_loss` embutidos como objetos
+
+### Correcao aplicada
+- o worker deixou de enviar `clientOrderId` dentro dos objetos embutidos de `takeProfit` e `stopLoss`
+- a ordem continua enviando apenas:
+  - `stop_price`
+  - `limit_price`
+- o `client_order_id` valido permanece apenas no nivel raiz de `create_market_order`
+
+### Arquivos envolvidos
+- [apps/worker/src/application/createOperationalWorker.ts](/home/alxdfm/Projects/callydus/trading-bot-pacifica/apps/worker/src/application/createOperationalWorker.ts)
+- [packages/pacifica-trading/src/index.ts](/home/alxdfm/Projects/callydus/trading-bot-pacifica/packages/pacifica-trading/src/index.ts)
+
+### Licao
+- em payloads aninhados da Pacifica, campo opcional nao deve ser inventado ou adaptado livremente
+- se a doc pedir UUID, use UUID puro ou omita o campo

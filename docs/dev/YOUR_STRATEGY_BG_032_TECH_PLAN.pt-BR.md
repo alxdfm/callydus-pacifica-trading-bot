@@ -259,6 +259,34 @@ Durante os testes ponta a ponta com Pacifica real, surgiram problemas fora do bu
   - `bid` passou a ser normalizado como `long`
   - o caso ficou coberto por teste automatizado
 
+### 7. Fluxo canonico Pacifica validado
+Depois da rodada final de depuracao operacional, o fluxo que ficou validado foi:
+- readiness:
+  - `create_order` assinado com serializacao canonica + assinatura `base58`
+  - `builder_code` quando configurado
+  - cancelamento da ordem de teste
+- abertura real:
+  - `create_market_order`
+  - `long -> bid`
+  - `short -> ask`
+  - `take_profit` e `stop_loss` embutidos na mesma chamada
+  - `client_order_id` UUID valido apenas no nivel raiz
+- fechamento manual:
+  - API registra intencao
+  - worker executa `create_market_order` com `reduce_only = true`
+  - `long -> ask`
+  - `short -> bid`
+- reconciliacao:
+  - `bid -> long`
+  - `ask -> short`
+
+O detalhe decisivo do ultimo bug foi:
+- `client_order_id` dentro de `take_profit` e `stop_loss` nao podia usar sufixos como `:tp` e `:sl`
+- ao remover esses campos opcionais do payload embutido, a Pacifica passou a aceitar a ordem protegida
+
+Documento de referencia:
+- [PACIFICA_OPERATIONAL_IMPLEMENTATION.pt-BR.md](/home/alxdfm/Projects/callydus/trading-bot-pacifica/docs/dev/PACIFICA_OPERATIONAL_IMPLEMENTATION.pt-BR.md)
+
 ### 7. Reconciliacao limpava o estado de `close_requested`
 - sintoma: o usuario pedia `Close trade`, mas a reconciliacao voltava o trade para `open`, fazendo o worker deixar de enxerga-lo como pendente
 - causa mapeada: a sincronizacao do snapshot externo regravava `tradeStatus = open` sempre que a Pacifica ainda reportava a posicao aberta
