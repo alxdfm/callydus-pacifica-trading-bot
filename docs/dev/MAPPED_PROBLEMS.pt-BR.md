@@ -176,3 +176,91 @@
 
 ### Licao
 - a UI precisa refletir o lifecycle real do comando operacional para nao incentivar reenvio desnecessario
+
+## 2026-04-11 - `Account PnL` da conta ficando em `+$0.00` por normalizacao frouxa do snapshot Pacifica
+
+### Sintoma
+- o card `Account PnL` no Dashboard podia ficar travado em `+$0.00`
+- o problema podia coexistir com saldo total correto e conta operacional ativa
+- o mesmo risco existia para `unrealizedPnl/currentPrice` de posicoes quando o payload viesse com chaves alternativas
+
+### Causa mapeada
+- a normalizacao do saldo da Pacifica aceitava `pnl` como campo generico cedo demais
+- em payloads onde `pnl = 0`, mas existia um campo mais especifico como `floating_pnl`, o parser podia priorizar o valor errado
+- o gateway tambem estava estreito demais para variações de chave em camelCase e aliases comuns da Pacifica
+
+### Evidencia
+- o parser antigo priorizava:
+  - `unrealized_pnl`
+  - `unrealised_pnl`
+  - `pnl`
+  - `account_unrealized_pnl`
+  - `account_unrealised_pnl`
+- isso permitia que `pnl = 0` mascarasse um `floating_pnl` valido
+- o endurecimento do parser com fixture cobrindo:
+  - `accountEquity`
+  - `walletBalance`
+  - `freeCollateral`
+  - `totalMarginUsed`
+  - `pnl = 0`
+  - `floating_pnl = 10.50`
+  passou a retornar `aggregatedPnl = 10.5`
+
+### Correcao aplicada
+- o gateway passou a priorizar campos especificos de `PnL` antes do `pnl` generico
+- o parser passou a aceitar variantes adicionais em camelCase e aliases equivalentes para:
+  - saldo total
+  - saldo disponivel
+  - PnL agregado
+  - capital em uso
+  - `currentPrice`
+  - `unrealizedPnl`
+- foram adicionados testes automatizados cobrindo:
+  - `aggregatedPnl` com prioridade correta
+  - `currentPrice` e `unrealizedPnl` de posicoes com chaves alternativas
+
+### Arquivos envolvidos
+- [apps/api/src/infrastructure/pacifica/PacificaAccountStateGateway.ts](/home/alxdfm/Projects/callydus/trading-bot-pacifica/apps/api/src/infrastructure/pacifica/PacificaAccountStateGateway.ts)
+- [apps/api/src/infrastructure/pacifica/PacificaAccountStateGateway.test.ts](/home/alxdfm/Projects/callydus/trading-bot-pacifica/apps/api/src/infrastructure/pacifica/PacificaAccountStateGateway.test.ts)
+
+### Licao
+- payload da Pacifica nao deve ser normalizado assumindo um unico naming estável
+- campos genericos como `pnl` nao podem ter precedencia sobre campos mais especificos de conta
+
+## 2026-04-11 - `History` marcando `Closed by system` apos remocao do `client_order_id` interno de TP/SL
+
+### Sintoma
+- trades fechados por `take profit` ou `stop loss` podiam aparecer no historico como `Closed by system`
+- registros antigos podiam continuar misturados entre `Closed by stop` e `Closed by system`
+
+### Causa mapeada
+- a inferencia de `closeReason` no backend dependia de `clientOrderId` com sufixos:
+  - `:tp`
+  - `:sl`
+- essa heuristica ficou fragil depois da correcao onde os `client_order_id` internos de `take_profit` e `stop_loss` foram removidos para satisfazer o contrato da Pacifica
+- com isso, a inferencia perdia o sinal legado e caia no fallback `system`
+
+### Evidencia
+- `findMatchingExternalCloseEvent()` inferia:
+  - `take_profit` se `clientOrderId.endsWith(":tp")`
+  - `stop_loss` se `clientOrderId.endsWith(":sl")`
+  - `system` caso contrario
+- o snapshot da Pacifica ja normalizava `recentTradeHistory` com campo `cause`
+- depois da remocao dos `client_order_id` internos, a heuristica antiga passou a ter menos informação e ficava inclinada ao fallback
+
+### Correcao aplicada
+- a inferencia de `closeReason` passou a priorizar `cause` vindo da Pacifica
+- o fallback legado por `clientOrderId` com `:tp` / `:sl` foi mantido para compatibilidade com historico antigo ou eventos legados
+- foram adicionados testes automatizados cobrindo:
+  - `take profit` por `cause`
+  - `stop loss` por `cause`
+  - fallback legado por `clientOrderId`
+  - fallback final para `system`
+
+### Arquivos envolvidos
+- [apps/api/src/infrastructure/persistence/PrismaPacificaCredentialRepository.ts](/home/alxdfm/Projects/callydus/trading-bot-pacifica/apps/api/src/infrastructure/persistence/PrismaPacificaCredentialRepository.ts)
+- [apps/api/src/infrastructure/persistence/PrismaPacificaCredentialRepository.test.ts](/home/alxdfm/Projects/callydus/trading-bot-pacifica/apps/api/src/infrastructure/persistence/PrismaPacificaCredentialRepository.test.ts)
+
+### Licao
+- heuristica de fechamento nao pode depender apenas de convention interna de `client_order_id`
+- quando a exchange expuser um motivo semantico como `cause`, esse campo deve ser a fonte canonica da inferencia
