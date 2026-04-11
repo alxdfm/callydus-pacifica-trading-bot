@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { OperationalTradesSessionFound } from "@pacifica/contracts";
+import type { OpenTrade, OperationalTradesSessionFound } from "@pacifica/contracts";
 import { applyOperationalTradesSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalTradesViaBackend } from "../../features/account/backend-operational-page-sessions";
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
@@ -8,6 +8,10 @@ import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runt
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import { LoadingPanel } from "../components/LoadingPanel";
+import { PaginationControls } from "../components/PaginationControls";
+
+const TRADES_PER_PAGE = 5;
 
 export function TradesPage() {
   const {
@@ -24,6 +28,8 @@ export function TradesPage() {
   );
   const [closingTradeId, setClosingTradeId] = useState<string | null>(null);
   const [pendingCloseTradeId, setPendingCloseTradeId] = useState<string | null>(null);
+  const [platformPage, setPlatformPage] = useState(1);
+  const [externalPage, setExternalPage] = useState(1);
   const applyTradesSnapshot = useCallback(
     (snapshot: OperationalTradesSessionFound) => {
       applyOperationalTradesSessionSnapshot(snapshot, {
@@ -50,11 +56,29 @@ export function TradesPage() {
     unavailableMessage: t("runtimeStatusError"),
   });
 
+  const platformTrades = state.runtime.currentTrades.filter((trade) => trade.isPlatformTrade);
+  const externalTrades = state.runtime.currentTrades.filter((trade) => !trade.isPlatformTrade);
+  const platformTotalPages = Math.max(1, Math.ceil(platformTrades.length / TRADES_PER_PAGE));
+  const externalTotalPages = Math.max(1, Math.ceil(externalTrades.length / TRADES_PER_PAGE));
+  const visiblePlatformTrades = paginate(platformTrades, platformPage, TRADES_PER_PAGE);
+  const visibleExternalTrades = paginate(externalTrades, externalPage, TRADES_PER_PAGE);
+  const visibleTrades = [...visiblePlatformTrades, ...visibleExternalTrades];
+
   useEffect(() => {
-    if (!state.runtime.currentTrades.find((trade) => trade.id === selectedTradeId)) {
-      setSelectedTradeId(state.runtime.currentTrades[0]?.id ?? null);
+    if (platformPage > platformTotalPages) {
+      setPlatformPage(platformTotalPages);
     }
-  }, [selectedTradeId, state.runtime.currentTrades]);
+
+    if (externalPage > externalTotalPages) {
+      setExternalPage(externalTotalPages);
+    }
+  }, [externalPage, externalTotalPages, platformPage, platformTotalPages]);
+
+  useEffect(() => {
+    if (!visibleTrades.find((trade) => trade.id === selectedTradeId)) {
+      setSelectedTradeId(visibleTrades[0]?.id ?? null);
+    }
+  }, [selectedTradeId, visibleTrades]);
 
   const selectedTrade =
     state.runtime.currentTrades.find((trade) => trade.id === selectedTradeId) ?? null;
@@ -63,12 +87,60 @@ export function TradesPage() {
     selectedTrade.tradeStatus === "open" &&
     closingTradeId !== selectedTrade.id;
 
-  function formatSignedCurrency(value: number) {
-    return `${value >= 0 ? "+" : "-"}${new Intl.NumberFormat("en-US", {
+  const pendingTrade =
+    state.runtime.currentTrades.find((trade) => trade.id === pendingCloseTradeId) ?? null;
+  const runtimeSyncPresentation = getSecondaryRuntimeSyncPresentation(
+    state.runtime.syncStatus,
+    state.runtime.exchangeSnapshotStatus,
+    state.runtime.exchangeSnapshotMessage,
+    state.runtime.exchangeLastSyncedAt,
+    state.runtime.lastRuntimeMessage,
+    t,
+  );
+  const shouldShowRuntimeErrorBanner =
+    state.runtime.screenStatus === "error" &&
+    Boolean(state.runtime.lastRuntimeMessage);
+
+  function formatCurrency(value: number) {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       maximumFractionDigits: 2,
-    }).format(Math.abs(value))}`;
+    }).format(value);
+  }
+
+  function formatSignedCurrency(value: number) {
+    return `${value >= 0 ? "+" : "-"}${formatCurrency(Math.abs(value))}`;
+  }
+
+  function formatTradeOrigin(isPlatformTrade: boolean) {
+    return isPlatformTrade
+      ? t("tradeOriginPlatform")
+      : t("tradeOriginExternal");
+  }
+
+  function formatPositionSize(trade: OpenTrade) {
+    const totalBalance = state.runtime.balance?.totalBalance ?? null;
+
+    if (!totalBalance || totalBalance <= 0) {
+      return formatCurrency(trade.capitalAllocated);
+    }
+
+    const sizePercent = (trade.capitalAllocated / totalBalance) * 100;
+    return `${sizePercent.toFixed(1)}% · ${formatCurrency(trade.capitalAllocated)}`;
+  }
+
+  function showRuntimeToast(
+    tone: "info" | "success" | "danger",
+    message: string,
+  ) {
+    setRuntimeState({
+      actionToast: {
+        id: Date.now(),
+        tone,
+        message,
+      },
+    });
   }
 
   async function handleCloseTrade(tradeId: string) {
@@ -82,7 +154,7 @@ export function TradesPage() {
     setClosingTradeId(tradeId);
     setRuntimeState({
       screenStatus: "loading",
-      lastRuntimeMessage: t("runtimeActionProcessing"),
+      lastRuntimeMessage: null,
     });
 
     const commandResult = await closeTradeViaBackend({
@@ -92,9 +164,9 @@ export function TradesPage() {
 
     if (commandResult.status === "error") {
       setRuntimeState({
-        screenStatus: "error",
-        lastRuntimeMessage: commandResult.message,
+        screenStatus: "ready",
       });
+      showRuntimeToast("danger", commandResult.message);
       setClosingTradeId(null);
       return;
     }
@@ -104,8 +176,8 @@ export function TradesPage() {
     if (sessionSnapshot?.status === "found") {
       setRuntimeState({
         screenStatus: "ready",
-        lastRuntimeMessage: t("runtimeActionCloseSuccess"),
       });
+      showRuntimeToast("success", t("runtimeActionCloseSuccess"));
     } else {
       setRuntimeState({
         screenStatus: "error",
@@ -118,18 +190,6 @@ export function TradesPage() {
 
     setClosingTradeId(null);
   }
-
-  const pendingTrade =
-    state.runtime.currentTrades.find((trade) => trade.id === pendingCloseTradeId) ?? null;
-  const runtimeSyncPresentation = getSecondaryRuntimeSyncPresentation(
-    state.runtime.syncStatus,
-    state.runtime.exchangeSnapshotStatus,
-    state.runtime.exchangeSnapshotMessage,
-    state.runtime.exchangeLastSyncedAt,
-    state.runtime.lastRuntimeMessage,
-    t,
-  );
-  const shouldShowRuntimeActionBanner = Boolean(state.runtime.lastRuntimeMessage);
 
   return (
     <div className="page-stack">
@@ -154,6 +214,7 @@ export function TradesPage() {
         title={t("tradeCloseConfirmTitle")}
         tone="danger"
       />
+
       <section className="topbar">
         <div>
           <p className="page-card__eyebrow">{t("pageTradesTitle")}</p>
@@ -168,40 +229,27 @@ export function TradesPage() {
       </section>
 
       {tradesSession.status === "loading" || tradesSession.status === "error" ? (
-        <section
-          className={`page-card status-banner status-banner--${
-            tradesSession.status === "error" ? "danger" : "warning"
-          }`}
-        >
-          <strong>
-            {tradesSession.status === "error"
-              ? t("runtimeStatusError")
-              : t("runtimeStatusLoading")}
-          </strong>
-          <p>{tradesSession.message}</p>
-        </section>
+        tradesSession.status === "loading" ? (
+          <LoadingPanel
+            title={t("runtimeStatusLoading")}
+            message={tradesSession.message}
+          />
+        ) : (
+          <section className="page-card status-banner status-banner--danger">
+            <strong>{t("runtimeStatusError")}</strong>
+            <p>{tradesSession.message}</p>
+          </section>
+        )
       ) : null}
 
-      {shouldShowRuntimeActionBanner ? (
-        <section
-          className={`page-card status-banner status-banner--${
-            state.runtime.screenStatus === "error"
-              ? "danger"
-              : state.runtime.screenStatus === "loading"
-                ? "warning"
-                : "neutral"
-          }`}
-        >
-          <strong>
-            {state.runtime.screenStatus === "loading"
-              ? t("runtimeStatusLoading")
-              : t("runtimeStatusReady")}
-          </strong>
+      {shouldShowRuntimeErrorBanner ? (
+        <section className="page-card status-banner status-banner--danger">
+          <strong>{t("runtimeStatusError")}</strong>
           <p>{state.runtime.lastRuntimeMessage}</p>
         </section>
       ) : null}
 
-      {!shouldShowRuntimeActionBanner && runtimeSyncPresentation.show ? (
+      {!shouldShowRuntimeErrorBanner && runtimeSyncPresentation.show ? (
         <section
           className={`page-card status-banner status-banner--${runtimeSyncPresentation.tone}`}
         >
@@ -217,72 +265,55 @@ export function TradesPage() {
               <p className="panel-label">{t("tradesListEyebrow")}</p>
               <h3>{t("tradesListTitle")}</h3>
             </div>
-            <span className="badge badge--neutral">{t("tradesListBadge")}</span>
+            <span className="badge badge--neutral">
+              {`${state.runtime.currentTrades.length} ${t("tradesTopbarCount")}`}
+            </span>
           </div>
 
           {state.runtime.currentTrades.length > 0 ? (
-            <div className="trade-stack">
-              {state.runtime.currentTrades.map((trade) => {
-                const tradeCanBeClosed =
-                  trade.tradeStatus === "open" && closingTradeId !== trade.id;
-
-                return (
-                <article
-                  key={trade.id}
-                  className={`trade-card wide ${trade.tradeStatus === "open" ? "live" : ""} ${
-                    selectedTradeId === trade.id ? "selected" : ""
-                  }`}
-                  onClick={() => setSelectedTradeId(trade.id)}
-                >
-                  <div>
-                    <div className="trade-head">
-                      <strong>{trade.symbol}</strong>
-                      <span className={`badge badge--${trade.side === "long" ? "info" : "danger"}`}>
-                        {trade.side === "long" ? t("tradeSideLong") : t("tradeSideShort")}
-                      </span>
-                      <span
-                        className={`badge badge--${
-                          trade.tradeStatus === "open" ? "success" : "warning"
-                        }`}
-                      >
-                        {trade.tradeStatus === "open" ? t("tradeStatusOpen") : t("tradeStatusWaiting")}
-                      </span>
-                    </div>
-                    <p>
-                      {trade.isPlatformTrade ? t("tradeOriginPlatform") : t("tradeOriginExternal")}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="trade-label">{t("tradeEntryLabel")}</span>
-                    <strong>{trade.entryPrice}</strong>
-                  </div>
-                  <div>
-                    <span className="trade-label">{t("tradeCurrentLabel")}</span>
-                    <strong>{trade.currentPrice}</strong>
-                  </div>
-                  <div>
-                    <span className="trade-label">{t("tradePnlLabel")}</span>
-                    <strong className={trade.unrealizedPnl >= 0 ? "up" : "down"}>
-                      {formatSignedCurrency(trade.unrealizedPnl)}
-                    </strong>
-                  </div>
-                  <button
-                    className="btn secondary small"
-                    disabled={!tradeCanBeClosed}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (!tradeCanBeClosed) {
-                        return;
-                      }
-                      setPendingCloseTradeId(trade.id);
-                    }}
-                    type="button"
-                  >
-                    {t("tradeCloseAction")}
-                  </button>
-                </article>
-                );
-              })}
+            <div className="trade-origin-stack">
+              <TradeOriginGroup
+                currentPage={platformPage}
+                emptyTitle={t("tradesGroupEmptyTitle")}
+                nextLabel={t("paginationNext")}
+                onCloseTrade={(tradeId) => setPendingCloseTradeId(tradeId)}
+                onPageChange={setPlatformPage}
+                onSelectTrade={setSelectedTradeId}
+                previousLabel={t("paginationPrevious")}
+                selectedTradeId={selectedTradeId}
+                title={t("tradesGroupPlatformTitle")}
+                description={t("tradesGroupPlatformDescription")}
+                trades={visiblePlatformTrades}
+                totalCount={platformTrades.length}
+                totalPages={platformTotalPages}
+                closingTradeId={closingTradeId}
+                formatSignedCurrency={formatSignedCurrency}
+                formatTradeOrigin={formatTradeOrigin}
+                pageSummary={t("paginationPageOf")
+                  .replace("{page}", String(platformPage))
+                  .replace("{total}", String(platformTotalPages))}
+              />
+              <TradeOriginGroup
+                currentPage={externalPage}
+                emptyTitle={t("tradesGroupEmptyTitle")}
+                nextLabel={t("paginationNext")}
+                onCloseTrade={(tradeId) => setPendingCloseTradeId(tradeId)}
+                onPageChange={setExternalPage}
+                onSelectTrade={setSelectedTradeId}
+                previousLabel={t("paginationPrevious")}
+                selectedTradeId={selectedTradeId}
+                title={t("tradesGroupExternalTitle")}
+                description={t("tradesGroupExternalDescription")}
+                trades={visibleExternalTrades}
+                totalCount={externalTrades.length}
+                totalPages={externalTotalPages}
+                closingTradeId={closingTradeId}
+                formatSignedCurrency={formatSignedCurrency}
+                formatTradeOrigin={formatTradeOrigin}
+                pageSummary={t("paginationPageOf")
+                  .replace("{page}", String(externalPage))
+                  .replace("{total}", String(externalTotalPages))}
+              />
             </div>
           ) : (
             <div className="info-note">
@@ -319,19 +350,31 @@ export function TradesPage() {
             <>
               <div className="detail-grid">
                 <div className="detail-item">
+                  <span>{t("tradesDetailOrigin")}</span>
+                  <strong>{formatTradeOrigin(selectedTrade.isPlatformTrade)}</strong>
+                </div>
+                <div className="detail-item">
                   <span>{t("tradesDetailDirection")}</span>
-                  <strong>{selectedTrade.side === "long" ? t("tradeSideLong") : t("tradeSideShort")}</strong>
+                  <strong>
+                    {selectedTrade.side === "long" ? t("tradeSideLong") : t("tradeSideShort")}
+                  </strong>
                 </div>
                 <div className="detail-item">
                   <span>{t("tradesDetailPositionSize")}</span>
-                  <strong>{`${Math.round((selectedTrade.capitalAllocated / (state.runtime.balance?.totalBalance || 1)) * 100)}%`}</strong>
+                  <strong>{formatPositionSize(selectedTrade)}</strong>
+                </div>
+                <div className="detail-item">
+                  <span>{t("tradePnlLabel")}</span>
+                  <strong className={selectedTrade.unrealizedPnl >= 0 ? "up" : "down"}>
+                    {formatSignedCurrency(selectedTrade.unrealizedPnl)}
+                  </strong>
                 </div>
                 <div className="detail-item">
                   <span>{t("tradesDetailStopLoss")}</span>
                   <strong>
                     {selectedTrade.stopLossPrice !== null
                       ? selectedTrade.stopLossPrice.toFixed(2)
-                      : "—"}
+                      : "-"}
                   </strong>
                 </div>
                 <div className="detail-item">
@@ -339,14 +382,9 @@ export function TradesPage() {
                   <strong>
                     {selectedTrade.takeProfitPrice !== null
                       ? selectedTrade.takeProfitPrice.toFixed(2)
-                      : "—"}
+                      : "-"}
                   </strong>
                 </div>
-              </div>
-
-              <div className="info-note">
-                <strong>{t("tradesDetailInterventionTitle")}</strong>
-                <p>{t("tradesDetailInterventionDescription")}</p>
               </div>
 
               <button
@@ -373,5 +411,145 @@ export function TradesPage() {
         </aside>
       </section>
     </div>
+  );
+}
+
+function paginate<T>(items: T[], page: number, pageSize: number) {
+  const safePage = Math.max(1, page);
+  const startIndex = (safePage - 1) * pageSize;
+
+  return items.slice(startIndex, startIndex + pageSize);
+}
+
+function TradeOriginGroup(props: {
+  currentPage: number;
+  emptyTitle: string;
+  nextLabel: string;
+  onCloseTrade: (tradeId: string) => void;
+  onPageChange: (page: number) => void;
+  onSelectTrade: (tradeId: string) => void;
+  previousLabel: string;
+  selectedTradeId: string | null;
+  title: string;
+  description: string;
+  trades: OpenTrade[];
+  totalCount: number;
+  totalPages: number;
+  closingTradeId: string | null;
+  formatSignedCurrency: (value: number) => string;
+  formatTradeOrigin: (isPlatformTrade: boolean) => string;
+  pageSummary: string;
+}) {
+  const { t } = useI18n();
+  const {
+    closingTradeId,
+    currentPage,
+    description,
+    emptyTitle,
+    formatSignedCurrency,
+    formatTradeOrigin,
+    nextLabel,
+    onCloseTrade,
+    onPageChange,
+    onSelectTrade,
+    pageSummary,
+    previousLabel,
+    selectedTradeId,
+    title,
+    totalCount,
+    totalPages,
+    trades,
+  } = props;
+
+  return (
+    <section className="trade-origin-group">
+      <div className="row-between align-start section-gap">
+        <div>
+          <p className="panel-label">{title}</p>
+          <h4>{title}</h4>
+          <p className="subtle">{description}</p>
+        </div>
+        <span className="badge badge--info">{totalCount}</span>
+      </div>
+
+      {trades.length > 0 ? (
+        <>
+          <div className="trade-stack">
+            {trades.map((trade) => {
+              const tradeCanBeClosed =
+                trade.tradeStatus === "open" && closingTradeId !== trade.id;
+
+              return (
+                <article
+                  key={trade.id}
+                  className={`trade-card wide ${trade.tradeStatus === "open" ? "live" : ""} ${
+                    selectedTradeId === trade.id ? "selected" : ""
+                  }`}
+                  onClick={() => onSelectTrade(trade.id)}
+                >
+                  <div>
+                    <div className="trade-head">
+                      <strong>{trade.symbol}</strong>
+                      <span className={`badge badge--${trade.side === "long" ? "info" : "danger"}`}>
+                        {trade.side === "long" ? t("tradeSideLong") : t("tradeSideShort")}
+                      </span>
+                      <span
+                        className={`badge badge--${
+                          trade.tradeStatus === "open" ? "success" : "warning"
+                        }`}
+                      >
+                        {trade.tradeStatus === "open" ? t("tradeStatusOpen") : t("tradeStatusWaiting")}
+                      </span>
+                    </div>
+                    <p>{formatTradeOrigin(trade.isPlatformTrade)}</p>
+                  </div>
+                  <div>
+                    <span className="trade-label">{t("tradeEntryLabel")}</span>
+                    <strong>{trade.entryPrice}</strong>
+                  </div>
+                  <div>
+                    <span className="trade-label">{t("tradeCurrentLabel")}</span>
+                    <strong>{trade.currentPrice}</strong>
+                  </div>
+                  <div>
+                    <span className="trade-label">{t("tradePnlLabel")}</span>
+                    <strong className={trade.unrealizedPnl >= 0 ? "up" : "down"}>
+                      {formatSignedCurrency(trade.unrealizedPnl)}
+                    </strong>
+                  </div>
+                  <button
+                    className="btn secondary small"
+                    disabled={!tradeCanBeClosed}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (!tradeCanBeClosed) {
+                        return;
+                      }
+                      onCloseTrade(trade.id);
+                    }}
+                    type="button"
+                  >
+                    {t("tradeCloseAction")}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+          <PaginationControls
+            nextLabel={nextLabel}
+            onPageChange={onPageChange}
+            page={currentPage}
+            previousLabel={previousLabel}
+            summary={pageSummary}
+            totalPages={totalPages}
+          />
+        </>
+      ) : (
+        <div className="info-note">
+          <strong>{emptyTitle}</strong>
+          <p>{description}</p>
+        </div>
+      )}
+    </section>
   );
 }

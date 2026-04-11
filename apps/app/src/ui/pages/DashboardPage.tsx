@@ -14,6 +14,7 @@ import {
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import { LoadingPanel } from "../components/LoadingPanel";
 
 export function DashboardPage() {
   const location = useLocation();
@@ -41,12 +42,8 @@ export function DashboardPage() {
   const botActionBlockedMessage = resumeActionRequiresPreset
     ? t("dashboardResumeRequiresPresetTooltip")
     : undefined;
-  const currentTrades = state.runtime.currentTrades.slice(0, 2);
-  const recentClosedTrades = state.runtime.closedTrades.slice(0, 3);
-  const recentEvents = state.runtime.events.slice(0, 4);
-  const activeAlerts = state.runtime.alerts
-    .filter((alert) => alert.isActive)
-    .slice(0, 2);
+  const currentTrades = state.runtime.currentTrades.slice(0, 3);
+  const recentClosedTrades = state.runtime.closedTrades.slice(0, 4);
   const closedTodayCount = state.runtime.closedTrades.length;
   const wins = state.runtime.closedTrades.filter(
     (trade) => trade.realizedPnl >= 0,
@@ -97,28 +94,19 @@ export function DashboardPage() {
     }
   }
 
-  const runtimeBannerTone =
-    state.runtime.screenStatus === "error"
-      ? "danger"
-      : state.runtime.screenStatus === "loading"
-        ? "warning"
-        : "neutral";
-  const runtimeBannerTitle =
-    state.runtime.screenStatus === "loading"
-      ? t("runtimeStatusLoading")
-      : state.runtime.screenStatus === "error"
-        ? t("runtimeStatusError")
-        : t("runtimeStatusReady");
-  const runtimeBannerMessage =
-    state.runtime.screenStatus === "error"
-      ? state.runtime.lastRuntimeMessage &&
-          state.runtime.lastRuntimeMessage !== t("runtimeStatusError")
-        ? state.runtime.lastRuntimeMessage
-        : null
-      : state.runtime.screenStatus === "loading"
-        ? t("runtimeStatusLoading")
-        : state.runtime.lastRuntimeMessage;
-  const shouldShowRuntimeActionBanner = Boolean(runtimeBannerMessage);
+  function tradeOriginLabel(isPlatformTrade: boolean) {
+    return isPlatformTrade
+      ? t("tradeOriginPlatform")
+      : t("tradeOriginExternal");
+  }
+
+  const shouldShowRuntimeErrorBanner =
+    state.runtime.screenStatus === "error" &&
+    Boolean(state.runtime.lastRuntimeMessage);
+  const shouldShowOperationalBanner =
+    !shouldShowRuntimeErrorBanner &&
+    runtimeSyncPresentation.show &&
+    runtimeSyncPresentation.tone !== "neutral";
 
   const applyDashboardSnapshot = useCallback(
     (snapshot: OperationalDashboardSessionFound) => {
@@ -186,6 +174,19 @@ export function DashboardPage() {
     navigate("/presets");
   }
 
+  function showRuntimeToast(
+    tone: "info" | "success" | "danger",
+    message: string,
+  ) {
+    setRuntimeState({
+      actionToast: {
+        id: Date.now(),
+        tone,
+        message,
+      },
+    });
+  }
+
   async function handleToggleBot() {
     const walletAddress = state.wallet.mainWalletPublicKey;
     const isEnteringOperationalState =
@@ -201,7 +202,7 @@ export function DashboardPage() {
 
     setRuntimeState({
       screenStatus: "loading",
-      lastRuntimeMessage: t("runtimeActionProcessing"),
+      lastRuntimeMessage: null,
     });
 
     const commandResult =
@@ -211,9 +212,9 @@ export function DashboardPage() {
 
     if (commandResult.status === "error") {
       setRuntimeState({
-        screenStatus: "error",
-        lastRuntimeMessage: commandResult.message,
+        screenStatus: "ready",
       });
+      showRuntimeToast("danger", commandResult.message);
       return;
     }
 
@@ -221,7 +222,6 @@ export function DashboardPage() {
       botStatus: nextBotStatus,
       syncStatus: nextSyncStatus,
       screenStatus: "ready",
-      lastRuntimeMessage: commandResult.message,
     });
 
     const sessionSnapshot = await dashboardSession.reload();
@@ -229,8 +229,8 @@ export function DashboardPage() {
     if (sessionSnapshot?.status === "found") {
       setRuntimeState({
         screenStatus: "ready",
-        lastRuntimeMessage: commandResult.message,
       });
+      showRuntimeToast("success", commandResult.message);
       return;
     }
 
@@ -271,6 +271,13 @@ export function DashboardPage() {
           >
             {t("dashboardReviewPresetAction")}
           </button>
+          <button
+            className="btn secondary"
+            onClick={() => navigate("/operations")}
+            type="button"
+          >
+            {t("dashboardOperationsAction")}
+          </button>
           <span
             className={
               botActionBlockedMessage
@@ -292,30 +299,29 @@ export function DashboardPage() {
       </section>
 
       {dashboardSession.status === "loading" || dashboardSession.status === "error" ? (
+        dashboardSession.status === "loading" ? (
+          <LoadingPanel
+            title={t("runtimeStatusLoading")}
+            message={dashboardSession.message}
+          />
+        ) : (
+          <section className="page-card status-banner status-banner--danger">
+            <strong>{t("runtimeStatusError")}</strong>
+            <p>{dashboardSession.message}</p>
+          </section>
+        )
+      ) : null}
+
+      {shouldShowRuntimeErrorBanner ? (
         <section
-          className={`page-card status-banner status-banner--${
-            dashboardSession.status === "error" ? "danger" : "warning"
-          }`}
+          className="page-card status-banner status-banner--danger"
         >
-          <strong>
-            {dashboardSession.status === "error"
-              ? t("runtimeStatusError")
-              : t("runtimeStatusLoading")}
-          </strong>
-          <p>{dashboardSession.message}</p>
+          <strong>{t("runtimeStatusError")}</strong>
+          {state.runtime.lastRuntimeMessage ? <p>{state.runtime.lastRuntimeMessage}</p> : null}
         </section>
       ) : null}
 
-      {shouldShowRuntimeActionBanner ? (
-        <section
-          className={`page-card status-banner status-banner--${runtimeBannerTone}`}
-        >
-          <strong>{runtimeBannerTitle}</strong>
-          {runtimeBannerMessage ? <p>{runtimeBannerMessage}</p> : null}
-        </section>
-      ) : null}
-
-      {!shouldShowRuntimeActionBanner && runtimeSyncPresentation.show ? (
+      {shouldShowOperationalBanner ? (
         <section
           className={`page-card status-banner status-banner--${runtimeSyncPresentation.tone}`}
         >
@@ -345,6 +351,13 @@ export function DashboardPage() {
             <p>{t("dashboardMetricPnlHint")}</p>
           </article>
           <article className="stat-panel">
+            <span>{t("dashboardMetricExposure")}</span>
+            <strong>
+              {formatCurrency(state.runtime.balance.capitalInUse)}
+            </strong>
+            <p>{t("dashboardMetricExposureHint")}</p>
+          </article>
+          <article className="stat-panel">
             <span>{t("dashboardMetricOpenTrades")}</span>
             <strong>{state.runtime.currentTrades.length}</strong>
             <p>{t("dashboardMetricOpenTradesHint")}</p>
@@ -352,7 +365,11 @@ export function DashboardPage() {
           <article className="stat-panel">
             <span>{t("dashboardMetricClosedToday")}</span>
             <strong>{closedTodayCount}</strong>
-            <p>{`${wins} ${t("dashboardWinsLabel")} · ${losses} ${t("dashboardLossesLabel")}`}</p>
+            <p>
+              {closedTodayCount > 0
+                ? `${wins} ${t("dashboardWinsLabel")} · ${losses} ${t("dashboardLossesLabel")}`
+                : t("dashboardMetricClosedTodayHint")}
+            </p>
           </article>
         </section>
       ) : (
@@ -432,32 +449,6 @@ export function DashboardPage() {
           )}
         </section>
 
-        <section className="panel alert-panel">
-          <div className="row-between align-start">
-            <div>
-              <p className="panel-label">{t("dashboardAlertsEyebrow")}</p>
-              <h3>
-                {activeAlerts.length > 0
-                  ? `${activeAlerts.length} ${t("dashboardAlertsCountLabel")}`
-                  : t("dashboardAlertsEmptyTitle")}
-              </h3>
-            </div>
-            <span
-              className={`badge badge--${activeAlerts.length > 0 ? "info" : "neutral"}`}
-            >
-              {activeAlerts.length > 0
-                ? t("dashboardAlertsInfoBadge")
-                : t("dashboardAlertsEmptyBadge")}
-            </span>
-          </div>
-          <p className="alert-copy">
-            {activeAlerts.length > 0
-              ? (activeAlerts[0]?.message ??
-                t("dashboardAlertsEmptyDescription"))
-              : t("dashboardAlertsEmptyDescription")}
-          </p>
-        </section>
-
         <section className="panel trades-panel">
           <div className="row-between align-start section-gap">
             <div>
@@ -496,9 +487,7 @@ export function DashboardPage() {
                         ? t("tradeStatusOpen")
                         : t("tradeStatusWaiting")}
                       {" · "}
-                      {trade.isPlatformTrade
-                        ? t("tradeOriginPlatform")
-                        : t("tradeOriginExternal")}
+                      {tradeOriginLabel(trade.isPlatformTrade)}
                     </p>
                   </div>
                   <div>
@@ -574,39 +563,6 @@ export function DashboardPage() {
           )}
         </section>
 
-        <section className="panel recent-panel">
-          <div className="row-between align-start section-gap">
-            <div>
-              <p className="panel-label">{t("dashboardActivityEyebrow")}</p>
-              <h3>{t("dashboardActivityTitle")}</h3>
-              <p className="subtle">{t("dashboardActivityDescription")}</p>
-            </div>
-          </div>
-
-          {recentEvents.length > 0 ? (
-            <div className="history-list">
-              {recentEvents.map((event) => (
-                <div key={event.id} className="history-row">
-                  <div>
-                    <strong>{event.title}</strong>
-                    <p>{event.message}</p>
-                  </div>
-                  <strong>
-                    {new Date(event.createdAt).toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </strong>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="info-note">
-              <strong>{t("dashboardActivityEmptyTitle")}</strong>
-              <p>{t("dashboardActivityEmptyDescription")}</p>
-            </div>
-          )}
-        </section>
       </section>
     </div>
   );

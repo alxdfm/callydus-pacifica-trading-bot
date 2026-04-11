@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import type { OperationalHistorySessionFound } from "@pacifica/contracts";
+import type { ClosedTrade, OperationalHistorySessionFound } from "@pacifica/contracts";
 import { applyOperationalHistorySessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalHistoryViaBackend } from "../../features/account/backend-operational-page-sessions";
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
+import { LoadingPanel } from "../components/LoadingPanel";
+import { PaginationControls } from "../components/PaginationControls";
+
+const HISTORY_PER_PAGE = 12;
 
 export function HistoryPage() {
   const {
@@ -20,6 +24,7 @@ export function HistoryPage() {
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(
     state.runtime.closedTrades[0]?.id ?? null,
   );
+  const [page, setPage] = useState(1);
   const applyHistorySnapshot = useCallback(
     (snapshot: OperationalHistorySessionFound) => {
       applyOperationalHistorySessionSnapshot(snapshot, {
@@ -46,17 +51,10 @@ export function HistoryPage() {
     unavailableMessage: t("runtimeStatusError"),
   });
 
-  useEffect(() => {
-    if (
-      !state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId)
-    ) {
-      setSelectedTradeId(state.runtime.closedTrades[0]?.id ?? null);
-    }
-  }, [selectedTradeId, state.runtime.closedTrades]);
-
+  const totalPages = Math.max(1, Math.ceil(state.runtime.closedTrades.length / HISTORY_PER_PAGE));
+  const visibleTrades = paginate(state.runtime.closedTrades, page, HISTORY_PER_PAGE);
   const selectedTrade =
-    state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId) ??
-    null;
+    state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId) ?? null;
   const runtimeSyncPresentation = getSecondaryRuntimeSyncPresentation(
     state.runtime.syncStatus,
     state.runtime.exchangeSnapshotStatus,
@@ -65,14 +63,47 @@ export function HistoryPage() {
     state.runtime.lastRuntimeMessage,
     t,
   );
-  const shouldShowRuntimeActionBanner = Boolean(state.runtime.lastRuntimeMessage);
+  const shouldShowRuntimeErrorBanner =
+    state.runtime.screenStatus === "error" &&
+    Boolean(state.runtime.lastRuntimeMessage);
 
-  function formatSignedCurrency(value: number) {
-    return `${value >= 0 ? "+" : "-"}${new Intl.NumberFormat("en-US", {
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  useEffect(() => {
+    if (!visibleTrades.find((trade) => trade.id === selectedTradeId)) {
+      setSelectedTradeId(visibleTrades[0]?.id ?? null);
+    }
+  }, [selectedTradeId, visibleTrades]);
+
+  function formatCurrency(value: number) {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       maximumFractionDigits: 2,
-    }).format(Math.abs(value))}`;
+    }).format(value);
+  }
+
+  function formatSignedCurrency(value: number) {
+    return `${value >= 0 ? "+" : "-"}${formatCurrency(Math.abs(value))}`;
+  }
+
+  function formatTradeOrigin(isPlatformTrade: boolean) {
+    return isPlatformTrade
+      ? t("tradeOriginPlatform")
+      : t("tradeOriginExternal");
+  }
+
+  function formatEventTime(value: string) {
+    return new Date(value).toLocaleString("en-US", {
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   function closeReasonLabel(reason: string) {
@@ -99,36 +130,27 @@ export function HistoryPage() {
       </section>
 
       {historySession.status === "loading" || historySession.status === "error" ? (
-        <section
-          className={`page-card status-banner status-banner--${
-            historySession.status === "error" ? "danger" : "warning"
-          }`}
-        >
-          <strong>
-            {historySession.status === "error"
-              ? t("runtimeStatusError")
-              : t("runtimeStatusLoading")}
-          </strong>
-          <p>{historySession.message}</p>
-        </section>
+        historySession.status === "loading" ? (
+          <LoadingPanel
+            title={t("runtimeStatusLoading")}
+            message={historySession.message}
+          />
+        ) : (
+          <section className="page-card status-banner status-banner--danger">
+            <strong>{t("runtimeStatusError")}</strong>
+            <p>{historySession.message}</p>
+          </section>
+        )
       ) : null}
 
-      {shouldShowRuntimeActionBanner ? (
-        <section
-          className={`page-card status-banner status-banner--${
-            state.runtime.screenStatus === "error" ? "danger" : "neutral"
-          }`}
-        >
-          <strong>
-            {state.runtime.screenStatus === "error"
-              ? t("runtimeStatusError")
-              : t("runtimeStatusReady")}
-          </strong>
+      {shouldShowRuntimeErrorBanner ? (
+        <section className="page-card status-banner status-banner--danger">
+          <strong>{t("runtimeStatusError")}</strong>
           <p>{state.runtime.lastRuntimeMessage}</p>
         </section>
       ) : null}
 
-      {!shouldShowRuntimeActionBanner && runtimeSyncPresentation.show ? (
+      {!shouldShowRuntimeErrorBanner && runtimeSyncPresentation.show ? (
         <section
           className={`page-card status-banner status-banner--${runtimeSyncPresentation.tone}`}
         >
@@ -150,57 +172,59 @@ export function HistoryPage() {
           </div>
 
           {state.runtime.closedTrades.length > 0 ? (
-            <div className="history-stack">
-              {state.runtime.closedTrades.map((trade) => (
-                <article
-                  key={trade.id}
-                  className={`history-card ${selectedTradeId === trade.id ? "selected" : ""}`}
-                  onClick={() => setSelectedTradeId(trade.id)}
-                >
-                  <div>
-                    <div className="trade-head">
-                      <strong>{trade.symbol}</strong>
-                      <span
-                        className={`badge badge--${trade.side === "long" ? "info" : "danger"}`}
-                      >
-                        {trade.side === "long"
-                          ? t("tradeSideLong")
-                          : t("tradeSideShort")}
-                      </span>
-                      <span
-                        className={`badge badge--${trade.realizedPnl >= 0 ? "success" : "danger"}`}
-                      >
-                        {closeReasonLabel(trade.closeReason)}
-                      </span>
+            <>
+              <div className="history-stack">
+                {visibleTrades.map((trade) => (
+                  <article
+                    key={trade.id}
+                    className={`history-card ${selectedTradeId === trade.id ? "selected" : ""}`}
+                    onClick={() => setSelectedTradeId(trade.id)}
+                  >
+                    <div>
+                      <div className="trade-head">
+                        <strong>{trade.symbol}</strong>
+                        <span
+                          className={`badge badge--${trade.side === "long" ? "info" : "danger"}`}
+                        >
+                          {trade.side === "long"
+                            ? t("tradeSideLong")
+                            : t("tradeSideShort")}
+                        </span>
+                        <span
+                          className={`badge badge--${
+                            trade.realizedPnl >= 0 ? "success" : "danger"
+                          }`}
+                        >
+                          {closeReasonLabel(trade.closeReason)}
+                        </span>
+                      </div>
+                      <p>{formatTradeOrigin(trade.isPlatformTrade)}</p>
+                      <p>
+                        {t("historyEntryLabel")} {formatEventTime(trade.openedAt)}
+                        {" · "}
+                        {t("historyExitLabel")} {formatEventTime(trade.closedAt)}
+                      </p>
                     </div>
-                    <p>
-                      {t("historyEntryLabel")}{" "}
-                      {new Date(trade.openedAt).toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}{" "}
-                      · {t("historyExitLabel")}{" "}
-                      {new Date(trade.closedAt).toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}{" "}
-                      ·{" "}
-                      {trade.isPlatformTrade
-                        ? t("tradeOriginPlatform")
-                        : t("tradeOriginExternal")}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="trade-label">
-                      {t("historyResultLabel")}
-                    </span>
-                    <strong className={trade.realizedPnl >= 0 ? "up" : "down"}>
-                      {formatSignedCurrency(trade.realizedPnl)}
-                    </strong>
-                  </div>
-                </article>
-              ))}
-            </div>
+                    <div>
+                      <span className="trade-label">{t("historyResultLabel")}</span>
+                      <strong className={trade.realizedPnl >= 0 ? "up" : "down"}>
+                        {formatSignedCurrency(trade.realizedPnl)}
+                      </strong>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <PaginationControls
+                nextLabel={t("paginationNext")}
+                onPageChange={setPage}
+                page={page}
+                previousLabel={t("paginationPrevious")}
+                summary={t("paginationPageOf")
+                  .replace("{page}", String(page))
+                  .replace("{total}", String(totalPages))}
+                totalPages={totalPages}
+              />
+            </>
           ) : (
             <div className="info-note">
               <strong>{t("historyEmptyTitle")}</strong>
@@ -209,9 +233,7 @@ export function HistoryPage() {
           )}
         </section>
 
-        <aside
-          className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}
-        >
+        <aside className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}>
           <div className="row-between align-start section-gap">
             <div>
               <p className="panel-label">{t("historyDetailEyebrow")}</p>
@@ -239,30 +261,38 @@ export function HistoryPage() {
           </div>
 
           {selectedTrade ? (
-            <>
-              <div className="detail-grid">
-                <div className="detail-item">
-                  <span>{t("historyDetailCloseReason")}</span>
-                  <strong>{closeReasonLabel(selectedTrade.closeReason)}</strong>
-                </div>
-                <div className="detail-item">
-                  <span>{t("historyDetailDirection")}</span>
-                  <strong>
-                    {selectedTrade.side === "long"
-                      ? t("tradeSideLong")
-                      : t("tradeSideShort")}
-                  </strong>
-                </div>
-                <div className="detail-item">
-                  <span>{t("historyDetailEntry")}</span>
-                  <strong>{selectedTrade.entryPrice}</strong>
-                </div>
-                <div className="detail-item">
-                  <span>{t("historyDetailExit")}</span>
-                  <strong>{selectedTrade.exitPrice}</strong>
-                </div>
+            <div className="detail-grid">
+              <div className="detail-item">
+                <span>{t("historyDetailResult")}</span>
+                <strong className={selectedTrade.realizedPnl >= 0 ? "up" : "down"}>
+                  {formatSignedCurrency(selectedTrade.realizedPnl)}
+                </strong>
               </div>
-            </>
+              <div className="detail-item">
+                <span>{t("historyDetailCloseReason")}</span>
+                <strong>{closeReasonLabel(selectedTrade.closeReason)}</strong>
+              </div>
+              <div className="detail-item">
+                <span>{t("historyDetailOrigin")}</span>
+                <strong>{formatTradeOrigin(selectedTrade.isPlatformTrade)}</strong>
+              </div>
+              <div className="detail-item">
+                <span>{t("historyDetailDirection")}</span>
+                <strong>
+                  {selectedTrade.side === "long"
+                    ? t("tradeSideLong")
+                    : t("tradeSideShort")}
+                </strong>
+              </div>
+              <div className="detail-item">
+                <span>{t("historyDetailEntry")}</span>
+                <strong>{selectedTrade.entryPrice}</strong>
+              </div>
+              <div className="detail-item">
+                <span>{t("historyDetailExit")}</span>
+                <strong>{selectedTrade.exitPrice}</strong>
+              </div>
+            </div>
           ) : (
             <div className="info-note">
               <strong>{t("historyDetailEmptyTitle")}</strong>
@@ -273,4 +303,11 @@ export function HistoryPage() {
       </section>
     </div>
   );
+}
+
+function paginate<T>(items: T[], page: number, pageSize: number) {
+  const safePage = Math.max(1, page);
+  const startIndex = (safePage - 1) * pageSize;
+
+  return items.slice(startIndex, startIndex + pageSize);
 }

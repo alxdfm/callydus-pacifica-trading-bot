@@ -9,6 +9,7 @@ import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEn
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import { LoadingPanel } from "../components/LoadingPanel";
 
 function formatRelativeValidation(value: string | null, fallback: string) {
   if (!value) {
@@ -369,18 +370,17 @@ export function ProfilePage() {
       </section>
 
       {profileSession.status === "loading" || profileSession.status === "error" ? (
-        <section
-          className={`page-card status-banner status-banner--${
-            profileSession.status === "error" ? "danger" : "warning"
-          }`}
-        >
-          <strong>
-            {profileSession.status === "error"
-              ? t("runtimeStatusError")
-              : t("runtimeStatusLoading")}
-          </strong>
-          <p>{profileSession.message}</p>
-        </section>
+        profileSession.status === "loading" ? (
+          <LoadingPanel
+            title={t("runtimeStatusLoading")}
+            message={profileSession.message}
+          />
+        ) : (
+          <section className="page-card status-banner status-banner--danger">
+            <strong>{t("runtimeStatusError")}</strong>
+            <p>{profileSession.message}</p>
+          </section>
+        )
       ) : null}
 
       <section className="dashboard-grid profile-grid">

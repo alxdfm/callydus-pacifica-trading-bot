@@ -33,6 +33,7 @@ import {
   saveYourStrategyViaBackend,
 } from "../../features/presets/your-strategy-backend";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+import { LoadingPanel } from "../components/LoadingPanel";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
@@ -52,7 +53,6 @@ export function PresetsPage() {
   const selectedPresetDefinitionId = state.presets.selectedPresetDefinitionId;
   const isYourStrategySelected =
     selectedPresetDefinitionId === YOUR_STRATEGY_PRESET_DEFINITION_ID;
-  const [isYourStrategyModalOpen, setIsYourStrategyModalOpen] = useState(false);
   const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
   const [isBacktestLoading, setIsBacktestLoading] = useState(false);
   const [backtestPreview, setBacktestPreview] =
@@ -281,7 +281,6 @@ export function PresetsPage() {
   function handleSelectPreset(presetDefinitionId: string) {
     if (presetDefinitionId === YOUR_STRATEGY_PRESET_DEFINITION_ID) {
       setYourStrategyStep(1);
-      setIsYourStrategyModalOpen(true);
       setPresetState({
         selectedPresetDefinitionId: presetDefinitionId,
         draftEditableConfig: null,
@@ -299,6 +298,19 @@ export function PresetsPage() {
       ),
       activationStatus: "idle",
       activationMessage: null,
+    });
+  }
+
+  function showRuntimeToast(
+    tone: "info" | "success" | "danger",
+    message: string,
+  ) {
+    setRuntimeState({
+      actionToast: {
+        id: Date.now(),
+        tone,
+        message,
+      },
     });
   }
 
@@ -786,7 +798,7 @@ export function PresetsPage() {
       });
       setRuntimeState({
         screenStatus: "loading",
-        lastRuntimeMessage: t("runtimeStatusLoading"),
+        lastRuntimeMessage: null,
       });
 
       const request = activateYourStrategyRequestSchema.parse({
@@ -806,17 +818,17 @@ export function PresetsPage() {
           botStatus: result.runtime.botStatus,
           syncStatus: result.runtime.syncStatus,
           screenStatus: "ready",
-          lastRuntimeMessage: result.message,
         });
+        showRuntimeToast("success", result.message);
       } else {
         setPresetState({
           activationStatus: "error",
           activationMessage: result.message,
         });
         setRuntimeState({
-          screenStatus: "error",
-          lastRuntimeMessage: result.message,
+          screenStatus: "ready",
         });
+        showRuntimeToast("danger", result.message);
       }
 
       return;
@@ -837,7 +849,7 @@ export function PresetsPage() {
       });
       setRuntimeState({
         screenStatus: "loading",
-        lastRuntimeMessage: t("runtimeStatusLoading"),
+        lastRuntimeMessage: null,
       });
 
       const request = presetActivationRequestSchema.parse({
@@ -859,23 +871,22 @@ export function PresetsPage() {
         botStatus: result.runtime.botStatus,
         syncStatus: result.runtime.syncStatus,
         screenStatus: "ready",
-        lastRuntimeMessage: result.message,
       });
+      showRuntimeToast("success", result.message);
     } catch {
       setPresetState({
         activationStatus: "error",
         activationMessage: t("presetActivationErrorGeneric"),
       });
       setRuntimeState({
-        screenStatus: "error",
-        lastRuntimeMessage: t("presetActivationErrorGeneric"),
+        screenStatus: "ready",
       });
+      showRuntimeToast("danger", t("presetActivationErrorGeneric"));
     }
   }
 
   function handleCancelSelection() {
     setYourStrategyStep(1);
-    setIsYourStrategyModalOpen(false);
     setPresetState({
       selectedPresetDefinitionId: null,
       draftEditableConfig: null,
@@ -906,18 +917,17 @@ export function PresetsPage() {
   return (
     <div className="page-stack">
       {presetsSession.status === "loading" || presetsSession.status === "error" ? (
-        <section
-          className={`page-card status-banner status-banner--${
-            presetsSession.status === "error" ? "danger" : "warning"
-          }`}
-        >
-          <strong>
-            {presetsSession.status === "error"
-              ? t("runtimeStatusError")
-              : t("runtimeStatusLoading")}
-          </strong>
-          <p>{presetsSession.message}</p>
-        </section>
+        presetsSession.status === "loading" ? (
+          <LoadingPanel
+            title={t("runtimeStatusLoading")}
+            message={presetsSession.message}
+          />
+        ) : (
+          <section className="page-card status-banner status-banner--danger">
+            <strong>{t("runtimeStatusError")}</strong>
+            <p>{presetsSession.message}</p>
+          </section>
+        )
       ) : null}
 
       <ConfirmationModal
@@ -1076,6 +1086,56 @@ export function PresetsPage() {
             </article>
           </div>
 
+          {isYourStrategySelected ? (
+            <section className="backtest-preview strategy-builder-panel">
+              <div className="row-between align-start section-gap">
+                <div>
+                  <p className="panel-label">{t("yourStrategyBuilderEyebrow")}</p>
+                  <h3>{t("yourStrategyBuilderTitle")}</h3>
+                  <p className="subtle">{t("yourStrategyBuilderDescription")}</p>
+                </div>
+                <span className={`badge badge--${yourStrategyStatusTone}`}>
+                  {t("yourStrategyBadge")}
+                </span>
+              </div>
+
+              <YourStrategyWizard
+                activationMessage={state.presets.activationMessage}
+                activationStatus={state.presets.activationStatus}
+                canAccessProduct={canAccessProduct}
+                currentStep={yourStrategyStep}
+                draft={yourStrategyDraft}
+                editingBlocked={isYourStrategyEditingBlocked}
+                leverage={selectedLeverage}
+                onActivate={() => void handleActivationRequest()}
+                onAddIndicator={handleAddIndicator}
+                onAddRule={handleAddYourStrategyRule}
+                onFieldChange={handleUpdateYourStrategyField}
+                onGroupTypeChange={handleUpdateYourStrategyGroupType}
+                onIndicatorChange={handleUpdateIndicator}
+                onIndicatorRemove={handleRemoveIndicator}
+                onPreview={() => void handlePreviewYourStrategy()}
+                onReload={() => void handleReloadYourStrategy()}
+                onReset={handleResetYourStrategyDraft}
+                onRuleChange={handleUpdateYourStrategyRule}
+                onRuleRemove={handleRemoveYourStrategyRule}
+                onSave={() => void handleSaveYourStrategy()}
+                onSideToggle={handleToggleYourStrategySide}
+                onStepChange={setYourStrategyStep}
+                onStopLossAtrMultiplierChange={handleUpdateStopLossAtrMultiplier}
+                onStopLossAtrPeriodChange={handleUpdateStopLossAtrPeriod}
+                onStopLossModeChange={handleUpdateStopLossMode}
+                onStopLossStaticValueChange={handleUpdateStopLossStaticValue}
+                onTakeProfitToggle={handleUpdateTakeProfitEnabled}
+                onTakeProfitMultipleChange={handleUpdateTakeProfitMultiple}
+                preview={yourStrategyPreview}
+                statusMessage={yourStrategyStatusMessage}
+                statusTone={yourStrategyStatusTone}
+                t={t}
+                validationMessage={yourStrategyValidationMessage}
+              />
+            </section>
+          ) : (
           <section className="backtest-preview">
             <div className="row-between align-start section-gap">
               <div>
@@ -1278,6 +1338,7 @@ export function PresetsPage() {
               </div>
             ) : null}
           </section>
+          )}
         </section>
 
         {!isYourStrategySelected ? (
@@ -1560,62 +1621,6 @@ export function PresetsPage() {
         ) : null}
       </section>
 
-      {isYourStrategySelected && isYourStrategyModalOpen ? (
-        <div className="modal-overlay">
-          <div className="modal-card profile-maintenance-modal your-strategy-modal">
-            <div className="row-between align-start">
-              <div>
-                <p className="panel-label">{t("yourStrategyBuilderEyebrow")}</p>
-                <h3>{t("yourStrategyBuilderTitle")}</h3>
-                <p className="subtle">{t("yourStrategyBuilderDescription")}</p>
-              </div>
-              <button
-                className="btn secondary"
-                onClick={() => setIsYourStrategyModalOpen(false)}
-                type="button"
-              >
-                {t("modalCloseAction")}
-              </button>
-            </div>
-
-            <YourStrategyWizard
-              activationMessage={state.presets.activationMessage}
-              activationStatus={state.presets.activationStatus}
-              canAccessProduct={canAccessProduct}
-              currentStep={yourStrategyStep}
-              draft={yourStrategyDraft}
-              editingBlocked={isYourStrategyEditingBlocked}
-              leverage={selectedLeverage}
-              onActivate={() => void handleActivationRequest()}
-              onAddIndicator={handleAddIndicator}
-              onAddRule={handleAddYourStrategyRule}
-              onFieldChange={handleUpdateYourStrategyField}
-              onGroupTypeChange={handleUpdateYourStrategyGroupType}
-              onIndicatorChange={handleUpdateIndicator}
-              onIndicatorRemove={handleRemoveIndicator}
-              onPreview={() => void handlePreviewYourStrategy()}
-              onReload={() => void handleReloadYourStrategy()}
-              onReset={handleResetYourStrategyDraft}
-              onRuleChange={handleUpdateYourStrategyRule}
-              onRuleRemove={handleRemoveYourStrategyRule}
-              onSave={() => void handleSaveYourStrategy()}
-              onSideToggle={handleToggleYourStrategySide}
-              onStepChange={setYourStrategyStep}
-              onStopLossAtrMultiplierChange={handleUpdateStopLossAtrMultiplier}
-              onStopLossAtrPeriodChange={handleUpdateStopLossAtrPeriod}
-              onStopLossModeChange={handleUpdateStopLossMode}
-              onStopLossStaticValueChange={handleUpdateStopLossStaticValue}
-              onTakeProfitToggle={handleUpdateTakeProfitEnabled}
-              onTakeProfitMultipleChange={handleUpdateTakeProfitMultiple}
-              preview={yourStrategyPreview}
-              statusMessage={yourStrategyStatusMessage}
-              statusTone={yourStrategyStatusTone}
-              t={t}
-              validationMessage={yourStrategyValidationMessage}
-            />
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
