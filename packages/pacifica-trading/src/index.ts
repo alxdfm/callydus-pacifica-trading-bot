@@ -73,6 +73,7 @@ export type PacificaPosition = {
   symbol: string;
   side: "bid" | "ask";
   amount: string;
+  entryPrice: string | null;
 };
 
 export class PacificaClient {
@@ -318,12 +319,15 @@ export class PacificaClient {
       const amount = normalizePositionAmount(
         row.amount ?? row.size ?? row.position,
       );
+      const entryPrice = normalizePositionEntryPrice(
+        row.entry_price ?? row.avg_entry_price,
+      );
 
       if (!symbol || !side || !amount) {
         return [];
       }
 
-      return [{ symbol, side, amount }];
+      return [{ symbol, side, amount, entryPrice }];
     });
   }
 
@@ -632,6 +636,16 @@ function normalizePositionAmount(amountValue: unknown) {
   }
 
   return String(Math.abs(amount));
+}
+
+function normalizePositionEntryPrice(value: unknown) {
+  const price = Number(value);
+
+  if (!Number.isFinite(price) || price <= 0) {
+    return null;
+  }
+
+  return String(price);
 }
 
 function parsePrivateKey(rawPrivateKey: string) {

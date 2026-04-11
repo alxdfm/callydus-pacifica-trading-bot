@@ -7,6 +7,7 @@ import {
   findMarketInfo,
   normalizeMarketOrderInput,
   PacificaClient,
+  type PacificaPosition,
 } from "@pacifica/pacifica-trading";
 import {
   buildPresetRiskPlans,
@@ -164,6 +165,22 @@ export function formatProtectedPrice(value: number, tickSize: string) {
   return value.toFixed(decimals);
 }
 
+function applyAdverseEntrySlippage(
+  price: number,
+  side: "long" | "short",
+  slippagePercent: string,
+) {
+  const slippageRate = Number(slippagePercent) / 100;
+
+  if (!Number.isFinite(slippageRate) || slippageRate <= 0) {
+    return price;
+  }
+
+  return side === "long"
+    ? price * (1 + slippageRate)
+    : price * (1 - slippageRate);
+}
+
 function validateProtectionLevels(input: {
   side: "long" | "short";
   entryReferencePrice: number;
@@ -197,6 +214,64 @@ function validateProtectionLevels(input: {
       "Invalid take profit for short trade: take profit must be below the entry price.",
     );
   }
+}
+
+function deriveProtectionFromActualEntry(input: {
+  side: "long" | "short";
+  actualEntryPrice: number;
+  plannedEntryPrice: number;
+  plannedStopLossPrice: number;
+  plannedTakeProfitPrice: number;
+}) {
+  const stopDistance = Math.abs(input.plannedEntryPrice - input.plannedStopLossPrice);
+  const takeProfitDistance = Math.abs(
+    input.plannedTakeProfitPrice - input.plannedEntryPrice,
+  );
+
+  return input.side === "long"
+    ? {
+        entryPrice: input.actualEntryPrice,
+        stopLossPrice: input.actualEntryPrice - stopDistance,
+        takeProfitPrice: input.actualEntryPrice + takeProfitDistance,
+      }
+    : {
+        entryPrice: input.actualEntryPrice,
+        stopLossPrice: input.actualEntryPrice + stopDistance,
+        takeProfitPrice: input.actualEntryPrice - takeProfitDistance,
+      };
+}
+
+async function waitForMatchingPosition(input: {
+  client: PacificaClient;
+  symbol: string;
+  side: "bid" | "ask";
+  sleep?: (ms: number) => Promise<void>;
+  attempts?: number;
+  delayMs?: number;
+}) {
+  const attempts = input.attempts ?? 8;
+  const delayMs = input.delayMs ?? 500;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const positions = await input.client.getPositions();
+    const matchingPosition =
+      positions.find(
+        (position) =>
+          position.symbol === input.symbol && position.side === input.side,
+      ) ?? null;
+
+    if (matchingPosition?.entryPrice) {
+      return matchingPosition;
+    }
+
+    if (attempt < attempts - 1) {
+      await (input.sleep
+        ? input.sleep(delayMs)
+        : new Promise((resolve) => setTimeout(resolve, delayMs)));
+    }
+  }
+
+  return null;
 }
 
 function alignToLastClosedCandleEndTime(
@@ -393,11 +468,28 @@ export function createOperationalWorker(
       return { signalFingerprint: null as string | null };
     }
 
-    const riskPlans = buildPresetRiskPlans(
-      snapshot.activePreset.effectiveContract,
-      evaluation.indicators,
+    const longOperationalEntryPrice = applyAdverseEntrySlippage(
       latestCandle.close,
+      "long",
+      dependencies.environment.marketOrderSlippagePercent,
     );
+    const shortOperationalEntryPrice = applyAdverseEntrySlippage(
+      latestCandle.close,
+      "short",
+      dependencies.environment.marketOrderSlippagePercent,
+    );
+    const riskPlans = {
+      long: buildPresetRiskPlans(
+        snapshot.activePreset.effectiveContract,
+        evaluation.indicators,
+        longOperationalEntryPrice,
+      ).long,
+      short: buildPresetRiskPlans(
+        snapshot.activePreset.effectiveContract,
+        evaluation.indicators,
+        shortOperationalEntryPrice,
+      ).short,
+    };
     const riskPlan =
       evaluation.signal === "long" ? riskPlans.long : riskPlans.short;
     const signalFingerprint = [
@@ -562,13 +654,45 @@ export function createOperationalWorker(
 
     for (const trade of requestedTrades) {
       const clientOrderId = randomUUID();
-      const side: "bid" | "ask" = trade.side === "long" ? "ask" : "bid";
+      const closeSide: "bid" | "ask" = trade.side === "long" ? "ask" : "bid";
+      const positionSide: "bid" | "ask" = trade.side === "long" ? "bid" : "ask";
+      const marketSymbol = toPacificaMarketSymbol(trade.symbol) ?? trade.symbol;
 
       try {
+        const positions = await client.getPositions();
+        const matchingPosition =
+          positions.find(
+            (position) =>
+              position.symbol === marketSymbol && position.side === positionSide,
+          ) ?? null;
+
+        if (!matchingPosition) {
+          await dependencies.repository.appendOperationalEvent({
+            operatorAccountId: snapshot.operatorAccountId,
+            eventType: "order_execution",
+            severity: "warning",
+            title: "Manual close skipped because the exchange position no longer exists",
+            message: `No matching Pacifica position was found for ${trade.symbol} during manual close.`,
+            payloadJson: {
+              tradeId: trade.tradeId,
+              symbol: trade.symbol,
+              expectedPositionSide: positionSide,
+            },
+          });
+          logger.warn("worker.manual_close_position_missing", {
+            operatorAccountId: snapshot.operatorAccountId,
+            walletAddress: lease.walletAddress,
+            tradeId: trade.tradeId,
+            symbol: trade.symbol,
+            expectedPositionSide: positionSide,
+          });
+          continue;
+        }
+
         const response = await client.createMarketOrder({
-          symbol: toPacificaMarketSymbol(trade.symbol) ?? trade.symbol,
-          side,
-          amount: String(trade.quantity),
+          symbol: marketSymbol,
+          side: closeSide,
+          amount: matchingPosition.amount,
           slippagePercent: dependencies.environment.marketOrderSlippagePercent,
           clientOrderId,
           reduceOnly: true,
@@ -589,6 +713,7 @@ export function createOperationalWorker(
           payloadJson: {
             tradeId: trade.tradeId,
             clientOrderId,
+            matchedPosition: matchingPosition,
             response,
           },
         });
@@ -759,18 +884,6 @@ export function createOperationalWorker(
         amount: normalizedOrder.amount,
         slippagePercent: dependencies.environment.marketOrderSlippagePercent,
         clientOrderId,
-        takeProfit: {
-          stopPrice: formatProtectedPrice(
-            signalDecision.takeProfitPrice,
-            marketInfo.tickSize,
-          ),
-        },
-        stopLoss: {
-          stopPrice: formatProtectedPrice(
-            signalDecision.stopLossPrice,
-            marketInfo.tickSize,
-          ),
-        },
       };
       requestPayloadSnapshot = requestPayload;
 
@@ -790,6 +903,47 @@ export function createOperationalWorker(
                 (response as { data: { order_id: unknown } }).data.order_id,
             )
           : null;
+
+      const actualPosition = await waitForMatchingPosition({
+        client,
+        symbol: normalizedOrder.symbol,
+        side,
+        ...(dependencies.sleep ? { sleep: dependencies.sleep } : {}),
+      });
+      const actualEntryPrice = actualPosition?.entryPrice
+        ? Number(actualPosition.entryPrice)
+        : signalDecision.entryReferencePrice;
+      const protectionPlan = deriveProtectionFromActualEntry({
+        side: signalDecision.signalSide,
+        actualEntryPrice,
+        plannedEntryPrice: signalDecision.entryReferencePrice,
+        plannedStopLossPrice: signalDecision.stopLossPrice,
+        plannedTakeProfitPrice: signalDecision.takeProfitPrice,
+      });
+
+      validateProtectionLevels({
+        side: signalDecision.signalSide,
+        entryReferencePrice: protectionPlan.entryPrice,
+        stopLossPrice: protectionPlan.stopLossPrice,
+        takeProfitPrice: protectionPlan.takeProfitPrice,
+      });
+
+      await client.setPositionTpsl({
+        symbol: normalizedOrder.symbol,
+        side: signalDecision.signalSide === "long" ? "ask" : "bid",
+        takeProfit: {
+          stopPrice: formatProtectedPrice(
+            protectionPlan.takeProfitPrice,
+            marketInfo.tickSize,
+          ),
+        },
+        stopLoss: {
+          stopPrice: formatProtectedPrice(
+            protectionPlan.stopLossPrice,
+            marketInfo.tickSize,
+          ),
+        },
+      });
 
       await dependencies.repository.recordOrderExecutionAttempt({
         operatorAccountId: signalDecision.operatorAccountId,
@@ -825,11 +979,11 @@ export function createOperationalWorker(
           pacificaOrderId,
           symbol: signalDecision.symbol,
           side: signalDecision.signalSide,
-          entryPrice: signalDecision.entryReferencePrice,
+          entryPrice: protectionPlan.entryPrice,
           quantity: Number(normalizedOrder.amount),
           capitalAllocated: targetNotionalUsd,
-          stopLossPrice: signalDecision.stopLossPrice,
-          takeProfitPrice: signalDecision.takeProfitPrice,
+          stopLossPrice: protectionPlan.stopLossPrice,
+          takeProfitPrice: protectionPlan.takeProfitPrice,
           openedAtIso: now().toISOString(),
         });
         await dependencies.repository.completeSignalDecision({
@@ -877,13 +1031,15 @@ export function createOperationalWorker(
         eventType: "order_execution",
         severity: "info",
         title: "Market order submitted",
-        message: `${signalDecision.signalSide} market order submitted for ${signalDecision.symbol} with embedded stop-loss and take-profit protection.`,
+        message: `${signalDecision.signalSide} market order submitted for ${signalDecision.symbol} and protected after position confirmation.`,
         payloadJson: {
           signalDecisionId: signalDecision.signalDecisionId,
           signalFingerprint: signalDecision.signalFingerprint,
           clientOrderId,
           pacificaOrderId,
           requestPayload,
+          actualPosition,
+          protectionPlan,
         },
       });
 

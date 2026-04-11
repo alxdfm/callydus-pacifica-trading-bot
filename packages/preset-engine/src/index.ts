@@ -389,11 +389,6 @@ export function simulatePresetBacktest(
       const evaluation = evaluatePresetSignal(input.technicalContract, candleWindow);
 
       if (evaluation.signal !== "none" && nextCandle) {
-        const riskPlans = buildPresetRiskPlans(
-          input.technicalContract,
-          evaluation.indicators,
-          currentCandle.close,
-        );
         const capitalAllocated = resolveCapitalAllocation(
           input.technicalContract,
           equity,
@@ -404,6 +399,11 @@ export function simulatePresetBacktest(
           evaluation.signal,
           slippageRate,
           "entry",
+        );
+        const riskPlans = buildPresetRiskPlans(
+          input.technicalContract,
+          evaluation.indicators,
+          entryPrice,
         );
         const quantity = notionalUsd / entryPrice;
         const entryFeeUsd = notionalUsd * feeRate;
