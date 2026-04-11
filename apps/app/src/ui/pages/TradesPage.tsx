@@ -271,11 +271,19 @@ export function TradesPage() {
                 </div>
                 <div className="detail-item">
                   <span>{t("tradesDetailStopLoss")}</span>
-                  <strong>{(selectedTrade.entryPrice * 0.994).toFixed(2)}</strong>
+                  <strong>
+                    {selectedTrade.stopLossPrice !== null
+                      ? selectedTrade.stopLossPrice.toFixed(2)
+                      : "—"}
+                  </strong>
                 </div>
                 <div className="detail-item">
                   <span>{t("tradesDetailTakeProfit")}</span>
-                  <strong>{(selectedTrade.entryPrice * 1.018).toFixed(2)}</strong>
+                  <strong>
+                    {selectedTrade.takeProfitPrice !== null
+                      ? selectedTrade.takeProfitPrice.toFixed(2)
+                      : "—"}
+                  </strong>
                 </div>
               </div>
 
