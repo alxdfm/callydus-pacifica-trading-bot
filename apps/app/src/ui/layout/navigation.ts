@@ -3,6 +3,7 @@ const baseNavigationItems = [
   { to: "/presets", labelKey: "navPresets" },
   { to: "/trades", labelKey: "navTrades" },
   { to: "/history", labelKey: "navHistory" },
+  { to: "/operations", labelKey: "navOperations" },
   { to: "/profile", labelKey: "navProfile" },
 ] as const;
 

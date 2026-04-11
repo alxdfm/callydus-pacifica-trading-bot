@@ -8,6 +8,7 @@ describe("getNavigationItems", () => {
       "/presets",
       "/trades",
       "/history",
+      "/operations",
       "/profile",
     ]);
   });

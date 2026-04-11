@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "./ui/layout/AppLayout";
 import { DashboardPage } from "./ui/pages/DashboardPage";
 import { HistoryPage } from "./ui/pages/HistoryPage";
+import { OperationsPage } from "./ui/pages/OperationsPage";
 import { PresetsPage } from "./ui/pages/PresetsPage";
 import { TradesPage } from "./ui/pages/TradesPage";
 import { ProfileRouteGuard } from "./ui/router/ProfileRouteGuard";
@@ -54,6 +55,10 @@ export const router = createBrowserRouter([
           {
             path: "/history",
             element: <HistoryPage />,
+          },
+          {
+            path: "/operations",
+            element: <OperationsPage />,
           },
         ],
       },
