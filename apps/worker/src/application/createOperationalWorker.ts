@@ -216,7 +216,7 @@ function validateProtectionLevels(input: {
   }
 }
 
-function deriveProtectionFromActualEntry(input: {
+export function deriveProtectionFromActualEntry(input: {
   side: "long" | "short";
   actualEntryPrice: number;
   plannedEntryPrice: number;

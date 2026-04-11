@@ -31,6 +31,10 @@ export function TradesPage() {
 
   const selectedTrade =
     state.runtime.currentTrades.find((trade) => trade.id === selectedTradeId) ?? null;
+  const selectedTradeCanBeClosed =
+    selectedTrade !== null &&
+    selectedTrade.tradeStatus === "open" &&
+    closingTradeId !== selectedTrade.id;
 
   function formatSignedCurrency(value: number) {
     return `${value >= 0 ? "+" : "-"}${new Intl.NumberFormat("en-US", {
@@ -185,7 +189,11 @@ export function TradesPage() {
 
           {state.runtime.currentTrades.length > 0 ? (
             <div className="trade-stack">
-              {state.runtime.currentTrades.map((trade) => (
+              {state.runtime.currentTrades.map((trade) => {
+                const tradeCanBeClosed =
+                  trade.tradeStatus === "open" && closingTradeId !== trade.id;
+
+                return (
                 <article
                   key={trade.id}
                   className={`trade-card wide ${trade.tradeStatus === "open" ? "live" : ""} ${
@@ -227,9 +235,12 @@ export function TradesPage() {
                   </div>
                   <button
                     className="btn secondary small"
-                    disabled={closingTradeId === trade.id}
+                    disabled={!tradeCanBeClosed}
                     onClick={(event) => {
                       event.stopPropagation();
+                      if (!tradeCanBeClosed) {
+                        return;
+                      }
                       setPendingCloseTradeId(trade.id);
                     }}
                     type="button"
@@ -237,7 +248,8 @@ export function TradesPage() {
                     {t("tradeCloseAction")}
                   </button>
                 </article>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="info-note">
@@ -253,8 +265,20 @@ export function TradesPage() {
               <p className="panel-label">{t("tradesDetailEyebrow")}</p>
               <h3>{selectedTrade ? selectedTrade.symbol : t("tradesDetailEmptyTitle")}</h3>
             </div>
-            <span className={`badge badge--${selectedTrade ? "success" : "neutral"}`}>
-              {selectedTrade ? t("tradeStatusOpen") : t("tradesDetailEmptyBadge")}
+            <span
+              className={`badge badge--${
+                selectedTrade
+                  ? selectedTrade.tradeStatus === "open"
+                    ? "success"
+                    : "warning"
+                  : "neutral"
+              }`}
+            >
+              {selectedTrade
+                ? selectedTrade.tradeStatus === "open"
+                  ? t("tradeStatusOpen")
+                  : t("tradeStatusWaiting")
+                : t("tradesDetailEmptyBadge")}
             </span>
           </div>
 
@@ -294,8 +318,14 @@ export function TradesPage() {
 
               <button
                 className="btn danger wide"
-                disabled={closingTradeId === selectedTrade.id}
-                onClick={() => setPendingCloseTradeId(selectedTrade.id)}
+                disabled={!selectedTradeCanBeClosed}
+                onClick={() => {
+                  if (!selectedTradeCanBeClosed) {
+                    return;
+                  }
+
+                  setPendingCloseTradeId(selectedTrade.id);
+                }}
                 type="button"
               >
                 {t("tradeCloseSelectedAction")}

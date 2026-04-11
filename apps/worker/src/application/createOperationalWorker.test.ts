@@ -3,6 +3,7 @@ import {
   buildLeaseExpiryIso,
   calculateTargetNotionalUsd,
   calculateUnrealizedPnl,
+  deriveProtectionFromActualEntry,
   extractPacificaErrorMessage,
   formatProtectedPrice,
   resolveAutomaticClose,
@@ -103,6 +104,32 @@ describe("createOperationalWorker pure rules", () => {
   it("protege preços conforme a granularidade de tick size", () => {
     expect(formatProtectedPrice(123.4567, "0.01")).toBe("123.46");
     expect(formatProtectedPrice(123.4567, "1")).toBe("123");
+  });
+
+  it("recalcula a proteção usando o entry real sem inverter a direção", () => {
+    const longProtection = deriveProtectionFromActualEntry({
+      side: "long",
+      actualEntryPrice: 84.77,
+      plannedEntryPrice: 84.35,
+      plannedStopLossPrice: 84.24,
+      plannedTakeProfitPrice: 84.57,
+    });
+
+    expect(longProtection.entryPrice).toBeCloseTo(84.77);
+    expect(longProtection.stopLossPrice).toBeCloseTo(84.66);
+    expect(longProtection.takeProfitPrice).toBeCloseTo(84.99);
+
+    const shortProtection = deriveProtectionFromActualEntry({
+      side: "short",
+      actualEntryPrice: 84.01,
+      plannedEntryPrice: 83.85,
+      plannedStopLossPrice: 83.98,
+      plannedTakeProfitPrice: 83.58,
+    });
+
+    expect(shortProtection.entryPrice).toBeCloseTo(84.01);
+    expect(shortProtection.stopLossPrice).toBeCloseTo(84.14);
+    expect(shortProtection.takeProfitPrice).toBeCloseTo(83.74);
   });
 
   it("extrai a mensagem mais útil do payload Pacifica com fallback estável", () => {
