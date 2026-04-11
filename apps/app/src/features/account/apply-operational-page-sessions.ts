@@ -11,7 +11,10 @@ import type {
   CredentialState,
   OperationalVerificationState,
 } from "../../state/app-state";
-import type { RuntimeState } from "../runtime/runtime-state";
+import {
+  createRuntimePersistentFeedback,
+  type RuntimeState,
+} from "../runtime/runtime-state";
 
 type ApplyOperationalPageSessionDependencies = {
   setBuilderApprovalState: (value: Partial<BuilderApprovalState>) => void;
@@ -55,8 +58,7 @@ export function applyOperationalProfileSessionSnapshot(
   });
   dependencies.setRuntimeState({
     botStatus: snapshot.runtime.botStatus,
-    screenStatus: snapshot.runtime.lastErrorMessage ? "error" : "ready",
-    lastRuntimeMessage: snapshot.runtime.lastErrorMessage,
+    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
   });
 }
 
@@ -75,8 +77,7 @@ export function applyOperationalDashboardSessionSnapshot(
     closedTrades: snapshot.runtime.closedTrades,
     alerts: snapshot.runtime.activeAlerts,
     events: snapshot.recentEvents,
-    screenStatus: snapshot.runtime.lastErrorMessage ? "error" : "ready",
-    lastRuntimeMessage: snapshot.runtime.lastErrorMessage,
+    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
   });
 }
 
@@ -102,8 +103,7 @@ export function applyOperationalTradesSessionSnapshot(
     exchangeLastSyncedAt: snapshot.runtime.exchangeLastSyncedAt,
     exchangeSnapshotMessage: snapshot.runtime.exchangeSnapshotMessage,
     currentTrades: snapshot.runtime.currentTrades,
-    screenStatus: snapshot.runtime.lastErrorMessage ? "error" : "ready",
-    lastRuntimeMessage: snapshot.runtime.lastErrorMessage,
+    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
   });
 }
 
@@ -118,7 +118,6 @@ export function applyOperationalHistorySessionSnapshot(
     exchangeLastSyncedAt: snapshot.runtime.exchangeLastSyncedAt,
     exchangeSnapshotMessage: snapshot.runtime.exchangeSnapshotMessage,
     closedTrades: snapshot.runtime.closedTrades,
-    screenStatus: snapshot.runtime.lastErrorMessage ? "error" : "ready",
-    lastRuntimeMessage: snapshot.runtime.lastErrorMessage,
+    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
   });
 }

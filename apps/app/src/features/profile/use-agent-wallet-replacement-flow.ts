@@ -164,15 +164,19 @@ export function useAgentWalletReplacementFlow() {
 
     setRuntimeState({
       screenStatus: "loading",
-      lastRuntimeMessage: t("runtimeActionProcessing"),
+      lastRuntimeMessage: null,
     });
 
     const commandResult = await pauseBotViaBackend({ walletAddress });
 
     if (commandResult.status === "error") {
       setRuntimeState({
-        screenStatus: "error",
-        lastRuntimeMessage: commandResult.message,
+        screenStatus: "ready",
+        actionToast: {
+          id: Date.now(),
+          tone: "danger",
+          message: commandResult.message,
+        },
       });
       setModalFeedback(commandResult.message);
       setModalFeedbackTone("danger");

@@ -43,7 +43,11 @@ import {
   useMemo,
   useState,
 } from "react";
-import { createEmptyRuntimeState, type RuntimeState } from "../features/runtime/runtime-state";
+import {
+  createEmptyRuntimeState,
+  type RuntimeState,
+  type RuntimeToast,
+} from "../features/runtime/runtime-state";
 import { defaultLocale, type AppLocale } from "../shared/i18n/messages";
 
 export type CredentialState = {
@@ -236,6 +240,7 @@ export function parseStoredState(rawValue: string | null): AppSessionState {
         alerts: operationalAlertsValue(parsed.runtime?.alerts),
         events: operationalEventsValue(parsed.runtime?.events),
         screenStatus: runtimeScreenStatus(parsed.runtime?.screenStatus),
+        actionToast: runtimeToastValue(parsed.runtime?.actionToast),
       },
       onboarding: {
         ...baseState.onboarding,
@@ -389,6 +394,31 @@ function runtimeScreenStatus(value: unknown): RuntimeState["screenStatus"] {
   return value === "loading" || value === "ready" || value === "error" ? value : "idle";
 }
 
+function runtimeToastValue(value: unknown): RuntimeToast | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<RuntimeToast>;
+
+  if (
+    typeof candidate.id !== "number" ||
+    (candidate.tone !== "info" &&
+      candidate.tone !== "success" &&
+      candidate.tone !== "danger") ||
+    typeof candidate.message !== "string" ||
+    candidate.message.trim().length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    tone: candidate.tone,
+    message: candidate.message,
+  };
+}
+
 function symbolOperationalConfigsValue(value: unknown): SymbolOperationalConfig[] {
   if (!Array.isArray(value)) {
     return [];
@@ -479,6 +509,14 @@ export function sanitizeStateForPersistence(state: AppSessionState): AppSessionS
     },
     operational,
     onboarding,
+    runtime: {
+      ...state.runtime,
+      actionToast: null,
+      screenStatus:
+        state.runtime.screenStatus === "loading"
+          ? "idle"
+          : state.runtime.screenStatus,
+    },
   };
 }
 

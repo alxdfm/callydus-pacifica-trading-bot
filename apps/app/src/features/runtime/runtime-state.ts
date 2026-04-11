@@ -10,6 +10,12 @@ import type {
   SyncStatus,
 } from "@pacifica/contracts";
 
+export type RuntimeToast = {
+  id: number;
+  tone: "info" | "success" | "danger";
+  message: string;
+};
+
 export type RuntimeState = {
   balance: BalanceSnapshot | null;
   botStatus: BotStatus;
@@ -24,6 +30,7 @@ export type RuntimeState = {
   events: OperationalEvent[];
   screenStatus: "idle" | "loading" | "ready" | "error";
   lastRuntimeMessage: string | null;
+  actionToast: RuntimeToast | null;
 };
 
 export function createEmptyRuntimeState(): RuntimeState {
@@ -41,5 +48,20 @@ export function createEmptyRuntimeState(): RuntimeState {
     events: [],
     screenStatus: "idle",
     lastRuntimeMessage: null,
+    actionToast: null,
   };
+}
+
+export function createRuntimePersistentFeedback(
+  lastRuntimeMessage: string | null,
+): Pick<RuntimeState, "screenStatus" | "lastRuntimeMessage"> {
+  return lastRuntimeMessage
+    ? {
+        screenStatus: "error",
+        lastRuntimeMessage,
+      }
+    : {
+        screenStatus: "ready",
+        lastRuntimeMessage: null,
+      };
 }

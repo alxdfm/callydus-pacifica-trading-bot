@@ -7,7 +7,10 @@ import type {
   CredentialState,
   OperationalVerificationState,
 } from "../../state/app-state";
-import type { RuntimeState } from "../runtime/runtime-state";
+import {
+  createRuntimePersistentFeedback,
+  type RuntimeState,
+} from "../runtime/runtime-state";
 
 type ApplyAccountSessionDependencies = {
   setBuilderApprovalState: (value: Partial<BuilderApprovalState>) => void;
@@ -68,8 +71,7 @@ export function applyAccountSessionSnapshot(
     closedTrades: snapshot.runtime.closedTrades,
     alerts: snapshot.runtime.activeAlerts,
     events: snapshot.recentEvents,
-    screenStatus: snapshot.runtime.lastErrorMessage ? "error" : "ready",
-    lastRuntimeMessage: snapshot.runtime.lastErrorMessage,
+    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
   });
 
   dependencies.setOnboardingState?.({
