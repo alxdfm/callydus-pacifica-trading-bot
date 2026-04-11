@@ -2,6 +2,7 @@ import {
   YOUR_STRATEGY_PRESET_DEFINITION_ID,
   activateYourStrategyRequestSchema,
   presetActivationRequestSchema,
+  type OperationalPresetsSessionFound,
   type MarketInfoItem,
   type PresetBacktestCurvePoint,
   type PresetBacktestPreviewResponse,
@@ -14,7 +15,10 @@ import {
   type YourStrategyBacktestPreviewSuccess,
   type YourStrategyDraft,
 } from "@pacifica/contracts";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { applyOperationalPresetsSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
+import { readOperationalPresetsViaBackend } from "../../features/account/backend-operational-page-sessions";
+import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { activatePreset } from "../../features/presets/preset-activation";
 import { previewPresetBacktestViaBackend } from "../../features/presets/backend-backtest-preview";
 import {
@@ -25,21 +29,26 @@ import {
 } from "../../features/presets/preset-catalog";
 import {
   activateYourStrategyViaBackend,
-  getYourStrategyViaBackend,
   previewYourStrategyBacktestViaBackend,
   saveYourStrategyViaBackend,
 } from "../../features/presets/your-strategy-backend";
-import {
-  getMarketInfoViaBackend,
-} from "../../features/runtime/backend-runtime-config";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
 export function PresetsPage() {
   const { t } = useI18n();
-  const { canAccessProduct, setPresetState, setRuntimeState, state } = useAppState();
+  const {
+    canAccessProduct,
+    setBuilderApprovalState,
+    setCredentialState,
+    setOperationalState,
+    setPresetState,
+    setRuntimeState,
+    state,
+  } = useAppState();
   const presets = getPresetCatalog(t);
+  const currentPresetsRef = useRef(state.presets);
   const selectedPresetDefinitionId = state.presets.selectedPresetDefinitionId;
   const isYourStrategySelected =
     selectedPresetDefinitionId === YOUR_STRATEGY_PRESET_DEFINITION_ID;
@@ -64,10 +73,47 @@ export function PresetsPage() {
     useState<string | null>(null);
   const [yourStrategyStep, setYourStrategyStep] = useState(1);
   const [marketInfo, setMarketInfo] = useState<MarketInfoItem[]>([]);
+  const [loadedYourStrategy, setLoadedYourStrategy] = useState<YourStrategy | null>(
+    null,
+  );
+  const [hasLoadedYourStrategy, setHasLoadedYourStrategy] = useState(false);
+  const applyPresetsSnapshot = useCallback(
+    (snapshot: OperationalPresetsSessionFound) => {
+      setMarketInfo(snapshot.marketInfo);
+      setLoadedYourStrategy(snapshot.yourStrategy);
+      setHasLoadedYourStrategy(true);
+      applyOperationalPresetsSessionSnapshot(snapshot, {
+        setBuilderApprovalState,
+        setCredentialState,
+        setOperationalState,
+        setPresetState,
+        setRuntimeState,
+        currentPresets: currentPresetsRef.current,
+      });
+    },
+    [
+      setBuilderApprovalState,
+      setCredentialState,
+      setOperationalState,
+      setPresetState,
+      setRuntimeState,
+    ],
+  );
+  const presetsSession = useOperationalPageSession({
+    readSnapshot: readOperationalPresetsViaBackend,
+    applySnapshot: applyPresetsSnapshot,
+    requestKey: "presets",
+    loadingMessage: t("runtimeStatusLoading"),
+    unavailableMessage: t("runtimeStatusError"),
+  });
   const selectedPreset = useMemo(
     () => getPresetCatalogItemByDefinitionId(selectedPresetDefinitionId, t),
     [selectedPresetDefinitionId, t],
   );
+
+  useEffect(() => {
+    currentPresetsRef.current = state.presets;
+  }, [state.presets]);
 
   const draftConfig = useMemo(() => {
     if (!selectedPresetDefinitionId || isYourStrategySelected) {
@@ -153,59 +199,38 @@ export function PresetsPage() {
     state.runtime.botStatus === "active" || state.runtime.botStatus === "syncing";
 
   useEffect(() => {
-    void (async () => {
-      const result = await getMarketInfoViaBackend();
-
-      if (result.status === "success") {
-        setMarketInfo(result.markets);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    let isCancelled = false;
-
     if (!isYourStrategySelected || !state.wallet.mainWalletPublicKey) {
       return;
     }
 
-    setYourStrategyStatusTone("info");
-    setYourStrategyStatusMessage(t("yourStrategyStatusLoading"));
+    if (!hasLoadedYourStrategy) {
+      setYourStrategyStatusTone("info");
+      setYourStrategyStatusMessage(t("yourStrategyStatusLoading"));
+      return;
+    }
 
-    void (async () => {
-      const result = await getYourStrategyViaBackend(state.wallet.mainWalletPublicKey!);
+    if (loadedYourStrategy) {
+      hydrateYourStrategyEditor(loadedYourStrategy);
+      setYourStrategyStatusTone("success");
+      setYourStrategyStatusMessage(t("yourStrategyLoadedMessage"));
+      return;
+    }
 
-      if (isCancelled) {
-        return;
-      }
-
-      if (result.status === "found") {
-        hydrateYourStrategyEditor(result.strategy);
-        setYourStrategyStatusTone("success");
-        setYourStrategyStatusMessage(t("yourStrategyLoadedMessage"));
-        return;
-      }
-
-      if (result.status === "not_found") {
-        const starterDraft = createDefaultYourStrategyDraft();
-        setYourStrategyRecord(null);
-        setYourStrategyDraft(starterDraft);
-        setYourStrategyEditorValue(JSON.stringify(starterDraft, null, 2));
-        setYourStrategyValidationMessage(null);
-        setYourStrategyPreview(null);
-        setYourStrategyStatusTone("neutral");
-        setYourStrategyStatusMessage(t("yourStrategyStatusNoSavedDraft"));
-        return;
-      }
-
-      setYourStrategyStatusTone("danger");
-      setYourStrategyStatusMessage(result.message);
-    })();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [isYourStrategySelected, state.wallet.mainWalletPublicKey, t]);
+    const starterDraft = createDefaultYourStrategyDraft();
+    setYourStrategyRecord(null);
+    setYourStrategyDraft(starterDraft);
+    setYourStrategyEditorValue(JSON.stringify(starterDraft, null, 2));
+    setYourStrategyValidationMessage(null);
+    setYourStrategyPreview(null);
+    setYourStrategyStatusTone("neutral");
+    setYourStrategyStatusMessage(t("yourStrategyStatusNoSavedDraft"));
+  }, [
+    hasLoadedYourStrategy,
+    isYourStrategySelected,
+    loadedYourStrategy,
+    state.wallet.mainWalletPublicKey,
+    t,
+  ]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -310,25 +335,28 @@ export function PresetsPage() {
     setYourStrategyStatusTone("info");
     setYourStrategyStatusMessage(t("yourStrategyStatusLoading"));
 
-    const result = await getYourStrategyViaBackend(state.wallet.mainWalletPublicKey);
+    const result = await presetsSession.reload();
 
-    if (result.status === "found") {
-      hydrateYourStrategyEditor(result.strategy);
+    if (result?.status === "found") {
       if (!options?.preservePreview) {
         setYourStrategyPreview(null);
       }
-      setYourStrategyStatusTone("success");
-      setYourStrategyStatusMessage(t("yourStrategyLoadedMessage"));
-      return;
-    }
-
-    if (result.status === "not_found") {
-      handleResetYourStrategyDraft();
+      if (result.yourStrategy) {
+        hydrateYourStrategyEditor(result.yourStrategy);
+        setYourStrategyStatusTone("success");
+        setYourStrategyStatusMessage(t("yourStrategyLoadedMessage"));
+      } else {
+        handleResetYourStrategyDraft();
+      }
       return;
     }
 
     setYourStrategyStatusTone("danger");
-    setYourStrategyStatusMessage(result.message);
+    setYourStrategyStatusMessage(
+      result?.status === "error"
+        ? result.message
+        : t("runtimeStatusError"),
+    );
   }
 
   async function handleSaveYourStrategy() {
@@ -877,6 +905,21 @@ export function PresetsPage() {
 
   return (
     <div className="page-stack">
+      {presetsSession.status === "loading" || presetsSession.status === "error" ? (
+        <section
+          className={`page-card status-banner status-banner--${
+            presetsSession.status === "error" ? "danger" : "warning"
+          }`}
+        >
+          <strong>
+            {presetsSession.status === "error"
+              ? t("runtimeStatusError")
+              : t("runtimeStatusLoading")}
+          </strong>
+          <p>{presetsSession.message}</p>
+        </section>
+      ) : null}
+
       <ConfirmationModal
         cancelLabel={t("modalCancelAction")}
         confirmLabel={

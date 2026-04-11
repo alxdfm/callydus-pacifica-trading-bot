@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { OperationalDashboardSessionFound } from "@pacifica/contracts";
 import { useLocation, useNavigate } from "react-router-dom";
-import { readAccountSessionViaBackend } from "../../features/account/backend-account-session";
-import { applyAccountSessionSnapshot } from "../../features/account/apply-account-session";
+import { applyOperationalDashboardSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
+import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";
+import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { getBotStatusPresentation } from "../../features/runtime/bot-status-presentation";
 import { getDashboardRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
@@ -118,6 +120,32 @@ export function DashboardPage() {
         : state.runtime.lastRuntimeMessage;
   const shouldShowRuntimeActionBanner = Boolean(runtimeBannerMessage);
 
+  const applyDashboardSnapshot = useCallback(
+    (snapshot: OperationalDashboardSessionFound) => {
+      applyOperationalDashboardSessionSnapshot(snapshot, {
+        setBuilderApprovalState,
+        setCredentialState,
+        setOperationalState,
+        setPresetState,
+        setRuntimeState,
+      });
+    },
+    [
+      setBuilderApprovalState,
+      setCredentialState,
+      setOperationalState,
+      setPresetState,
+      setRuntimeState,
+    ],
+  );
+  const dashboardSession = useOperationalPageSession({
+    readSnapshot: readOperationalDashboardViaBackend,
+    applySnapshot: applyDashboardSnapshot,
+    requestKey: "dashboard",
+    loadingMessage: t("runtimeStatusLoading"),
+    unavailableMessage: t("runtimeStatusError"),
+  });
+
   useEffect(() => {
     const onboardingFlashFromState =
       location.state &&
@@ -196,18 +224,9 @@ export function DashboardPage() {
       lastRuntimeMessage: commandResult.message,
     });
 
-    const sessionSnapshot = await readAccountSessionViaBackend({
-      walletAddress,
-    });
+    const sessionSnapshot = await dashboardSession.reload();
 
-    if (sessionSnapshot.status === "found") {
-      applyAccountSessionSnapshot(sessionSnapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-      });
+    if (sessionSnapshot?.status === "found") {
       setRuntimeState({
         screenStatus: "ready",
         lastRuntimeMessage: commandResult.message,
@@ -218,7 +237,7 @@ export function DashboardPage() {
     setRuntimeState({
       screenStatus: "error",
       lastRuntimeMessage:
-        sessionSnapshot.status === "error"
+        sessionSnapshot?.status === "error"
           ? sessionSnapshot.message
           : t("runtimeStatusError"),
     });
@@ -271,6 +290,21 @@ export function DashboardPage() {
           </span>
         </div>
       </section>
+
+      {dashboardSession.status === "loading" || dashboardSession.status === "error" ? (
+        <section
+          className={`page-card status-banner status-banner--${
+            dashboardSession.status === "error" ? "danger" : "warning"
+          }`}
+        >
+          <strong>
+            {dashboardSession.status === "error"
+              ? t("runtimeStatusError")
+              : t("runtimeStatusLoading")}
+          </strong>
+          <p>{dashboardSession.message}</p>
+        </section>
+      ) : null}
 
       {shouldShowRuntimeActionBanner ? (
         <section

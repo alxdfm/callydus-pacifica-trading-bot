@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PropsWithChildren } from "react";
+import { useEffect, type PropsWithChildren } from "react";
 import type { WalletProvider } from "@pacifica/contracts";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -6,10 +6,6 @@ import { createEmptyRuntimeState } from "../../runtime/runtime-state";
 import { useAppState } from "../../../state/app-state";
 import { useSolanaWalletPort } from "./SolanaWalletEnvironment";
 import { lookupOperationalAccountViaBackend } from "../../onboarding/backend-operational-account-lookup";
-import { readAccountSessionViaBackend } from "../../account/backend-account-session";
-import { applyAccountSessionSnapshot } from "../../account/apply-account-session";
-
-const ACCOUNT_SESSION_POLL_MS = 10_000;
 
 function mapAdapterNameToWalletProvider(
   providerName: string | null,
@@ -36,7 +32,6 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   const navigate = useNavigate();
   const { lastErrorCode, selectedProviderName } = useSolanaWalletPort();
   const {
-    canAccessProduct,
     setOperationalState,
     setPresetState,
     setBuilderApprovalState,
@@ -46,8 +41,6 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     setWalletSession,
     state,
   } = useAppState();
-  const hydratedSessionWalletRef = useRef<string | null>(null);
-  const sessionHydrationInFlightWalletRef = useRef<string | null>(null);
 
   useEffect(() => {
     const mainWalletPublicKey = publicKey?.toBase58() ?? null;
@@ -243,8 +236,6 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     const mainWalletPublicKey = publicKey?.toBase58() ?? null;
 
     if (!connected || !mainWalletPublicKey) {
-      hydratedSessionWalletRef.current = null;
-      sessionHydrationInFlightWalletRef.current = null;
       return;
     }
 
@@ -265,76 +256,58 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
 
     void lookupOperationalAccountViaBackend({
       walletAddress: mainWalletPublicKey,
-    }).then(async (result) => {
+    }).then((result) => {
       if (isCancelled) {
         return;
       }
 
       if (result.status === "found") {
-        const sessionSnapshot = await readAccountSessionViaBackend({
-          walletAddress: mainWalletPublicKey,
+        setBuilderApprovalState({
+          approvalStatus: "approved",
+          lastErrorCode: null,
+          lastMessage: "Existing operational account found for this wallet.",
+          retryable: false,
         });
-
-        if (isCancelled) {
-          return;
-        }
-
-        if (sessionSnapshot.status === "found") {
-          applyAccountSessionSnapshot(sessionSnapshot, {
-            setBuilderApprovalState,
-            setCredentialState,
-            setOperationalState,
-            setPresetState,
-            setRuntimeState,
-            setOnboardingState,
-          });
-        } else {
-          setBuilderApprovalState({
-            approvalStatus: "approved",
-            lastErrorCode: null,
-            lastMessage: "Existing operational account found for this wallet.",
-            retryable: false,
-          });
-          setCredentialState({
-            credentialId: result.credentialId,
-            agentWalletPublicKey: result.agentWalletPublicKey,
-            agentWalletPrivateKey: null,
-            credentialAlias: result.credentialAlias,
-            keyFingerprint: result.keyFingerprint,
-            validationStatus: "valid",
-            lastValidatedAt: null,
-            lastErrorCode: null,
-            lastValidationMessage: "Existing operational account found.",
-            retryable: false,
-          });
-          setOperationalState({
-            status: "verified",
-            lastVerifiedAt: null,
-            lastErrorCode: null,
-            lastMessage: "Existing operational account found.",
-            retryable: false,
-            probeSymbol: null,
-            probeClientOrderId: null,
-          });
-          setPresetState({
-            activePreset: null,
-            selectedPresetDefinitionId: null,
-            draftEditableConfig: null,
-            activationStatus: "idle",
-            activationMessage: null,
-          });
-          setRuntimeState({
-            ...createEmptyRuntimeState(),
-            screenStatus: "ready",
-          });
-          setOnboardingState({
-            status: "ready",
-            accountReady: true,
-            accountLookupStatus: "existing_account",
-            discoveredWalletAddress: mainWalletPublicKey,
-            showCompletionModal: false,
-          });
-        }
+        setCredentialState({
+          credentialId: result.credentialId,
+          agentWalletPublicKey: result.agentWalletPublicKey,
+          agentWalletPrivateKey: null,
+          credentialAlias: result.credentialAlias,
+          keyFingerprint: result.keyFingerprint,
+          validationStatus: "valid",
+          lastValidatedAt: null,
+          lastErrorCode: null,
+          lastValidationMessage: "Existing operational account found.",
+          retryable: false,
+        });
+        setOperationalState({
+          status: "verified",
+          lastVerifiedAt: null,
+          lastErrorCode: null,
+          lastMessage: "Existing operational account found.",
+          retryable: false,
+          probeSymbol: null,
+          probeClientOrderId: null,
+        });
+        setPresetState({
+          activePreset: null,
+          selectedPresetDefinitionId: null,
+          draftEditableConfig: null,
+          activationStatus: "idle",
+          activationMessage: null,
+        });
+        setRuntimeState({
+          ...createEmptyRuntimeState(),
+          screenStatus: "idle",
+          lastRuntimeMessage: null,
+        });
+        setOnboardingState({
+          status: "ready",
+          accountReady: true,
+          accountLookupStatus: "existing_account",
+          discoveredWalletAddress: mainWalletPublicKey,
+          showCompletionModal: false,
+        });
 
         if (location.pathname === "/onboarding") {
           window.setTimeout(() => {
@@ -378,126 +351,6 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     setRuntimeState,
     location.pathname,
     navigate,
-  ]);
-
-  useEffect(() => {
-    const mainWalletPublicKey = publicKey?.toBase58() ?? null;
-    const canHydrateExistingAccount =
-      canAccessProduct || state.onboarding.accountLookupStatus === "existing_account";
-
-    if (!connected || !mainWalletPublicKey || !canHydrateExistingAccount) {
-      if (!connected || !mainWalletPublicKey) {
-        hydratedSessionWalletRef.current = null;
-        sessionHydrationInFlightWalletRef.current = null;
-      }
-      return;
-    }
-
-    if (
-      hydratedSessionWalletRef.current === mainWalletPublicKey ||
-      sessionHydrationInFlightWalletRef.current === mainWalletPublicKey
-    ) {
-      return;
-    }
-
-    let isCancelled = false;
-
-    sessionHydrationInFlightWalletRef.current = mainWalletPublicKey;
-
-    void readAccountSessionViaBackend({
-      walletAddress: mainWalletPublicKey,
-    }).then((sessionSnapshot) => {
-      if (isCancelled) {
-        return;
-      }
-
-      sessionHydrationInFlightWalletRef.current = null;
-
-      if (sessionSnapshot.status !== "found") {
-        return;
-      }
-
-      applyAccountSessionSnapshot(sessionSnapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-        setOnboardingState,
-      });
-      hydratedSessionWalletRef.current = mainWalletPublicKey;
-    });
-
-    return () => {
-      isCancelled = true;
-
-      if (sessionHydrationInFlightWalletRef.current === mainWalletPublicKey) {
-        sessionHydrationInFlightWalletRef.current = null;
-      }
-    };
-  }, [
-    canAccessProduct,
-    connected,
-    publicKey,
-    setBuilderApprovalState,
-    setCredentialState,
-    setOnboardingState,
-    setOperationalState,
-    setPresetState,
-    setRuntimeState,
-    state.onboarding.accountLookupStatus,
-  ]);
-
-  useEffect(() => {
-    const mainWalletPublicKey = publicKey?.toBase58() ?? null;
-    const canPollExistingAccount =
-      canAccessProduct || state.onboarding.accountLookupStatus === "existing_account";
-
-    if (!connected || !mainWalletPublicKey || !canPollExistingAccount) {
-      return;
-    }
-
-    let isCancelled = false;
-
-    const refreshSession = async () => {
-      const sessionSnapshot = await readAccountSessionViaBackend({
-        walletAddress: mainWalletPublicKey,
-      });
-
-      if (isCancelled || sessionSnapshot.status !== "found") {
-        return;
-      }
-
-      applyAccountSessionSnapshot(sessionSnapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-        setOnboardingState,
-      });
-      hydratedSessionWalletRef.current = mainWalletPublicKey;
-    };
-
-    const intervalId = window.setInterval(() => {
-      void refreshSession();
-    }, ACCOUNT_SESSION_POLL_MS);
-
-    return () => {
-      isCancelled = true;
-      window.clearInterval(intervalId);
-    };
-  }, [
-    canAccessProduct,
-    connected,
-    publicKey,
-    setBuilderApprovalState,
-    setCredentialState,
-    setOnboardingState,
-    setOperationalState,
-    setPresetState,
-    setRuntimeState,
-    state.onboarding.accountLookupStatus,
   ]);
 
   return children;

@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
-import { readAccountSessionViaBackend } from "../../features/account/backend-account-session";
-import { applyAccountSessionSnapshot } from "../../features/account/apply-account-session";
+import { useCallback, useEffect, useState } from "react";
+import type { OperationalTradesSessionFound } from "@pacifica/contracts";
+import { applyOperationalTradesSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
+import { readOperationalTradesViaBackend } from "../../features/account/backend-operational-page-sessions";
+import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { closeTradeViaBackend } from "../../features/runtime/backend-bot-commands";
 import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
 import { useI18n } from "../../shared/i18n/I18nProvider";
@@ -22,6 +24,31 @@ export function TradesPage() {
   );
   const [closingTradeId, setClosingTradeId] = useState<string | null>(null);
   const [pendingCloseTradeId, setPendingCloseTradeId] = useState<string | null>(null);
+  const applyTradesSnapshot = useCallback(
+    (snapshot: OperationalTradesSessionFound) => {
+      applyOperationalTradesSessionSnapshot(snapshot, {
+        setBuilderApprovalState,
+        setCredentialState,
+        setOperationalState,
+        setPresetState,
+        setRuntimeState,
+      });
+    },
+    [
+      setBuilderApprovalState,
+      setCredentialState,
+      setOperationalState,
+      setPresetState,
+      setRuntimeState,
+    ],
+  );
+  const tradesSession = useOperationalPageSession({
+    readSnapshot: readOperationalTradesViaBackend,
+    applySnapshot: applyTradesSnapshot,
+    requestKey: "trades",
+    loadingMessage: t("runtimeStatusLoading"),
+    unavailableMessage: t("runtimeStatusError"),
+  });
 
   useEffect(() => {
     if (!state.runtime.currentTrades.find((trade) => trade.id === selectedTradeId)) {
@@ -72,18 +99,9 @@ export function TradesPage() {
       return;
     }
 
-    const sessionSnapshot = await readAccountSessionViaBackend({
-      walletAddress,
-    });
+    const sessionSnapshot = await tradesSession.reload();
 
-    if (sessionSnapshot.status === "found") {
-      applyAccountSessionSnapshot(sessionSnapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-      });
+    if (sessionSnapshot?.status === "found") {
       setRuntimeState({
         screenStatus: "ready",
         lastRuntimeMessage: t("runtimeActionCloseSuccess"),
@@ -92,7 +110,7 @@ export function TradesPage() {
       setRuntimeState({
         screenStatus: "error",
         lastRuntimeMessage:
-          sessionSnapshot.status === "error"
+          sessionSnapshot?.status === "error"
             ? sessionSnapshot.message
             : t("runtimeStatusError"),
       });
@@ -148,6 +166,21 @@ export function TradesPage() {
           </span>
         </div>
       </section>
+
+      {tradesSession.status === "loading" || tradesSession.status === "error" ? (
+        <section
+          className={`page-card status-banner status-banner--${
+            tradesSession.status === "error" ? "danger" : "warning"
+          }`}
+        >
+          <strong>
+            {tradesSession.status === "error"
+              ? t("runtimeStatusError")
+              : t("runtimeStatusLoading")}
+          </strong>
+          <p>{tradesSession.message}</p>
+        </section>
+      ) : null}
 
       {shouldShowRuntimeActionBanner ? (
         <section

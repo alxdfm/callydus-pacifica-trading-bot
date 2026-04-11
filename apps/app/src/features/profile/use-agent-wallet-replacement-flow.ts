@@ -4,8 +4,8 @@ import type {
   PacificaValidationErrorCode,
   PacificaOperationalVerificationResponse,
 } from "@pacifica/contracts";
-import { applyAccountSessionSnapshot } from "../account/apply-account-session";
-import { readAccountSessionViaBackend } from "../account/backend-account-session";
+import { applyOperationalProfileSessionSnapshot } from "../account/apply-operational-page-sessions";
+import { readOperationalProfileViaBackend } from "../account/backend-operational-page-sessions";
 import { validateAgentWalletViaBackend } from "../onboarding/backend-credential-validation";
 import { verifyAgentWalletOperationallyViaBackend } from "../onboarding/backend-operational-verification";
 import { pauseBotViaBackend } from "../runtime/backend-bot-commands";
@@ -179,12 +179,12 @@ export function useAgentWalletReplacementFlow() {
       return;
     }
 
-    const sessionSnapshot = await readAccountSessionViaBackend({
+    const sessionSnapshot = await readOperationalProfileViaBackend({
       walletAddress,
     });
 
     if (sessionSnapshot.status === "found") {
-      applyAccountSessionSnapshot(sessionSnapshot, {
+      applyOperationalProfileSessionSnapshot(sessionSnapshot, {
         setBuilderApprovalState,
         setCredentialState,
         setOperationalState,

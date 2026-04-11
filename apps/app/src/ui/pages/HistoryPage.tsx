@@ -1,14 +1,50 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { OperationalHistorySessionFound } from "@pacifica/contracts";
+import { applyOperationalHistorySessionSnapshot } from "../../features/account/apply-operational-page-sessions";
+import { readOperationalHistoryViaBackend } from "../../features/account/backend-operational-page-sessions";
+import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
 export function HistoryPage() {
-  const { state } = useAppState();
+  const {
+    setBuilderApprovalState,
+    setCredentialState,
+    setOperationalState,
+    setPresetState,
+    setRuntimeState,
+    state,
+  } = useAppState();
   const { t } = useI18n();
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(
     state.runtime.closedTrades[0]?.id ?? null,
   );
+  const applyHistorySnapshot = useCallback(
+    (snapshot: OperationalHistorySessionFound) => {
+      applyOperationalHistorySessionSnapshot(snapshot, {
+        setBuilderApprovalState,
+        setCredentialState,
+        setOperationalState,
+        setPresetState,
+        setRuntimeState,
+      });
+    },
+    [
+      setBuilderApprovalState,
+      setCredentialState,
+      setOperationalState,
+      setPresetState,
+      setRuntimeState,
+    ],
+  );
+  const historySession = useOperationalPageSession({
+    readSnapshot: readOperationalHistoryViaBackend,
+    applySnapshot: applyHistorySnapshot,
+    requestKey: "history",
+    loadingMessage: t("runtimeStatusLoading"),
+    unavailableMessage: t("runtimeStatusError"),
+  });
 
   useEffect(() => {
     if (
@@ -61,6 +97,21 @@ export function HistoryPage() {
           <p className="subtle">{t("historyTopbarDescription")}</p>
         </div>
       </section>
+
+      {historySession.status === "loading" || historySession.status === "error" ? (
+        <section
+          className={`page-card status-banner status-banner--${
+            historySession.status === "error" ? "danger" : "warning"
+          }`}
+        >
+          <strong>
+            {historySession.status === "error"
+              ? t("runtimeStatusError")
+              : t("runtimeStatusLoading")}
+          </strong>
+          <p>{historySession.message}</p>
+        </section>
+      ) : null}
 
       {shouldShowRuntimeActionBanner ? (
         <section
