@@ -54,6 +54,56 @@ describe("PacificaAccountStateGateway", () => {
     });
   });
 
+  it("prioriza campos especificos de pnl antes do fallback generico", async () => {
+    const fetchMock = vi.fn().mockImplementation((input: string | URL) => {
+      const url = input.toString();
+
+      if (url.includes("/api/v1/account")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: {
+                accountEquity: "210.50",
+                walletBalance: "200.00",
+                freeCollateral: "150.25",
+                totalMarginUsed: "60.25",
+                pnl: "0",
+                floating_pnl: "10.50",
+              },
+            }),
+          ),
+        );
+      }
+
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: [],
+          }),
+        ),
+      );
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const gateway = new PacificaAccountStateGateway({
+      pacificaRestBaseUrl: "https://pacifica.example",
+    });
+
+    const snapshot = await gateway.readAccountState({
+      walletAddress: "wallet-1",
+      nowIso: "2026-04-06T12:00:00.000Z",
+    });
+
+    expect(snapshot.balance).toEqual({
+      totalBalance: 210.5,
+      availableBalance: 150.25,
+      aggregatedPnl: 10.5,
+      capitalInUse: 60.25,
+      capturedAtIso: "2026-04-06T12:00:00.000Z",
+    });
+  });
+
   it("normaliza side ask/bid das posicoes da Pacifica corretamente", async () => {
     const fetchMock = vi.fn().mockImplementation((input: string | URL) => {
       const url = input.toString();
@@ -68,12 +118,16 @@ describe("PacificaAccountStateGateway", () => {
                   side: "ask",
                   amount: "0.14",
                   entry_price: "85.04",
+                  unrealizedPnl: "-1.25",
+                  markPrice: "83.79",
                 },
                 {
                   symbol: "BTC",
                   side: "bid",
                   amount: "0.001",
                   entry_price: "90000",
+                  pnl: "0.75",
+                  currentPrice: "90750",
                 },
               ],
             }),
@@ -107,8 +161,8 @@ describe("PacificaAccountStateGateway", () => {
         side: "short",
         quantity: 0.14,
         entryPrice: 85.04,
-        currentPrice: 85.04,
-        unrealizedPnl: 0,
+        currentPrice: 83.79,
+        unrealizedPnl: -1.25,
         pacificaTradeId: "position:SOL:short",
         isPlatformTrade: false,
       },
@@ -117,8 +171,8 @@ describe("PacificaAccountStateGateway", () => {
         side: "long",
         quantity: 0.001,
         entryPrice: 90000,
-        currentPrice: 90000,
-        unrealizedPnl: 0,
+        currentPrice: 90750,
+        unrealizedPnl: 0.75,
         pacificaTradeId: "position:BTC:long",
         isPlatformTrade: false,
       },

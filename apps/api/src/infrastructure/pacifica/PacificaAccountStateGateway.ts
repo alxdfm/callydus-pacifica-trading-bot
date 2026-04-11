@@ -86,38 +86,61 @@ function normalizeBalanceSnapshot(payload: unknown, fallbackNowIso: string) {
   const totalBalance = pickNumber(record, [
     "equity",
     "account_equity",
+    "accountEquity",
     "balance",
     "total_balance",
+    "totalBalance",
   ]);
   const availableBalance = pickNumber(record, [
     "available_balance",
+    "availableBalance",
     "available_to_spend",
     "free_collateral",
+    "freeCollateral",
     "available",
   ]);
   const realizedOrBaseBalance = pickNumber(record, [
     "balance",
     "wallet_balance",
+    "walletBalance",
     "account_balance",
+    "accountBalance",
     "cash_balance",
+    "cashBalance",
   ]);
   const aggregatedPnlDirect = pickNumber(record, [
     "unrealized_pnl",
     "unrealised_pnl",
-    "pnl",
     "account_unrealized_pnl",
     "account_unrealised_pnl",
+    "total_unrealized_pnl",
+    "total_unrealised_pnl",
+    "floating_pnl",
+    "floatingPnL",
+    "floatingPnl",
+    "unrealizedPnl",
+    "unrealisedPnl",
+    "accountUnrealizedPnl",
+    "accountUnrealisedPnl",
+  ]);
+  const aggregatedPnlLoose = pickNumber(record, [
+    "pnl",
   ]);
   const aggregatedPnl =
     aggregatedPnlDirect ??
     (totalBalance !== null && realizedOrBaseBalance !== null
       ? totalBalance - realizedOrBaseBalance
-      : null);
+      : null) ??
+    aggregatedPnlLoose;
   const capitalInUse = pickNumber(record, [
     "margin_used",
+    "marginUsed",
     "used_margin",
+    "usedMargin",
     "total_margin_used",
+    "totalMarginUsed",
     "capital_in_use",
+    "capitalInUse",
     "margin",
   ]);
 
@@ -161,9 +184,27 @@ function normalizePositions(
       );
       const entryPrice = pickNumber(row, ["entry_price", "avg_entry_price"]);
       const unrealizedPnl =
-        pickNumber(row, ["unrealized_pnl", "pnl"]) ?? 0;
+        pickNumber(row, [
+          "unrealized_pnl",
+          "unrealised_pnl",
+          "unrealizedPnl",
+          "unrealisedPnl",
+          "floating_pnl",
+          "floatingPnL",
+          "floatingPnl",
+          "position_pnl",
+          "positionPnl",
+          "pnl",
+        ]) ?? 0;
       const currentPrice =
-        pickNumber(row, ["mark_price", "current_price", "index_price"]) ??
+        pickNumber(row, [
+          "mark_price",
+          "markPrice",
+          "current_price",
+          "currentPrice",
+          "index_price",
+          "indexPrice",
+        ]) ??
         recentTradeHistory.find((trade) => trade.symbol === symbol)?.price ??
         entryPrice;
 
