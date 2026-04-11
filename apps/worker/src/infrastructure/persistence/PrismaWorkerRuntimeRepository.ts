@@ -9,7 +9,6 @@ import type {
   AcquiredWorkerLease,
   AppendWorkerOperationalEventInput,
   CancelSignalDecisionInput,
-  ClaimSignalDecisionInput,
   CloseOpenTradeInput,
   CompleteSignalDecisionInput,
   CreateOpenTradeFromExecutionInput,

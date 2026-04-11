@@ -7,7 +7,6 @@ import {
   findMarketInfo,
   normalizeMarketOrderInput,
   PacificaClient,
-  type PacificaPosition,
 } from "@pacifica/pacifica-trading";
 import {
   buildPresetRiskPlans,
@@ -575,7 +574,7 @@ export function createOperationalWorker(
  *   position is still alive
  */
   async function synchronizeOpenTradesWithLatestCandle(
-    lease: AcquiredWorkerLease,
+    _lease: AcquiredWorkerLease,
     snapshot: NonNullable<
       Awaited<ReturnType<WorkerRuntimeRepository["readOwnedRuntimeSnapshot"]>>
     >,

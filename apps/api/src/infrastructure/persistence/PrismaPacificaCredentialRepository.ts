@@ -5,9 +5,7 @@ import {
   yourStrategyDraftSchema,
   yourStrategySchema,
   type PresetSymbol,
-  type PresetTechnicalContract,
   type YourStrategy,
-  type YourStrategyActivationBlocker,
 } from "@pacifica/contracts";
 import { toPacificaMarketSymbol } from "@pacifica/preset-engine";
 import type { PacificaCredential } from "../../domain/pacifica-credentials/PacificaCredential";
@@ -1600,9 +1598,6 @@ export class PrismaPacificaCredentialRepository
           openTradesBySymbol.set(pacificaSymbol, trade);
         }
       }
-      const externalSymbols = new Set(
-        input.snapshot.positions.map((position) => position.symbol),
-      );
       let detectedDivergence = false;
       let divergenceMessage: string | null = null;
 

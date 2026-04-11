@@ -1,6 +1,5 @@
 import type {
   MarketCandle,
-  MarketCandleInterval,
   MarketCandleRequest,
   MarketInfoItem,
   MarketPriceSnapshot,
@@ -9,7 +8,6 @@ import type { MarketDataPort } from "../../domain/market-data/MarketDataPort";
 import type {
   MarketDataCandleSnapshot,
   MarketDataSnapshotRepository,
-  MarketSnapshotStatus,
 } from "../../domain/market-data/MarketDataSnapshotRepository";
 import {
   isFreshCandleSnapshot,

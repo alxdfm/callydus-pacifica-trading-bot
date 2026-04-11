@@ -8,7 +8,7 @@ import { deriveSignerPublicKeyFromPrivateKey } from "./PacificaClient";
 export class PacificaCredentialValidationGateway
   implements PacificaCredentialValidationPort
 {
-  constructor(private readonly environment: ApiEnvironment) {}
+  constructor(_environment: ApiEnvironment) {}
 
   async validateAgentWallet(input: {
     mainWalletPublicKey: string;

@@ -1,9 +1,5 @@
 import type {
-  DashboardContract,
-  HistoryContract,
   MarketInfoItem,
-  OnboardingContract,
-  PresetCatalogContract,
 } from "@pacifica/contracts";
 import type { PrismaClient } from "@prisma/client";
 import { randomUUID } from "node:crypto";
@@ -120,13 +116,6 @@ import { PersistedMarketDataGateway } from "./infrastructure/market-data/Persist
 import { PrismaMarketDataSnapshotRepository } from "./infrastructure/persistence/PrismaMarketDataSnapshotRepository";
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
-
-type ApiReadModels = {
-  onboarding: OnboardingContract;
-  dashboard: DashboardContract;
-  presets: PresetCatalogContract;
-  history: HistoryContract;
-};
 
 const supportedPresetMarketSymbols = new Set(["BTC", "ETH", "SOL"]);
 
