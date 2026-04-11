@@ -30,7 +30,7 @@ Validar assinatura, credencial operacional, agent wallet e builder setup antes d
 ## 2. Abertura de Ordem de Mercado
 
 ### Objetivo
-Abrir a posicao real na Pacifica com protecao embutida.
+Abrir a posicao real na Pacifica e aplicar protecao coerente com o `entryPrice` real.
 
 ### Implementacao correta
 - usar `POST /api/v1/orders/create_market`
@@ -41,24 +41,26 @@ Abrir a posicao real na Pacifica com protecao embutida.
   - `slippage_percent`
   - `reduce_only = false`
   - `client_order_id` raiz como UUID valido
-- embutir `take_profit` e `stop_loss` no mesmo payload
 - incluir `builder_code` quando configurado
+- esperar a posicao aparecer em `/positions`
+- ler o `entryPrice` real retornado pela Pacifica
+- recalcular `stop loss` e `take profit` a partir do `entryPrice` real
+- aplicar a protecao via `POST /api/v1/positions/tpsl`
 
 ### Mapeamento de lado
 - `long -> bid`
 - `short -> ask`
 
-### Formato validado de protecao embutida
+### Formato validado da protecao pos-abertura
 - `take_profit`
   - `stop_price`
-  - `limit_price`
 - `stop_loss`
   - `stop_price`
-  - `limit_price`
 
 ### Regra importante
-- nao enviar `client_order_id` dentro de `take_profit` e `stop_loss`, a menos que seja um UUID valido e explicitamente necessario
 - o campo raiz `client_order_id` da ordem principal continua obrigatorio para rastreio
+- `TP/SL` nao deve ser derivado do preco de referencia do sinal quando a execucao real entrar com outro preco
+- a protecao precisa usar o `entryPrice` real da posicao que a Pacifica abriu
 
 ## 3. Validacao de TP/SL Antes do Envio
 
@@ -127,9 +129,15 @@ Refletir corretamente o estado real da Pacifica no read model local.
 
 ### Fechamento manual
 - a API nao deve fechar localmente de imediato
-- o worker submete o `reduce_only`
+- o worker primeiro consulta a posicao real em `/positions`
+- se a posicao ainda existir, o worker submete o `reduce_only` usando o `amount` real da exchange
+- se a posicao nao existir mais, o worker nao envia `reduce_only` cego
 - o trade local entra em `closing`
 - a reconciliacao fecha o lifecycle local com base no estado real da exchange
+
+### UX do close manual
+- `Close trade` e `Close selected trade` devem ficar desabilitados enquanto o trade estiver em `waiting` / `closing`
+- isso evita clique repetido em um close que ja esta em processamento
 
 ## 7. Builder Code
 
@@ -157,7 +165,15 @@ Refletir corretamente o estado real da Pacifica no read model local.
 
 ## 9. Estado Atual Validado
 - readiness check funcional com assinatura canonica + `base58`
-- `create_market_order` funcional com TP/SL embutidos
+- `create_market_order` funcional para abertura limpa da posicao
+- `set_position_tpsl` funcional apos leitura do `entryPrice` real da posicao
 - fechamento manual funcional via worker com `reduce_only`
 - reconciliacao correta de `bid/ask`
 - read model exibindo `stopLossPrice` e `takeProfitPrice` reais
+
+## 10. Follow-up Explicitado
+- atualizar `TP/SL` de posicoes ja protegidas depois que o trade estiver aberto continua fora do escopo imediato
+- o foco atual e:
+  - abrir a posicao corretamente
+  - aplicar a protecao inicial correta
+  - fechar manualmente com base no estado real da exchange

@@ -127,3 +127,52 @@
 ### Licao
 - em payloads aninhados da Pacifica, campo opcional nao deve ser inventado ou adaptado livremente
 - se a doc pedir UUID, use UUID puro ou omita o campo
+
+## 2026-04-11 - `TP/SL` calculado pelo preco do sinal em vez do `entryPrice` real
+
+### Sintoma
+- em alguns trades `long`, a UI passava a mostrar:
+  - `stop loss > entry`
+  - ou `take profit < entry`
+- a Pacifica podia aceitar apenas parte da protecao
+
+### Causa mapeada
+- o plano de risco era calculado a partir do preco de referencia do sinal
+- a ordem real podia entrar com slippage e ser executada em outro `entryPrice`
+- isso deixava `TP/SL` valido para o sinal, mas invalido para a posicao real aberta
+
+### Evidencia
+- `SignalDecision.entryReferencePrice` e `OpenTrade.entryPrice` divergiam no banco
+- os mesmos `stopLossPrice` e `takeProfitPrice` eram persistidos mesmo com `entryPrice` real diferente
+
+### Correcao aplicada
+- a abertura voltou a sair sem `TP/SL` embutido
+- o worker passou a esperar a posicao aparecer em `/positions`
+- o worker passou a recalcular a protecao com base no `entryPrice` real da exchange
+- depois disso, a protecao e aplicada por `set_position_tpsl`
+
+### Arquivos envolvidos
+- [apps/worker/src/application/createOperationalWorker.ts](/home/alxdfm/Projects/callydus/trading-bot-pacifica/apps/worker/src/application/createOperationalWorker.ts)
+- [packages/pacifica-trading/src/index.ts](/home/alxdfm/Projects/callydus/trading-bot-pacifica/packages/pacifica-trading/src/index.ts)
+- [packages/preset-engine/src/index.ts](/home/alxdfm/Projects/callydus/trading-bot-pacifica/packages/preset-engine/src/index.ts)
+
+### Licao
+- `TP/SL` precisa nascer do `entryPrice` real que a exchange executou, nao apenas do preco teorico do sinal
+
+## 2026-04-11 - Close manual repetido enquanto o trade ja estava em `waiting`
+
+### Sintoma
+- clique repetido de `Close trade` podia gerar novo `manual close`
+- o worker podia receber tentativa redundante e bater em `422`
+
+### Causa mapeada
+- a UI ainda deixava `Close trade` e `Close selected trade` ativos enquanto o trade ja estava em `waiting` / `closing`
+
+### Correcao aplicada
+- os botoes de close passaram a ficar desabilitados enquanto o trade nao estiver `open`
+
+### Arquivos envolvidos
+- [apps/app/src/ui/pages/TradesPage.tsx](/home/alxdfm/Projects/callydus/trading-bot-pacifica/apps/app/src/ui/pages/TradesPage.tsx)
+
+### Licao
+- a UI precisa refletir o lifecycle real do comando operacional para nao incentivar reenvio desnecessario
