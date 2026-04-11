@@ -4,6 +4,7 @@ import {
   botRuntimeStateSchema,
   yourStrategyDraftSchema,
   yourStrategySchema,
+  type CloseReason,
   type PresetSymbol,
   type YourStrategy,
 } from "@pacifica/contracts";
@@ -2178,6 +2179,7 @@ function findMatchingExternalCloseEvent(
     price: number;
     pnl: number;
     createdAtIso: string;
+    cause: string | null;
   }>,
 ) {
   const expectedSide = side === "long" ? "close_long" : "close_short";
@@ -2193,13 +2195,65 @@ function findMatchingExternalCloseEvent(
     price: match.price,
     pnl: match.pnl,
     createdAtIso: match.createdAtIso,
-    closeReason:
-      match.clientOrderId?.endsWith(":tp")
-        ? ("take_profit" as const)
-        : match.clientOrderId?.endsWith(":sl")
-          ? ("stop_loss" as const)
-          : ("system" as const),
+    closeReason: inferPacificaCloseReason(match),
   };
+}
+
+export function inferPacificaCloseReason(input: {
+  cause: string | null;
+  clientOrderId: string | null;
+}): CloseReason {
+  const normalizedCause = normalizePacificaReasonToken(input.cause);
+
+  if (normalizedCause) {
+    return normalizedCause;
+  }
+
+  if (input.clientOrderId?.endsWith(":tp")) {
+    return "take_profit";
+  }
+
+  if (input.clientOrderId?.endsWith(":sl")) {
+    return "stop_loss";
+  }
+
+  return "system";
+}
+
+function normalizePacificaReasonToken(value: string | null): CloseReason | null {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (
+    normalized === "tp" ||
+    normalized.includes("take_profit") ||
+    normalized.includes("take profit") ||
+    normalized.includes("profit")
+  ) {
+    return "take_profit";
+  }
+
+  if (
+    normalized === "sl" ||
+    normalized.includes("stop_loss") ||
+    normalized.includes("stop loss") ||
+    normalized.includes("stopped")
+  ) {
+    return "stop_loss";
+  }
+
+  if (normalized.includes("manual")) {
+    return "manual";
+  }
+
+  if (normalized.includes("error")) {
+    return "error";
+  }
+
+  return null;
 }
 
 function mapBotCommand(command: {

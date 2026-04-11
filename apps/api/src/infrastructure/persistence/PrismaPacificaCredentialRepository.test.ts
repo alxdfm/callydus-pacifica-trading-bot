@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { PrismaPacificaCredentialRepository } from "./PrismaPacificaCredentialRepository";
+import {
+  inferPacificaCloseReason,
+  PrismaPacificaCredentialRepository,
+} from "./PrismaPacificaCredentialRepository";
 
 function createDraft() {
   return {
@@ -195,5 +198,48 @@ describe("PrismaPacificaCredentialRepository - YOUR Strategy", () => {
     expect(strategy?.operatorAccountId).toBe(
       "11111111-1111-4111-8111-111111111111",
     );
+  });
+});
+
+describe("inferPacificaCloseReason", () => {
+  it("prioriza o campo cause da Pacifica para take profit e stop loss", () => {
+    expect(
+      inferPacificaCloseReason({
+        cause: "take_profit",
+        clientOrderId: null,
+      }),
+    ).toBe("take_profit");
+
+    expect(
+      inferPacificaCloseReason({
+        cause: "stop loss",
+        clientOrderId: null,
+      }),
+    ).toBe("stop_loss");
+  });
+
+  it("mantem compatibilidade com clientOrderId legado quando necessario", () => {
+    expect(
+      inferPacificaCloseReason({
+        cause: null,
+        clientOrderId: "order-1:tp",
+      }),
+    ).toBe("take_profit");
+
+    expect(
+      inferPacificaCloseReason({
+        cause: null,
+        clientOrderId: "order-1:sl",
+      }),
+    ).toBe("stop_loss");
+  });
+
+  it("faz fallback para system quando nao ha evidencia suficiente", () => {
+    expect(
+      inferPacificaCloseReason({
+        cause: null,
+        clientOrderId: "order-1",
+      }),
+    ).toBe("system");
   });
 });
