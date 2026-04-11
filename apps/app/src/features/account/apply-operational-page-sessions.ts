@@ -19,38 +19,13 @@ type ApplyOperationalPageSessionDependencies = {
   setOperationalState: (value: Partial<OperationalVerificationState>) => void;
   setPresetState: (value: Partial<AppSessionState["presets"]>) => void;
   setRuntimeState: (value: Partial<RuntimeState>) => void;
-  setOnboardingState?: (value: Partial<AppSessionState["onboarding"]>) => void;
   currentPresets?: AppSessionState["presets"];
 };
-
-function applyOperationalShell(
-  snapshot: {
-    walletAddress: string;
-    onboardingStatus: AppSessionState["onboarding"]["status"];
-    activePreset: AppSessionState["presets"]["activePreset"];
-    canAccessProduct: boolean;
-  },
-  dependencies: ApplyOperationalPageSessionDependencies,
-) {
-  dependencies.setPresetState({
-    activePreset: snapshot.activePreset,
-  });
-
-  dependencies.setOnboardingState?.({
-    status: snapshot.onboardingStatus,
-    accountReady: snapshot.canAccessProduct,
-    accountLookupStatus: "existing_account",
-    discoveredWalletAddress: snapshot.walletAddress,
-    showCompletionModal: false,
-  });
-}
 
 export function applyOperationalProfileSessionSnapshot(
   snapshot: OperationalProfileSessionFound,
   dependencies: ApplyOperationalPageSessionDependencies,
 ) {
-  applyOperationalShell(snapshot, dependencies);
-
   dependencies.setBuilderApprovalState({
     approvalStatus: snapshot.builderApproved ? "approved" : "pending",
     lastErrorCode: null,
@@ -89,8 +64,6 @@ export function applyOperationalDashboardSessionSnapshot(
   snapshot: OperationalDashboardSessionFound,
   dependencies: ApplyOperationalPageSessionDependencies,
 ) {
-  applyOperationalShell(snapshot, dependencies);
-
   dependencies.setRuntimeState({
     balance: snapshot.runtime.balance,
     botStatus: snapshot.runtime.botStatus,
@@ -111,22 +84,6 @@ export function applyOperationalPresetsSessionSnapshot(
   snapshot: OperationalPresetsSessionFound,
   dependencies: ApplyOperationalPageSessionDependencies,
 ) {
-  applyOperationalShell(snapshot, dependencies);
-
-  const shouldHydratePresetSelection =
-    dependencies.currentPresets?.selectedPresetDefinitionId == null &&
-    dependencies.currentPresets?.draftEditableConfig == null;
-
-  dependencies.setPresetState({
-    activePreset: snapshot.activePreset,
-    ...(shouldHydratePresetSelection
-      ? {
-          selectedPresetDefinitionId:
-            snapshot.activePreset?.presetDefinitionId ?? null,
-          draftEditableConfig: snapshot.activePreset?.editableConfig ?? null,
-        }
-      : {}),
-  });
   dependencies.setRuntimeState({
     balance: snapshot.runtime.balance,
     botStatus: snapshot.runtime.botStatus,
@@ -138,8 +95,6 @@ export function applyOperationalTradesSessionSnapshot(
   snapshot: OperationalTradesSessionFound,
   dependencies: ApplyOperationalPageSessionDependencies,
 ) {
-  applyOperationalShell(snapshot, dependencies);
-
   dependencies.setRuntimeState({
     botStatus: snapshot.runtime.botStatus,
     syncStatus: snapshot.runtime.syncStatus,
@@ -156,8 +111,6 @@ export function applyOperationalHistorySessionSnapshot(
   snapshot: OperationalHistorySessionFound,
   dependencies: ApplyOperationalPageSessionDependencies,
 ) {
-  applyOperationalShell(snapshot, dependencies);
-
   dependencies.setRuntimeState({
     botStatus: snapshot.runtime.botStatus,
     syncStatus: snapshot.runtime.syncStatus,

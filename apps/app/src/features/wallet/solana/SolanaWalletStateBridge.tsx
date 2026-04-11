@@ -1,7 +1,9 @@
-import { useEffect, type PropsWithChildren } from "react";
+import { useEffect, useRef, type PropsWithChildren } from "react";
 import type { WalletProvider } from "@pacifica/contracts";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { applyAccountSessionSnapshot } from "../../account/apply-account-session";
+import { readAccountSessionViaBackend } from "../../account/backend-account-session";
 import { createEmptyRuntimeState } from "../../runtime/runtime-state";
 import { useAppState } from "../../../state/app-state";
 import { useSolanaWalletPort } from "./SolanaWalletEnvironment";
@@ -41,6 +43,8 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     setWalletSession,
     state,
   } = useAppState();
+  const hydratedSessionWalletRef = useRef<string | null>(null);
+  const sessionHydrationInFlightWalletRef = useRef<string | null>(null);
 
   useEffect(() => {
     const mainWalletPublicKey = publicKey?.toBase58() ?? null;
@@ -236,6 +240,8 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     const mainWalletPublicKey = publicKey?.toBase58() ?? null;
 
     if (!connected || !mainWalletPublicKey) {
+      hydratedSessionWalletRef.current = null;
+      sessionHydrationInFlightWalletRef.current = null;
       return;
     }
 
@@ -351,6 +357,77 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     setRuntimeState,
     location.pathname,
     navigate,
+  ]);
+
+  useEffect(() => {
+    const mainWalletPublicKey = publicKey?.toBase58() ?? null;
+    const canHydrateExistingAccount =
+      connected &&
+      Boolean(mainWalletPublicKey) &&
+      (state.onboarding.accountLookupStatus === "existing_account" ||
+        state.onboarding.accountReady);
+
+    if (!canHydrateExistingAccount || !mainWalletPublicKey) {
+      if (!connected || !mainWalletPublicKey) {
+        hydratedSessionWalletRef.current = null;
+        sessionHydrationInFlightWalletRef.current = null;
+      }
+      return;
+    }
+
+    if (
+      hydratedSessionWalletRef.current === mainWalletPublicKey ||
+      sessionHydrationInFlightWalletRef.current === mainWalletPublicKey
+    ) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    sessionHydrationInFlightWalletRef.current = mainWalletPublicKey;
+
+    void readAccountSessionViaBackend({
+      walletAddress: mainWalletPublicKey,
+    }).then((sessionSnapshot) => {
+      if (isCancelled) {
+        return;
+      }
+
+      sessionHydrationInFlightWalletRef.current = null;
+
+      if (sessionSnapshot.status !== "found") {
+        return;
+      }
+
+      applyAccountSessionSnapshot(sessionSnapshot, {
+        setBuilderApprovalState,
+        setCredentialState,
+        setOperationalState,
+        setPresetState,
+        setRuntimeState,
+        setOnboardingState,
+      });
+      hydratedSessionWalletRef.current = mainWalletPublicKey;
+    });
+
+    return () => {
+      isCancelled = true;
+
+      if (sessionHydrationInFlightWalletRef.current === mainWalletPublicKey) {
+        sessionHydrationInFlightWalletRef.current = null;
+      }
+    };
+  }, [
+    connected,
+    publicKey,
+    setBuilderApprovalState,
+    setCredentialState,
+    setOnboardingState,
+    setOperationalState,
+    setPresetState,
+    setRuntimeState,
+    state.onboarding.accountLookupStatus,
+    state.onboarding.accountReady,
   ]);
 
   return children;

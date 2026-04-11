@@ -190,7 +190,6 @@ export function useAgentWalletReplacementFlow() {
         setOperationalState,
         setPresetState,
         setRuntimeState,
-        setOnboardingState,
       });
       setModalFeedback("Bot paused successfully. You can now validate the replacement Agent Wallet.");
       setModalFeedbackTone("info");

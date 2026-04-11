@@ -86,7 +86,6 @@ export function ProfilePage() {
     resetOnboardingState,
     setBuilderApprovalState,
     setCredentialState,
-    setOnboardingState,
     setOperationalState,
     setPresetState,
     setRuntimeState,
@@ -105,13 +104,11 @@ export function ProfilePage() {
         setOperationalState,
         setPresetState,
         setRuntimeState,
-        setOnboardingState,
       });
     },
     [
       setBuilderApprovalState,
       setCredentialState,
-      setOnboardingState,
       setOperationalState,
       setPresetState,
       setRuntimeState,
