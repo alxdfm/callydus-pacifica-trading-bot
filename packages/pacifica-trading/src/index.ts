@@ -166,6 +166,20 @@ export class PacificaClient {
     slippagePercent: string;
     clientOrderId: string;
     reduceOnly?: boolean;
+    takeProfit?:
+      | {
+          stopPrice: string;
+          limitPrice?: string | null;
+          clientOrderId?: string | null;
+        }
+      | null;
+    stopLoss?:
+      | {
+          stopPrice: string;
+          limitPrice?: string | null;
+          clientOrderId?: string | null;
+        }
+      | null;
   }): Promise<unknown> {
     return this.requestSigned({
       path: "/api/v1/orders/create_market",
@@ -177,6 +191,32 @@ export class PacificaClient {
         slippage_percent: input.slippagePercent,
         reduce_only: Boolean(input.reduceOnly),
         client_order_id: input.clientOrderId,
+        ...(input.takeProfit
+          ? {
+              take_profit: {
+                stop_price: input.takeProfit.stopPrice,
+                ...(input.takeProfit.limitPrice
+                  ? { limit_price: input.takeProfit.limitPrice }
+                  : {}),
+                ...(input.takeProfit.clientOrderId
+                  ? { client_order_id: input.takeProfit.clientOrderId }
+                  : {}),
+              },
+            }
+          : {}),
+        ...(input.stopLoss
+          ? {
+              stop_loss: {
+                stop_price: input.stopLoss.stopPrice,
+                ...(input.stopLoss.limitPrice
+                  ? { limit_price: input.stopLoss.limitPrice }
+                  : {}),
+                ...(input.stopLoss.clientOrderId
+                  ? { client_order_id: input.stopLoss.clientOrderId }
+                  : {}),
+              },
+            }
+          : {}),
         ...(this.builderCode ? { builder_code: this.builderCode } : {}),
       },
     });
@@ -185,8 +225,20 @@ export class PacificaClient {
   async setPositionTpsl(input: {
     symbol: string;
     side: "bid" | "ask";
-    takeProfit?: string | null;
-    stopLoss?: string | null;
+    takeProfit?:
+      | {
+          stopPrice: string;
+          limitPrice?: string | null;
+          clientOrderId?: string | null;
+        }
+      | null;
+    stopLoss?:
+      | {
+          stopPrice: string;
+          limitPrice?: string | null;
+          clientOrderId?: string | null;
+        }
+      | null;
   }): Promise<unknown> {
     return this.requestSigned({
       path: "/api/v1/positions/tpsl",
@@ -194,8 +246,26 @@ export class PacificaClient {
       data: {
         symbol: input.symbol,
         side: input.side,
-        ...(input.takeProfit ? { take_profit: input.takeProfit } : {}),
-        ...(input.stopLoss ? { stop_loss: input.stopLoss } : {}),
+        ...(input.takeProfit
+          ? {
+              take_profit: {
+                stop_price: input.takeProfit.stopPrice,
+                ...(input.takeProfit.clientOrderId
+                  ? { client_order_id: input.takeProfit.clientOrderId }
+                  : {}),
+              },
+            }
+          : {}),
+        ...(input.stopLoss
+          ? {
+              stop_loss: {
+                stop_price: input.stopLoss.stopPrice,
+                ...(input.stopLoss.clientOrderId
+                  ? { client_order_id: input.stopLoss.clientOrderId }
+                  : {}),
+              },
+            }
+          : {}),
         ...(this.builderCode ? { builder_code: this.builderCode } : {}),
       },
     });

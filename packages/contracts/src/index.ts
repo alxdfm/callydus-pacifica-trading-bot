@@ -778,6 +778,8 @@ export const openTradeSchema = z.object({
   symbol: z.string().min(1),
   side: tradeSideSchema,
   entryPrice: z.number(),
+  stopLossPrice: z.number().nullable(),
+  takeProfitPrice: z.number().nullable(),
   currentPrice: z.number(),
   quantity: z.number(),
   capitalAllocated: z.number(),

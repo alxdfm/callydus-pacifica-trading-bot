@@ -9,6 +9,7 @@ import {
   type YourStrategy,
   type YourStrategyActivationBlocker,
 } from "@pacifica/contracts";
+import { toPacificaMarketSymbol } from "@pacifica/preset-engine";
 import type { PacificaCredential } from "../../domain/pacifica-credentials/PacificaCredential";
 import type {
   FindActiveCredentialInput,
@@ -1223,9 +1224,15 @@ export class PrismaPacificaCredentialRepository
         });
       }
 
-      const openTradesBySymbol = new Map(
-        operatorAccount.openTrades.map((trade) => [trade.symbol, trade]),
-      );
+      const openTradesBySymbol = new Map<string, (typeof operatorAccount.openTrades)[number]>();
+      for (const trade of operatorAccount.openTrades) {
+        openTradesBySymbol.set(trade.symbol, trade);
+        const pacificaSymbol = toPacificaMarketSymbol(trade.symbol);
+
+        if (pacificaSymbol) {
+          openTradesBySymbol.set(pacificaSymbol, trade);
+        }
+      }
       const externalSymbols = new Set(
         input.snapshot.positions.map((position) => position.symbol),
       );
@@ -1295,7 +1302,11 @@ export class PrismaPacificaCredentialRepository
       }
 
       for (const localTrade of operatorAccount.openTrades) {
-        if (externalSymbols.has(localTrade.symbol)) {
+        if (
+          input.snapshot.positions.some((position) =>
+            symbolsMatchLocalAndPacifica(localTrade.symbol, position.symbol),
+          )
+        ) {
           continue;
         }
 
@@ -1894,6 +1905,8 @@ function mapOpenTrade(trade: {
   symbol: string;
   side: "long" | "short";
   entryPrice: Prisma.Decimal;
+  stopLossPrice: Prisma.Decimal | null;
+  takeProfitPrice: Prisma.Decimal | null;
   currentPrice: Prisma.Decimal;
   quantity: Prisma.Decimal;
   capitalAllocated: Prisma.Decimal;
@@ -1909,6 +1922,10 @@ function mapOpenTrade(trade: {
     symbol: trade.symbol,
     side: trade.side,
     entryPrice: decimalToNumber(trade.entryPrice),
+    stopLossPrice: trade.stopLossPrice ? decimalToNumber(trade.stopLossPrice) : null,
+    takeProfitPrice: trade.takeProfitPrice
+      ? decimalToNumber(trade.takeProfitPrice)
+      : null,
     currentPrice: decimalToNumber(trade.currentPrice),
     quantity: decimalToNumber(trade.quantity),
     capitalAllocated: decimalToNumber(trade.capitalAllocated),
@@ -1951,6 +1968,16 @@ function mapClosedTrade(trade: {
     closedAt: trade.closedAt.toISOString(),
     isPlatformTrade: trade.isPlatformTrade,
   };
+}
+
+function symbolsMatchLocalAndPacifica(
+  localSymbol: string,
+  pacificaSymbol: string,
+) {
+  return (
+    localSymbol === pacificaSymbol ||
+    toPacificaMarketSymbol(localSymbol) === pacificaSymbol
+  );
 }
 
 function mapOperationalAlert(alert: {

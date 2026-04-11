@@ -2,6 +2,7 @@ import {
   presetEditableConfigSchema,
   presetTechnicalContractSchema,
 } from "@pacifica/contracts";
+import { toPacificaMarketSymbol } from "@pacifica/preset-engine";
 import { Prisma, PrismaClient } from "@prisma/client";
 import type {
   AcquireWorkerLeaseInput,
@@ -381,6 +382,47 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
     input: CreateSignalDecisionInput,
   ): Promise<SignalDecisionWriteResult> {
     return this.prisma.$transaction(async (tx) => {
+      const existingOpenTrade = await tx.openTrade.findFirst({
+        where: {
+          operatorAccountId: input.operatorAccountId,
+          OR: [{ symbol: input.symbol }, { symbol: input.marketSymbol }],
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (existingOpenTrade) {
+        return {
+          status: "skipped_open_trade",
+          decisionId: null,
+        };
+      }
+
+      const pendingDecisionForSymbol = await tx.signalDecision.findFirst({
+        where: {
+          operatorAccountId: input.operatorAccountId,
+          decisionStatus: {
+            in: ["pending", "processing"],
+          },
+          OR: [
+            { symbol: input.symbol },
+            { symbol: input.marketSymbol },
+            { marketSymbol: input.marketSymbol },
+          ],
+        },
+        orderBy: {
+          requestedAt: "desc",
+        },
+      });
+
+      if (pendingDecisionForSymbol) {
+        return {
+          status: "skipped_pending_decision",
+          decisionId: pendingDecisionForSymbol.id,
+        };
+      }
+
       const duplicate = await tx.signalDecision.findFirst({
         where: {
           operatorAccountId: input.operatorAccountId,
@@ -530,15 +572,21 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
       }
 
       const balanceSnapshot = decision.operatorAccount.accountBalanceSnapshots[0] ?? null;
-      const existingOpenTrade = await tx.openTrade.findFirst({
+      const existingOpenTrades = await tx.openTrade.findMany({
         where: {
           operatorAccountId,
-          symbol: decision.symbol,
         },
         select: {
+          symbol: true,
           id: true,
         },
       });
+      const existingOpenTrade = existingOpenTrades.find(
+        (trade) =>
+          trade.symbol === decision.symbol ||
+          trade.symbol === decision.marketSymbol ||
+          toPacificaMarketSymbol(trade.symbol) === decision.marketSymbol,
+      );
 
       return {
         signalDecisionId: decision.id,
@@ -578,7 +626,7 @@ export class PrismaWorkerRuntimeRepository implements WorkerRuntimeRepository {
               capturedAt: balanceSnapshot.capturedAt.toISOString(),
             }
           : null,
-        hasOpenTradeForSymbol: existingOpenTrade !== null,
+        hasOpenTradeForSymbol: existingOpenTrade !== undefined,
       };
     });
   }

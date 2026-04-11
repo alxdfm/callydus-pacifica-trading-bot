@@ -106,6 +106,14 @@ export type SignalDecisionWriteResult =
   | {
       status: "duplicate";
       decisionId: string;
+    }
+  | {
+      status: "skipped_open_trade";
+      decisionId: null;
+    }
+  | {
+      status: "skipped_pending_decision";
+      decisionId: string;
     };
 
 export type AppendWorkerOperationalEventInput = {
