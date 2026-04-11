@@ -1809,26 +1809,6 @@ function createIndicatorKeyForConfig(
   return `${prefix}${existingKeys.size + 1}`;
 }
 
-function createIndicatorKeyForPrefix(
-  draft: YourStrategyDraft,
-  prefix: string,
-  currentKey?: string,
-) {
-  const existingKeys = new Set(
-    Object.keys(draft.indicators).filter((key) => key !== currentKey),
-  );
-
-  for (let index = 1; index <= 99; index += 1) {
-    const key = `${prefix}${index}`;
-
-    if (!existingKeys.has(key)) {
-      return key;
-    }
-  }
-
-  return `${prefix}${existingKeys.size + 1}`;
-}
-
 function addIndicatorToRecord(
   record: Record<string, PresetIndicatorConfig>,
   key: string,

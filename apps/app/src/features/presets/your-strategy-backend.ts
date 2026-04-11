@@ -1,10 +1,8 @@
 import {
   activateYourStrategyResponseSchema,
-  getYourStrategyResponseSchema,
   saveYourStrategyResponseSchema,
   type ActivateYourStrategyRequest,
   type ActivateYourStrategyResponse,
-  type GetYourStrategyResponse,
   type SaveYourStrategyRequest,
   type SaveYourStrategyResponse,
   type YourStrategyBacktestPreviewRequest,
@@ -14,32 +12,6 @@ import {
 import { parseJsonResponse } from "../onboarding/backend-response";
 
 const defaultApiBaseUrl = "http://localhost:3003";
-
-export async function getYourStrategyViaBackend(
-  walletAddress: string,
-): Promise<GetYourStrategyResponse> {
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_APP_API_BASE_URL ?? defaultApiBaseUrl}/api/strategies/your/get`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ walletAddress }),
-      },
-    );
-
-    return getYourStrategyResponseSchema.parse(await parseJsonResponse(response));
-  } catch {
-    return getYourStrategyResponseSchema.parse({
-      status: "error",
-      code: "internal_error",
-      message: "Could not load YOUR Strategy right now.",
-      retryable: true,
-    });
-  }
-}
 
 export async function saveYourStrategyViaBackend(
   request: SaveYourStrategyRequest,

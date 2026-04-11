@@ -3,7 +3,6 @@ import type {
   BuilderApprovalStatus,
   PacificaValidationErrorCode,
   CredentialValidationStatus,
-  OnboardingStatus,
   OperationalVerificationStatus,
   PacificaBuilderApprovalResponse,
   PacificaCredentialSubmission,
@@ -266,22 +265,6 @@ function mapBuilderMicrocopy(
   }
 }
 
-function mapAccountBadgeTone(
-  canAccessProduct: boolean,
-  status: OnboardingStatus,
-  operationalStatus: OperationalVerificationStatus,
-): BadgeTone {
-  if (canAccessProduct) {
-    return "success";
-  }
-
-  if (status === "credentials_validating" || operationalStatus === "verifying") {
-    return "warning";
-  }
-
-  return "neutral";
-}
-
 function mapValidationCodeField(code: PacificaValidationErrorCode | null) {
   if (!code) {
     return null;
@@ -365,66 +348,8 @@ function mapOperationalBadgeTone(
   }
 }
 
-function mapOperationalMicrocopy(
-  status: OperationalVerificationStatus,
-  retryable: boolean,
-): MessageKey {
-  switch (status) {
-    case "verifying":
-      return "onboardingOperationalMicrocopyRunning";
-    case "verified":
-      return "onboardingOperationalMicrocopyVerified";
-    case "blocked":
-    case "error":
-      return retryable
-        ? "onboardingOperationalMicrocopyRetry"
-        : "onboardingOperationalMicrocopyBlocked";
-    default:
-      return "onboardingOperationalMicrocopyPending";
-  }
-}
-
-function deriveVisibleOnboardingStatusKey(input: {
-  walletStatus: WalletSession["sessionStatus"];
-  builderStatus: BuilderApprovalStatus;
-  credentialStatus: CredentialValidationStatus;
-  operationalStatus: OperationalVerificationStatus;
-  canAccessProduct: boolean;
-}): MessageKey {
-  if (input.canAccessProduct) {
-    return "onboardingStatusReady";
-  }
-
-  if (input.walletStatus !== "connected") {
-    return "onboardingStatusWalletPending";
-  }
-
-  if (input.builderStatus !== "approved") {
-    return "onboardingStatusBuilderPending";
-  }
-
-  if (input.credentialStatus === "validating") {
-    return "onboardingStatusCredentialsValidating";
-  }
-
-  if (input.credentialStatus !== "valid") {
-    return "onboardingStatusCredentialsPending";
-  }
-
-  if (input.operationalStatus === "verifying") {
-    return "onboardingStatusOperationalRunning";
-  }
-
-  if (input.operationalStatus !== "verified") {
-    return "onboardingStatusOperationalPending";
-  }
-
-  return "onboardingStatusBlocked";
-}
-
 export function OnboardingPage() {
   const {
-    canAccessProduct,
     setBuilderApprovalState,
     setCredentialState,
     setOperationalState,
@@ -454,26 +379,12 @@ export function OnboardingPage() {
   const credentialStatusLabel = t(
     mapCredentialStatusToMessageKey(state.credentials.validationStatus),
   );
-  const onboardingStatusLabel = t(
-    deriveVisibleOnboardingStatusKey({
-      walletStatus: state.wallet.sessionStatus,
-      builderStatus: state.builderApproval.approvalStatus,
-      credentialStatus: state.credentials.validationStatus,
-      operationalStatus: state.operational.status,
-      canAccessProduct,
-    }),
-  );
   const walletBadgeTone = mapWalletBadgeTone(state.wallet.sessionStatus);
   const builderBadgeTone = mapBuilderBadgeTone(
     state.builderApproval.approvalStatus,
   );
   const credentialBadgeTone = mapCredentialBadgeTone(
     state.credentials.validationStatus,
-  );
-  const accountBadgeTone = mapAccountBadgeTone(
-    canAccessProduct,
-    state.onboarding.status,
-    state.operational.status,
   );
   const progressSteps = buildProgressSteps(
     state.wallet.sessionStatus,
@@ -497,10 +408,6 @@ export function OnboardingPage() {
     0,
     progressSteps.findIndex((step) => step.status === "current"),
   );
-  const currentStepNumber =
-    progressSteps.findIndex((step) => step.status === "current") === -1
-      ? progressSteps.length
-      : currentStepIndex + 1;
   const walletConnected = state.wallet.sessionStatus === "connected";
   const builderApproved = state.builderApproval.approvalStatus === "approved";
   const credentialsValidated = state.credentials.validationStatus === "valid";
@@ -531,9 +438,6 @@ export function OnboardingPage() {
     mapOperationalStatusToMessageKey(state.operational.status),
   );
   const operationalBadgeTone = mapOperationalBadgeTone(state.operational.status);
-  const operationalMicrocopy = t(
-    mapOperationalMicrocopy(state.operational.status, state.operational.retryable),
-  );
   const credentialMicrocopy = t(
     mapCredentialMicrocopy(
       state.credentials.validationStatus,

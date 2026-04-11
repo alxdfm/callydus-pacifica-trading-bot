@@ -135,9 +135,6 @@ export function ProfilePage() {
     state.credentials.validationStatus,
     t,
   );
-  const botStatusBadgeTone = replacementFlow.isBotRunning
-    ? "warning"
-    : "neutral";
 
   function openAgentWalletModal() {
     replacementFlow.resetDrafts();
