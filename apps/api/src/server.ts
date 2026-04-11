@@ -230,22 +230,6 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "POST" &&
-    request.url === "/api/strategies/your/get"
-  ) {
-    const body = await readJsonBody(request);
-    const result = await api.router.getYourStrategy({
-      body: body as never,
-    });
-
-    response.writeHead(result.status === "error" ? 400 : 200, {
-      "Content-Type": "application/json",
-    });
-    response.end(JSON.stringify(result));
-    return;
-  }
-
-  if (
-    request.method === "POST" &&
     request.url === "/api/strategies/your/save"
   ) {
     const body = await readJsonBody(request);
@@ -284,19 +268,6 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     const result = await api.router.getMarketCandles({
       body: body as never,
     });
-
-    response.writeHead(result.status === "success" ? 200 : 400, {
-      "Content-Type": "application/json",
-    });
-    response.end(JSON.stringify(result));
-    return;
-  }
-
-  if (
-    request.method === "GET" &&
-    request.url === "/api/market/info"
-  ) {
-    const result = await api.router.getMarketInfo();
 
     response.writeHead(result.status === "success" ? 200 : 400, {
       "Content-Type": "application/json",

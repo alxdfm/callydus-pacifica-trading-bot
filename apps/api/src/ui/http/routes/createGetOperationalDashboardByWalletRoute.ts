@@ -21,15 +21,8 @@ export function createGetOperationalDashboardByWalletRoute(
     operationalDashboardSessionResponseSchema,
     (session): OperationalDashboardSessionResponse => ({
       status: "found",
-      walletAddress: session.walletAddress,
-      accountExists: true,
-      onboardingStatus: session.onboardingStatus,
-      builderApproved: session.builderApproved,
-      operationallyVerified: session.operationallyVerified,
-      activePreset: session.activePreset,
       runtime: session.runtime,
       recentEvents: session.recentEvents,
-      canAccessProduct: session.canAccessProduct,
     }),
   );
 }

@@ -33,14 +33,6 @@ import {
   type GetMarketPricesDependencies,
 } from "./application/get-market-prices/GetMarketPrices";
 import {
-  createGetMarketInfo,
-  type GetMarketInfoDependencies,
-} from "./application/get-market-info/GetMarketInfo";
-import {
-  createGetYourStrategy,
-  type GetYourStrategyDependencies,
-} from "./application/get-your-strategy/GetYourStrategy";
-import {
   createMarketDataRefresher,
   type RefreshMarketDataDependencies,
 } from "./application/refresh-market-data/RefreshMarketData";
@@ -131,8 +123,6 @@ type CreateApiModuleInput = {
   evaluatePresetSignalDependencies?: Partial<EvaluatePresetSignalDependencies>;
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
-  getMarketInfoDependencies?: Partial<GetMarketInfoDependencies>;
-  getYourStrategyDependencies?: Partial<GetYourStrategyDependencies>;
   refreshMarketDataDependencies?: Partial<RefreshMarketDataDependencies>;
   refreshMarketDataManuallyDependencies?: Partial<
     RefreshMarketDataManuallyDependencies
@@ -222,15 +212,6 @@ export function createApiModule(input: CreateApiModuleInput) {
     marketData:
       input.getMarketPricesDependencies?.marketData ??
       persistedMarketDataGateway,
-  });
-  const getMarketInfo = createGetMarketInfo({
-    marketInfo:
-      input.getMarketInfoDependencies?.marketInfo ?? persistedMarketDataGateway,
-  });
-  const getYourStrategy = createGetYourStrategy({
-    repository:
-      input.getYourStrategyDependencies?.repository ??
-      defaultCredentialRepository,
   });
   const previewPresetBacktest = createPreviewPresetBacktest({
     marketData:
@@ -605,9 +586,7 @@ export function createApiModule(input: CreateApiModuleInput) {
       closeTrade,
       evaluatePresetSignal,
       getMarketCandles,
-      getMarketInfo,
       getMarketPrices,
-      getYourStrategy,
       refreshMarketData,
       previewPresetBacktest,
       previewYourStrategyBacktest,

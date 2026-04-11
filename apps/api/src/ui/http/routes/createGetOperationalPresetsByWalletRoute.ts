@@ -21,16 +21,9 @@ export function createGetOperationalPresetsByWalletRoute(
     operationalPresetsSessionResponseSchema,
     (session): OperationalPresetsSessionResponse => ({
       status: "found",
-      walletAddress: session.walletAddress,
-      accountExists: true,
-      onboardingStatus: session.onboardingStatus,
-      builderApproved: session.builderApproved,
-      operationallyVerified: session.operationallyVerified,
-      activePreset: session.activePreset,
       runtime: session.runtime,
       marketInfo: session.marketInfo,
       yourStrategy: session.yourStrategy,
-      canAccessProduct: session.canAccessProduct,
     }),
   );
 }

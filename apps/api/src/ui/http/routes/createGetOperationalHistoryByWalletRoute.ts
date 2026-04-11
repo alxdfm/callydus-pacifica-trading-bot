@@ -21,14 +21,7 @@ export function createGetOperationalHistoryByWalletRoute(
     operationalHistorySessionResponseSchema,
     (session): OperationalHistorySessionResponse => ({
       status: "found",
-      walletAddress: session.walletAddress,
-      accountExists: true,
-      onboardingStatus: session.onboardingStatus,
-      builderApproved: session.builderApproved,
-      operationallyVerified: session.operationallyVerified,
-      activePreset: session.activePreset,
       runtime: session.runtime,
-      canAccessProduct: session.canAccessProduct,
     }),
   );
 }

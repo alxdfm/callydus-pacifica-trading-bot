@@ -21,18 +21,13 @@ export function createGetOperationalProfileByWalletRoute(
     operationalProfileSessionResponseSchema,
     (session): OperationalProfileSessionResponse => ({
       status: "found",
-      walletAddress: session.walletAddress,
-      accountExists: true,
-      onboardingStatus: session.onboardingStatus,
+      builderApproved: session.builderApproved,
+      operationallyVerified: session.operationallyVerified,
       credentialId: session.credentialId,
       agentWalletPublicKey: session.agentWalletPublicKey,
       credentialAlias: session.credentialAlias,
       keyFingerprint: session.keyFingerprint,
-      builderApproved: session.builderApproved,
-      operationallyVerified: session.operationallyVerified,
-      activePreset: session.activePreset,
       runtime: session.runtime,
-      canAccessProduct: session.canAccessProduct,
     }),
   );
 }

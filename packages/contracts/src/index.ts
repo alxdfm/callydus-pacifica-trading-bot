@@ -645,33 +645,6 @@ export const yourStrategyBacktestPreviewResponseSchema = z.union([
   yourStrategyBacktestPreviewErrorSchema,
 ]);
 
-export const getYourStrategyRequestSchema = z.object({
-  walletAddress: z.string().min(1),
-});
-
-export const getYourStrategyFoundSchema = z.object({
-  status: z.literal("found"),
-  strategy: yourStrategySchema,
-});
-
-export const getYourStrategyNotFoundSchema = z.object({
-  status: z.literal("not_found"),
-  walletAddress: z.string().min(1),
-});
-
-export const getYourStrategyErrorSchema = z.object({
-  status: z.literal("error"),
-  code: z.enum(["account_not_ready", "internal_error"]),
-  message: z.string().min(1),
-  retryable: z.boolean(),
-});
-
-export const getYourStrategyResponseSchema = z.union([
-  getYourStrategyFoundSchema,
-  getYourStrategyNotFoundSchema,
-  getYourStrategyErrorSchema,
-]);
-
 export const saveYourStrategyRequestSchema = z.object({
   walletAddress: z.string().min(1),
   draft: yourStrategyDraftSchema,
@@ -850,19 +823,6 @@ export const marketInfoItemSchema = z.object({
   minOrderSize: z.string().min(1),
   maxLeverage: z.number().int().positive(),
 });
-
-export const marketInfoResponseSchema = z.union([
-  z.object({
-    status: z.literal("success"),
-    markets: z.array(marketInfoItemSchema),
-  }),
-  z.object({
-    status: z.literal("error"),
-    code: z.enum(["provider_unavailable", "internal_error"]),
-    message: z.string().min(1),
-    retryable: z.boolean(),
-  }),
-]);
 
 export const marketCandleSchema = z.object({
   symbol: z.string().min(1),
@@ -1116,7 +1076,8 @@ export const operationalProfileRuntimeSnapshotSchema = z.object({
 
 export const operationalProfileSessionFoundSchema = z.object({
   status: z.literal("found"),
-  ...operationalSessionCommonFoundFields,
+  builderApproved: z.boolean(),
+  operationallyVerified: z.boolean(),
   credentialId: z.string().uuid().nullable(),
   agentWalletPublicKey: z.string().nullable(),
   credentialAlias: z.string().nullable(),
@@ -1145,7 +1106,6 @@ export const operationalDashboardRuntimeSnapshotSchema = z.object({
 
 export const operationalDashboardSessionFoundSchema = z.object({
   status: z.literal("found"),
-  ...operationalSessionCommonFoundFields,
   runtime: operationalDashboardRuntimeSnapshotSchema,
   recentEvents: z.array(operationalEventSchema),
 });
@@ -1164,7 +1124,6 @@ export const operationalPresetsRuntimeSnapshotSchema = z.object({
 
 export const operationalPresetsSessionFoundSchema = z.object({
   status: z.literal("found"),
-  ...operationalSessionCommonFoundFields,
   runtime: operationalPresetsRuntimeSnapshotSchema,
   marketInfo: z.array(marketInfoItemSchema),
   yourStrategy: yourStrategySchema.nullable(),
@@ -1188,7 +1147,6 @@ export const operationalTradesRuntimeSnapshotSchema = z.object({
 
 export const operationalTradesSessionFoundSchema = z.object({
   status: z.literal("found"),
-  ...operationalSessionCommonFoundFields,
   runtime: operationalTradesRuntimeSnapshotSchema,
 });
 
@@ -1210,7 +1168,6 @@ export const operationalHistoryRuntimeSnapshotSchema = z.object({
 
 export const operationalHistorySessionFoundSchema = z.object({
   status: z.literal("found"),
-  ...operationalSessionCommonFoundFields,
   runtime: operationalHistoryRuntimeSnapshotSchema,
 });
 
@@ -2023,7 +1980,6 @@ export type MarketInfoItem = z.infer<typeof marketInfoItemSchema>;
 export type MarketCandle = z.infer<typeof marketCandleSchema>;
 export type MarketCandleRequest = z.infer<typeof marketCandleRequestSchema>;
 export type MarketCandleResponse = z.infer<typeof marketCandleResponseSchema>;
-export type MarketInfoResponse = z.infer<typeof marketInfoResponseSchema>;
 export type MarketPricesResponse = z.infer<typeof marketPricesResponseSchema>;
 export type PresetSignalEvaluationErrorCode = z.infer<
   typeof presetSignalEvaluationErrorCodeSchema
@@ -2072,8 +2028,6 @@ export type PresetBacktestPreviewResponse = z.infer<
 export type YourStrategyBacktestPreviewResponse = z.infer<
   typeof yourStrategyBacktestPreviewResponseSchema
 >;
-export type GetYourStrategyRequest = z.infer<typeof getYourStrategyRequestSchema>;
-export type GetYourStrategyResponse = z.infer<typeof getYourStrategyResponseSchema>;
 export type SaveYourStrategyRequest = z.infer<typeof saveYourStrategyRequestSchema>;
 export type SaveYourStrategyErrorCode = z.infer<
   typeof saveYourStrategyErrorCodeSchema

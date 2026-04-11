@@ -10,10 +10,6 @@ import type { EvaluatePresetSignalHandler } from "./routes/createEvaluatePresetS
 import type { GetMarketCandlesHandler } from "./routes/createGetMarketCandlesRoute";
 import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute";
 import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
-import { createGetMarketInfoRoute } from "./routes/createGetMarketInfoRoute";
-import type { GetMarketInfoHandler } from "./routes/createGetMarketInfoRoute";
-import { createGetYourStrategyRoute } from "./routes/createGetYourStrategyRoute";
-import type { GetYourStrategyHandler } from "./routes/createGetYourStrategyRoute";
 import { createPreviewPresetBacktestRoute } from "./routes/createPreviewPresetBacktestRoute";
 import type { PreviewPresetBacktestHandler } from "./routes/createPreviewPresetBacktestRoute";
 import { createPreviewYourStrategyBacktestRoute } from "./routes/createPreviewYourStrategyBacktestRoute";
@@ -58,9 +54,7 @@ type ApiRouterDependencies = {
   closeTrade: CloseTradeHandler;
   evaluatePresetSignal: EvaluatePresetSignalHandler;
   getMarketCandles: GetMarketCandlesHandler;
-  getMarketInfo: GetMarketInfoHandler;
   getMarketPrices: GetMarketPricesHandler;
-  getYourStrategy: GetYourStrategyHandler;
   previewPresetBacktest: PreviewPresetBacktestHandler;
   previewYourStrategyBacktest: PreviewYourStrategyBacktestHandler;
   heartbeatRuntime: HeartbeatRuntimeHandler;
@@ -96,12 +90,8 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     getMarketCandles: createGetMarketCandlesRoute(
       dependencies.getMarketCandles,
     ),
-    getMarketInfo: createGetMarketInfoRoute(dependencies.getMarketInfo),
     getMarketPrices: createGetMarketPricesRoute(
       dependencies.getMarketPrices,
-    ),
-    getYourStrategy: createGetYourStrategyRoute(
-      dependencies.getYourStrategy,
     ),
     previewPresetBacktest: createPreviewPresetBacktestRoute(
       dependencies.previewPresetBacktest,
