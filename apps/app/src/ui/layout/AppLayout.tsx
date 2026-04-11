@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import logoUrl from "../../shared/assets/logo.svg";
 import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
+import { LoadingPanel } from "../components/LoadingPanel";
 import { getNavigationItems } from "./navigation";
 
 function NavigationLinks() {
@@ -30,16 +32,55 @@ function NavigationLinks() {
 
 export function AppLayout() {
   const location = useLocation();
-  const { setLocale, state } = useAppState();
+  const { setLocale, setRuntimeState, state } = useAppState();
   const { isReady, t } = useI18n();
   const isOnboardingRoute = location.pathname === "/onboarding";
   const activePresetItem = getPresetCatalogItemByDefinitionId(
     state.presets.activePreset?.presetDefinitionId,
     t,
   );
+  const hasActiveStrategy = Boolean(activePresetItem && state.presets.activePreset);
+  const isStrategyRunning =
+    hasActiveStrategy &&
+    (state.runtime.botStatus === "active" || state.runtime.botStatus === "syncing");
+  const strategyIndicatorVariant = isStrategyRunning
+    ? "running"
+    : hasActiveStrategy
+      ? "configured"
+      : "idle";
+  const strategyBadgeTone = isStrategyRunning
+    ? "warning"
+    : hasActiveStrategy
+      ? "info"
+      : "neutral";
+  const strategyStatusLabel = isStrategyRunning
+    ? t("presetSidebarRunning")
+    : hasActiveStrategy
+      ? t("presetSidebarConfigured")
+      : t("presetSidebarEmpty");
+
+  useEffect(() => {
+    if (!state.runtime.actionToast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setRuntimeState({
+        actionToast: null,
+      });
+    }, 4_500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [setRuntimeState, state.runtime.actionToast]);
 
   if (!isReady) {
-    return <div className="shell-loading">Loading messages...</div>;
+    return (
+      <main className="shell-loading">
+        <LoadingPanel compact title="Loading interface" />
+      </main>
+    );
   }
 
   if (isOnboardingRoute) {
@@ -68,13 +109,17 @@ export function AppLayout() {
           <NavigationLinks />
         </nav>
         <div className="nav-card shell-side-card">
-          <span
-            className={`badge badge--${state.runtime.botStatus === "active" ? "warning" : "neutral"}`}
-          >
-            {state.runtime.botStatus === "active"
-              ? t("presetSidebarActive")
-              : t("presetSidebarEmpty")}
-          </span>
+          <div className="row-between align-start">
+            <span className={`badge badge--${strategyBadgeTone}`}>
+              {strategyStatusLabel}
+            </span>
+            <span
+              aria-hidden="true"
+              className={`shell-side-card__signal shell-side-card__signal--${strategyIndicatorVariant}`}
+            >
+              <span className="shell-side-card__signal-core"></span>
+            </span>
+          </div>
           <strong>
             {activePresetItem
               ? activePresetItem.definition.name
@@ -104,6 +149,26 @@ export function AppLayout() {
       </aside>
 
       <div className="shell-body">
+        {state.runtime.actionToast ? (
+          <div className="shell-toast-host" role="status" aria-live="polite">
+            <section className={`shell-toast shell-toast--${state.runtime.actionToast.tone}`}>
+              <p>{state.runtime.actionToast.message}</p>
+              <button
+                aria-label={t("modalCloseAction")}
+                className="shell-toast__close"
+                onClick={() =>
+                  setRuntimeState({
+                    actionToast: null,
+                  })
+                }
+                type="button"
+              >
+                {t("modalCloseAction")}
+              </button>
+            </section>
+          </div>
+        ) : null}
+
         <nav
           aria-label={t("mobileMenuLabel")}
           className="shell-nav shell-nav--mobile"
