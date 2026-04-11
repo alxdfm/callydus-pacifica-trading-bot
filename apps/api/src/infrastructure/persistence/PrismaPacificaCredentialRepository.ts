@@ -19,8 +19,13 @@ import type {
   UpdateOperationalVerificationInput,
 } from "../../domain/pacifica-credentials/PacificaCredentialRepository";
 import type {
+  OperationalDashboardSession,
+  OperationalHistorySession,
+  OperationalPresetsSession,
+  OperationalProfileSession,
   OperationalSession,
   OperationalSessionRepository,
+  OperationalTradesSession,
 } from "../../domain/operational-session/OperationalSession";
 import type {
   ActivatePresetInput,
@@ -447,6 +452,368 @@ export class PrismaPacificaCredentialRepository
       },
       recentEvents: recentEvents.map(mapOperationalEvent),
       canAccessProduct,
+    };
+  }
+
+  async findProfileByWalletAddress(
+    walletAddress: string,
+  ): Promise<OperationalProfileSession | null> {
+    const operatorAccount = await this.prisma.operatorAccount.findUnique({
+      where: {
+        walletAddress,
+      },
+      include: {
+        pacificaCredentials: {
+          where: {
+            validationStatus: "valid",
+            lifecycleStatus: "active",
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
+        botRuntimeState: true,
+        presetActivations: {
+          where: {
+            activationStatus: "active",
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!operatorAccount) {
+      return null;
+    }
+
+    const activeCredential = operatorAccount.pacificaCredentials[0] ?? null;
+    const activePreset = operatorAccount.presetActivations[0] ?? null;
+    const runtime = operatorAccount.botRuntimeState;
+
+    return {
+      ...mapOperationalSessionShell({
+        operatorAccount,
+        activeCredential,
+        activePreset,
+      }),
+      credentialId: activeCredential?.id ?? null,
+      agentWalletPublicKey: activeCredential?.publicKey ?? null,
+      credentialAlias: activeCredential?.credentialAlias ?? null,
+      keyFingerprint: activeCredential?.keyFingerprint ?? null,
+      runtime: {
+        botStatus: runtime?.botStatus ?? "inactive",
+        lastHeartbeatAt: runtime?.lastHeartbeatAt?.toISOString() ?? null,
+        lastErrorMessage: runtime?.lastErrorMessage ?? null,
+      },
+    };
+  }
+
+  async findDashboardByWalletAddress(
+    walletAddress: string,
+  ): Promise<OperationalDashboardSession | null> {
+    const operatorAccount = await this.prisma.operatorAccount.findUnique({
+      where: {
+        walletAddress,
+      },
+      include: {
+        pacificaCredentials: {
+          where: {
+            validationStatus: "valid",
+            lifecycleStatus: "active",
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
+        botRuntimeState: true,
+        accountBalanceSnapshots: {
+          orderBy: {
+            capturedAt: "desc",
+          },
+          take: 1,
+        },
+        openTrades: {
+          orderBy: {
+            openedAt: "desc",
+          },
+        },
+        closedTrades: {
+          orderBy: {
+            closedAt: "desc",
+          },
+        },
+        operationalAlerts: {
+          where: {
+            isActive: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+        presetActivations: {
+          where: {
+            activationStatus: "active",
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!operatorAccount) {
+      return null;
+    }
+
+    const activeCredential = operatorAccount.pacificaCredentials[0] ?? null;
+    const activePreset = operatorAccount.presetActivations[0] ?? null;
+    const balanceSnapshot = operatorAccount.accountBalanceSnapshots[0] ?? null;
+    const runtime = operatorAccount.botRuntimeState;
+    const recentEvents = await this.prisma.operationalEvent.findMany({
+      where: {
+        OR: [
+          {
+            operatorAccountId: operatorAccount.id,
+          },
+          {
+            walletAddress,
+          },
+        ],
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 8,
+    });
+
+    return {
+      ...mapOperationalSessionShell({
+        operatorAccount,
+        activeCredential,
+        activePreset,
+      }),
+      runtime: {
+        balance: balanceSnapshot ? mapBalanceSnapshot(balanceSnapshot) : null,
+        botStatus: runtime?.botStatus ?? "inactive",
+        syncStatus: runtime?.syncStatus ?? "idle",
+        exchangeSnapshotStatus: runtime?.exchangeSnapshotStatus ?? "last_known",
+        exchangeLastSyncedAt:
+          runtime?.exchangeLastSyncedAt?.toISOString() ?? null,
+        exchangeSnapshotMessage: runtime?.exchangeSnapshotMessage ?? null,
+        lastErrorMessage: runtime?.lastErrorMessage ?? null,
+        currentTrades: operatorAccount.openTrades.map(mapOpenTrade),
+        closedTrades: operatorAccount.closedTrades.map(mapClosedTrade),
+        activeAlerts: operatorAccount.operationalAlerts.map(mapOperationalAlert),
+      },
+      recentEvents: recentEvents.map(mapOperationalEvent),
+    };
+  }
+
+  async findPresetsByWalletAddress(
+    walletAddress: string,
+  ): Promise<OperationalPresetsSession | null> {
+    const operatorAccount = await this.prisma.operatorAccount.findUnique({
+      where: {
+        walletAddress,
+      },
+      include: {
+        pacificaCredentials: {
+          where: {
+            validationStatus: "valid",
+            lifecycleStatus: "active",
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
+        botRuntimeState: true,
+        symbolOperationalConfigs: {
+          orderBy: {
+            symbol: "asc",
+          },
+        },
+        accountBalanceSnapshots: {
+          orderBy: {
+            capturedAt: "desc",
+          },
+          take: 1,
+        },
+        yourStrategy: {
+          include: {
+            operatorAccount: true,
+          },
+        },
+        presetActivations: {
+          where: {
+            activationStatus: "active",
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!operatorAccount) {
+      return null;
+    }
+
+    const activeCredential = operatorAccount.pacificaCredentials[0] ?? null;
+    const activePreset = operatorAccount.presetActivations[0] ?? null;
+    const balanceSnapshot = operatorAccount.accountBalanceSnapshots[0] ?? null;
+    const runtime = operatorAccount.botRuntimeState;
+
+    return {
+      ...mapOperationalSessionShell({
+        operatorAccount,
+        activeCredential,
+        activePreset,
+      }),
+      runtime: {
+        balance: balanceSnapshot ? mapBalanceSnapshot(balanceSnapshot) : null,
+        botStatus: runtime?.botStatus ?? "inactive",
+        symbolOperationalConfigs: mapSymbolOperationalConfigs(
+          operatorAccount.symbolOperationalConfigs,
+        ),
+      },
+      marketInfo: [],
+      yourStrategy: operatorAccount.yourStrategy
+        ? mapYourStrategy(operatorAccount.yourStrategy)
+        : null,
+    };
+  }
+
+  async findTradesByWalletAddress(
+    walletAddress: string,
+  ): Promise<OperationalTradesSession | null> {
+    const operatorAccount = await this.prisma.operatorAccount.findUnique({
+      where: {
+        walletAddress,
+      },
+      include: {
+        pacificaCredentials: {
+          where: {
+            validationStatus: "valid",
+            lifecycleStatus: "active",
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
+        botRuntimeState: true,
+        openTrades: {
+          orderBy: {
+            openedAt: "desc",
+          },
+        },
+        presetActivations: {
+          where: {
+            activationStatus: "active",
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!operatorAccount) {
+      return null;
+    }
+
+    const activeCredential = operatorAccount.pacificaCredentials[0] ?? null;
+    const activePreset = operatorAccount.presetActivations[0] ?? null;
+    const runtime = operatorAccount.botRuntimeState;
+
+    return {
+      ...mapOperationalSessionShell({
+        operatorAccount,
+        activeCredential,
+        activePreset,
+      }),
+      runtime: {
+        botStatus: runtime?.botStatus ?? "inactive",
+        syncStatus: runtime?.syncStatus ?? "idle",
+        exchangeSnapshotStatus: runtime?.exchangeSnapshotStatus ?? "last_known",
+        exchangeLastSyncedAt:
+          runtime?.exchangeLastSyncedAt?.toISOString() ?? null,
+        exchangeSnapshotMessage: runtime?.exchangeSnapshotMessage ?? null,
+        lastErrorMessage: runtime?.lastErrorMessage ?? null,
+        currentTrades: operatorAccount.openTrades.map(mapOpenTrade),
+      },
+    };
+  }
+
+  async findHistoryByWalletAddress(
+    walletAddress: string,
+  ): Promise<OperationalHistorySession | null> {
+    const operatorAccount = await this.prisma.operatorAccount.findUnique({
+      where: {
+        walletAddress,
+      },
+      include: {
+        pacificaCredentials: {
+          where: {
+            validationStatus: "valid",
+            lifecycleStatus: "active",
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
+        botRuntimeState: true,
+        closedTrades: {
+          orderBy: {
+            closedAt: "desc",
+          },
+        },
+        presetActivations: {
+          where: {
+            activationStatus: "active",
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!operatorAccount) {
+      return null;
+    }
+
+    const activeCredential = operatorAccount.pacificaCredentials[0] ?? null;
+    const activePreset = operatorAccount.presetActivations[0] ?? null;
+    const runtime = operatorAccount.botRuntimeState;
+
+    return {
+      ...mapOperationalSessionShell({
+        operatorAccount,
+        activeCredential,
+        activePreset,
+      }),
+      runtime: {
+        botStatus: runtime?.botStatus ?? "inactive",
+        syncStatus: runtime?.syncStatus ?? "idle",
+        exchangeSnapshotStatus: runtime?.exchangeSnapshotStatus ?? "last_known",
+        exchangeLastSyncedAt:
+          runtime?.exchangeLastSyncedAt?.toISOString() ?? null,
+        exchangeSnapshotMessage: runtime?.exchangeSnapshotMessage ?? null,
+        lastErrorMessage: runtime?.lastErrorMessage ?? null,
+        closedTrades: operatorAccount.closedTrades.map(mapClosedTrade),
+      },
     };
   }
 
@@ -1653,6 +2020,39 @@ function toPrismaInputJsonValue(value: unknown): Prisma.InputJsonValue {
 
 function decimalToNumber(value: Prisma.Decimal): number {
   return Number(value.toString());
+}
+
+function mapOperationalSessionShell(input: {
+  operatorAccount: {
+    walletAddress: string;
+    onboardingStatus: string;
+  };
+  activeCredential: {
+    id: string;
+    operationallyVerified: boolean;
+  } | null;
+  activePreset: Parameters<typeof mapPresetActivation>[0] | null;
+}) {
+  const onboardingStatus = input.operatorAccount.onboardingStatus as
+    | "wallet_pending"
+    | "credentials_pending"
+    | "credentials_validating"
+    | "ready"
+    | "blocked";
+  const operationallyVerified =
+    input.activeCredential?.operationallyVerified ?? false;
+
+  return {
+    walletAddress: input.operatorAccount.walletAddress,
+    onboardingStatus,
+    builderApproved: Boolean(input.activeCredential?.id),
+    operationallyVerified,
+    activePreset: input.activePreset ? mapPresetActivation(input.activePreset) : null,
+    canAccessProduct:
+      onboardingStatus === "ready" &&
+      Boolean(input.activeCredential?.id) &&
+      operationallyVerified,
+  };
 }
 
 function mapPresetActivation(

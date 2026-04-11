@@ -368,6 +368,86 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
   if (
     request.method === "POST" &&
+    request.url === "/api/account/profile"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.getOperationalProfileByWallet({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "error" ? 500 : 200, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/account/dashboard"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.getOperationalDashboardByWallet({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "error" ? 500 : 200, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/account/presets"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.getOperationalPresetsByWallet({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "error" ? 500 : 200, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/account/trades"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.getOperationalTradesByWallet({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "error" ? 500 : 200, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
+    request.url === "/api/account/history"
+  ) {
+    const body = await readJsonBody(request);
+    const result = await api.router.getOperationalHistoryByWallet({
+      body: body as never,
+    });
+
+    response.writeHead(result.status === "error" ? 500 : 200, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (
+    request.method === "POST" &&
     request.url === "/api/onboarding/credentials/validate"
   ) {
     const body = await readJsonBody(request);

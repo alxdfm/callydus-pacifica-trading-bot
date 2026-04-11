@@ -1041,6 +1041,16 @@ export const operationalSessionSnapshotRequestSchema = z.object({
   walletAddress: z.string().min(1),
 });
 
+const operationalSessionCommonFoundFields = {
+  walletAddress: z.string().min(1),
+  accountExists: z.literal(true),
+  onboardingStatus: onboardingStatusSchema,
+  builderApproved: z.boolean(),
+  operationallyVerified: z.boolean(),
+  activePreset: presetActivationSchema.nullable(),
+  canAccessProduct: z.boolean(),
+} as const;
+
 export const operationalRuntimeSnapshotSchema = z.object({
   balance: balanceSnapshotSchema.nullable(),
   botStatus: botStatusSchema,
@@ -1094,6 +1104,118 @@ export const operationalSessionSnapshotErrorSchema = z.object({
 
 export const operationalSessionSnapshotResponseSchema = z.union([
   operationalSessionSnapshotFoundSchema,
+  operationalSessionSnapshotNotFoundSchema,
+  operationalSessionSnapshotErrorSchema,
+]);
+
+export const operationalProfileRuntimeSnapshotSchema = z.object({
+  botStatus: botStatusSchema,
+  lastHeartbeatAt: z.string().datetime().nullable(),
+  lastErrorMessage: z.string().nullable(),
+});
+
+export const operationalProfileSessionFoundSchema = z.object({
+  status: z.literal("found"),
+  ...operationalSessionCommonFoundFields,
+  credentialId: z.string().uuid().nullable(),
+  agentWalletPublicKey: z.string().nullable(),
+  credentialAlias: z.string().nullable(),
+  keyFingerprint: z.string().nullable(),
+  runtime: operationalProfileRuntimeSnapshotSchema,
+});
+
+export const operationalProfileSessionResponseSchema = z.union([
+  operationalProfileSessionFoundSchema,
+  operationalSessionSnapshotNotFoundSchema,
+  operationalSessionSnapshotErrorSchema,
+]);
+
+export const operationalDashboardRuntimeSnapshotSchema = z.object({
+  balance: balanceSnapshotSchema.nullable(),
+  botStatus: botStatusSchema,
+  syncStatus: syncStatusSchema,
+  exchangeSnapshotStatus: exchangeSnapshotStatusSchema,
+  exchangeLastSyncedAt: z.string().datetime().nullable(),
+  exchangeSnapshotMessage: z.string().nullable(),
+  lastErrorMessage: z.string().nullable(),
+  currentTrades: z.array(openTradeSchema),
+  closedTrades: z.array(closedTradeSchema),
+  activeAlerts: z.array(operationalAlertSchema),
+});
+
+export const operationalDashboardSessionFoundSchema = z.object({
+  status: z.literal("found"),
+  ...operationalSessionCommonFoundFields,
+  runtime: operationalDashboardRuntimeSnapshotSchema,
+  recentEvents: z.array(operationalEventSchema),
+});
+
+export const operationalDashboardSessionResponseSchema = z.union([
+  operationalDashboardSessionFoundSchema,
+  operationalSessionSnapshotNotFoundSchema,
+  operationalSessionSnapshotErrorSchema,
+]);
+
+export const operationalPresetsRuntimeSnapshotSchema = z.object({
+  balance: balanceSnapshotSchema.nullable(),
+  botStatus: botStatusSchema,
+  symbolOperationalConfigs: z.array(symbolOperationalConfigSchema),
+});
+
+export const operationalPresetsSessionFoundSchema = z.object({
+  status: z.literal("found"),
+  ...operationalSessionCommonFoundFields,
+  runtime: operationalPresetsRuntimeSnapshotSchema,
+  marketInfo: z.array(marketInfoItemSchema),
+  yourStrategy: yourStrategySchema.nullable(),
+});
+
+export const operationalPresetsSessionResponseSchema = z.union([
+  operationalPresetsSessionFoundSchema,
+  operationalSessionSnapshotNotFoundSchema,
+  operationalSessionSnapshotErrorSchema,
+]);
+
+export const operationalTradesRuntimeSnapshotSchema = z.object({
+  botStatus: botStatusSchema,
+  syncStatus: syncStatusSchema,
+  exchangeSnapshotStatus: exchangeSnapshotStatusSchema,
+  exchangeLastSyncedAt: z.string().datetime().nullable(),
+  exchangeSnapshotMessage: z.string().nullable(),
+  lastErrorMessage: z.string().nullable(),
+  currentTrades: z.array(openTradeSchema),
+});
+
+export const operationalTradesSessionFoundSchema = z.object({
+  status: z.literal("found"),
+  ...operationalSessionCommonFoundFields,
+  runtime: operationalTradesRuntimeSnapshotSchema,
+});
+
+export const operationalTradesSessionResponseSchema = z.union([
+  operationalTradesSessionFoundSchema,
+  operationalSessionSnapshotNotFoundSchema,
+  operationalSessionSnapshotErrorSchema,
+]);
+
+export const operationalHistoryRuntimeSnapshotSchema = z.object({
+  botStatus: botStatusSchema,
+  syncStatus: syncStatusSchema,
+  exchangeSnapshotStatus: exchangeSnapshotStatusSchema,
+  exchangeLastSyncedAt: z.string().datetime().nullable(),
+  exchangeSnapshotMessage: z.string().nullable(),
+  lastErrorMessage: z.string().nullable(),
+  closedTrades: z.array(closedTradeSchema),
+});
+
+export const operationalHistorySessionFoundSchema = z.object({
+  status: z.literal("found"),
+  ...operationalSessionCommonFoundFields,
+  runtime: operationalHistoryRuntimeSnapshotSchema,
+});
+
+export const operationalHistorySessionResponseSchema = z.union([
+  operationalHistorySessionFoundSchema,
   operationalSessionSnapshotNotFoundSchema,
   operationalSessionSnapshotErrorSchema,
 ]);
@@ -1990,6 +2112,21 @@ export type OperationalSessionSnapshotFound = z.infer<typeof operationalSessionS
 export type OperationalSessionSnapshotNotFound = z.infer<typeof operationalSessionSnapshotNotFoundSchema>;
 export type OperationalSessionSnapshotError = z.infer<typeof operationalSessionSnapshotErrorSchema>;
 export type OperationalSessionSnapshotResponse = z.infer<typeof operationalSessionSnapshotResponseSchema>;
+export type OperationalProfileRuntimeSnapshot = z.infer<typeof operationalProfileRuntimeSnapshotSchema>;
+export type OperationalProfileSessionFound = z.infer<typeof operationalProfileSessionFoundSchema>;
+export type OperationalProfileSessionResponse = z.infer<typeof operationalProfileSessionResponseSchema>;
+export type OperationalDashboardRuntimeSnapshot = z.infer<typeof operationalDashboardRuntimeSnapshotSchema>;
+export type OperationalDashboardSessionFound = z.infer<typeof operationalDashboardSessionFoundSchema>;
+export type OperationalDashboardSessionResponse = z.infer<typeof operationalDashboardSessionResponseSchema>;
+export type OperationalPresetsRuntimeSnapshot = z.infer<typeof operationalPresetsRuntimeSnapshotSchema>;
+export type OperationalPresetsSessionFound = z.infer<typeof operationalPresetsSessionFoundSchema>;
+export type OperationalPresetsSessionResponse = z.infer<typeof operationalPresetsSessionResponseSchema>;
+export type OperationalTradesRuntimeSnapshot = z.infer<typeof operationalTradesRuntimeSnapshotSchema>;
+export type OperationalTradesSessionFound = z.infer<typeof operationalTradesSessionFoundSchema>;
+export type OperationalTradesSessionResponse = z.infer<typeof operationalTradesSessionResponseSchema>;
+export type OperationalHistoryRuntimeSnapshot = z.infer<typeof operationalHistoryRuntimeSnapshotSchema>;
+export type OperationalHistorySessionFound = z.infer<typeof operationalHistorySessionFoundSchema>;
+export type OperationalHistorySessionResponse = z.infer<typeof operationalHistorySessionResponseSchema>;
 export type RuntimeHeartbeatRequest = z.infer<typeof runtimeHeartbeatRequestSchema>;
 export type RuntimeHeartbeatSuccess = z.infer<typeof runtimeHeartbeatSuccessSchema>;
 export type RuntimeHeartbeatError = z.infer<typeof runtimeHeartbeatErrorSchema>;

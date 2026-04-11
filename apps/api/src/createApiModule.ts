@@ -1,6 +1,7 @@
 import type {
   DashboardContract,
   HistoryContract,
+  MarketInfoItem,
   OnboardingContract,
   PresetCatalogContract,
 } from "@pacifica/contracts";
@@ -63,6 +64,7 @@ import {
   createGetOperationalSessionByWallet,
   type GetOperationalSessionByWalletDependencies,
 } from "./application/get-operational-session-by-wallet/GetOperationalSessionByWallet";
+import { createGetOperationalSessionSliceByWallet } from "./application/get-operational-session-slice-by-wallet/GetOperationalSessionSliceByWallet";
 import {
   createSynchronizePacificaAccountState,
   type SynchronizePacificaAccountStateDependencies,
@@ -125,6 +127,8 @@ type ApiReadModels = {
   presets: PresetCatalogContract;
   history: HistoryContract;
 };
+
+const supportedPresetMarketSymbols = new Set(["BTC", "ETH", "SOL"]);
 
 type CreateApiModuleInput = {
   environment?: Partial<ApiEnvironment>;
@@ -391,13 +395,30 @@ export function createApiModule(input: CreateApiModuleInput) {
       ? { now: input.synchronizePacificaAccountStateDependencies.now }
       : {}),
   });
+  const operationalSessionRepository =
+    input.getOperationalSessionByWalletDependencies
+      ?.operationalSessionRepository ?? defaultCredentialRepository;
+  const runtimeMaintenanceRepository =
+    input.getOperationalSessionByWalletDependencies
+      ?.runtimeMaintenanceRepository ?? defaultCredentialRepository;
+  const synchronizePacificaSymbolOperationalConfigs = async ({
+    walletAddress,
+  }: {
+    walletAddress: string;
+  }) => {
+    const configs =
+      await startBotReadinessGateway.listEffectiveSymbolOperationalConfigs(
+        walletAddress,
+      );
+
+    await defaultCredentialRepository.replaceSymbolOperationalConfigs({
+      walletAddress,
+      configs,
+    });
+  };
   const getOperationalSessionByWallet = createGetOperationalSessionByWallet({
-    operationalSessionRepository:
-      input.getOperationalSessionByWalletDependencies
-        ?.operationalSessionRepository ?? defaultCredentialRepository,
-    runtimeMaintenanceRepository:
-      input.getOperationalSessionByWalletDependencies
-        ?.runtimeMaintenanceRepository ?? defaultCredentialRepository,
+    operationalSessionRepository,
+    runtimeMaintenanceRepository,
     ...(input.getOperationalSessionByWalletDependencies?.now
       ? { now: input.getOperationalSessionByWalletDependencies.now }
       : {}),
@@ -414,18 +435,148 @@ export function createApiModule(input: CreateApiModuleInput) {
         }
       : {}),
     synchronizePacificaAccountState,
-    synchronizePacificaSymbolOperationalConfigs: async ({ walletAddress }) => {
-      const configs =
-        await startBotReadinessGateway.listEffectiveSymbolOperationalConfigs(
-          walletAddress,
-        );
-
-      await defaultCredentialRepository.replaceSymbolOperationalConfigs({
-        walletAddress,
-        configs,
-      });
-    },
+    synchronizePacificaSymbolOperationalConfigs,
   });
+  const getOperationalProfileByWallet =
+    createGetOperationalSessionSliceByWallet({
+      readSession: (walletAddress) =>
+        operationalSessionRepository.findProfileByWalletAddress(walletAddress),
+      runtimeMaintenanceRepository,
+      ...(input.getOperationalSessionByWalletDependencies?.now
+        ? { now: input.getOperationalSessionByWalletDependencies.now }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.degradedAfterMs
+        ? {
+            degradedAfterMs:
+              input.getOperationalSessionByWalletDependencies.degradedAfterMs,
+          }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.errorAfterMs
+        ? {
+            errorAfterMs:
+              input.getOperationalSessionByWalletDependencies.errorAfterMs,
+          }
+        : {}),
+    });
+  const getOperationalDashboardByWallet =
+    createGetOperationalSessionSliceByWallet({
+      readSession: (walletAddress) =>
+        operationalSessionRepository.findDashboardByWalletAddress(walletAddress),
+      runtimeMaintenanceRepository,
+      ...(input.getOperationalSessionByWalletDependencies?.now
+        ? { now: input.getOperationalSessionByWalletDependencies.now }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.degradedAfterMs
+        ? {
+            degradedAfterMs:
+              input.getOperationalSessionByWalletDependencies.degradedAfterMs,
+          }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.errorAfterMs
+        ? {
+            errorAfterMs:
+              input.getOperationalSessionByWalletDependencies.errorAfterMs,
+          }
+        : {}),
+      synchronizePacificaAccountState,
+      refreshPacificaAccountState: true,
+    });
+  const getOperationalPresetsByWallet =
+    createGetOperationalSessionSliceByWallet({
+      readSession: async (walletAddress) => {
+        const session =
+          await operationalSessionRepository.findPresetsByWalletAddress(
+            walletAddress,
+          );
+
+        if (!session) {
+          return null;
+        }
+
+        let marketInfo: MarketInfoItem[] = [];
+
+        try {
+          const markets = await persistedMarketDataGateway.listMarketInfo();
+          marketInfo = markets.filter((market) =>
+            supportedPresetMarketSymbols.has(market.symbol),
+          );
+        } catch {
+          marketInfo = [];
+        }
+
+        return {
+          ...session,
+          marketInfo,
+          yourStrategy: session.yourStrategy,
+        };
+      },
+      runtimeMaintenanceRepository,
+      ...(input.getOperationalSessionByWalletDependencies?.now
+        ? { now: input.getOperationalSessionByWalletDependencies.now }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.degradedAfterMs
+        ? {
+            degradedAfterMs:
+              input.getOperationalSessionByWalletDependencies.degradedAfterMs,
+          }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.errorAfterMs
+        ? {
+            errorAfterMs:
+              input.getOperationalSessionByWalletDependencies.errorAfterMs,
+          }
+        : {}),
+      synchronizePacificaAccountState,
+      synchronizePacificaSymbolOperationalConfigs,
+      refreshPacificaAccountState: true,
+      refreshSymbolOperationalConfigs: true,
+    });
+  const getOperationalTradesByWallet =
+    createGetOperationalSessionSliceByWallet({
+      readSession: (walletAddress) =>
+        operationalSessionRepository.findTradesByWalletAddress(walletAddress),
+      runtimeMaintenanceRepository,
+      ...(input.getOperationalSessionByWalletDependencies?.now
+        ? { now: input.getOperationalSessionByWalletDependencies.now }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.degradedAfterMs
+        ? {
+            degradedAfterMs:
+              input.getOperationalSessionByWalletDependencies.degradedAfterMs,
+          }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.errorAfterMs
+        ? {
+            errorAfterMs:
+              input.getOperationalSessionByWalletDependencies.errorAfterMs,
+          }
+        : {}),
+      synchronizePacificaAccountState,
+      refreshPacificaAccountState: true,
+    });
+  const getOperationalHistoryByWallet =
+    createGetOperationalSessionSliceByWallet({
+      readSession: (walletAddress) =>
+        operationalSessionRepository.findHistoryByWalletAddress(walletAddress),
+      runtimeMaintenanceRepository,
+      ...(input.getOperationalSessionByWalletDependencies?.now
+        ? { now: input.getOperationalSessionByWalletDependencies.now }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.degradedAfterMs
+        ? {
+            degradedAfterMs:
+              input.getOperationalSessionByWalletDependencies.degradedAfterMs,
+          }
+        : {}),
+      ...(input.getOperationalSessionByWalletDependencies?.errorAfterMs
+        ? {
+            errorAfterMs:
+              input.getOperationalSessionByWalletDependencies.errorAfterMs,
+          }
+        : {}),
+      synchronizePacificaAccountState,
+      refreshPacificaAccountState: true,
+    });
   const verifyPacificaOperational = createVerifyPacificaOperational({
     credentialRepository:
       input.verifyPacificaOperationalDependencies?.credentialRepository ??
@@ -478,6 +629,11 @@ export function createApiModule(input: CreateApiModuleInput) {
       resumeBot,
       saveYourStrategy,
       getOperationalSessionByWallet,
+      getOperationalProfileByWallet,
+      getOperationalDashboardByWallet,
+      getOperationalPresetsByWallet,
+      getOperationalTradesByWallet,
+      getOperationalHistoryByWallet,
       verifyPacificaOperational,
       validatePacificaCredentials,
     }),

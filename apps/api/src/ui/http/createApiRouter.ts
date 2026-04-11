@@ -34,6 +34,16 @@ import { createLookupOperationalAccountByWalletRoute } from "./routes/createLook
 import type { LookupOperationalAccountByWalletHandler } from "./routes/createLookupOperationalAccountByWalletRoute";
 import { createGetOperationalSessionByWalletRoute } from "./routes/createGetOperationalSessionByWalletRoute";
 import type { GetOperationalSessionByWalletHandler } from "./routes/createGetOperationalSessionByWalletRoute";
+import { createGetOperationalProfileByWalletRoute } from "./routes/createGetOperationalProfileByWalletRoute";
+import type { GetOperationalProfileByWalletHandler } from "./routes/createGetOperationalProfileByWalletRoute";
+import { createGetOperationalDashboardByWalletRoute } from "./routes/createGetOperationalDashboardByWalletRoute";
+import type { GetOperationalDashboardByWalletHandler } from "./routes/createGetOperationalDashboardByWalletRoute";
+import { createGetOperationalPresetsByWalletRoute } from "./routes/createGetOperationalPresetsByWalletRoute";
+import type { GetOperationalPresetsByWalletHandler } from "./routes/createGetOperationalPresetsByWalletRoute";
+import { createGetOperationalTradesByWalletRoute } from "./routes/createGetOperationalTradesByWalletRoute";
+import type { GetOperationalTradesByWalletHandler } from "./routes/createGetOperationalTradesByWalletRoute";
+import { createGetOperationalHistoryByWalletRoute } from "./routes/createGetOperationalHistoryByWalletRoute";
+import type { GetOperationalHistoryByWalletHandler } from "./routes/createGetOperationalHistoryByWalletRoute";
 import { createValidatePacificaCredentialsRoute } from "./routes/createValidatePacificaCredentialsRoute";
 import type { ValidatePacificaCredentialsHandler } from "./routes/createValidatePacificaCredentialsRoute";
 import { createRefreshMarketDataRoute } from "./routes/createRefreshMarketDataRoute";
@@ -59,6 +69,11 @@ type ApiRouterDependencies = {
   reconcileRuntime: ReconcileRuntimeHandler;
   resumeBot: ResumeBotHandler;
   getOperationalSessionByWallet: GetOperationalSessionByWalletHandler;
+  getOperationalProfileByWallet: GetOperationalProfileByWalletHandler;
+  getOperationalDashboardByWallet: GetOperationalDashboardByWalletHandler;
+  getOperationalPresetsByWallet: GetOperationalPresetsByWalletHandler;
+  getOperationalTradesByWallet: GetOperationalTradesByWalletHandler;
+  getOperationalHistoryByWallet: GetOperationalHistoryByWalletHandler;
   refreshMarketData: RefreshMarketDataHandler;
   saveYourStrategy: SaveYourStrategyHandler;
   validatePacificaCredentials: ValidatePacificaCredentialsHandler;
@@ -107,6 +122,21 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     resumeBot: createResumeBotRoute(dependencies.resumeBot),
     getOperationalSessionByWallet: createGetOperationalSessionByWalletRoute(
       dependencies.getOperationalSessionByWallet,
+    ),
+    getOperationalProfileByWallet: createGetOperationalProfileByWalletRoute(
+      dependencies.getOperationalProfileByWallet,
+    ),
+    getOperationalDashboardByWallet: createGetOperationalDashboardByWalletRoute(
+      dependencies.getOperationalDashboardByWallet,
+    ),
+    getOperationalPresetsByWallet: createGetOperationalPresetsByWalletRoute(
+      dependencies.getOperationalPresetsByWallet,
+    ),
+    getOperationalTradesByWallet: createGetOperationalTradesByWalletRoute(
+      dependencies.getOperationalTradesByWallet,
+    ),
+    getOperationalHistoryByWallet: createGetOperationalHistoryByWalletRoute(
+      dependencies.getOperationalHistoryByWallet,
     ),
     refreshMarketData: createRefreshMarketDataRoute(
       dependencies.refreshMarketData,
