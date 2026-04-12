@@ -3,7 +3,6 @@ export type ApiEnvironment = {
   pacificaSignatureExpiryWindowMs: number;
   pacificaBuilderCode: string;
   pacificaBuilderMaxFeeRate: string;
-  pacificaAccountPrivateKey: string;
   pacificaOperationalProbeSymbol: string;
   pacificaOperationalProbePrice: string;
   pacificaOperationalProbeTargetNotionalUsd: string;
@@ -21,7 +20,6 @@ export function createApiEnvironment(
       input.pacificaSignatureExpiryWindowMs ?? 30000,
     pacificaBuilderCode: input.pacificaBuilderCode ?? "",
     pacificaBuilderMaxFeeRate: input.pacificaBuilderMaxFeeRate ?? "",
-    pacificaAccountPrivateKey: input.pacificaAccountPrivateKey ?? "",
     pacificaOperationalProbeSymbol:
       input.pacificaOperationalProbeSymbol ?? "BTC",
     pacificaOperationalProbePrice:

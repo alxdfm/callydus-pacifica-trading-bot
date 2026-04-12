@@ -18,8 +18,6 @@ const api = createApiModule({
     pacificaBuilderCode: process.env.PACIFICA_BUILDER_CODE ?? "",
     pacificaBuilderMaxFeeRate:
       process.env.PACIFICA_BUILDER_MAX_FEE_RATE ?? "",
-    pacificaAccountPrivateKey:
-      process.env.PACIFICA_ACCOUNT_PRIVATE_KEY ?? "",
     pacificaOperationalProbeSymbol:
       process.env.PACIFICA_OPERATIONAL_PROBE_SYMBOL ?? "BTC",
     pacificaOperationalProbePrice:
