@@ -4,7 +4,7 @@ import { AppLayout } from "./ui/layout/AppLayout";
 import { DashboardPage } from "./ui/pages/DashboardPage";
 import { HistoryPage } from "./ui/pages/HistoryPage";
 import { OperationsPage } from "./ui/pages/OperationsPage";
-import { PresetsPage } from "./ui/pages/PresetsPage";
+import { StrategiesPage } from "./ui/pages/StrategiesPage";
 import { TradesPage } from "./ui/pages/TradesPage";
 import { ProfileRouteGuard } from "./ui/router/ProfileRouteGuard";
 import { ProductRouteGuard } from "./ui/router/ProductRouteGuard";
@@ -45,8 +45,8 @@ export const router = createBrowserRouter([
             element: <DashboardPage />,
           },
           {
-            path: "/presets",
-            element: <PresetsPage />,
+            path: "/strategies",
+            element: <StrategiesPage />,
           },
           {
             path: "/trades",

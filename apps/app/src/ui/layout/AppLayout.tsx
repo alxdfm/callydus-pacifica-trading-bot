@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import logoUrl from "../../shared/assets/logo.svg";
-import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { LoadingPanel } from "../components/LoadingPanel";
@@ -35,11 +34,7 @@ export function AppLayout() {
   const { setLocale, setRuntimeState, state } = useAppState();
   const { isReady, t } = useI18n();
   const isOnboardingRoute = location.pathname === "/onboarding";
-  const activePresetItem = getPresetCatalogItemByDefinitionId(
-    state.presets.activePreset?.presetDefinitionId,
-    t,
-  );
-  const hasActiveStrategy = Boolean(activePresetItem && state.presets.activePreset);
+  const hasActiveStrategy = Boolean(state.presets.activePreset);
   const isStrategyRunning =
     hasActiveStrategy &&
     (state.runtime.botStatus === "active" || state.runtime.botStatus === "syncing");
@@ -121,13 +116,13 @@ export function AppLayout() {
             </span>
           </div>
           <strong>
-            {activePresetItem
-              ? activePresetItem.definition.name
+            {hasActiveStrategy
+              ? "YOUR Strategy"
               : t("presetSidebarTitle")}
           </strong>
           <p>
-            {activePresetItem
-              ? `${activePresetItem.definition.riskLabel} · ${state.presets.activePreset?.editableConfig.symbol ?? activePresetItem.defaultEditableConfig.symbol}`
+            {hasActiveStrategy
+              ? `${t("yourStrategyRiskLabel")} · ${state.presets.activePreset?.editableConfig.symbol ?? ""}`
               : t("presetSidebarHint")}
           </p>
         </div>

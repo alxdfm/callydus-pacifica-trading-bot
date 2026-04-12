@@ -5,7 +5,7 @@ describe("getNavigationItems", () => {
   it("mantém apenas a navegação principal sem expor onboarding no menu", () => {
     expect(getNavigationItems().map((item) => item.to)).toEqual([
       "/dashboard",
-      "/presets",
+      "/strategies",
       "/trades",
       "/history",
       "/operations",

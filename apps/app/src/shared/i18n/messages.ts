@@ -249,84 +249,12 @@ export const messages = {
     pagePresetsDescription:
       "Strategy setup, review and activation live in this route.",
     pagePresetsAction: "Keep this route available for navigation and shared layout validation.",
-    presetPageTitle: "Build and activate your strategy",
-    presetPageDescription:
-      "YOUR Strategy is the main flow. Legacy templates stay available as optional starting points.",
-    presetPageBadge: "Builder first",
-    presetSaferRiskLabel: "Low risk",
-    presetSaferFrequencyLabel: "Low frequency",
-    presetSaferDescription: "Lower activity and stronger protection.",
-    presetSaferPriorityOne: "Selective entries",
-    presetSaferPriorityTwo: "Stronger protection",
-    presetSaferReviewSummary: "EMA 12/24 with RSI extremes and ATR protection on 15m.",
-    presetSaferActivationSummary:
-      "Safer on {symbol} with size {size}, {longState} and {shortState}.",
-    presetSaferTriggerBuy:
-      "Buys when emaFast crosses above emaSlow and RSI is below 30.",
-    presetSaferTriggerSell:
-      "Sells short when emaFast crosses below emaSlow and RSI is above 70.",
-    presetSaferTriggerStopLoss: "Uses ATR(14) with multiplier 1.5.",
-    presetSaferTriggerTakeProfit: "Uses risk-reward multiple 2.0.",
-    presetBalancedRiskLabel: "Medium risk",
-    presetBalancedFrequencyLabel: "Medium frequency",
-    presetBalancedDescription: "Best default for the MVP with controlled exposure.",
-    presetBalancedPriorityOne: "Moderate activity",
-    presetBalancedPriorityTwo: "Controlled entries",
-    presetBalancedReviewSummary:
-      "EMA 8/21 with RSI 50 and volume above volumeSma on 15m.",
-    presetBalancedActivationSummary:
-      "Balanced on {symbol} with size {size}, {longState} and {shortState}.",
-    presetBalancedTriggerBuy:
-      "Buys when emaFast crosses above emaSlow, RSI is at or above 50 and volume crosses above volumeSma.",
-    presetBalancedTriggerSell:
-      "Sells short when emaFast crosses below emaSlow, RSI is at or below 50 and volume crosses above volumeSma.",
-    presetBalancedTriggerStopLoss: "Uses static stop loss of 1.2%.",
-    presetBalancedTriggerTakeProfit: "Uses risk-reward multiple 2.0.",
-    presetMoreActiveRiskLabel: "Higher activity",
-    presetMoreActiveFrequencyLabel: "Higher frequency",
-    presetMoreActiveDescription: "More opportunities with looser selection rules.",
-    presetMoreActivePriorityOne: "Looser filters",
-    presetMoreActivePriorityTwo: "Higher recurrence",
-    presetMoreActiveReviewSummary:
-      "EMA 9/18 with volume above volumeSma and RSI thresholds on 5m.",
-    presetMoreActiveActivationSummary:
-      "More active on {symbol} with size {size}, {longState} and {shortState}.",
-    presetMoreActiveTriggerBuy:
-      "Buys when volume crosses above volumeSma, emaFast crosses above emaSlow and RSI is at or above 45.",
-    presetMoreActiveTriggerSell:
-      "Sells short when volume crosses above volumeSma, emaFast crosses below emaSlow and RSI is at or below 55.",
-    presetMoreActiveTriggerStopLoss: "Uses static stop loss of 1.0%.",
-    presetMoreActiveTriggerTakeProfit: "Uses risk-reward multiple 1.6.",
-    presetLongEnabled: "long enabled",
-    presetLongDisabled: "long disabled",
-    presetShortEnabled: "short enabled",
-    presetShortDisabled: "short disabled",
-    presetChoiceEyebrow: "Legacy templates",
-    presetChoiceTitle: "Optional starting points",
-    presetChoiceDescription:
-      "Use a legacy template as a quick seed, or stay on YOUR Strategy for the main builder flow.",
-    presetChoiceBadge: "Optional",
-    presetSelectAction: "Select",
-    presetSelectSelected: "Selected",
-    presetReviewEyebrow: "Template review",
-    presetReviewEmptyTitle: "Select a template first",
-    presetReviewEmptyDescription:
-      "Choose a legacy template to review its editable fields before activation.",
-    presetReviewEmptyBadge: "No preset selected",
-    presetReviewBlockedTitle: "Template review stays blocked",
-    presetReviewBlockedDescription:
-      "Select one of the legacy templates to unlock this review area, or keep working inside YOUR Strategy.",
     presetReviewSymbolLabel: "Symbol",
-    presetReviewSymbolHint: "Choose from the symbols currently supported by the MVP.",
     presetReviewPositionSizeLabel: "Position size",
-    presetReviewLeverageLabel: "Leverage",
     presetReviewLeverageHint:
       "This value comes from the current leverage configured on Pacifica for the selected symbol.",
     presetReviewLongLabel: "Long",
     presetReviewShortLabel: "Short",
-    presetReviewHint:
-      "The user edits only what matters. Logic, indicators and timeframe stay locked.",
-    presetSuggestionNote: "Preset is a strategy suggestion, not a return guarantee.",
     presetBacktestEyebrow: "Backtest preview",
     presetBacktestTitle: "Recent strategy vs hold",
     presetBacktestDescription:
@@ -364,23 +292,12 @@ export const messages = {
     presetBacktestCloseEndOfPeriod: "End of period",
     presetActivationEyebrow: "Activation",
     presetActivationTitleIdle: "Choose a template to continue",
-    presetActivationTitleReady: "Ready to activate",
-    presetActivationSummaryEmpty: "Activation stays blocked until a preset is selected and reviewed.",
-    presetActivationAction: "Activate template",
-    presetActivationCancel: "Cancel",
     presetActivationStatusIdle: "Waiting for review",
-    presetActivationStatusIdleDescription:
-      "Choose a preset, review the editable fields and activate it explicitly.",
     presetActivationStatusLoading: "Activation in progress",
     presetActivationStatusSuccess: "Template activated",
     presetActivationStatusError: "Activation failed",
-    presetActivationConfirmTitle: "Activate template?",
-    presetActivationConfirmDescription:
-      "This will activate {preset} on {symbol} and refresh the operational screens.",
     presetActivationLoading: "Activating the selected template...",
-    presetActivationSuccess: "Template activated successfully.",
     presetActivationErrorNoSelection: "Select a template before activating it.",
-    presetActivationErrorGeneric: "Could not activate the selected template right now.",
     yourStrategyRiskLabel: "Custom",
     yourStrategyFrequencyLabel: "Builder flow",
     yourStrategyDescription:
@@ -579,11 +496,6 @@ export const messages = {
       "Take profit is disabled. Saving is allowed, but activation stays blocked and preview results stay only indicative until you configure a take profit or accept that limitation for draft work only.",
     yourStrategyIssueUnsupportedPositionSize:
       "Only balance percent sizing is supported in YOUR Strategy right now. Use Step 5 to keep position size as balance percent.",
-    presetDisclosureInfoAction: "Preset details",
-    presetDisclosureBuyLabel: "Buy trigger",
-    presetDisclosureSellLabel: "Sell trigger",
-    presetDisclosureStopLabel: "Stop loss",
-    presetDisclosureTakeProfitLabel: "Take profit",
     presetSidebarTitle: "No active strategy",
     presetSidebarHint:
       "Choose and activate a strategy to keep the operational setup visible in the sidebar.",
@@ -610,8 +522,8 @@ export const messages = {
     dashboardResumeBotAction: "Resume bot",
     dashboardMetricBalance: "Total balance",
     dashboardMetricBalanceHint: "Available for automation",
-    dashboardMetricPnl: "Account PnL",
-    dashboardMetricPnlHint: "Current aggregated account result",
+    dashboardMetricPnl: "7D PnL",
+    dashboardMetricPnlHint: "Cumulative account result over the last 7 days",
     dashboardMetricExposure: "Exposure",
     dashboardMetricExposureHint: "Capital currently in use",
     dashboardMetricOpenTrades: "Open trades",

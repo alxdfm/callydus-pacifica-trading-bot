@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { applyOperationalDashboardSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
-import { getPresetCatalogItemByDefinitionId } from "../../features/presets/preset-catalog";
 import { getBotStatusPresentation } from "../../features/runtime/bot-status-presentation";
 import { getDashboardRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
 import {
@@ -31,10 +30,6 @@ export function DashboardPage() {
   } = useAppState();
   const { t } = useI18n();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const activePresetItem = getPresetCatalogItemByDefinitionId(
-    state.presets.activePreset?.presetDefinitionId,
-    t,
-  );
   const botStatusPresentation = getBotStatusPresentation(state.runtime.botStatus, t);
   const resumeActionRequiresPreset =
     botStatusPresentation.nextAction === "resume" && !state.presets.activePreset;
@@ -57,7 +52,7 @@ export function DashboardPage() {
     state.runtime.lastRuntimeMessage,
     t,
   );
-  const activePresetEyebrow = !activePresetItem
+  const activePresetEyebrow = !state.presets.activePreset
     ? t("dashboardNoPresetTitle")
     : state.runtime.botStatus === "active"
       ? t("dashboardActivePresetEyebrow")
@@ -171,7 +166,7 @@ export function DashboardPage() {
 
   function handleWelcomeConfirm() {
     dismissWelcomeModal();
-    navigate("/presets");
+    navigate("/strategies");
   }
 
   function showRuntimeToast(
@@ -266,7 +261,7 @@ export function DashboardPage() {
         <div className="topbar-actions">
           <button
             className="btn secondary"
-            onClick={() => navigate("/presets")}
+            onClick={() => navigate("/strategies")}
             type="button"
           >
             {t("dashboardReviewPresetAction")}
@@ -384,32 +379,31 @@ export function DashboardPage() {
           <div>
             <p className="panel-label">{activePresetEyebrow}</p>
             <h3>
-              {activePresetItem
-                ? activePresetItem.definition.name
+              {state.presets.activePreset
+                ? "YOUR Strategy"
                 : t("dashboardNoPresetTitle")}
             </h3>
             <p className="subtle">
-              {activePresetItem
-                ? activePresetItem.reviewSummary
+              {state.presets.activePreset
+                ? t("yourStrategyReviewSummary")
                 : t("dashboardNoPresetDescription")}
             </p>
           </div>
           <div className="row-between align-start">
             <span
-              className={`badge badge--${activePresetItem?.riskTone ?? "neutral"}`}
+              className={`badge badge--${state.presets.activePreset ? "info" : "neutral"}`}
             >
-              {activePresetItem
-                ? activePresetItem.definition.riskLabel
+              {state.presets.activePreset
+                ? t("yourStrategyRiskLabel")
                 : t("presetSidebarEmpty")}
             </span>
           </div>
-          {activePresetItem && state.presets.activePreset ? (
+          {state.presets.activePreset ? (
             <>
               <div className="chip-row">
                 <span className="chip">
                   {state.presets.activePreset.editableConfig.symbol}
                 </span>
-                <span className="chip">{activePresetItem.timeframeLabel}</span>
                 <span className="chip">
                   {`${t("dashboardSizeLabel")} ${state.presets.activePreset.editableConfig.positionSizeValue}%`}
                 </span>
@@ -427,14 +421,14 @@ export function DashboardPage() {
               <div className="action-row">
                 <button
                   className="btn secondary"
-                  onClick={() => navigate("/presets")}
+                  onClick={() => navigate("/strategies")}
                   type="button"
                 >
                   {t("dashboardChangePresetAction")}
                 </button>
                 <button
                   className="btn primary"
-                  onClick={() => navigate("/presets")}
+                  onClick={() => navigate("/strategies")}
                   type="button"
                 >
                   {t("dashboardOpenPresetAction")}
