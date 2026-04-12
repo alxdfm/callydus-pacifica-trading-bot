@@ -9,10 +9,6 @@ import {
   type ApprovePacificaBuilderDependencies,
 } from "./application/approve-pacifica-builder/ApprovePacificaBuilder";
 import {
-  createActivatePreset,
-  type ActivatePresetDependencies,
-} from "./application/activate-preset/ActivatePreset";
-import {
   createActivateYourStrategy,
   type ActivateYourStrategyDependencies,
 } from "./application/activate-your-strategy/ActivateYourStrategy";
@@ -20,10 +16,6 @@ import {
   createCloseTrade,
   type CloseTradeDependencies,
 } from "./application/close-trade/CloseTrade";
-import {
-  createEvaluatePresetSignal,
-  type EvaluatePresetSignalDependencies,
-} from "./application/evaluate-preset-signal/EvaluatePresetSignal";
 import {
   createGetMarketCandles,
   type GetMarketCandlesDependencies,
@@ -61,10 +53,6 @@ import {
   createPauseBot,
   type PauseBotDependencies,
 } from "./application/pause-bot/PauseBot";
-import {
-  createPreviewPresetBacktest,
-  type PreviewPresetBacktestDependencies,
-} from "./application/preview-preset-backtest/PreviewPresetBacktest";
 import {
   createPreviewYourStrategyBacktest,
   type PreviewYourStrategyBacktestDependencies,
@@ -109,7 +97,7 @@ import { PrismaMarketDataSnapshotRepository } from "./infrastructure/persistence
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
 
-const supportedPresetMarketSymbols = new Set(["BTC", "ETH", "SOL"]);
+const supportedStrategyMarketSymbols = new Set(["BTC", "ETH", "SOL"]);
 
 type CreateApiModuleInput = {
   environment?: Partial<ApiEnvironment>;
@@ -117,17 +105,14 @@ type CreateApiModuleInput = {
   approvePacificaBuilderDependencies?: Partial<
     ApprovePacificaBuilderDependencies
   >;
-  activatePresetDependencies?: Partial<ActivatePresetDependencies>;
   activateYourStrategyDependencies?: Partial<ActivateYourStrategyDependencies>;
   closeTradeDependencies?: Partial<CloseTradeDependencies>;
-  evaluatePresetSignalDependencies?: Partial<EvaluatePresetSignalDependencies>;
   getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
   getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
   refreshMarketDataDependencies?: Partial<RefreshMarketDataDependencies>;
   refreshMarketDataManuallyDependencies?: Partial<
     RefreshMarketDataManuallyDependencies
   >;
-  previewPresetBacktestDependencies?: Partial<PreviewPresetBacktestDependencies>;
   previewYourStrategyBacktestDependencies?: Partial<
     PreviewYourStrategyBacktestDependencies
   >;
@@ -197,29 +182,10 @@ export function createApiModule(input: CreateApiModuleInput) {
       input.getMarketCandlesDependencies?.marketData ??
       persistedMarketDataGateway,
   });
-  const evaluatePresetSignal = createEvaluatePresetSignal({
-    marketData:
-      input.evaluatePresetSignalDependencies?.marketData ??
-      persistedMarketDataGateway,
-    eventRepository:
-      input.evaluatePresetSignalDependencies?.eventRepository ??
-      defaultCredentialRepository,
-    ...(input.evaluatePresetSignalDependencies?.now
-      ? { now: input.evaluatePresetSignalDependencies.now }
-      : {}),
-  });
   const getMarketPrices = createGetMarketPrices({
     marketData:
       input.getMarketPricesDependencies?.marketData ??
       persistedMarketDataGateway,
-  });
-  const previewPresetBacktest = createPreviewPresetBacktest({
-    marketData:
-      input.previewPresetBacktestDependencies?.marketData ??
-      persistedMarketDataGateway,
-    refresher:
-      input.previewPresetBacktestDependencies?.refresher ??
-      marketDataRefresher,
   });
   const previewYourStrategyBacktest = createPreviewYourStrategyBacktest({
     marketData:
@@ -238,20 +204,6 @@ export function createApiModule(input: CreateApiModuleInput) {
       marketDataRefresher,
   });
 
-  const activatePreset = createActivatePreset({
-    credentialRepository:
-      input.activatePresetDependencies?.credentialRepository ??
-      defaultCredentialRepository,
-    presetActivationRepository:
-      input.activatePresetDependencies?.presetActivationRepository ??
-      defaultCredentialRepository,
-    eventRepository:
-      input.activatePresetDependencies?.eventRepository ??
-      defaultCredentialRepository,
-    ...(input.activatePresetDependencies?.now
-      ? { now: input.activatePresetDependencies.now }
-      : {}),
-  });
   const activateYourStrategy = createActivateYourStrategy({
     credentialRepository:
       input.activateYourStrategyDependencies?.credentialRepository ??
@@ -468,7 +420,7 @@ export function createApiModule(input: CreateApiModuleInput) {
         try {
           const markets = await persistedMarketDataGateway.listMarketInfo();
           marketInfo = markets.filter((market) =>
-            supportedPresetMarketSymbols.has(market.symbol),
+            supportedStrategyMarketSymbols.has(market.symbol),
           );
         } catch {
           marketInfo = [];
@@ -581,14 +533,11 @@ export function createApiModule(input: CreateApiModuleInput) {
     environment,
     router: createApiRouter({
       approvePacificaBuilder,
-      activatePreset,
       activateYourStrategy,
       closeTrade,
-      evaluatePresetSignal,
       getMarketCandles,
       getMarketPrices,
       refreshMarketData,
-      previewPresetBacktest,
       previewYourStrategyBacktest,
       heartbeatRuntime,
       lookupOperationalAccountByWallet,

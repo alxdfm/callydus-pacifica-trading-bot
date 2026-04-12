@@ -1,7 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { createApiModule } from "../createApiModule";
-import { createActivePresetMarketDataRequestResolver } from "../infrastructure/market-data/ActivePresetMarketDataRequestResolver";
-import { normalizeCandleRequestConfig } from "../infrastructure/market-data/startLocalMarketDataRefreshScheduler";
 
 const prisma = new PrismaClient();
 
@@ -36,11 +34,6 @@ async function main() {
     },
     prisma,
   });
-  const resolveActivePresetMarketDataRequests =
-    createActivePresetMarketDataRequestResolver({
-      prisma,
-    });
-
   const symbol = process.env.MARKET_REFRESH_SYMBOL;
   const interval = process.env.MARKET_REFRESH_INTERVAL as
     | "1m"
@@ -79,9 +72,7 @@ async function main() {
               ...(typeof limit === "number" ? { limit } : {}),
             },
           ]
-        : (await resolveActivePresetMarketDataRequests()).map((request) =>
-            normalizeCandleRequestConfig(request, new Date()),
-          ),
+        : [],
   });
 
   console.log(JSON.stringify(result, null, 2));

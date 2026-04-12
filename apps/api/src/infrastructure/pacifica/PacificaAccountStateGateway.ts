@@ -16,7 +16,7 @@ export class PacificaAccountStateGateway implements PacificaAccountStatePort {
   async readAccountState(
     input: ReadPacificaAccountStateInput,
   ) {
-    const [accountInfo, positions, orderHistory, tradeHistory] = await Promise.all([
+    const [accountInfo, positions, orderHistory, tradeHistory, portfolio7d] = await Promise.all([
       this.getJson("/api/v1/account", {
         account: input.walletAddress,
       }),
@@ -31,13 +31,18 @@ export class PacificaAccountStateGateway implements PacificaAccountStatePort {
         account: input.walletAddress,
         limit: "100",
       }),
+      this.getJson("/api/v1/portfolio", {
+        account: input.walletAddress,
+        time_range: "7d",
+      }),
     ]);
 
     const normalizedTradeHistory = normalizeTradeHistory(tradeHistory);
+    const pnl7d = normalizePortfolioPnl(portfolio7d);
 
     return {
       fetchedAtIso: input.nowIso,
-      balance: normalizeBalanceSnapshot(accountInfo, input.nowIso),
+      balance: normalizeBalanceSnapshot(accountInfo, pnl7d, input.nowIso),
       positions: normalizePositions(positions, normalizedTradeHistory),
       recentTradeHistory: normalizedTradeHistory,
       orderHistorySummary: normalizeOrderHistorySummary(orderHistory),
@@ -76,7 +81,21 @@ export class PacificaAccountStateGateway implements PacificaAccountStatePort {
   }
 }
 
-function normalizeBalanceSnapshot(payload: unknown, fallbackNowIso: string) {
+function normalizePortfolioPnl(payload: unknown): number | null {
+  const rows = dataArray(payload);
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  // The portfolio series is ordered by timestamp ascending; the last entry
+  // holds the cumulative PnL since the start of the requested period.
+  const last = rows[rows.length - 1] ?? null;
+  if (!last) return null;
+  return pickNumber(last, ["pnl"]);
+}
+
+function normalizeBalanceSnapshot(payload: unknown, pnl7d: number | null, fallbackNowIso: string) {
   const record = firstDataRecord(payload);
 
   if (!record) {
@@ -108,30 +127,8 @@ function normalizeBalanceSnapshot(payload: unknown, fallbackNowIso: string) {
     "cash_balance",
     "cashBalance",
   ]);
-  const aggregatedPnlDirect = pickNumber(record, [
-    "unrealized_pnl",
-    "unrealised_pnl",
-    "account_unrealized_pnl",
-    "account_unrealised_pnl",
-    "total_unrealized_pnl",
-    "total_unrealised_pnl",
-    "floating_pnl",
-    "floatingPnL",
-    "floatingPnl",
-    "unrealizedPnl",
-    "unrealisedPnl",
-    "accountUnrealizedPnl",
-    "accountUnrealisedPnl",
-  ]);
-  const aggregatedPnlLoose = pickNumber(record, [
-    "pnl",
-  ]);
-  const aggregatedPnl =
-    aggregatedPnlDirect ??
-    (totalBalance !== null && realizedOrBaseBalance !== null
-      ? totalBalance - realizedOrBaseBalance
-      : null) ??
-    aggregatedPnlLoose;
+  // 7-day PnL sourced from /api/v1/portfolio?time_range=7d (last entry's cumulative pnl)
+  const aggregatedPnl = pnl7d;
   const capitalInUse = pickNumber(record, [
     "margin_used",
     "marginUsed",

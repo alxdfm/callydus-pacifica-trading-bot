@@ -1,17 +1,11 @@
-import { createActivatePresetRoute } from "./routes/createActivatePresetRoute";
-import type { ActivatePresetHandler } from "./routes/createActivatePresetRoute";
 import { createActivateYourStrategyRoute } from "./routes/createActivateYourStrategyRoute";
 import type { ActivateYourStrategyHandler } from "./routes/createActivateYourStrategyRoute";
 import { createCloseTradeRoute } from "./routes/createCloseTradeRoute";
 import type { CloseTradeHandler } from "./routes/createCloseTradeRoute";
 import { createGetMarketCandlesRoute } from "./routes/createGetMarketCandlesRoute";
-import { createEvaluatePresetSignalRoute } from "./routes/createEvaluatePresetSignalRoute";
-import type { EvaluatePresetSignalHandler } from "./routes/createEvaluatePresetSignalRoute";
 import type { GetMarketCandlesHandler } from "./routes/createGetMarketCandlesRoute";
 import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute";
 import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
-import { createPreviewPresetBacktestRoute } from "./routes/createPreviewPresetBacktestRoute";
-import type { PreviewPresetBacktestHandler } from "./routes/createPreviewPresetBacktestRoute";
 import { createPreviewYourStrategyBacktestRoute } from "./routes/createPreviewYourStrategyBacktestRoute";
 import type { PreviewYourStrategyBacktestHandler } from "./routes/createPreviewYourStrategyBacktestRoute";
 import { createPauseBotRoute } from "./routes/createPauseBotRoute";
@@ -48,14 +42,11 @@ import { createSaveYourStrategyRoute } from "./routes/createSaveYourStrategyRout
 import type { SaveYourStrategyHandler } from "./routes/createSaveYourStrategyRoute";
 
 type ApiRouterDependencies = {
-  activatePreset: ActivatePresetHandler;
   activateYourStrategy: ActivateYourStrategyHandler;
   approvePacificaBuilder: ApprovePacificaBuilderHandler;
   closeTrade: CloseTradeHandler;
-  evaluatePresetSignal: EvaluatePresetSignalHandler;
   getMarketCandles: GetMarketCandlesHandler;
   getMarketPrices: GetMarketPricesHandler;
-  previewPresetBacktest: PreviewPresetBacktestHandler;
   previewYourStrategyBacktest: PreviewYourStrategyBacktestHandler;
   heartbeatRuntime: HeartbeatRuntimeHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
@@ -76,7 +67,6 @@ type ApiRouterDependencies = {
 
 export function createApiRouter(dependencies: ApiRouterDependencies) {
   return {
-    activatePreset: createActivatePresetRoute(dependencies.activatePreset),
     activateYourStrategy: createActivateYourStrategyRoute(
       dependencies.activateYourStrategy,
     ),
@@ -84,17 +74,11 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
       dependencies.approvePacificaBuilder,
     ),
     closeTrade: createCloseTradeRoute(dependencies.closeTrade),
-    evaluatePresetSignal: createEvaluatePresetSignalRoute(
-      dependencies.evaluatePresetSignal,
-    ),
     getMarketCandles: createGetMarketCandlesRoute(
       dependencies.getMarketCandles,
     ),
     getMarketPrices: createGetMarketPricesRoute(
       dependencies.getMarketPrices,
-    ),
-    previewPresetBacktest: createPreviewPresetBacktestRoute(
-      dependencies.previewPresetBacktest,
     ),
     previewYourStrategyBacktest: createPreviewYourStrategyBacktestRoute(
       dependencies.previewYourStrategyBacktest,

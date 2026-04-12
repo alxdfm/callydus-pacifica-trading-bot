@@ -2,7 +2,6 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PrismaClient } from "@prisma/client";
 import { createApiModule } from "./createApiModule";
-import { createActivePresetMarketDataRequestResolver } from "./infrastructure/market-data/ActivePresetMarketDataRequestResolver";
 import {
   readLocalMarketDataRefreshSchedulerConfigFromEnv,
   startLocalMarketDataRefreshScheduler,
@@ -39,14 +38,9 @@ const api = createApiModule({
   },
   prisma,
 });
-const resolveActivePresetMarketDataRequests =
-  createActivePresetMarketDataRequestResolver({
-    prisma,
-  });
 const localMarketDataRefreshScheduler = startLocalMarketDataRefreshScheduler({
   config: readLocalMarketDataRefreshSchedulerConfigFromEnv(process.env),
   refreshMarketData: api.services.refreshMarketData,
-  resolveCandleRequests: resolveActivePresetMarketDataRequests,
 });
 
 const port = Number(process.env.PORT ?? "3003");
@@ -74,22 +68,6 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     });
 
     response.writeHead(result.canProceed ? 200 : 400, {
-      "Content-Type": "application/json",
-    });
-    response.end(JSON.stringify(result));
-    return;
-  }
-
-  if (
-    request.method === "POST" &&
-    request.url === "/api/presets/activate"
-  ) {
-    const body = await readJsonBody(request);
-    const result = await api.router.activatePreset({
-      body: body as never,
-    });
-
-    response.writeHead(result.status === "success" ? 200 : 400, {
       "Content-Type": "application/json",
     });
     response.end(JSON.stringify(result));
@@ -187,38 +165,6 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
         ...(body as Record<string, unknown>),
         tradeId,
       } as never,
-    });
-
-    response.writeHead(result.status === "success" ? 200 : 400, {
-      "Content-Type": "application/json",
-    });
-    response.end(JSON.stringify(result));
-    return;
-  }
-
-  if (
-    request.method === "POST" &&
-    request.url === "/api/presets/evaluate-signal"
-  ) {
-    const body = await readJsonBody(request);
-    const result = await api.router.evaluatePresetSignal({
-      body: body as never,
-    });
-
-    response.writeHead(result.status === "success" ? 200 : 400, {
-      "Content-Type": "application/json",
-    });
-    response.end(JSON.stringify(result));
-    return;
-  }
-
-  if (
-    request.method === "POST" &&
-    request.url === "/api/presets/backtest-preview"
-  ) {
-    const body = await readJsonBody(request);
-    const result = await api.router.previewPresetBacktest({
-      body: body as never,
     });
 
     response.writeHead(result.status === "success" ? 200 : 400, {
