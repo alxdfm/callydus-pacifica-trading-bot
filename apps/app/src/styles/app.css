@@ -794,8 +794,9 @@ a {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
+  align-items: start;
 }
 
 .hero-panel-wide,
@@ -805,7 +806,7 @@ a {
 }
 
 .hero-panel-wide {
-  grid-column: 1 / -1;
+  grid-column: span 1;
 }
 
 .recent-panel,
