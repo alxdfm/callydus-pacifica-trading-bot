@@ -806,7 +806,7 @@ A recomendacao preferencial e:
 - [ ] acompanhar tempo medio de refresh
 
 ### Validacao final
-- [ ] validar que API e worker nao dependem mais de fetch direto para market data publico
+- [X] validar que API e worker nao dependem mais de fetch direto para market data publico
 - [X] validar que snapshots continuam sendo servidos durante indisponibilidade temporaria da Pacifica
 - [ ] validar que a rotina de limpeza mantem o banco sob controle
 - [ ] validar impacto real em volume de chamadas externas
@@ -835,14 +835,15 @@ Variaveis principais:
 - `LOCAL_MARKET_DATA_REFRESH_MARKET_INFO=true`
 
 Observacao:
-- o scheduler local nao usa mais uma lista fixa de `symbol + timeframe` em `env`
-- os `candleRequests` sao derivados dinamicamente dos presets ativos atuais no banco
-- o simbolo e convertido para o formato Pacifica no momento do refresh
+- o scheduler usa uma lista estatica de `symbol + timeframe` para pre-aquecer os 3 simbolos suportados
+- simbolos configurados: `BTC-PERP`, `ETH-PERP`, `SOL-PERP`
+- intervalos configurados: `5m`, `15m`, `1h`
+- a configuracao estatica fica em `apps/api/src/server.ts` como `resolveCandleRequests`
 
 Com essa configuracao:
 - a API faz refresh no startup
 - continua refrescando a cada `1 minuto`
-- persiste `prices`, `market info` e candles configurados
+- persiste `prices`, `market info` e candles dos 3 simbolos suportados
 
 ### Refresh manual
 Tambem e possivel disparar refresh manualmente.

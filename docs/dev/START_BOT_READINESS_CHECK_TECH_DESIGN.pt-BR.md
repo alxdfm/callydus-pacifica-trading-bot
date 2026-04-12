@@ -248,12 +248,14 @@ A API deve:
 Sem isso:
 - o readiness check falha antes de qualquer chamada externa
 
-### Passo 2. Ler estado atual da Pacifica
-Chamar:
+### Passo 2. Ler estado atual da Pacifica e do cache interno
+Chamar diretamente na Pacifica:
 - `GET /api/v1/account`
 - `GET /api/v1/account/settings`
 - `GET /api/v1/info`
-- `GET /api/v1/info/prices`
+
+Ler do cache interno de market data (`MarketDataPort.getPrices()`):
+- precos atuais dos simbolos suportados
 
 Objetivo:
 - `availableBalance`
@@ -263,7 +265,13 @@ Objetivo:
 - `min_order_size`
 - `tick_size`
 - `lot_size`
-- preco atual do simbolo
+- preco atual do simbolo (via cache, sem chamada extra a Pacifica)
+
+Observacao:
+- precos nao devem ser buscados diretamente em `GET /api/v1/info/prices`
+- o preco deve vir do `PersistedMarketDataGateway` (cache interno atualizado pelo scheduler)
+- o `StartBotReadinessCheck` (use case) busca precos via `marketData.getPrices()` e os repassa ao gateway
+- o gateway usa `markPrice` do snapshot interno; fallback para chamada direta apenas se o cache nao estiver disponivel
 
 ### Passo 2.1. Resolver leverage configuravel por par
 O produto deve passar a expor leverage por simbolo suportado.
