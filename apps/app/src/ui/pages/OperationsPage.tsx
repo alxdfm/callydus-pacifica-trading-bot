@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { OperationalDashboardSessionFound } from "@pacifica/contracts";
 import { applyOperationalDashboardSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";
@@ -6,7 +6,7 @@ import { useOperationalPageSession } from "../../features/account/use-operationa
 import { getDashboardRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
-import { LoadingPanel } from "../components/LoadingPanel";
+import { PaginationControls } from "../components/PaginationControls";
 
 export function OperationsPage() {
   const {
@@ -55,6 +55,39 @@ export function OperationsPage() {
     state.runtime.screenStatus === "error" &&
     Boolean(state.runtime.lastRuntimeMessage);
 
+  const ALERTS_PER_PAGE = 4;
+  const [alertPage, setAlertPage] = useState(1);
+  const [eventPage, setEventPage] = useState(1);
+  const alertsTotalPages = Math.max(
+    1,
+    Math.ceil(state.runtime.alerts.length / ALERTS_PER_PAGE),
+  );
+  const visibleAlerts = state.runtime.alerts.slice(
+    (alertPage - 1) * ALERTS_PER_PAGE,
+    alertPage * ALERTS_PER_PAGE,
+  );
+
+  const eventsTotalPages = Math.max(
+    1,
+    Math.ceil(state.runtime.events.length / ALERTS_PER_PAGE),
+  );
+  const visibleEvents = state.runtime.events.slice(
+    (eventPage - 1) * ALERTS_PER_PAGE,
+    eventPage * ALERTS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    if (alertPage > alertsTotalPages) {
+      setAlertPage(alertsTotalPages);
+    }
+  }, [alertPage, alertsTotalPages]);
+
+  useEffect(() => {
+    if (eventPage > eventsTotalPages) {
+      setEventPage(eventsTotalPages);
+    }
+  }, [eventPage, eventsTotalPages]);
+
   function formatTimestamp(value: string | null) {
     if (!value) {
       return "-";
@@ -68,6 +101,54 @@ export function OperationsPage() {
     });
   }
 
+  if (operationsSession.status === "loading") {
+    return (
+      <div className="page-stack">
+        <section className="topbar">
+          <div>
+            <p className="page-card__eyebrow">{t("pageOperationsTitle")}</p>
+            <h2>{t("operationsTopbarTitle")}</h2>
+            <p className="subtle">{t("operationsTopbarDescription")}</p>
+          </div>
+        </section>
+        <div className="operations-grid">
+          <section className="panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="sk-stack" style={{ marginTop: 6 }}>
+                  <div className="sk-line sk-line--xs sk-w-40" />
+                  <div className="sk-line sk-line--sm sk-w-60" />
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-full" />
+              <div className="sk-line sk-line--sm sk-w-70" />
+            </div>
+          </section>
+          <section className="panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-25" />
+              <div className="sk-line sk-line--md sk-w-40" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="sk-stack" style={{ marginTop: 6 }}>
+                  <div className="sk-line sk-line--sm sk-w-full" />
+                  <div className="sk-line sk-line--xs sk-w-50" />
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-stack">
       <section className="topbar">
@@ -78,19 +159,11 @@ export function OperationsPage() {
         </div>
       </section>
 
-      {operationsSession.status === "loading" ||
-      operationsSession.status === "error" ? (
-        operationsSession.status === "loading" ? (
-          <LoadingPanel
-            title={t("runtimeStatusLoading")}
-            message={operationsSession.message}
-          />
-        ) : (
-          <section className="page-card status-banner status-banner--danger">
-            <strong>{t("runtimeStatusError")}</strong>
-            <p>{operationsSession.message}</p>
-          </section>
-        )
+      {operationsSession.status === "error" ? (
+        <section className="page-card status-banner status-banner--danger">
+          <strong>{t("runtimeStatusError")}</strong>
+          <p>{operationsSession.message}</p>
+        </section>
       ) : null}
 
       {shouldShowRuntimeErrorBanner ? (
@@ -153,17 +226,29 @@ export function OperationsPage() {
           </div>
 
           {state.runtime.alerts.length > 0 ? (
-            <div className="history-list">
-              {state.runtime.alerts.map((alert) => (
-                <div key={alert.id} className="history-row">
-                  <div>
-                    <strong>{alert.title}</strong>
-                    <p>{alert.message}</p>
+            <>
+              <div className="history-list">
+                {visibleAlerts.map((alert) => (
+                  <div key={alert.id} className="history-row">
+                    <div>
+                      <strong>{alert.title}</strong>
+                      <p>{alert.message}</p>
+                    </div>
+                    <strong>{formatTimestamp(alert.createdAt)}</strong>
                   </div>
-                  <strong>{formatTimestamp(alert.createdAt)}</strong>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <PaginationControls
+                nextLabel={t("paginationNext")}
+                onPageChange={setAlertPage}
+                page={alertPage}
+                previousLabel={t("paginationPrevious")}
+                summary={t("paginationPageOf")
+                  .replace("{page}", String(alertPage))
+                  .replace("{total}", String(alertsTotalPages))}
+                totalPages={alertsTotalPages}
+              />
+            </>
           ) : (
             <div className="info-note">
               <strong>{t("operationsAlertsEmptyTitle")}</strong>
@@ -172,7 +257,7 @@ export function OperationsPage() {
           )}
         </section>
 
-        <section className="panel operations-panel operations-panel--wide">
+        <section className="panel operations-panel">
           <div>
             <p className="panel-label">{t("operationsActivityTitle")}</p>
             <h3>{t("operationsActivityTitle")}</h3>
@@ -180,17 +265,29 @@ export function OperationsPage() {
           </div>
 
           {state.runtime.events.length > 0 ? (
-            <div className="history-list">
-              {state.runtime.events.map((event) => (
-                <div key={event.id} className="history-row">
-                  <div>
-                    <strong>{event.title}</strong>
-                    <p>{event.message}</p>
+            <>
+              <div className="history-list">
+                {visibleEvents.map((event) => (
+                  <div key={event.id} className="history-row">
+                    <div>
+                      <strong>{event.title}</strong>
+                      <p>{event.message}</p>
+                    </div>
+                    <strong>{formatTimestamp(event.createdAt)}</strong>
                   </div>
-                  <strong>{formatTimestamp(event.createdAt)}</strong>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <PaginationControls
+                nextLabel={t("paginationNext")}
+                onPageChange={setEventPage}
+                page={eventPage}
+                previousLabel={t("paginationPrevious")}
+                summary={t("paginationPageOf")
+                  .replace("{page}", String(eventPage))
+                  .replace("{total}", String(eventsTotalPages))}
+                totalPages={eventsTotalPages}
+              />
+            </>
           ) : (
             <div className="info-note">
               <strong>{t("operationsActivityEmptyTitle")}</strong>
