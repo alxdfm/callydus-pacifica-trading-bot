@@ -1,12 +1,12 @@
 # BG-029 Card
 
 ## Status
-- status: `TODO`
+- status: `DONE`
 - tipo: `decisao em aberto`
 - prioridade: `P0`
 - owner: `PO`
 - area: `runtime / start bot`
-- ultima atualizacao: `2026-04-09`
+- ultima atualizacao: `2026-04-11`
 
 ## Objetivo
 Formalizar no backlog de produto o `Start bot readiness check` como gate operacional obrigatorio antes do `resume`, evitando que o bot entre em `active` sem validar a viabilidade real do preset com saldo, mercado e configuracao da conta naquele instante.
@@ -45,12 +45,10 @@ Faltava o espelho no fluxo de PO/backlog, para o item nao ficar solto apenas em 
 
 ## Critérios de Aceite Iniciais
 - [x] existe item formal de PO para o readiness de `Start bot`
-- [ ] fica claro que o gate e diferente do `operational verification` do onboarding
-- [ ] fica claro que o bot nao entra em `active` quando o preset nao consegue operar com a configuracao atual
-- [ ] produto e dev compartilham a mesma expectativa de mensagem e bloqueio
-
-## Proximo Passo Recomendado
-Transformar este card em handoff curto de PO para dev e design, fechando copy visivel, semantica do bloqueio e criterio de sucesso/erro no `Start bot`.
+- [x] fica claro que o gate e diferente do `operational verification` do onboarding
+- [x] fica claro que o bot nao entra em `active` quando o preset nao consegue operar com a configuracao atual
+- [x] produto e dev compartilham a mesma expectativa de mensagem e bloqueio
 
 ## Log de Acompanhamento
 - `2026-04-09`: card criado para espelhar no backlog de PO a trilha de `Start bot readiness check`, que ate entao existia apenas em documentacao tecnica de dev.
+- `2026-04-11`: implementacao confirmada. `StartBotReadinessCheck` e `ResumeBot` implementados em `apps/api/src/application/`. Gate obrigatorio no `resume` validando: saldo disponivel, sizing vs `min_order_size`, leverage real da conta, margem suficiente e probe de ordem cancelada. 16 codigos de erro mapeados com mensagens explicitas. `SymbolOperationalConfig` persistido no banco apos cada check bem-sucedido.

@@ -1,12 +1,12 @@
 # BG-032 Card
 
 ## Status
-- status: `IN_PROGRESS`
+- status: `DONE`
 - tipo: `implementacao`
 - prioridade: `P1`
 - owner: `Dev`
 - area: `presets / strategy builder`
-- ultima atualizacao: `2026-04-10`
+- ultima atualizacao: `2026-04-11`
 
 ## Objetivo
 Implementar a trilha funcional de `YOUR Strategy`, incluindo persistencia do registro custom por conta, builder guiado, geracao de contrato compatível, backtest preview e ativacao real.

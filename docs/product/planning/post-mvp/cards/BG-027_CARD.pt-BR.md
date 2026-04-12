@@ -1,7 +1,7 @@
 # BG-027 Card
 
 ## Status
-- status: `TODO`
+- status: `DROPPED`
 - tipo: `implementacao`
 - prioridade: `P1`
 - owner: `Dev`

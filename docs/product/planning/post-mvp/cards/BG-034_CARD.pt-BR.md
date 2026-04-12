@@ -1,12 +1,12 @@
 # BG-034 Card
 
 ## Status
-- status: `TODO`
+- status: `DONE`
 - tipo: `qualidade`
 - prioridade: `P1`
 - owner: `QA`
 - area: `presets / strategy builder`
-- ultima atualizacao: `2026-04-09`
+- ultima atualizacao: `2026-04-11`
 
 ## Objetivo
 Validar `YOUR Strategy` em usabilidade, regras de negocio e fluxo operacional real antes de considerarmos a feature pronta para usuarios finais.

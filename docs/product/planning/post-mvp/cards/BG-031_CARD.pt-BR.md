@@ -1,12 +1,12 @@
 # BG-031 Card
 
 ## Status
-- status: `TODO`
+- status: `DONE`
 - tipo: `mudanca de escopo`
 - prioridade: `P0`
 - owner: `PO`
 - area: `presets / strategy builder`
-- ultima atualizacao: `2026-04-09`
+- ultima atualizacao: `2026-04-11`
 
 ## Objetivo
 Introduzir a feature `YOUR Strategy`, permitindo ao usuario final criar sua propria estrategia do zero, com UX guiada, contrato compatível com os presets atuais e ativacao real no produto.

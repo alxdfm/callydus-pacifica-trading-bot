@@ -1,7 +1,7 @@
 # BG-026 Card
 
 ## Status
-- status: `TODO`
+- status: `DROPPED`
 - tipo: `melhoria`
 - prioridade: `P1`
 - owner: `Dev`
