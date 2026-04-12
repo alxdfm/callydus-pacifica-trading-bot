@@ -419,74 +419,6 @@ export function DashboardPage() {
       )}
 
       <section className="dashboard-grid">
-        <section className="panel hero-panel-wide">
-          <div>
-            <p className="panel-label">{activePresetEyebrow}</p>
-            <h3>
-              {state.presets.activePreset
-                ? "YOUR Strategy"
-                : t("dashboardNoPresetTitle")}
-            </h3>
-            <p className="subtle">
-              {state.presets.activePreset
-                ? t("yourStrategyReviewSummary")
-                : t("dashboardNoPresetDescription")}
-            </p>
-          </div>
-          <div className="row-between align-start">
-            <span
-              className={`badge badge--${state.presets.activePreset ? "info" : "neutral"}`}
-            >
-              {state.presets.activePreset
-                ? t("yourStrategyRiskLabel")
-                : t("presetSidebarEmpty")}
-            </span>
-          </div>
-          {state.presets.activePreset ? (
-            <>
-              <div className="chip-row">
-                <span className="chip">
-                  {state.presets.activePreset.editableConfig.symbol}
-                </span>
-                <span className="chip">
-                  {`${t("dashboardSizeLabel")} ${state.presets.activePreset.editableConfig.positionSizeValue}%`}
-                </span>
-                <span className="chip">
-                  {state.presets.activePreset.editableConfig.longEnabled
-                    ? t("dashboardLongEnabled")
-                    : t("dashboardLongDisabled")}
-                </span>
-                <span className="chip">
-                  {state.presets.activePreset.editableConfig.shortEnabled
-                    ? t("dashboardShortEnabled")
-                    : t("dashboardShortDisabled")}
-                </span>
-              </div>
-              <div className="action-row">
-                <button
-                  className="btn secondary"
-                  onClick={() => navigate("/strategies")}
-                  type="button"
-                >
-                  {t("dashboardChangePresetAction")}
-                </button>
-                <button
-                  className="btn primary"
-                  onClick={() => navigate("/strategies")}
-                  type="button"
-                >
-                  {t("dashboardOpenPresetAction")}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="info-note">
-              <strong>{t("dashboardNoPresetTitle")}</strong>
-              <p>{t("dashboardNoPresetDescription")}</p>
-            </div>
-          )}
-        </section>
-
         <section className="panel trades-panel">
           <div className="row-between align-start section-gap">
             <div>
@@ -560,6 +492,74 @@ export function DashboardPage() {
             <div className="info-note">
               <strong>{t("dashboardTradesEmptyTitle")}</strong>
               <p>{t("dashboardTradesEmptyDescription")}</p>
+            </div>
+          )}
+        </section>
+
+        <section className="panel hero-panel-wide">
+          <div>
+            <p className="panel-label">{activePresetEyebrow}</p>
+            <h3>
+              {state.presets.activePreset
+                ? "YOUR Strategy"
+                : t("dashboardNoPresetTitle")}
+            </h3>
+            <p className="subtle">
+              {state.presets.activePreset
+                ? t("yourStrategyReviewSummary")
+                : t("dashboardNoPresetDescription")}
+            </p>
+          </div>
+          <div className="row-between align-start">
+            <span
+              className={`badge badge--${state.presets.activePreset ? "info" : "neutral"}`}
+            >
+              {state.presets.activePreset
+                ? t("yourStrategyRiskLabel")
+                : t("presetSidebarEmpty")}
+            </span>
+          </div>
+          {state.presets.activePreset ? (
+            <>
+              <div className="chip-row">
+                <span className="chip">
+                  {state.presets.activePreset.editableConfig.symbol}
+                </span>
+                <span className="chip">
+                  {`${t("dashboardSizeLabel")} ${state.presets.activePreset.editableConfig.positionSizeValue}%`}
+                </span>
+                <span className="chip">
+                  {state.presets.activePreset.editableConfig.longEnabled
+                    ? t("dashboardLongEnabled")
+                    : t("dashboardLongDisabled")}
+                </span>
+                <span className="chip">
+                  {state.presets.activePreset.editableConfig.shortEnabled
+                    ? t("dashboardShortEnabled")
+                    : t("dashboardShortDisabled")}
+                </span>
+              </div>
+              <div className="action-row">
+                <button
+                  className="btn secondary"
+                  onClick={() => navigate("/strategies")}
+                  type="button"
+                >
+                  {t("dashboardChangePresetAction")}
+                </button>
+                <button
+                  className="btn primary"
+                  onClick={() => navigate("/strategies")}
+                  type="button"
+                >
+                  {t("dashboardOpenPresetAction")}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="info-note">
+              <strong>{t("dashboardNoPresetTitle")}</strong>
+              <p>{t("dashboardNoPresetDescription")}</p>
             </div>
           )}
         </section>
