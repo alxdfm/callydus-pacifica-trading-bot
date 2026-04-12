@@ -119,7 +119,7 @@ export function ProfilePage() {
     readSnapshot: readOperationalProfileViaBackend,
     applySnapshot: applyProfileSnapshot,
     requestKey: "profile",
-    loadingMessage: t("runtimeStatusLoading"),
+    loadingMessage: t("runtimeStatusLoadingMessage"),
     unavailableMessage: t("runtimeStatusError"),
   });
 
@@ -293,7 +293,7 @@ export function ProfilePage() {
                         : t("profileAgentWalletReplacementCompletedTitle")
                       : replacementFlow.modalFeedbackTone === "info"
                         ? t("profilePauseBotCompletedTitle")
-                      : t("profileAgentWalletValidatedTitle")}
+                        : t("profileAgentWalletValidatedTitle")}
                   </strong>
                   <p>{replacementFlow.modalFeedback}</p>
                 </div>
@@ -369,7 +369,8 @@ export function ProfilePage() {
         </div>
       </section>
 
-      {profileSession.status === "loading" || profileSession.status === "error" ? (
+      {profileSession.status === "loading" ||
+      profileSession.status === "error" ? (
         profileSession.status === "loading" ? (
           <LoadingPanel
             title={t("runtimeStatusLoading")}

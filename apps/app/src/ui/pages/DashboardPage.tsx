@@ -30,9 +30,13 @@ export function DashboardPage() {
   } = useAppState();
   const { t } = useI18n();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const botStatusPresentation = getBotStatusPresentation(state.runtime.botStatus, t);
+  const botStatusPresentation = getBotStatusPresentation(
+    state.runtime.botStatus,
+    t,
+  );
   const resumeActionRequiresPreset =
-    botStatusPresentation.nextAction === "resume" && !state.presets.activePreset;
+    botStatusPresentation.nextAction === "resume" &&
+    !state.presets.activePreset;
   const botActionBlocked = !canAccessProduct || resumeActionRequiresPreset;
   const botActionBlockedMessage = resumeActionRequiresPreset
     ? t("dashboardResumeRequiresPresetTooltip")
@@ -125,7 +129,7 @@ export function DashboardPage() {
     readSnapshot: readOperationalDashboardViaBackend,
     applySnapshot: applyDashboardSnapshot,
     requestKey: "dashboard",
-    loadingMessage: t("runtimeStatusLoading"),
+    loadingMessage: t("runtimeStatusLoadingMessage"),
     unavailableMessage: t("runtimeStatusError"),
   });
 
@@ -186,10 +190,8 @@ export function DashboardPage() {
     const walletAddress = state.wallet.mainWalletPublicKey;
     const isEnteringOperationalState =
       botStatusPresentation.nextAction !== "pause";
-    const nextBotStatus =
-      isEnteringOperationalState ? "active" : "paused";
-    const nextSyncStatus =
-      isEnteringOperationalState ? "syncing" : "idle";
+    const nextBotStatus = isEnteringOperationalState ? "active" : "paused";
+    const nextSyncStatus = isEnteringOperationalState ? "syncing" : "idle";
 
     if (!walletAddress) {
       return;
@@ -200,10 +202,9 @@ export function DashboardPage() {
       lastRuntimeMessage: null,
     });
 
-    const commandResult =
-      isEnteringOperationalState
-        ? await resumeBotViaBackend({ walletAddress })
-        : await pauseBotViaBackend({ walletAddress });
+    const commandResult = isEnteringOperationalState
+      ? await resumeBotViaBackend({ walletAddress })
+      : await pauseBotViaBackend({ walletAddress });
 
     if (commandResult.status === "error") {
       setRuntimeState({
@@ -275,9 +276,7 @@ export function DashboardPage() {
           </button>
           <span
             className={
-              botActionBlockedMessage
-                ? "disabled-tooltip-trigger"
-                : undefined
+              botActionBlockedMessage ? "disabled-tooltip-trigger" : undefined
             }
             data-tooltip={botActionBlockedMessage}
           >
@@ -293,7 +292,8 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {dashboardSession.status === "loading" || dashboardSession.status === "error" ? (
+      {dashboardSession.status === "loading" ||
+      dashboardSession.status === "error" ? (
         dashboardSession.status === "loading" ? (
           <LoadingPanel
             title={t("runtimeStatusLoading")}
@@ -308,11 +308,11 @@ export function DashboardPage() {
       ) : null}
 
       {shouldShowRuntimeErrorBanner ? (
-        <section
-          className="page-card status-banner status-banner--danger"
-        >
+        <section className="page-card status-banner status-banner--danger">
           <strong>{t("runtimeStatusError")}</strong>
-          {state.runtime.lastRuntimeMessage ? <p>{state.runtime.lastRuntimeMessage}</p> : null}
+          {state.runtime.lastRuntimeMessage ? (
+            <p>{state.runtime.lastRuntimeMessage}</p>
+          ) : null}
         </section>
       ) : null}
 
@@ -556,7 +556,6 @@ export function DashboardPage() {
             </div>
           )}
         </section>
-
       </section>
     </div>
   );

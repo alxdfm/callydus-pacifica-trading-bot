@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import type { OpenTrade, OperationalTradesSessionFound } from "@pacifica/contracts";
+import type {
+  OpenTrade,
+  OperationalTradesSessionFound,
+} from "@pacifica/contracts";
 import { applyOperationalTradesSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalTradesViaBackend } from "../../features/account/backend-operational-page-sessions";
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
@@ -27,7 +30,9 @@ export function TradesPage() {
     state.runtime.currentTrades[0]?.id ?? null,
   );
   const [closingTradeId, setClosingTradeId] = useState<string | null>(null);
-  const [pendingCloseTradeId, setPendingCloseTradeId] = useState<string | null>(null);
+  const [pendingCloseTradeId, setPendingCloseTradeId] = useState<string | null>(
+    null,
+  );
   const [platformPage, setPlatformPage] = useState(1);
   const [externalPage, setExternalPage] = useState(1);
   const applyTradesSnapshot = useCallback(
@@ -52,16 +57,34 @@ export function TradesPage() {
     readSnapshot: readOperationalTradesViaBackend,
     applySnapshot: applyTradesSnapshot,
     requestKey: "trades",
-    loadingMessage: t("runtimeStatusLoading"),
+    loadingMessage: t("runtimeStatusLoadingMessage"),
     unavailableMessage: t("runtimeStatusError"),
   });
 
-  const platformTrades = state.runtime.currentTrades.filter((trade) => trade.isPlatformTrade);
-  const externalTrades = state.runtime.currentTrades.filter((trade) => !trade.isPlatformTrade);
-  const platformTotalPages = Math.max(1, Math.ceil(platformTrades.length / TRADES_PER_PAGE));
-  const externalTotalPages = Math.max(1, Math.ceil(externalTrades.length / TRADES_PER_PAGE));
-  const visiblePlatformTrades = paginate(platformTrades, platformPage, TRADES_PER_PAGE);
-  const visibleExternalTrades = paginate(externalTrades, externalPage, TRADES_PER_PAGE);
+  const platformTrades = state.runtime.currentTrades.filter(
+    (trade) => trade.isPlatformTrade,
+  );
+  const externalTrades = state.runtime.currentTrades.filter(
+    (trade) => !trade.isPlatformTrade,
+  );
+  const platformTotalPages = Math.max(
+    1,
+    Math.ceil(platformTrades.length / TRADES_PER_PAGE),
+  );
+  const externalTotalPages = Math.max(
+    1,
+    Math.ceil(externalTrades.length / TRADES_PER_PAGE),
+  );
+  const visiblePlatformTrades = paginate(
+    platformTrades,
+    platformPage,
+    TRADES_PER_PAGE,
+  );
+  const visibleExternalTrades = paginate(
+    externalTrades,
+    externalPage,
+    TRADES_PER_PAGE,
+  );
   const visibleTrades = [...visiblePlatformTrades, ...visibleExternalTrades];
 
   useEffect(() => {
@@ -81,14 +104,17 @@ export function TradesPage() {
   }, [selectedTradeId, visibleTrades]);
 
   const selectedTrade =
-    state.runtime.currentTrades.find((trade) => trade.id === selectedTradeId) ?? null;
+    state.runtime.currentTrades.find((trade) => trade.id === selectedTradeId) ??
+    null;
   const selectedTradeCanBeClosed =
     selectedTrade !== null &&
     selectedTrade.tradeStatus === "open" &&
     closingTradeId !== selectedTrade.id;
 
   const pendingTrade =
-    state.runtime.currentTrades.find((trade) => trade.id === pendingCloseTradeId) ?? null;
+    state.runtime.currentTrades.find(
+      (trade) => trade.id === pendingCloseTradeId,
+    ) ?? null;
   const runtimeSyncPresentation = getSecondaryRuntimeSyncPresentation(
     state.runtime.syncStatus,
     state.runtime.exchangeSnapshotStatus,
@@ -144,7 +170,9 @@ export function TradesPage() {
   }
 
   async function handleCloseTrade(tradeId: string) {
-    const trade = state.runtime.currentTrades.find((candidate) => candidate.id === tradeId);
+    const trade = state.runtime.currentTrades.find(
+      (candidate) => candidate.id === tradeId,
+    );
     const walletAddress = state.wallet.mainWalletPublicKey;
 
     if (!trade || !walletAddress) {
@@ -198,7 +226,10 @@ export function TradesPage() {
         confirmLabel={t("tradeCloseAction")}
         description={
           pendingTrade
-            ? t("tradeCloseConfirmDescription").replace("{symbol}", pendingTrade.symbol)
+            ? t("tradeCloseConfirmDescription").replace(
+                "{symbol}",
+                pendingTrade.symbol,
+              )
             : t("tradeCloseConfirmFallback")
         }
         isOpen={Boolean(pendingTrade)}
@@ -228,7 +259,8 @@ export function TradesPage() {
         </div>
       </section>
 
-      {tradesSession.status === "loading" || tradesSession.status === "error" ? (
+      {tradesSession.status === "loading" ||
+      tradesSession.status === "error" ? (
         tradesSession.status === "loading" ? (
           <LoadingPanel
             title={t("runtimeStatusLoading")}
@@ -323,11 +355,17 @@ export function TradesPage() {
           )}
         </section>
 
-        <aside className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}>
+        <aside
+          className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}
+        >
           <div className="row-between align-start section-gap">
             <div>
               <p className="panel-label">{t("tradesDetailEyebrow")}</p>
-              <h3>{selectedTrade ? selectedTrade.symbol : t("tradesDetailEmptyTitle")}</h3>
+              <h3>
+                {selectedTrade
+                  ? selectedTrade.symbol
+                  : t("tradesDetailEmptyTitle")}
+              </h3>
             </div>
             <span
               className={`badge badge--${
@@ -351,12 +389,16 @@ export function TradesPage() {
               <div className="detail-grid">
                 <div className="detail-item">
                   <span>{t("tradesDetailOrigin")}</span>
-                  <strong>{formatTradeOrigin(selectedTrade.isPlatformTrade)}</strong>
+                  <strong>
+                    {formatTradeOrigin(selectedTrade.isPlatformTrade)}
+                  </strong>
                 </div>
                 <div className="detail-item">
                   <span>{t("tradesDetailDirection")}</span>
                   <strong>
-                    {selectedTrade.side === "long" ? t("tradeSideLong") : t("tradeSideShort")}
+                    {selectedTrade.side === "long"
+                      ? t("tradeSideLong")
+                      : t("tradeSideShort")}
                   </strong>
                 </div>
                 <div className="detail-item">
@@ -365,7 +407,9 @@ export function TradesPage() {
                 </div>
                 <div className="detail-item">
                   <span>{t("tradePnlLabel")}</span>
-                  <strong className={selectedTrade.unrealizedPnl >= 0 ? "up" : "down"}>
+                  <strong
+                    className={selectedTrade.unrealizedPnl >= 0 ? "up" : "down"}
+                  >
                     {formatSignedCurrency(selectedTrade.unrealizedPnl)}
                   </strong>
                 </div>
@@ -490,15 +534,21 @@ function TradeOriginGroup(props: {
                   <div>
                     <div className="trade-head">
                       <strong>{trade.symbol}</strong>
-                      <span className={`badge badge--${trade.side === "long" ? "info" : "danger"}`}>
-                        {trade.side === "long" ? t("tradeSideLong") : t("tradeSideShort")}
+                      <span
+                        className={`badge badge--${trade.side === "long" ? "info" : "danger"}`}
+                      >
+                        {trade.side === "long"
+                          ? t("tradeSideLong")
+                          : t("tradeSideShort")}
                       </span>
                       <span
                         className={`badge badge--${
                           trade.tradeStatus === "open" ? "success" : "warning"
                         }`}
                       >
-                        {trade.tradeStatus === "open" ? t("tradeStatusOpen") : t("tradeStatusWaiting")}
+                        {trade.tradeStatus === "open"
+                          ? t("tradeStatusOpen")
+                          : t("tradeStatusWaiting")}
                       </span>
                     </div>
                     <p>{formatTradeOrigin(trade.isPlatformTrade)}</p>
@@ -508,12 +558,16 @@ function TradeOriginGroup(props: {
                     <strong>{trade.entryPrice}</strong>
                   </div>
                   <div>
-                    <span className="trade-label">{t("tradeCurrentLabel")}</span>
+                    <span className="trade-label">
+                      {t("tradeCurrentLabel")}
+                    </span>
                     <strong>{trade.currentPrice}</strong>
                   </div>
                   <div>
                     <span className="trade-label">{t("tradePnlLabel")}</span>
-                    <strong className={trade.unrealizedPnl >= 0 ? "up" : "down"}>
+                    <strong
+                      className={trade.unrealizedPnl >= 0 ? "up" : "down"}
+                    >
                       {formatSignedCurrency(trade.unrealizedPnl)}
                     </strong>
                   </div>

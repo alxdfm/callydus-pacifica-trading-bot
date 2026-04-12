@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ClosedTrade, OperationalHistorySessionFound } from "@pacifica/contracts";
+import type {
+  ClosedTrade,
+  OperationalHistorySessionFound,
+} from "@pacifica/contracts";
 import { applyOperationalHistorySessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalHistoryViaBackend } from "../../features/account/backend-operational-page-sessions";
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
@@ -47,14 +50,22 @@ export function HistoryPage() {
     readSnapshot: readOperationalHistoryViaBackend,
     applySnapshot: applyHistorySnapshot,
     requestKey: "history",
-    loadingMessage: t("runtimeStatusLoading"),
+    loadingMessage: t("runtimeStatusLoadingMessage"),
     unavailableMessage: t("runtimeStatusError"),
   });
 
-  const totalPages = Math.max(1, Math.ceil(state.runtime.closedTrades.length / HISTORY_PER_PAGE));
-  const visibleTrades = paginate(state.runtime.closedTrades, page, HISTORY_PER_PAGE);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(state.runtime.closedTrades.length / HISTORY_PER_PAGE),
+  );
+  const visibleTrades = paginate(
+    state.runtime.closedTrades,
+    page,
+    HISTORY_PER_PAGE,
+  );
   const selectedTrade =
-    state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId) ?? null;
+    state.runtime.closedTrades.find((trade) => trade.id === selectedTradeId) ??
+    null;
   const runtimeSyncPresentation = getSecondaryRuntimeSyncPresentation(
     state.runtime.syncStatus,
     state.runtime.exchangeSnapshotStatus,
@@ -129,7 +140,8 @@ export function HistoryPage() {
         </div>
       </section>
 
-      {historySession.status === "loading" || historySession.status === "error" ? (
+      {historySession.status === "loading" ||
+      historySession.status === "error" ? (
         historySession.status === "loading" ? (
           <LoadingPanel
             title={t("runtimeStatusLoading")}
@@ -200,14 +212,20 @@ export function HistoryPage() {
                       </div>
                       <p>{formatTradeOrigin(trade.isPlatformTrade)}</p>
                       <p>
-                        {t("historyEntryLabel")} {formatEventTime(trade.openedAt)}
+                        {t("historyEntryLabel")}{" "}
+                        {formatEventTime(trade.openedAt)}
                         {" · "}
-                        {t("historyExitLabel")} {formatEventTime(trade.closedAt)}
+                        {t("historyExitLabel")}{" "}
+                        {formatEventTime(trade.closedAt)}
                       </p>
                     </div>
                     <div>
-                      <span className="trade-label">{t("historyResultLabel")}</span>
-                      <strong className={trade.realizedPnl >= 0 ? "up" : "down"}>
+                      <span className="trade-label">
+                        {t("historyResultLabel")}
+                      </span>
+                      <strong
+                        className={trade.realizedPnl >= 0 ? "up" : "down"}
+                      >
                         {formatSignedCurrency(trade.realizedPnl)}
                       </strong>
                     </div>
@@ -233,7 +251,9 @@ export function HistoryPage() {
           )}
         </section>
 
-        <aside className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}>
+        <aside
+          className={`panel detail-panel ${selectedTrade ? "detail-panel--linked" : ""}`}
+        >
           <div className="row-between align-start section-gap">
             <div>
               <p className="panel-label">{t("historyDetailEyebrow")}</p>
@@ -264,7 +284,9 @@ export function HistoryPage() {
             <div className="detail-grid">
               <div className="detail-item">
                 <span>{t("historyDetailResult")}</span>
-                <strong className={selectedTrade.realizedPnl >= 0 ? "up" : "down"}>
+                <strong
+                  className={selectedTrade.realizedPnl >= 0 ? "up" : "down"}
+                >
                   {formatSignedCurrency(selectedTrade.realizedPnl)}
                 </strong>
               </div>
@@ -274,7 +296,9 @@ export function HistoryPage() {
               </div>
               <div className="detail-item">
                 <span>{t("historyDetailOrigin")}</span>
-                <strong>{formatTradeOrigin(selectedTrade.isPlatformTrade)}</strong>
+                <strong>
+                  {formatTradeOrigin(selectedTrade.isPlatformTrade)}
+                </strong>
               </div>
               <div className="detail-item">
                 <span>{t("historyDetailDirection")}</span>

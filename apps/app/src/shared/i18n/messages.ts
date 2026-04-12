@@ -745,6 +745,7 @@ export const messages = {
     tradeCloseReasonManual: "Closed manually",
     tradeCloseReasonSystem: "Closed by system",
     runtimeStatusLoading: "Loading operational data...",
+    runtimeStatusLoadingMessage: "This should only take a few seconds",
     runtimeStatusError: "Operational data is temporarily unavailable.",
     runtimeStatusReady: "Operational data ready.",
     runtimeSyncIdleTitle: "Runtime idle",

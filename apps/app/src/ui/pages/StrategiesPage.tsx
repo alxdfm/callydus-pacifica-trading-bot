@@ -37,11 +37,11 @@ export function StrategiesPage() {
     state,
   } = useAppState();
   const currentPresetsRef = useRef(state.presets);
-  const [yourStrategyRecord, setYourStrategyRecord] = useState<YourStrategy | null>(null);
+  const [yourStrategyRecord, setYourStrategyRecord] =
+    useState<YourStrategy | null>(null);
   const [, setYourStrategyEditorValue] = useState("");
-  const [yourStrategyDraft, setYourStrategyDraft] = useState<YourStrategyDraft | null>(
-    null,
-  );
+  const [yourStrategyDraft, setYourStrategyDraft] =
+    useState<YourStrategyDraft | null>(null);
   const [yourStrategyValidationMessage, setYourStrategyValidationMessage] =
     useState<string | null>(null);
   const [yourStrategyPreview, setYourStrategyPreview] =
@@ -49,13 +49,13 @@ export function StrategiesPage() {
   const [yourStrategyStatusTone, setYourStrategyStatusTone] = useState<
     "neutral" | "info" | "success" | "danger"
   >("neutral");
-  const [yourStrategyStatusMessage, setYourStrategyStatusMessage] =
-    useState<string | null>(null);
+  const [yourStrategyStatusMessage, setYourStrategyStatusMessage] = useState<
+    string | null
+  >(null);
   const [yourStrategyStep, setYourStrategyStep] = useState(1);
   const [marketInfo, setMarketInfo] = useState<MarketInfoItem[]>([]);
-  const [loadedYourStrategy, setLoadedYourStrategy] = useState<YourStrategy | null>(
-    null,
-  );
+  const [loadedYourStrategy, setLoadedYourStrategy] =
+    useState<YourStrategy | null>(null);
   const [hasLoadedYourStrategy, setHasLoadedYourStrategy] = useState(false);
 
   const applyPresetsSnapshot = useCallback(
@@ -85,7 +85,7 @@ export function StrategiesPage() {
     readSnapshot: readOperationalPresetsViaBackend,
     applySnapshot: applyPresetsSnapshot,
     requestKey: "presets",
-    loadingMessage: t("runtimeStatusLoading"),
+    loadingMessage: t("runtimeStatusLoadingMessage"),
     unavailableMessage: t("runtimeStatusError"),
   });
 
@@ -96,7 +96,8 @@ export function StrategiesPage() {
   const selectedSymbol = yourStrategyDraft?.symbol;
 
   const selectedMarketInfo = useMemo(
-    () => marketInfo.find((item) => item.symbol === selectedSymbol?.split("/")[0]),
+    () =>
+      marketInfo.find((item) => item.symbol === selectedSymbol?.split("/")[0]),
     [marketInfo, selectedSymbol],
   );
   const selectedSymbolConfig = useMemo(
@@ -113,7 +114,8 @@ export function StrategiesPage() {
     state.runtime.balance?.totalBalance ??
     1000;
   const isYourStrategyEditingBlocked =
-    state.runtime.botStatus === "active" || state.runtime.botStatus === "syncing";
+    state.runtime.botStatus === "active" ||
+    state.runtime.botStatus === "syncing";
 
   useEffect(() => {
     if (!state.wallet.mainWalletPublicKey) {
@@ -162,7 +164,9 @@ export function StrategiesPage() {
   }
 
   function hydrateYourStrategyEditor(strategy: YourStrategy) {
-    const normalizedDraft = normalizeYourStrategyDraftForBuilder(strategy.draft);
+    const normalizedDraft = normalizeYourStrategyDraftForBuilder(
+      strategy.draft,
+    );
     setYourStrategyRecord(strategy);
     setYourStrategyDraft(normalizedDraft);
     setYourStrategyEditorValue(JSON.stringify(normalizedDraft, null, 2));
@@ -186,7 +190,9 @@ export function StrategiesPage() {
     });
   }
 
-  async function handleReloadYourStrategy(options?: { preservePreview?: boolean }) {
+  async function handleReloadYourStrategy(options?: {
+    preservePreview?: boolean;
+  }) {
     if (!state.wallet.mainWalletPublicKey) {
       return;
     }
@@ -212,9 +218,7 @@ export function StrategiesPage() {
 
     setYourStrategyStatusTone("danger");
     setYourStrategyStatusMessage(
-      result?.status === "error"
-        ? result.message
-        : t("runtimeStatusError"),
+      result?.status === "error" ? result.message : t("runtimeStatusError"),
     );
   }
 
@@ -260,7 +264,9 @@ export function StrategiesPage() {
 
     const period = getPresetBacktestPeriod();
 
-    setYourStrategyStep(getYourStrategyWizardSteps(t, yourStrategyDraft).length);
+    setYourStrategyStep(
+      getYourStrategyWizardSteps(t, yourStrategyDraft).length,
+    );
     setYourStrategyStatusTone("info");
     setYourStrategyStatusMessage(t("presetBacktestLoadingDescription"));
 
@@ -296,7 +302,9 @@ export function StrategiesPage() {
         return currentDraft;
       }
 
-      const nextDraft = normalizeYourStrategyDraftForBuilder(updater(currentDraft));
+      const nextDraft = normalizeYourStrategyDraftForBuilder(
+        updater(currentDraft),
+      );
       setYourStrategyEditorValue(JSON.stringify(nextDraft, null, 2));
       setYourStrategyValidationMessage(null);
       setYourStrategyPreview(null);
@@ -310,7 +318,10 @@ export function StrategiesPage() {
   }
 
   function handleUpdateYourStrategyField<
-    K extends keyof Pick<YourStrategyDraft, "name" | "symbol" | "timeframe" | "positionSizeValue">
+    K extends keyof Pick<
+      YourStrategyDraft,
+      "name" | "symbol" | "timeframe" | "positionSizeValue"
+    >,
   >(field: K, value: YourStrategyDraft[K]) {
     updateYourStrategyDraft((currentDraft) => ({
       ...currentDraft,
@@ -374,7 +385,7 @@ export function StrategiesPage() {
 
   function handleAddYourStrategyRule(side: "long" | "short") {
     const firstIndicatorKey = yourStrategyDraft
-      ? Object.keys(yourStrategyDraft.indicators)[0] ?? "EMA1"
+      ? (Object.keys(yourStrategyDraft.indicators)[0] ?? "EMA1")
       : "EMA1";
 
     updateYourStrategyDraft((currentDraft) => ({
@@ -398,7 +409,10 @@ export function StrategiesPage() {
     }));
   }
 
-  function handleRemoveYourStrategyRule(side: "long" | "short", ruleIndex: number) {
+  function handleRemoveYourStrategyRule(
+    side: "long" | "short",
+    ruleIndex: number,
+  ) {
     updateYourStrategyDraft((currentDraft) => {
       const nextRules = currentDraft.entry[side].trigger.rules.filter(
         (_, index) => index !== ruleIndex,
@@ -415,7 +429,11 @@ export function StrategiesPage() {
               rules:
                 nextRules.length > 0
                   ? nextRules
-                  : [createDefaultThresholdRule(getFirstIndicatorKey(currentDraft))],
+                  : [
+                      createDefaultThresholdRule(
+                        getFirstIndicatorKey(currentDraft),
+                      ),
+                    ],
             },
           },
         },
@@ -425,7 +443,10 @@ export function StrategiesPage() {
 
   function handleAddIndicator() {
     updateYourStrategyDraft((currentDraft) => {
-      const nextIndicator = { type: "ema", period: 20 } satisfies PresetIndicatorConfig;
+      const nextIndicator = {
+        type: "ema",
+        period: 20,
+      } satisfies PresetIndicatorConfig;
       const nextKey = createIndicatorKeyForConfig(currentDraft, nextIndicator);
 
       return ensureVolumeSupportDraft({
@@ -443,7 +464,11 @@ export function StrategiesPage() {
     nextIndicator: PresetIndicatorConfig,
   ) {
     updateYourStrategyDraft((currentDraft) => {
-      const nextKey = createIndicatorKeyForConfig(currentDraft, nextIndicator, indicatorKey);
+      const nextKey = createIndicatorKeyForConfig(
+        currentDraft,
+        nextIndicator,
+        indicatorKey,
+      );
       const nextIndicators: Record<string, PresetIndicatorConfig> = {
         ...currentDraft.indicators,
       };
@@ -473,7 +498,8 @@ export function StrategiesPage() {
     indicatorKey: string,
     nextIndicator: PresetIndicatorConfig,
   ) {
-    const currentIndicator = yourStrategyDraft?.indicators[indicatorKey] ?? null;
+    const currentIndicator =
+      yourStrategyDraft?.indicators[indicatorKey] ?? null;
 
     if (currentIndicator && currentIndicator.type !== nextIndicator.type) {
       handleRenameIndicator(indicatorKey, nextIndicator);
@@ -499,11 +525,13 @@ export function StrategiesPage() {
       delete nextIndicators[indicatorKey];
 
       if (currentDraft.indicators[indicatorKey]?.type === "volume") {
-        Object.entries(nextIndicators).forEach(([candidateKey, candidateIndicator]) => {
-          if (isVolumeDerivedIndicator(candidateIndicator)) {
-            delete nextIndicators[candidateKey];
-          }
-        });
+        Object.entries(nextIndicators).forEach(
+          ([candidateKey, candidateIndicator]) => {
+            if (isVolumeDerivedIndicator(candidateIndicator)) {
+              delete nextIndicators[candidateKey];
+            }
+          },
+        );
       }
 
       const fallbackKey =
@@ -657,7 +685,8 @@ export function StrategiesPage() {
 
   return (
     <div className="page-stack">
-      {presetsSession.status === "loading" || presetsSession.status === "error" ? (
+      {presetsSession.status === "loading" ||
+      presetsSession.status === "error" ? (
         presetsSession.status === "loading" ? (
           <LoadingPanel
             title={t("runtimeStatusLoading")}
@@ -676,7 +705,9 @@ export function StrategiesPage() {
           <div>
             <p className="page-card__eyebrow">{t("pagePresetsTitle")}</p>
             <h3>{t("yourStrategyBuilderTitle")}</h3>
-            <p className="page-card__description">{t("yourStrategyBuilderDescription")}</p>
+            <p className="page-card__description">
+              {t("yourStrategyBuilderDescription")}
+            </p>
           </div>
           <span className={`badge badge--${yourStrategyStatusTone}`}>
             {t("yourStrategyBadge")}
@@ -849,8 +880,7 @@ function createDefaultRuleForIndicator(
   }
 
   if (getIndicatorContext(indicator) === "volume") {
-    const referenceKey =
-      getVolumeReferenceKeys(indicators)[0] ?? indicatorKey;
+    const referenceKey = getVolumeReferenceKeys(indicators)[0] ?? indicatorKey;
 
     return {
       scope: "currentCandle",
@@ -952,7 +982,10 @@ function sanitizeEntrySideIndicatorReferences(
                   rule.indicator === removedIndicatorKey
                     ? fallbackIndicatorKey
                     : rule.indicator,
-                ref: rule.ref === removedIndicatorKey ? fallbackIndicatorKey : rule.ref,
+                ref:
+                  rule.ref === removedIndicatorKey
+                    ? fallbackIndicatorKey
+                    : rule.ref,
               }
             : {
                 ...rule,
@@ -970,7 +1003,10 @@ function sanitizeEntrySideIndicatorReferences(
                 rule.indicator === removedIndicatorKey
                   ? fallbackIndicatorKey
                   : rule.indicator,
-              ref: rule.ref === removedIndicatorKey ? fallbackIndicatorKey : rule.ref,
+              ref:
+                rule.ref === removedIndicatorKey
+                  ? fallbackIndicatorKey
+                  : rule.ref,
             }
           : {
               ...rule,
@@ -1002,24 +1038,28 @@ function renameEntrySideIndicatorReferences(
           return rule.ref !== undefined
             ? {
                 ...rule,
-                indicator: rule.indicator === previousKey ? nextKey : rule.indicator,
+                indicator:
+                  rule.indicator === previousKey ? nextKey : rule.indicator,
                 ref: rule.ref === previousKey ? nextKey : rule.ref,
               }
             : {
                 ...rule,
-                indicator: rule.indicator === previousKey ? nextKey : rule.indicator,
+                indicator:
+                  rule.indicator === previousKey ? nextKey : rule.indicator,
               };
         }
 
         return rule.ref !== undefined
           ? {
               ...rule,
-              indicator: rule.indicator === previousKey ? nextKey : rule.indicator,
+              indicator:
+                rule.indicator === previousKey ? nextKey : rule.indicator,
               ref: rule.ref === previousKey ? nextKey : rule.ref,
             }
           : {
               ...rule,
-              indicator: rule.indicator === previousKey ? nextKey : rule.indicator,
+              indicator:
+                rule.indicator === previousKey ? nextKey : rule.indicator,
             };
       }),
     },
@@ -1045,14 +1085,11 @@ function ensureVolumeSupportDraft(draft: YourStrategyDraft) {
     return draft;
   }
 
-  const nextKey = createIndicatorKeyForConfig(
-    draft,
-    {
-      type: "sma",
-      source: "volume",
-      period: 20,
-    },
-  );
+  const nextKey = createIndicatorKeyForConfig(draft, {
+    type: "sma",
+    source: "volume",
+    period: 20,
+  });
 
   return {
     ...draft,
@@ -1109,11 +1146,15 @@ function isVolumeDerivedIndicator(indicator: PresetIndicatorConfig) {
   );
 }
 
-function getIndicatorPeriod(indicator: PresetIndicatorConfig | null | undefined) {
+function getIndicatorPeriod(
+  indicator: PresetIndicatorConfig | null | undefined,
+) {
   return indicator && "period" in indicator ? indicator.period : 20;
 }
 
-function normalizeYourStrategyDraftForBuilder(draft: YourStrategyDraft): YourStrategyDraft {
+function normalizeYourStrategyDraftForBuilder(
+  draft: YourStrategyDraft,
+): YourStrategyDraft {
   const indicatorEntries = Object.entries(draft.indicators);
   const keyMap = new Map<string, string>();
   const nextIndicators: Record<string, PresetIndicatorConfig> = {};
@@ -1229,27 +1270,27 @@ function getYourStrategyWizardSteps(
     draft?.entry.long.enabled
       ? {
           key: "long",
-      eyebrow: t("yourStrategyStepThreeEyebrow"),
-      title: t("yourStrategyStepThreeTitle"),
-      summary: draft
-        ? t("yourStrategyStepThreeSummary").replace(
-            "{count}",
-            String(draft.entry.long.trigger.rules.length),
-          )
-        : t("yourStrategyStepThreeFallback"),
+          eyebrow: t("yourStrategyStepThreeEyebrow"),
+          title: t("yourStrategyStepThreeTitle"),
+          summary: draft
+            ? t("yourStrategyStepThreeSummary").replace(
+                "{count}",
+                String(draft.entry.long.trigger.rules.length),
+              )
+            : t("yourStrategyStepThreeFallback"),
         }
       : null,
     draft?.entry.short.enabled
       ? {
           key: "short",
-      eyebrow: t("yourStrategyStepFourEyebrow"),
-      title: t("yourStrategyStepFourTitle"),
-      summary: draft
-        ? t("yourStrategyStepFourSummary").replace(
-            "{count}",
-            String(draft.entry.short.trigger.rules.length),
-          )
-        : t("yourStrategyStepFourFallback"),
+          eyebrow: t("yourStrategyStepFourEyebrow"),
+          title: t("yourStrategyStepFourTitle"),
+          summary: draft
+            ? t("yourStrategyStepFourSummary").replace(
+                "{count}",
+                String(draft.entry.short.trigger.rules.length),
+              )
+            : t("yourStrategyStepFourFallback"),
         }
       : null,
     {
@@ -1257,8 +1298,10 @@ function getYourStrategyWizardSteps(
       eyebrow: t("yourStrategyStepFiveEyebrow"),
       title: t("yourStrategyStepFiveTitle"),
       summary: draft
-        ? t("yourStrategyStepFiveSummary")
-            .replace("{size}", `${draft.positionSizeValue}%`)
+        ? t("yourStrategyStepFiveSummary").replace(
+            "{size}",
+            `${draft.positionSizeValue}%`,
+          )
         : t("yourStrategyStepFiveFallback"),
     },
     {
@@ -1283,7 +1326,14 @@ function getYourStrategyWizardSteps(
   ].filter(Boolean);
 
   return steps as Array<{
-    key: "market" | "indicators" | "long" | "short" | "risk" | "take-profit" | "preview";
+    key:
+      | "market"
+      | "indicators"
+      | "long"
+      | "short"
+      | "risk"
+      | "take-profit"
+      | "preview";
     eyebrow: string;
     title: string;
     summary: string;
@@ -1314,37 +1364,50 @@ function getCompatibleIndicatorKeys(
   const selectedContext = getIndicatorContext(selectedIndicator);
 
   return Object.entries(indicators)
-    .filter(([, indicator]) => getIndicatorContext(indicator) === selectedContext)
+    .filter(
+      ([, indicator]) => getIndicatorContext(indicator) === selectedContext,
+    )
     .map(([indicatorKey]) => indicatorKey);
 }
 
-function getVisibleBuilderIndicators(indicators: Record<string, PresetIndicatorConfig>) {
+function getVisibleBuilderIndicators(
+  indicators: Record<string, PresetIndicatorConfig>,
+) {
   return Object.fromEntries(
     Object.entries(indicators).filter(
-      ([, indicator]) => indicator.type !== "atr" && !isVolumeDerivedIndicator(indicator),
+      ([, indicator]) =>
+        indicator.type !== "atr" && !isVolumeDerivedIndicator(indicator),
     ),
   );
 }
 
-function getPriceIndicatorKeys(indicators: Record<string, PresetIndicatorConfig>) {
+function getPriceIndicatorKeys(
+  indicators: Record<string, PresetIndicatorConfig>,
+) {
   return Object.entries(indicators)
     .filter(([, indicator]) => getIndicatorContext(indicator) === "price")
     .map(([indicatorKey]) => indicatorKey);
 }
 
-function getRsiIndicatorKeys(indicators: Record<string, PresetIndicatorConfig>) {
+function getRsiIndicatorKeys(
+  indicators: Record<string, PresetIndicatorConfig>,
+) {
   return Object.entries(indicators)
     .filter(([, indicator]) => getIndicatorContext(indicator) === "rsi")
     .map(([indicatorKey]) => indicatorKey);
 }
 
-function getVolumeBaselineKeys(indicators: Record<string, PresetIndicatorConfig>) {
+function getVolumeBaselineKeys(
+  indicators: Record<string, PresetIndicatorConfig>,
+) {
   return Object.entries(indicators)
     .filter(([, indicator]) => indicator.type === "volume")
     .map(([indicatorKey]) => indicatorKey);
 }
 
-function getVolumeReferenceKeys(indicators: Record<string, PresetIndicatorConfig>) {
+function getVolumeReferenceKeys(
+  indicators: Record<string, PresetIndicatorConfig>,
+) {
   return Object.entries(indicators)
     .filter(([, indicator]) => isVolumeDerivedIndicator(indicator))
     .map(([indicatorKey]) => indicatorKey);
@@ -1354,7 +1417,11 @@ function getVolumeCompanionKey(
   indicators: Record<string, PresetIndicatorConfig>,
   volumeIndicatorKey: string,
 ) {
-  return getVolumeReferenceKeys(indicators).find((indicatorKey) => indicatorKey !== volumeIndicatorKey) ?? null;
+  return (
+    getVolumeReferenceKeys(indicators).find(
+      (indicatorKey) => indicatorKey !== volumeIndicatorKey,
+    ) ?? null
+  );
 }
 
 function getYourStrategyIssues(t: TranslationFn, draft: YourStrategyDraft) {
@@ -1373,9 +1440,7 @@ function getYourStrategyIssues(t: TranslationFn, draft: YourStrategyDraft) {
     const side = draft.entry[key];
 
     if (side.enabled && side.trigger.rules.length === 0) {
-      issues.push(
-        t("yourStrategyIssueMissingRules").replace("{side}", label),
-      );
+      issues.push(t("yourStrategyIssueMissingRules").replace("{side}", label));
     }
 
     side.trigger.rules.forEach((rule, ruleIndex) => {
@@ -1391,7 +1456,10 @@ function getYourStrategyIssues(t: TranslationFn, draft: YourStrategyDraft) {
         return;
       }
 
-      if (rule.type === "threshold" && getIndicatorContext(indicator) === "volume") {
+      if (
+        rule.type === "threshold" &&
+        getIndicatorContext(indicator) === "volume"
+      ) {
         if (rule.ref === undefined) {
           issues.push(
             t("yourStrategyIssueVolumeThreshold")
@@ -1402,7 +1470,10 @@ function getYourStrategyIssues(t: TranslationFn, draft: YourStrategyDraft) {
       }
 
       if (rule.type === "threshold" && rule.ref !== undefined) {
-        const referenceContext = getReferenceContext(draft.indicators, rule.ref);
+        const referenceContext = getReferenceContext(
+          draft.indicators,
+          rule.ref,
+        );
 
         if (referenceContext === null) {
           issues.push(
@@ -1426,7 +1497,10 @@ function getYourStrategyIssues(t: TranslationFn, draft: YourStrategyDraft) {
       }
 
       if (rule.type === "cross" && rule.ref !== undefined) {
-        const referenceContext = getReferenceContext(draft.indicators, rule.ref);
+        const referenceContext = getReferenceContext(
+          draft.indicators,
+          rule.ref,
+        );
 
         if (referenceContext === null) {
           issues.push(
@@ -1474,7 +1548,10 @@ function getYourStrategyIssues(t: TranslationFn, draft: YourStrategyDraft) {
   return issues;
 }
 
-function describeIndicator(indicatorKey: string, indicator: PresetIndicatorConfig) {
+function describeIndicator(
+  indicatorKey: string,
+  indicator: PresetIndicatorConfig,
+) {
   switch (indicator.type) {
     case "volume":
       return `${indicatorKey}: Volume baseline`;
@@ -1516,7 +1593,10 @@ function YourStrategyWizard(input: {
   leverage: number | null;
   onStepChange: (step: number) => void;
   onFieldChange: <
-    K extends keyof Pick<YourStrategyDraft, "name" | "symbol" | "timeframe" | "positionSizeValue">
+    K extends keyof Pick<
+      YourStrategyDraft,
+      "name" | "symbol" | "timeframe" | "positionSizeValue"
+    >,
   >(
     field: K,
     value: YourStrategyDraft[K],
@@ -1531,7 +1611,10 @@ function YourStrategyWizard(input: {
   onAddRule: (side: "long" | "short") => void;
   onRuleRemove: (side: "long" | "short", ruleIndex: number) => void;
   onAddIndicator: () => void;
-  onIndicatorChange: (indicatorKey: string, nextIndicator: PresetIndicatorConfig) => void;
+  onIndicatorChange: (
+    indicatorKey: string,
+    nextIndicator: PresetIndicatorConfig,
+  ) => void;
   onIndicatorRemove: (indicatorKey: string) => void;
   onStopLossStaticValueChange: (value: number) => void;
   onStopLossModeChange: (mode: "static" | "atr") => void;
@@ -1597,7 +1680,8 @@ function YourStrategyWizard(input: {
   const indicatorKeys = Object.keys(visibleIndicators);
   const controlsDisabled = !canAccessProduct || editingBlocked;
   const strategyIssues = getYourStrategyIssues(t, draft);
-  const canAdvanceFromStepOne = draft.entry.long.enabled || draft.entry.short.enabled;
+  const canAdvanceFromStepOne =
+    draft.entry.long.enabled || draft.entry.short.enabled;
 
   return (
     <div className="your-strategy-builder">
@@ -1630,7 +1714,10 @@ function YourStrategyWizard(input: {
                 className="onboarding-form__input"
                 disabled={controlsDisabled}
                 onChange={(event) =>
-                  onFieldChange("symbol", event.target.value as YourStrategyDraft["symbol"])
+                  onFieldChange(
+                    "symbol",
+                    event.target.value as YourStrategyDraft["symbol"],
+                  )
                 }
                 value={draft.symbol}
               >
@@ -1693,7 +1780,8 @@ function YourStrategyWizard(input: {
             <div className="done-note">
               <strong>{t("yourStrategyLeverageTitle")}</strong>
               <p>
-                {leverage ? `${leverage}x` : "-"} · {t("presetReviewLeverageHint")}
+                {leverage ? `${leverage}x` : "-"} ·{" "}
+                {t("presetReviewLeverageHint")}
               </p>
             </div>
             {!canAdvanceFromStepOne ? (
@@ -1749,7 +1837,9 @@ function YourStrategyWizard(input: {
           indicators={visibleIndicators}
           onAddRule={() => onAddRule("long")}
           onGroupTypeChange={(type) => onGroupTypeChange("long", type)}
-          onRuleChange={(ruleIndex, updater) => onRuleChange("long", ruleIndex, updater)}
+          onRuleChange={(ruleIndex, updater) =>
+            onRuleChange("long", ruleIndex, updater)
+          }
           onRuleRemove={(ruleIndex) => onRuleRemove("long", ruleIndex)}
           side={draft.entry.long}
           t={t}
@@ -1764,7 +1854,9 @@ function YourStrategyWizard(input: {
           indicators={visibleIndicators}
           onAddRule={() => onAddRule("short")}
           onGroupTypeChange={(type) => onGroupTypeChange("short", type)}
-          onRuleChange={(ruleIndex, updater) => onRuleChange("short", ruleIndex, updater)}
+          onRuleChange={(ruleIndex, updater) =>
+            onRuleChange("short", ruleIndex, updater)
+          }
           onRuleRemove={(ruleIndex) => onRuleRemove("short", ruleIndex)}
           side={draft.entry.short}
           t={t}
@@ -1786,7 +1878,9 @@ function YourStrategyWizard(input: {
                 }
                 value={draft.risk.stopLoss.mode}
               >
-                <option value="static">{t("yourStrategyStopLossStatic")}</option>
+                <option value="static">
+                  {t("yourStrategyStopLossStatic")}
+                </option>
                 <option value="atr">{t("yourStrategyStopLossAtr")}</option>
               </select>
             </label>
@@ -1849,7 +1943,10 @@ function YourStrategyWizard(input: {
                   disabled={controlsDisabled}
                   min={1}
                   onChange={(event) =>
-                    onFieldChange("positionSizeValue", Number(event.target.value))
+                    onFieldChange(
+                      "positionSizeValue",
+                      Number(event.target.value),
+                    )
                   }
                   type="number"
                   value={draft.positionSizeValue}
@@ -1887,7 +1984,9 @@ function YourStrategyWizard(input: {
                 aria-pressed={draft.risk.takeProfit !== null}
                 className={`toggle ${draft.risk.takeProfit ? "on" : "off"}`}
                 disabled={controlsDisabled}
-                onClick={() => onTakeProfitToggle(draft.risk.takeProfit === null)}
+                onClick={() =>
+                  onTakeProfitToggle(draft.risk.takeProfit === null)
+                }
                 type="button"
               >
                 <span className="toggle__thumb"></span>
@@ -1933,14 +2032,22 @@ function YourStrategyWizard(input: {
             <div className="metric-grid">
               <article className="stat-panel emphasis">
                 <span>{t("presetBacktestMetricStrategy")}</span>
-                <strong className={preview.summary.strategyReturnPercent >= 0 ? "up" : "down"}>
+                <strong
+                  className={
+                    preview.summary.strategyReturnPercent >= 0 ? "up" : "down"
+                  }
+                >
                   {formatPercent(preview.summary.strategyReturnPercent)}
                 </strong>
                 <p>{t("presetBacktestMetricStrategyHint")}</p>
               </article>
               <article className="stat-panel">
                 <span>{t("presetBacktestMetricHold")}</span>
-                <strong className={preview.summary.holdReturnPercent >= 0 ? "up" : "down"}>
+                <strong
+                  className={
+                    preview.summary.holdReturnPercent >= 0 ? "up" : "down"
+                  }
+                >
                   {formatPercent(preview.summary.holdReturnPercent)}
                 </strong>
                 <p>{t("presetBacktestMetricHoldHint")}</p>
@@ -1962,7 +2069,8 @@ function YourStrategyWizard(input: {
             <div className="info-note">
               <strong>{t("yourStrategyBacktestErrorTitle")}</strong>
               <p>{preview.message}</p>
-              {"activationBlockers" in preview && preview.activationBlockers?.length ? (
+              {"activationBlockers" in preview &&
+              preview.activationBlockers?.length ? (
                 <ul className="summary-list">
                   {preview.activationBlockers.map((blocker) => (
                     <li key={blocker}>{formatActivationBlocker(t, blocker)}</li>
@@ -1983,7 +2091,10 @@ function YourStrategyWizard(input: {
                 <ul className="summary-list">
                   {indicatorKeys.map((indicatorKey) => (
                     <li key={indicatorKey}>
-                      {describeIndicator(indicatorKey, visibleIndicators[indicatorKey]!)}
+                      {describeIndicator(
+                        indicatorKey,
+                        visibleIndicators[indicatorKey]!,
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -2014,7 +2125,10 @@ function YourStrategyWizard(input: {
                           String(draft.risk.stopLoss.value),
                         )
                       : t("yourStrategyRiskStepAtrSummary")
-                          .replace("{period}", String(draft.risk.stopLoss.period))
+                          .replace(
+                            "{period}",
+                            String(draft.risk.stopLoss.period),
+                          )
                           .replace(
                             "{multiplier}",
                             String(draft.risk.stopLoss.multiplier),
@@ -2085,20 +2199,14 @@ function YourStrategyWizard(input: {
                         ? t("presetActivationStatusLoading")
                         : t("presetActivationStatusIdle")}
                 </strong>
-                <p>{activationMessage ?? t("yourStrategyActivationNeedsPreview")}</p>
+                <p>
+                  {activationMessage ?? t("yourStrategyActivationNeedsPreview")}
+                </p>
               </div>
             </div>
           </div>
 
           <div className="action-row">
-            <button
-              className="btn secondary"
-              disabled={controlsDisabled}
-              onClick={onSave}
-              type="button"
-            >
-              {t("yourStrategySaveAction")}
-            </button>
             <button
               className="btn secondary"
               disabled={controlsDisabled}
@@ -2207,15 +2315,29 @@ function IndicatorEditorCard(input: {
   indicator: PresetIndicatorConfig;
   indicators: Record<string, PresetIndicatorConfig>;
   disabled: boolean;
-  onChange: (indicatorKey: string, nextIndicator: PresetIndicatorConfig) => void;
+  onChange: (
+    indicatorKey: string,
+    nextIndicator: PresetIndicatorConfig,
+  ) => void;
   onRemove: (indicatorKey: string) => void;
 }) {
-  const { disabled, indicator, indicatorKey, indicators, onChange, onRemove, t } = input;
+  const {
+    disabled,
+    indicator,
+    indicatorKey,
+    indicators,
+    onChange,
+    onRemove,
+    t,
+  } = input;
   const volumeDerived = isVolumeDerivedIndicator(indicator);
   const volumeCompanionKey =
-    indicator.type === "volume" ? getVolumeCompanionKey(indicators, indicatorKey) : null;
-  const volumeCompanion =
-    volumeCompanionKey ? indicators[volumeCompanionKey] : null;
+    indicator.type === "volume"
+      ? getVolumeCompanionKey(indicators, indicatorKey)
+      : null;
+  const volumeCompanion = volumeCompanionKey
+    ? indicators[volumeCompanionKey]
+    : null;
   const volumeMovingAverage =
     volumeCompanion && isVolumeDerivedIndicator(volumeCompanion)
       ? volumeCompanion
@@ -2259,10 +2381,10 @@ function IndicatorEditorCard(input: {
       ]
     : indicator.type === "volume"
       ? [
-        { value: "volume", label: "Volume" },
-        { value: "ema", label: "EMA" },
-        { value: "sma", label: "SMA" },
-      ]
+          { value: "volume", label: "Volume" },
+          { value: "ema", label: "EMA" },
+          { value: "sma", label: "SMA" },
+        ]
       : [
           { value: "ema", label: "EMA" },
           { value: "rsi", label: "RSI" },
@@ -2323,7 +2445,11 @@ function IndicatorEditorCard(input: {
               <span>{t("yourStrategyVolumeMaPeriodLabel")}</span>
               <input
                 className="onboarding-form__input"
-                disabled={disabled || !volumeCompanionKey || volumeMovingAverage === null}
+                disabled={
+                  disabled ||
+                  !volumeCompanionKey ||
+                  volumeMovingAverage === null
+                }
                 min={1}
                 onChange={(event) => {
                   if (!volumeCompanionKey || !volumeMovingAverage) {
@@ -2354,7 +2480,9 @@ function IndicatorEditorCard(input: {
                 className="onboarding-form__input"
                 disabled={disabled}
                 onChange={(event) =>
-                  handleTypeChange(event.target.value as PresetIndicatorConfig["type"])
+                  handleTypeChange(
+                    event.target.value as PresetIndicatorConfig["type"],
+                  )
                 }
                 value={indicator.type}
               >
@@ -2438,7 +2566,9 @@ function EntrySideWizardSection(input: {
 
   return (
     <div className="form-stack">
-      <div className={`row-between align-start your-strategy-side-header your-strategy-side-header--${tone}`}>
+      <div
+        className={`row-between align-start your-strategy-side-header your-strategy-side-header--${tone}`}
+      >
         <div>
           <h4>{title}</h4>
           <p className="subtle">{t("yourStrategyRuleSectionDescription")}</p>
@@ -2514,7 +2644,9 @@ function RuleEditorCard(input: {
   const { disabled, indicators, onChange, onRemove, rule, t } = input;
   const indicatorKeys = Object.keys(indicators);
   const selectedIndicator = indicators[rule.indicator];
-  const selectedContext = selectedIndicator ? getIndicatorContext(selectedIndicator) : "price";
+  const selectedContext = selectedIndicator
+    ? getIndicatorContext(selectedIndicator)
+    : "price";
   const priceIndicatorKeys = getPriceIndicatorKeys(indicators);
   const rsiIndicatorKeys = getRsiIndicatorKeys(indicators);
   const volumeIndicatorKeys = getVolumeBaselineKeys(indicators);
@@ -2525,25 +2657,35 @@ function RuleEditorCard(input: {
       : selectedContext === "volume"
         ? volumeIndicatorKeys
         : priceIndicatorKeys;
-  const thresholdAllowed = selectedContext !== "volume" || volumeReferenceKeys.length > 0;
+  const thresholdAllowed =
+    selectedContext !== "volume" || volumeReferenceKeys.length > 0;
   const crossAllowed = selectedContext !== "volume";
   const thresholdUsesNumeric = selectedContext === "rsi";
   const crossUsesNumeric = selectedContext === "rsi";
   const referenceKeys =
     selectedContext === "price"
-      ? ["PRICE", ...priceIndicatorKeys.filter((indicatorKey) => indicatorKey !== rule.indicator)]
+      ? [
+          "PRICE",
+          ...priceIndicatorKeys.filter(
+            (indicatorKey) => indicatorKey !== rule.indicator,
+          ),
+        ]
       : selectedContext === "volume"
         ? volumeReferenceKeys
         : [];
 
   function handleRuleTypeChange(nextType: PresetTriggerRule["type"]) {
     if (nextType === "threshold") {
-      const nextIndicatorKey = availableIndicatorKeys[0] ?? indicatorKeys[0] ?? "EMA1";
-      onChange(() => createDefaultRuleForIndicator(indicators, nextIndicatorKey));
+      const nextIndicatorKey =
+        availableIndicatorKeys[0] ?? indicatorKeys[0] ?? "EMA1";
+      onChange(() =>
+        createDefaultRuleForIndicator(indicators, nextIndicatorKey),
+      );
       return;
     }
 
-    const nextIndicatorKey = availableIndicatorKeys[0] ?? indicatorKeys[0] ?? "EMA1";
+    const nextIndicatorKey =
+      availableIndicatorKeys[0] ?? indicatorKeys[0] ?? "EMA1";
 
     if (selectedContext === "rsi") {
       onChange(() => ({
@@ -2576,12 +2718,16 @@ function RuleEditorCard(input: {
             className="onboarding-form__input"
             disabled={disabled}
             onChange={(event) =>
-              handleRuleTypeChange(event.target.value as PresetTriggerRule["type"])
+              handleRuleTypeChange(
+                event.target.value as PresetTriggerRule["type"],
+              )
             }
             value={rule.type}
           >
             {thresholdAllowed ? (
-              <option value="threshold">{t("yourStrategyRuleTypeThreshold")}</option>
+              <option value="threshold">
+                {t("yourStrategyRuleTypeThreshold")}
+              </option>
             ) : null}
             {crossAllowed ? (
               <option value="cross">{t("yourStrategyRuleTypeCross")}</option>
@@ -2606,7 +2752,8 @@ function RuleEditorCard(input: {
                         getIndicatorContext(nextIndicator) === "volume"
                       ) {
                         const nextReference =
-                          getVolumeReferenceKeys(indicators)[0] ?? nextIndicatorKey;
+                          getVolumeReferenceKeys(indicators)[0] ??
+                          nextIndicatorKey;
 
                         return {
                           scope: currentRule.scope,
@@ -2627,12 +2774,21 @@ function RuleEditorCard(input: {
                       indicator: event.target.value,
                       value: undefined,
                       ref:
-                        (getReferenceContext(indicators, event.target.value) === "price"
-                          ? ["PRICE", ...getPriceIndicatorKeys(indicators).filter(
-                              (indicatorKey) => indicatorKey !== event.target.value,
-                            )]
-                          : getCompatibleIndicatorKeys(indicators, event.target.value).filter(
-                              (indicatorKey) => indicatorKey !== event.target.value,
+                        (getReferenceContext(indicators, event.target.value) ===
+                        "price"
+                          ? [
+                              "PRICE",
+                              ...getPriceIndicatorKeys(indicators).filter(
+                                (indicatorKey) =>
+                                  indicatorKey !== event.target.value,
+                              ),
+                            ]
+                          : getCompatibleIndicatorKeys(
+                              indicators,
+                              event.target.value,
+                            ).filter(
+                              (indicatorKey) =>
+                                indicatorKey !== event.target.value,
                             ))[0] ??
                         currentRule.ref ??
                         indicatorKeys[0] ??
@@ -2668,7 +2824,8 @@ function RuleEditorCard(input: {
                     currentRule.type === "threshold"
                       ? {
                           ...currentRule,
-                          operator: event.target.value as typeof currentRule.operator,
+                          operator: event.target
+                            .value as typeof currentRule.operator,
                         }
                       : currentRule,
                   )
@@ -2695,7 +2852,10 @@ function RuleEditorCard(input: {
                       ...currentRule,
                       value:
                         selectedContext === "rsi"
-                          ? Math.min(100, Math.max(0, Number(event.target.value)))
+                          ? Math.min(
+                              100,
+                              Math.max(0, Number(event.target.value)),
+                            )
                           : Number(event.target.value),
                       ref: undefined,
                     }))
@@ -2746,7 +2906,8 @@ function RuleEditorCard(input: {
                     currentRule.type === "cross"
                       ? {
                           ...currentRule,
-                          operator: event.target.value as typeof currentRule.operator,
+                          operator: event.target
+                            .value as typeof currentRule.operator,
                         }
                       : currentRule,
                   )
@@ -2768,7 +2929,10 @@ function RuleEditorCard(input: {
                   onChange={(event) =>
                     onChange((currentRule) => ({
                       ...currentRule,
-                      value: Math.min(100, Math.max(0, Number(event.target.value))),
+                      value: Math.min(
+                        100,
+                        Math.max(0, Number(event.target.value)),
+                      ),
                       ref: undefined,
                     }))
                   }

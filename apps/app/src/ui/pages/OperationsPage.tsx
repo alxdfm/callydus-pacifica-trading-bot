@@ -40,7 +40,7 @@ export function OperationsPage() {
     readSnapshot: readOperationalDashboardViaBackend,
     applySnapshot: applyDashboardSnapshot,
     requestKey: "operations",
-    loadingMessage: t("runtimeStatusLoading"),
+    loadingMessage: t("runtimeStatusLoadingMessage"),
     unavailableMessage: t("runtimeStatusError"),
   });
   const runtimeSyncPresentation = getDashboardRuntimeSyncPresentation(
@@ -78,7 +78,8 @@ export function OperationsPage() {
         </div>
       </section>
 
-      {operationsSession.status === "loading" || operationsSession.status === "error" ? (
+      {operationsSession.status === "loading" ||
+      operationsSession.status === "error" ? (
         operationsSession.status === "loading" ? (
           <LoadingPanel
             title={t("runtimeStatusLoading")}
@@ -130,12 +131,15 @@ export function OperationsPage() {
             </div>
             <div className="detail-item">
               <span>{t("operationsStatusLastSync")}</span>
-              <strong>{formatTimestamp(state.runtime.exchangeLastSyncedAt)}</strong>
+              <strong>
+                {formatTimestamp(state.runtime.exchangeLastSyncedAt)}
+              </strong>
             </div>
             <div className="detail-item detail-item--wide">
               <span>{t("operationsStatusLastIssue")}</span>
               <strong>
-                {state.runtime.lastRuntimeMessage ?? t("operationsStatusNoIssue")}
+                {state.runtime.lastRuntimeMessage ??
+                  t("operationsStatusNoIssue")}
               </strong>
             </div>
           </div>
