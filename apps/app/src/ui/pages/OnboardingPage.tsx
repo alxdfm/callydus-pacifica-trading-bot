@@ -14,9 +14,7 @@ import type {
 import { approveBuilderCodeViaBackend } from "../../features/onboarding/backend-builder-approval";
 import { validateAgentWalletViaBackend } from "../../features/onboarding/backend-credential-validation";
 import { verifyAgentWalletOperationallyViaBackend } from "../../features/onboarding/backend-operational-verification";
-import {
-  createSignedBuilderApprovalSubmission,
-} from "../../features/onboarding/pacifica-builder-approval";
+import { createSignedBuilderApprovalSubmission } from "../../features/onboarding/pacifica-builder-approval";
 import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEnvironment";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import type { MessageKey } from "../../shared/i18n/messages";
@@ -305,11 +303,7 @@ function buildProgressSteps(
     {
       title: labels("onboardingStepBuilderTitle"),
       description: labels("onboardingStepBuilderDescription"),
-      status: builderComplete
-        ? "done"
-        : walletComplete
-          ? "current"
-          : "locked",
+      status: builderComplete ? "done" : walletComplete ? "current" : "locked",
     },
     {
       title: labels("onboardingStepCredentialsTitle"),
@@ -437,7 +431,9 @@ export function OnboardingPage() {
   const operationalStatusLabel = t(
     mapOperationalStatusToMessageKey(state.operational.status),
   );
-  const operationalBadgeTone = mapOperationalBadgeTone(state.operational.status);
+  const operationalBadgeTone = mapOperationalBadgeTone(
+    state.operational.status,
+  );
   const credentialMicrocopy = t(
     mapCredentialMicrocopy(
       state.credentials.validationStatus,
@@ -666,7 +662,8 @@ export function OnboardingPage() {
       setBuilderApprovalState({
         approvalStatus: "error",
         lastErrorCode: "wallet_not_connected",
-        lastMessage: "Connect the main wallet before approving the builder code.",
+        lastMessage:
+          "Connect the main wallet before approving the builder code.",
         retryable: false,
       });
       return;
@@ -700,7 +697,9 @@ export function OnboardingPage() {
     } catch (error) {
       console.error("[builder-approval-signing]", error);
       const message =
-        error instanceof Error ? error.message : "Could not sign the builder approval payload.";
+        error instanceof Error
+          ? error.message
+          : "Could not sign the builder approval payload.";
       const normalizedMessage = message.toLowerCase();
       const rejected =
         normalizedMessage.includes("reject") ||
@@ -821,7 +820,8 @@ export function OnboardingPage() {
         status: "blocked",
         lastVerifiedAt: null,
         lastErrorCode: "internal_error",
-        lastMessage: "Validate the Agent Wallet before running the readiness check.",
+        lastMessage:
+          "Validate the Agent Wallet before running the readiness check.",
         retryable: false,
         probeSymbol: null,
         probeClientOrderId: null,
@@ -863,8 +863,7 @@ export function OnboardingPage() {
         validationStatus: "valid",
         lastValidatedAt: response.validatedAt,
         lastErrorCode: null,
-        lastValidationMessage:
-          "Agent Wallet validated through backend checks.",
+        lastValidationMessage: "Agent Wallet validated through backend checks.",
         retryable: false,
       });
       setOperationalState({
@@ -1024,6 +1023,65 @@ export function OnboardingPage() {
     });
   }
 
+  if (state.wallet.sessionStatus === "reconnecting") {
+    return (
+      <div className="onboarding-flow">
+        <aside className="onboarding-side">
+          <div className="onboarding-brand">
+            <img
+              alt={`${t("appName")} logo`}
+              className="onboarding-brand__logo"
+              src={logoMark}
+            />
+            <div className="onboarding-brand__copy">
+              <p className="page-card__eyebrow">{t("appName")}</p>
+              <h1>{t("pageOnboardingTitle")}</h1>
+            </div>
+          </div>
+          <div className="sk-stack sk-stack--lg" style={{ marginTop: 8 }}>
+            <div className="sk-line sk-line--md sk-w-70" />
+            <div className="sk-line sk-line--sm sk-w-50" />
+          </div>
+          <div className="sk-stack" style={{ marginTop: 8 }}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="sk-stack sk-stack--lg"
+                style={{ marginBottom: 10 }}
+              >
+                <div className="sk-line sk-line--sm sk-w-60" />
+                <div className="sk-line sk-line--xs sk-w-40" />
+              </div>
+            ))}
+          </div>
+        </aside>
+        <main className="onboarding-main">
+          <header className="topbar">
+            <div>
+              <p className="page-card__eyebrow">
+                {t("onboardingTopbarEyebrow")}
+              </p>
+              <h2>{t("onboardingTopbarTitle")}</h2>
+              <p className="subtle">{t("onboardingTopbarDescription")}</p>
+            </div>
+          </header>
+          <section className="panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-full" />
+              <div
+                className="sk-line sk-line--md sk-w-full"
+                style={{ marginTop: 12 }}
+              />
+              <div className="sk-line sk-line--md sk-w-full" />
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="onboarding-flow">
       <aside className="onboarding-side">
@@ -1047,7 +1105,8 @@ export function OnboardingPage() {
           <div className="flow-progress__meta">
             <strong>{t("onboardingProgressTitle")}</strong>
             <span>
-              {completedSteps} {t("onboardingProgressOf")} {visibleProgressSteps.length}{" "}
+              {completedSteps} {t("onboardingProgressOf")}{" "}
+              {visibleProgressSteps.length}{" "}
               {t("onboardingProgressStepsCompleted")}
             </span>
           </div>
@@ -1079,13 +1138,12 @@ export function OnboardingPage() {
                     ? t("onboardingProgressDone")
                     : step.status === "current"
                       ? t("onboardingProgressCurrent")
-                    : t("onboardingProgressLocked")}
+                      : t("onboardingProgressLocked")}
                 </span>
               </div>
             </button>
           ))}
         </div>
-
       </aside>
 
       <main className="onboarding-main">
@@ -1102,108 +1160,108 @@ export function OnboardingPage() {
             <section
               className={`panel wallet-panel panel-step ${progressSteps[0]?.status} panel-step--selected`}
             >
-            <div className="row-between align-start section-gap">
-              <div>
-                <p className="panel-label">
-                  {t("onboardingCardWalletEyebrow")}
-                </p>
-                <h3>{t("onboardingCardWalletTitle")}</h3>
-                <p className="panel-copy">
-                  {t("onboardingCardWalletDescription")}
-                </p>
-              </div>
-              <span className={`badge badge--${walletBadgeTone}`}>
-                {walletStatusLabel}
-              </span>
-            </div>
-
-            <div
-              className={`wallet-card ${walletConnected ? "wallet-card--connected" : ""}`}
-            >
-              <div>
-                <strong>
-                  {walletConnected
-                    ? `${valueOrFallback(
-                        formatWalletProvider(state.wallet.provider),
-                        "Phantom",
-                      )} wallet`
-                    : t("onboardingWalletAction")}
-                </strong>
-                <p>{walletMicrocopy}</p>
-                <small>
-                  {walletConnected
-                    ? `${t("onboardingMainWalletLabel")}: ${valueOrFallback(
-                        shortenPublicKey(state.wallet.mainWalletPublicKey),
-                        t("onboardingValueNotConnected"),
-                      )}`
-                    : t("onboardingWalletActionHint")}
-                </small>
-              </div>
-              <div className="form-stack">
-                {!walletConnected ? (
-                  <label className="onboarding-form__field">
-                    <span>{t("onboardingProviderSelectLabel")}</span>
-                    <select
-                      className="onboarding-form__input"
-                      onChange={(event) =>
-                        setSelectedWalletProvider(
-                          event.target.value as WalletProvider,
-                        )
-                      }
-                      value={selectedWalletProvider}
-                    >
-                      <option value="phantom">
-                        {t("onboardingProviderOptionPhantom")}
-                      </option>
-                      <option value="backpack">
-                        {t("onboardingProviderOptionBackpack")}
-                      </option>
-                    </select>
-                    <small>{t("onboardingWalletSelectionHint")}</small>
-                  </label>
-                ) : null}
-                {isWalletStepDone ? (
-                  <button
-                    className="btn secondary small"
-                    onClick={() => void handleEditWalletStep()}
-                    type="button"
-                  >
-                    {t("onboardingEditAction")}
-                  </button>
-                ) : (
-                  <button
-                    className="btn secondary"
-                    onClick={() =>
-                      void (walletConnected
-                        ? disconnectWallet()
-                        : connectWallet(selectedWalletProvider))
-                    }
-                    type="button"
-                  >
-                    {walletConnected
-                      ? t("onboardingWalletActionDisconnect")
-                      : t("onboardingWalletAction")}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {state.wallet.errorCode ? (
-              <div className="status-row status-row--danger">
-                <span className="status-dot status-dot--danger"></span>
+              <div className="row-between align-start section-gap">
                 <div>
-                  <strong>{t("onboardingWalletErrorLabel")}</strong>
-                  <p>{walletErrorMessage ?? state.wallet.errorCode}</p>
+                  <p className="panel-label">
+                    {t("onboardingCardWalletEyebrow")}
+                  </p>
+                  <h3>{t("onboardingCardWalletTitle")}</h3>
+                  <p className="panel-copy">
+                    {t("onboardingCardWalletDescription")}
+                  </p>
+                </div>
+                <span className={`badge badge--${walletBadgeTone}`}>
+                  {walletStatusLabel}
+                </span>
+              </div>
+
+              <div
+                className={`wallet-card ${walletConnected ? "wallet-card--connected" : ""}`}
+              >
+                <div>
+                  <strong>
+                    {walletConnected
+                      ? `${valueOrFallback(
+                          formatWalletProvider(state.wallet.provider),
+                          "Phantom",
+                        )} wallet`
+                      : t("onboardingWalletAction")}
+                  </strong>
+                  <p>{walletMicrocopy}</p>
+                  <small>
+                    {walletConnected
+                      ? `${t("onboardingMainWalletLabel")}: ${valueOrFallback(
+                          shortenPublicKey(state.wallet.mainWalletPublicKey),
+                          t("onboardingValueNotConnected"),
+                        )}`
+                      : t("onboardingWalletActionHint")}
+                  </small>
+                </div>
+                <div className="form-stack">
+                  {!walletConnected ? (
+                    <label className="onboarding-form__field">
+                      <span>{t("onboardingProviderSelectLabel")}</span>
+                      <select
+                        className="onboarding-form__input"
+                        onChange={(event) =>
+                          setSelectedWalletProvider(
+                            event.target.value as WalletProvider,
+                          )
+                        }
+                        value={selectedWalletProvider}
+                      >
+                        <option value="phantom">
+                          {t("onboardingProviderOptionPhantom")}
+                        </option>
+                        <option value="backpack">
+                          {t("onboardingProviderOptionBackpack")}
+                        </option>
+                      </select>
+                      <small>{t("onboardingWalletSelectionHint")}</small>
+                    </label>
+                  ) : null}
+                  {isWalletStepDone ? (
+                    <button
+                      className="btn secondary small"
+                      onClick={() => void handleEditWalletStep()}
+                      type="button"
+                    >
+                      {t("onboardingEditAction")}
+                    </button>
+                  ) : (
+                    <button
+                      className="btn secondary"
+                      onClick={() =>
+                        void (walletConnected
+                          ? disconnectWallet()
+                          : connectWallet(selectedWalletProvider))
+                      }
+                      type="button"
+                    >
+                      {walletConnected
+                        ? t("onboardingWalletActionDisconnect")
+                        : t("onboardingWalletAction")}
+                    </button>
+                  )}
                 </div>
               </div>
-            ) : null}
 
-            {isWalletStepDone ? (
-              <div className="done-note">
-                <strong>{t("onboardingStepCompletedTitle")}</strong>
-                <p>{t("onboardingWalletDoneNote")}</p>
-              </div>
-            ) : null}
+              {state.wallet.errorCode ? (
+                <div className="status-row status-row--danger">
+                  <span className="status-dot status-dot--danger"></span>
+                  <div>
+                    <strong>{t("onboardingWalletErrorLabel")}</strong>
+                    <p>{walletErrorMessage ?? state.wallet.errorCode}</p>
+                  </div>
+                </div>
+              ) : null}
+
+              {isWalletStepDone ? (
+                <div className="done-note">
+                  <strong>{t("onboardingStepCompletedTitle")}</strong>
+                  <p>{t("onboardingWalletDoneNote")}</p>
+                </div>
+              ) : null}
             </section>
           ) : null}
 
@@ -1211,69 +1269,71 @@ export function OnboardingPage() {
             <section
               className={`panel builder-panel panel-step ${progressSteps[1]?.status} panel-step--selected`}
             >
-            <div className="row-between align-start section-gap">
-              <div>
-                <p className="panel-label">{t("onboardingCardBuilderEyebrow")}</p>
-                <h3>{t("onboardingBuilderApprovalTitle")}</h3>
-                <p className="panel-copy">
-                  {t("onboardingBuilderApprovalDescription")}
-                </p>
-              </div>
-              <span className={`badge badge--${builderBadgeTone}`}>
-                {builderStatusLabel}
-              </span>
-            </div>
-
-            {isBuilderStepDone ? (
-              <div className="panel-step__header">
-                <div className="done-note panel-step__summary">
-                  <strong>{t("onboardingStepCompletedTitle")}</strong>
-                  <p>{builderApprovalMessage}</p>
+              <div className="row-between align-start section-gap">
+                <div>
+                  <p className="panel-label">
+                    {t("onboardingCardBuilderEyebrow")}
+                  </p>
+                  <h3>{t("onboardingBuilderApprovalTitle")}</h3>
+                  <p className="panel-copy">
+                    {t("onboardingBuilderApprovalDescription")}
+                  </p>
                 </div>
+                <span className={`badge badge--${builderBadgeTone}`}>
+                  {builderStatusLabel}
+                </span>
+              </div>
+
+              {isBuilderStepDone ? (
+                <div className="panel-step__header">
+                  <div className="done-note panel-step__summary">
+                    <strong>{t("onboardingStepCompletedTitle")}</strong>
+                    <p>{builderApprovalMessage}</p>
+                  </div>
+                  <button
+                    className="btn secondary small"
+                    onClick={handleEditBuilderStep}
+                    type="button"
+                  >
+                    {t("onboardingEditAction")}
+                  </button>
+                </div>
+              ) : null}
+
+              {!walletConnected ? (
+                <div className="info-note">
+                  <div className="row-between align-start section-gap">
+                    <div>
+                      <strong>{t("onboardingLockedStepTitle")}</strong>
+                      <p>{t("onboardingBuilderLockedNote")}</p>
+                    </div>
+                  </div>
+                  <small>{builderApprovalMessage}</small>
+                </div>
+              ) : null}
+
+              <div className="action-row">
                 <button
-                  className="btn secondary small"
-                  onClick={handleEditBuilderStep}
+                  className="btn secondary"
+                  disabled={
+                    !isBuilderStepCurrent ||
+                    !walletConnected ||
+                    !canSignMessages ||
+                    state.builderApproval.approvalStatus === "approving"
+                  }
+                  onClick={() => void handleApproveBuilderCode()}
                   type="button"
                 >
-                  {t("onboardingEditAction")}
+                  {t("onboardingBuilderApprovalAction")}
                 </button>
               </div>
-            ) : null}
 
-            {!walletConnected ? (
-              <div className="info-note">
-                <div className="row-between align-start section-gap">
-                  <div>
-                    <strong>{t("onboardingLockedStepTitle")}</strong>
-                    <p>{t("onboardingBuilderLockedNote")}</p>
-                  </div>
+              {isBuilderStepDone ? (
+                <div className="info-note">
+                  <p>{builderApprovalMessage}</p>
+                  <small>{t("onboardingBuilderDoneNote")}</small>
                 </div>
-                <small>{builderApprovalMessage}</small>
-              </div>
-            ) : null}
-
-            <div className="action-row">
-              <button
-                className="btn secondary"
-                disabled={
-                  !isBuilderStepCurrent ||
-                  !walletConnected ||
-                  !canSignMessages ||
-                  state.builderApproval.approvalStatus === "approving"
-                }
-                onClick={() => void handleApproveBuilderCode()}
-                type="button"
-              >
-                {t("onboardingBuilderApprovalAction")}
-              </button>
-            </div>
-
-            {isBuilderStepDone ? (
-              <div className="info-note">
-                <p>{builderApprovalMessage}</p>
-                <small>{t("onboardingBuilderDoneNote")}</small>
-              </div>
-            ) : null}
+              ) : null}
             </section>
           ) : null}
 
@@ -1281,226 +1341,230 @@ export function OnboardingPage() {
             <section
               className={`panel keys-panel panel-step ${progressSteps[2]?.status} panel-step--selected`}
             >
-            <div className="row-between align-start section-gap">
-              <div>
-                <p className="panel-label">
-                  {t("onboardingCardCredentialsEyebrow")}
-                </p>
-                <h3>{t("onboardingCardCredentialsTitle")}</h3>
-                <p className="panel-copy">
-                  {t("onboardingCardCredentialsDescription")}
-                </p>
-              </div>
-              <span className={`badge badge--${credentialBadgeTone}`}>
-                {credentialStatusLabel}
-              </span>
-            </div>
-
-            <div className="onboarding-form">
-              <label className="onboarding-form__field">
-                <span>{t("onboardingMainWalletLabel")}</span>
-                <input
-                  className="onboarding-form__input"
-                  readOnly
-                  value={valueOrFallback(
-                    state.wallet.mainWalletPublicKey,
-                    t("onboardingFormMainWalletLocked"),
-                  )}
-                />
-                <small>{t("onboardingHelperMainWallet")}</small>
-              </label>
-
-              <label className="onboarding-form__field">
-                <span>{t("onboardingAgentWalletPublicLabel")}</span>
-                <input
-                  className="onboarding-form__input"
-                  disabled={isCredentialStepDone || isCredentialStepLocked}
-                  onChange={(event) =>
-                    updateCredentialField(
-                      "agentWalletPublicKey",
-                      event.target.value,
-                    )
-                  }
-                  placeholder={t("onboardingValueAwaitingPublicKey")}
-                  value={state.credentials.agentWalletPublicKey ?? ""}
-                />
-                {fieldErrors.agentWalletPublicKey ? (
-                  <em className="onboarding-form__error">
-                    {t("onboardingFieldErrorPrefix")}:{" "}
-                    {fieldErrors.agentWalletPublicKey}
-                  </em>
-                ) : (
-                  <small>{t("onboardingHelperAgentWalletPublic")}</small>
-                )}
-              </label>
-
-              <label className="onboarding-form__field">
-                <span>{t("onboardingAgentWalletPrivateLabel")}</span>
-                <textarea
-                  className="onboarding-form__input onboarding-form__input--multiline"
-                  disabled={isCredentialStepDone || isCredentialStepLocked}
-                  onChange={(event) =>
-                    updateCredentialField(
-                      "agentWalletPrivateKey",
-                      event.target.value,
-                    )
-                  }
-                  placeholder={t("onboardingValueAwaitingPrivateKey")}
-                  value={state.credentials.agentWalletPrivateKey ?? ""}
-                />
-                {fieldErrors.agentWalletPrivateKey ? (
-                  <em className="onboarding-form__error">
-                    {t("onboardingFieldErrorPrefix")}:{" "}
-                    {fieldErrors.agentWalletPrivateKey}
-                  </em>
-                ) : (
-                  <small>{t("onboardingHelperAgentWalletPrivate")}</small>
-                )}
-              </label>
-
-              <label className="onboarding-form__field">
-                <span>{t("onboardingCredentialAliasLabel")}</span>
-                <input
-                  className="onboarding-form__input"
-                  disabled={isCredentialStepDone || isCredentialStepLocked}
-                  onChange={(event) =>
-                    updateCredentialField("credentialAlias", event.target.value)
-                  }
-                  placeholder={t("onboardingValueAwaitingAlias")}
-                  value={state.credentials.credentialAlias ?? ""}
-                />
-                <small>{t("onboardingHelperCredentialAlias")}</small>
-              </label>
-            </div>
-
-            <div className="status-stack">
-              <div
-                className={`status-row ${
-                  walletConnected
-                    ? "status-row--success"
-                    : "status-row--neutral"
-                }`}
-              >
-                <span
-                  className={`status-dot ${
-                    walletConnected
-                      ? "status-dot--success"
-                      : "status-dot--neutral"
-                  }`}
-                ></span>
+              <div className="row-between align-start section-gap">
                 <div>
-                  <strong>{walletStatusLabel}</strong>
-                  <p>{walletMicrocopy}</p>
+                  <p className="panel-label">
+                    {t("onboardingCardCredentialsEyebrow")}
+                  </p>
+                  <h3>{t("onboardingCardCredentialsTitle")}</h3>
+                  <p className="panel-copy">
+                    {t("onboardingCardCredentialsDescription")}
+                  </p>
                 </div>
+                <span className={`badge badge--${credentialBadgeTone}`}>
+                  {credentialStatusLabel}
+                </span>
               </div>
 
-              <div
-                className={`status-row ${
-                  state.builderApproval.approvalStatus === "approved"
-                    ? "status-row--success"
-                    : state.builderApproval.approvalStatus === "approving"
-                      ? "status-row--info"
-                      : state.builderApproval.approvalStatus === "rejected" ||
-                          state.builderApproval.approvalStatus === "error"
-                        ? "status-row--danger"
-                        : "status-row--neutral"
-                }`}
-              >
-                <span
-                  className={`status-dot ${
+              <div className="onboarding-form">
+                <label className="onboarding-form__field">
+                  <span>{t("onboardingMainWalletLabel")}</span>
+                  <input
+                    className="onboarding-form__input"
+                    readOnly
+                    value={valueOrFallback(
+                      state.wallet.mainWalletPublicKey,
+                      t("onboardingFormMainWalletLocked"),
+                    )}
+                  />
+                  <small>{t("onboardingHelperMainWallet")}</small>
+                </label>
+
+                <label className="onboarding-form__field">
+                  <span>{t("onboardingAgentWalletPublicLabel")}</span>
+                  <input
+                    className="onboarding-form__input"
+                    disabled={isCredentialStepDone || isCredentialStepLocked}
+                    onChange={(event) =>
+                      updateCredentialField(
+                        "agentWalletPublicKey",
+                        event.target.value,
+                      )
+                    }
+                    placeholder={t("onboardingValueAwaitingPublicKey")}
+                    value={state.credentials.agentWalletPublicKey ?? ""}
+                  />
+                  {fieldErrors.agentWalletPublicKey ? (
+                    <em className="onboarding-form__error">
+                      {t("onboardingFieldErrorPrefix")}:{" "}
+                      {fieldErrors.agentWalletPublicKey}
+                    </em>
+                  ) : (
+                    <small>{t("onboardingHelperAgentWalletPublic")}</small>
+                  )}
+                </label>
+
+                <label className="onboarding-form__field">
+                  <span>{t("onboardingAgentWalletPrivateLabel")}</span>
+                  <textarea
+                    className="onboarding-form__input onboarding-form__input--multiline"
+                    disabled={isCredentialStepDone || isCredentialStepLocked}
+                    onChange={(event) =>
+                      updateCredentialField(
+                        "agentWalletPrivateKey",
+                        event.target.value,
+                      )
+                    }
+                    placeholder={t("onboardingValueAwaitingPrivateKey")}
+                    value={state.credentials.agentWalletPrivateKey ?? ""}
+                  />
+                  {fieldErrors.agentWalletPrivateKey ? (
+                    <em className="onboarding-form__error">
+                      {t("onboardingFieldErrorPrefix")}:{" "}
+                      {fieldErrors.agentWalletPrivateKey}
+                    </em>
+                  ) : (
+                    <small>{t("onboardingHelperAgentWalletPrivate")}</small>
+                  )}
+                </label>
+
+                <label className="onboarding-form__field">
+                  <span>{t("onboardingCredentialAliasLabel")}</span>
+                  <input
+                    className="onboarding-form__input"
+                    disabled={isCredentialStepDone || isCredentialStepLocked}
+                    onChange={(event) =>
+                      updateCredentialField(
+                        "credentialAlias",
+                        event.target.value,
+                      )
+                    }
+                    placeholder={t("onboardingValueAwaitingAlias")}
+                    value={state.credentials.credentialAlias ?? ""}
+                  />
+                  <small>{t("onboardingHelperCredentialAlias")}</small>
+                </label>
+              </div>
+
+              <div className="status-stack">
+                <div
+                  className={`status-row ${
+                    walletConnected
+                      ? "status-row--success"
+                      : "status-row--neutral"
+                  }`}
+                >
+                  <span
+                    className={`status-dot ${
+                      walletConnected
+                        ? "status-dot--success"
+                        : "status-dot--neutral"
+                    }`}
+                  ></span>
+                  <div>
+                    <strong>{walletStatusLabel}</strong>
+                    <p>{walletMicrocopy}</p>
+                  </div>
+                </div>
+
+                <div
+                  className={`status-row ${
                     state.builderApproval.approvalStatus === "approved"
-                      ? "status-dot--success"
+                      ? "status-row--success"
                       : state.builderApproval.approvalStatus === "approving"
-                        ? "status-dot--info"
+                        ? "status-row--info"
                         : state.builderApproval.approvalStatus === "rejected" ||
                             state.builderApproval.approvalStatus === "error"
-                          ? "status-dot--danger"
-                          : "status-dot--neutral"
+                          ? "status-row--danger"
+                          : "status-row--neutral"
                   }`}
-                ></span>
-                <div>
-                  <strong>{builderStatusLabel}</strong>
-                  <p>{builderMicrocopy}</p>
+                >
+                  <span
+                    className={`status-dot ${
+                      state.builderApproval.approvalStatus === "approved"
+                        ? "status-dot--success"
+                        : state.builderApproval.approvalStatus === "approving"
+                          ? "status-dot--info"
+                          : state.builderApproval.approvalStatus ===
+                                "rejected" ||
+                              state.builderApproval.approvalStatus === "error"
+                            ? "status-dot--danger"
+                            : "status-dot--neutral"
+                    }`}
+                  ></span>
+                  <div>
+                    <strong>{builderStatusLabel}</strong>
+                    <p>{builderMicrocopy}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div
-                className={`status-row ${
-                  state.credentials.validationStatus === "valid"
-                    ? "status-row--success"
-                    : state.credentials.validationStatus === "validating"
-                      ? "status-row--info"
-                      : state.credentials.validationStatus === "invalid" ||
-                          state.credentials.validationStatus === "error"
-                        ? "status-row--danger"
-                        : "status-row--neutral"
-                }`}
-              >
-                <span
-                  className={`status-dot ${
+                <div
+                  className={`status-row ${
                     state.credentials.validationStatus === "valid"
-                      ? "status-dot--success"
+                      ? "status-row--success"
                       : state.credentials.validationStatus === "validating"
-                        ? "status-dot--info"
+                        ? "status-row--info"
                         : state.credentials.validationStatus === "invalid" ||
                             state.credentials.validationStatus === "error"
-                          ? "status-dot--danger"
-                          : "status-dot--neutral"
+                          ? "status-row--danger"
+                          : "status-row--neutral"
                   }`}
-                ></span>
-                <div>
-                  <strong>{credentialFormStateLabel}</strong>
-                  <p>{credentialMicrocopy}</p>
+                >
+                  <span
+                    className={`status-dot ${
+                      state.credentials.validationStatus === "valid"
+                        ? "status-dot--success"
+                        : state.credentials.validationStatus === "validating"
+                          ? "status-dot--info"
+                          : state.credentials.validationStatus === "invalid" ||
+                              state.credentials.validationStatus === "error"
+                            ? "status-dot--danger"
+                            : "status-dot--neutral"
+                    }`}
+                  ></span>
+                  <div>
+                    <strong>{credentialFormStateLabel}</strong>
+                    <p>{credentialMicrocopy}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="info-note">
-              <strong>{t("onboardingValidationMessageLabel")}</strong>
-              <p>{credentialBanner}</p>
-              <small>{validationMessage}</small>
-            </div>
+              <div className="info-note">
+                <strong>{t("onboardingValidationMessageLabel")}</strong>
+                <p>{credentialBanner}</p>
+                <small>{validationMessage}</small>
+              </div>
 
-            {isCredentialStepDone ? (
-              <div className="done-note done-note--action">
-                <div>
-                  <strong>{t("onboardingStepCompletedTitle")}</strong>
-                  <p>{validationMessage}</p>
+              {isCredentialStepDone ? (
+                <div className="done-note done-note--action">
+                  <div>
+                    <strong>{t("onboardingStepCompletedTitle")}</strong>
+                    <p>{validationMessage}</p>
+                  </div>
+                  <button
+                    className="btn secondary small"
+                    onClick={handleEditCredentialStep}
+                    type="button"
+                  >
+                    {t("onboardingEditAction")}
+                  </button>
                 </div>
+              ) : null}
+
+              <div className="action-row">
                 <button
-                  className="btn secondary small"
-                  onClick={handleEditCredentialStep}
+                  className="btn secondary"
+                  disabled={isCredentialStepDone || !isCredentialStepCurrent}
+                  onClick={clearCredentialForm}
                   type="button"
                 >
-                  {t("onboardingEditAction")}
+                  {t("onboardingClearAction")}
+                </button>
+                <button
+                  className="btn primary"
+                  disabled={
+                    !isCredentialStepCurrent ||
+                    !walletConnected ||
+                    !builderApproved ||
+                    isCredentialStepDone ||
+                    state.credentials.validationStatus === "validating"
+                  }
+                  onClick={() => void handleValidateCredentials()}
+                  type="button"
+                >
+                  {t("onboardingCredentialAction")}
                 </button>
               </div>
-            ) : null}
-
-            <div className="action-row">
-              <button
-                className="btn secondary"
-                disabled={isCredentialStepDone || !isCredentialStepCurrent}
-                onClick={clearCredentialForm}
-                type="button"
-              >
-                {t("onboardingClearAction")}
-              </button>
-              <button
-                className="btn primary"
-                disabled={
-                  !isCredentialStepCurrent ||
-                  !walletConnected ||
-                  !builderApproved ||
-                  isCredentialStepDone ||
-                  state.credentials.validationStatus === "validating"
-                }
-                onClick={() => void handleValidateCredentials()}
-                type="button"
-              >
-                {t("onboardingCredentialAction")}
-              </button>
-            </div>
             </section>
           ) : null}
 
@@ -1508,73 +1572,72 @@ export function OnboardingPage() {
             <section
               className={`panel account-panel panel-step ${progressSteps[3]?.status} panel-step--selected`}
             >
-            <div className="row-between align-start section-gap">
-              <div>
-                <p className="panel-label">
-                  {t("onboardingCardOperationalEyebrow")}
-                </p>
-                <h3>{t("onboardingCardOperationalTitle")}</h3>
-                <p className="panel-copy">
-                  {t("onboardingCardOperationalDescription")}
-                </p>
-              </div>
-              <span
-                className={`badge badge--${
-                  isOperationalStepLocked ? "neutral" : operationalBadgeTone
-                }`}
-              >
-                {isOperationalStepLocked
-                  ? t("onboardingProgressLocked")
-                  : operationalStatusLabel}
-              </span>
-            </div>
-
-            <div className="info-note">
-              <strong>{t("onboardingOperationalDisclosureTitle")}</strong>
-              <p>
-                {isOperationalStepLocked
-                  ? t("onboardingOperationalLockedNote")
-                  : t("onboardingOperationalDisclosureDescription")}
-              </p>
-              <small>{t("onboardingOperationalDisclosureNote")}</small>
-            </div>
-
-            {isOperationalStepDone ? (
-              <div className="done-note done-note--action">
+              <div className="row-between align-start section-gap">
                 <div>
-                  <strong>{t("onboardingStepCompletedTitle")}</strong>
-                  <p>{operationalMessage}</p>
+                  <p className="panel-label">
+                    {t("onboardingCardOperationalEyebrow")}
+                  </p>
+                  <h3>{t("onboardingCardOperationalTitle")}</h3>
+                  <p className="panel-copy">
+                    {t("onboardingCardOperationalDescription")}
+                  </p>
                 </div>
+                <span
+                  className={`badge badge--${
+                    isOperationalStepLocked ? "neutral" : operationalBadgeTone
+                  }`}
+                >
+                  {isOperationalStepLocked
+                    ? t("onboardingProgressLocked")
+                    : operationalStatusLabel}
+                </span>
+              </div>
+
+              <div className="info-note">
+                <strong>{t("onboardingOperationalDisclosureTitle")}</strong>
+                <p>
+                  {isOperationalStepLocked
+                    ? t("onboardingOperationalLockedNote")
+                    : t("onboardingOperationalDisclosureDescription")}
+                </p>
+                <small>{t("onboardingOperationalDisclosureNote")}</small>
+              </div>
+
+              {isOperationalStepDone ? (
+                <div className="done-note done-note--action">
+                  <div>
+                    <strong>{t("onboardingStepCompletedTitle")}</strong>
+                    <p>{operationalMessage}</p>
+                  </div>
+                  <button
+                    className="btn secondary small"
+                    onClick={handleEditOperationalStep}
+                    type="button"
+                  >
+                    {t("onboardingEditAction")}
+                  </button>
+                </div>
+              ) : null}
+
+              <div className="action-row">
                 <button
-                  className="btn secondary small"
-                  onClick={handleEditOperationalStep}
+                  className="btn secondary"
+                  disabled={
+                    !isOperationalStepCurrent ||
+                    state.credentials.validationStatus !== "valid" ||
+                    !state.credentials.credentialId ||
+                    state.operational.status === "verifying" ||
+                    state.operational.status === "verified"
+                  }
+                  onClick={() => void handleRunOperationalCheck()}
                   type="button"
                 >
-                  {t("onboardingEditAction")}
+                  {t("onboardingOperationalAction")}
                 </button>
               </div>
-            ) : null}
-
-            <div className="action-row">
-              <button
-                className="btn secondary"
-                disabled={
-                  !isOperationalStepCurrent ||
-                  state.credentials.validationStatus !== "valid" ||
-                  !state.credentials.credentialId ||
-                  state.operational.status === "verifying" ||
-                  state.operational.status === "verified"
-                }
-                onClick={() => void handleRunOperationalCheck()}
-                type="button"
-              >
-                {t("onboardingOperationalAction")}
-              </button>
-            </div>
             </section>
           ) : null}
         </section>
-
       </main>
     </div>
   );
