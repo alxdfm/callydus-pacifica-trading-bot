@@ -44,6 +44,7 @@ export class PacificaStartBotReadinessGateway {
     positionSizeType: "fixed_amount" | "balance_percent";
     positionSizeValue: number;
     configuredLeverage: number | null;
+    prices?: Array<{ symbol: string; markPrice: number }>;
   }): Promise<StartBotReadinessCheckResponse> {
     const marketSymbol = toPacificaMarketSymbol(input.displaySymbol);
 
@@ -57,13 +58,11 @@ export class PacificaStartBotReadinessGateway {
       };
     }
 
-    const [accountPayload, settingsPayload, infoPayload, pricesPayload] =
-      await Promise.all([
-        this.getJson("/api/v1/account", { account: input.walletAddress }),
-        this.getJson("/api/v1/account/settings", { account: input.walletAddress }),
-        this.getJson("/api/v1/info"),
-        this.getJson("/api/v1/info/prices"),
-      ]);
+    const [accountPayload, settingsPayload, infoPayload] = await Promise.all([
+      this.getJson("/api/v1/account", { account: input.walletAddress }),
+      this.getJson("/api/v1/account/settings", { account: input.walletAddress }),
+      this.getJson("/api/v1/info"),
+    ]);
 
     const market = normalizeMarketInfo(infoPayload).find(
       (candidate) => candidate.symbol === marketSymbol,
@@ -80,7 +79,12 @@ export class PacificaStartBotReadinessGateway {
     }
 
     const availableBalance = normalizeAvailableBalance(accountPayload);
-    const currentPrice = normalizeCurrentPrice(pricesPayload, marketSymbol);
+    const currentPrice = input.prices
+      ? (input.prices.find((p) => p.symbol === marketSymbol)?.markPrice ?? null)
+      : normalizeCurrentPrice(
+          await this.getJson("/api/v1/info/prices"),
+          marketSymbol,
+        );
 
     if (availableBalance === null || currentPrice === null) {
       const missingInputs = [

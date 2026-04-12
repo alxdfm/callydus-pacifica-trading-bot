@@ -75,7 +75,11 @@ export type StartBotReadinessCheckDependencies = {
       positionSizeType: "fixed_amount" | "balance_percent";
       positionSizeValue: number;
       configuredLeverage: number | null;
+      prices?: Array<{ symbol: string; markPrice: number }>;
     }): Promise<StartBotReadinessCheckResponse>;
+  };
+  marketData?: {
+    getPrices(): Promise<Array<{ symbol: string; markPrice: number }>>;
   };
   eventRepository?: OperationalEventRepository;
 };
@@ -153,6 +157,15 @@ export function createStartBotReadinessCheck(
         encryptedPrivateKeyRef: credential.encryptedPrivateKeyRef,
       });
 
+    let prices: Array<{ symbol: string; markPrice: number }> | undefined;
+    if (dependencies.marketData) {
+      try {
+        prices = await dependencies.marketData.getPrices();
+      } catch {
+        // fallback: gateway will fetch prices directly from provider
+      }
+    }
+
     const result = await dependencies.startBotReadiness.runCheck({
       walletAddress: session.walletAddress,
       agentWalletPublicKey: session.agentWalletPublicKey,
@@ -161,6 +174,7 @@ export function createStartBotReadinessCheck(
       positionSizeType: session.activePreset.editableConfig.positionSizeType,
       positionSizeValue: session.activePreset.editableConfig.positionSizeValue,
       configuredLeverage: symbolConfig?.leverage ?? null,
+      ...(prices ? { prices } : {}),
     });
 
     if (result.result) {

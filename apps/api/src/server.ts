@@ -36,9 +36,20 @@ const api = createApiModule({
   },
   prisma,
 });
+const SCHEDULER_CANDLE_SYMBOLS = ["BTC-PERP", "ETH-PERP", "SOL-PERP"] as const;
+const SCHEDULER_CANDLE_INTERVALS = ["5m", "15m", "1h"] as const;
+
 const localMarketDataRefreshScheduler = startLocalMarketDataRefreshScheduler({
   config: readLocalMarketDataRefreshSchedulerConfigFromEnv(process.env),
   refreshMarketData: api.services.refreshMarketData,
+  resolveCandleRequests: async () =>
+    SCHEDULER_CANDLE_SYMBOLS.flatMap((symbol) =>
+      SCHEDULER_CANDLE_INTERVALS.map((interval) => ({
+        symbol,
+        interval,
+        priceSource: "market" as const,
+      })),
+    ),
 });
 
 const port = Number(process.env.PORT ?? "3003");

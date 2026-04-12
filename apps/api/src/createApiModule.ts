@@ -244,6 +244,9 @@ export function createApiModule(input: CreateApiModuleInput) {
     startBotReadiness:
       input.startBotReadinessCheckDependencies?.startBotReadiness ??
       startBotReadinessGateway,
+    marketData:
+      input.startBotReadinessCheckDependencies?.marketData ??
+      persistedMarketDataGateway,
     eventRepository:
       input.startBotReadinessCheckDependencies?.eventRepository ??
       defaultCredentialRepository,
