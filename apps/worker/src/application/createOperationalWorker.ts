@@ -842,12 +842,18 @@ export function createOperationalWorker(
       }
 
       const { closeReason, exitPrice } = resolveDetectedClose(trade);
-      const realizedPnl = calculateUnrealizedPnl({
-        side: trade.side,
-        entryPrice: trade.entryPrice,
-        currentPrice: exitPrice,
-        quantity: trade.quantity,
-      });
+      const feeRate = dependencies.environment.takerFeePercent / 100;
+      const entryFeeUsd = trade.entryPrice * trade.quantity * feeRate;
+      const exitFeeUsd = exitPrice * trade.quantity * feeRate;
+      const realizedPnl =
+        calculateUnrealizedPnl({
+          side: trade.side,
+          entryPrice: trade.entryPrice,
+          currentPrice: exitPrice,
+          quantity: trade.quantity,
+        }) -
+        entryFeeUsd -
+        exitFeeUsd;
 
       try {
         await dependencies.repository.closeOpenTrade({
@@ -869,6 +875,8 @@ export function createOperationalWorker(
             side: trade.side,
             closeReason,
             exitPrice,
+            entryFeeUsd,
+            exitFeeUsd,
             realizedPnl,
             detectedAtIso: closedAtIso,
           },
@@ -881,6 +889,8 @@ export function createOperationalWorker(
           side: trade.side,
           closeReason,
           exitPrice,
+          entryFeeUsd,
+          exitFeeUsd,
           realizedPnl,
         });
       } catch (persistError) {

@@ -6,6 +6,7 @@ export type WorkerEnvironment = {
   credentialEncryptionKey: string;
   credentialEncryptionKeyId: string;
   marketOrderSlippagePercent: string;
+  takerFeePercent: number;
   signalTraceEnabled: boolean;
   scanIntervalMs: number;
   heartbeatIntervalMs: number;
@@ -37,6 +38,7 @@ export function createWorkerEnvironment(
     credentialEncryptionKey: input.credentialEncryptionKey ?? "",
     credentialEncryptionKeyId: input.credentialEncryptionKeyId ?? "local-dev-v1",
     marketOrderSlippagePercent: input.marketOrderSlippagePercent ?? "0.5",
+    takerFeePercent: input.takerFeePercent ?? 0.05,
     signalTraceEnabled: input.signalTraceEnabled ?? false,
     scanIntervalMs: input.scanIntervalMs ?? 5_000,
     heartbeatIntervalMs: input.heartbeatIntervalMs ?? 15_000,

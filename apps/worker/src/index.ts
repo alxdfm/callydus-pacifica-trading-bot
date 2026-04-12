@@ -28,6 +28,7 @@ const environment = createWorkerEnvironment({
   ...(process.env.WORKER_MARKET_ORDER_SLIPPAGE_PERCENT
     ? { marketOrderSlippagePercent: process.env.WORKER_MARKET_ORDER_SLIPPAGE_PERCENT }
     : {}),
+  takerFeePercent: numberFromEnv(process.env.WORKER_TAKER_FEE_PERCENT, 0.05),
   signalTraceEnabled: booleanFromEnv(
     process.env.WORKER_SIGNAL_TRACE_ENABLED,
     false,
