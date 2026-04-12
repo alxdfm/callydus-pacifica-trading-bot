@@ -293,9 +293,42 @@ function alignToLastClosedCandleEndTime(
  * - release ownership on pause/deactivation/shutdown
  *
  * Non-responsibility:
- * - it does not reconcile local trade state against the Pacifica exchange yet
- * - it does not provide the final exchange-source-of-truth view for the app
+ * - it does not provide the full historical trade view (read model is the source for that)
  */
+
+export function resolveDetectedClose(trade: {
+  side: "long" | "short";
+  stopLossPrice: number | null;
+  takeProfitPrice: number | null;
+  currentPrice: number;
+  closeReasonPending: "take_profit" | "stop_loss" | "manual" | "system" | "error" | null;
+}): {
+  closeReason: "take_profit" | "stop_loss" | "manual" | "system";
+  exitPrice: number;
+} {
+  if (trade.closeReasonPending === "manual") {
+    return { closeReason: "manual", exitPrice: trade.currentPrice };
+  }
+
+  if (trade.side === "long") {
+    if (trade.stopLossPrice !== null && trade.currentPrice <= trade.stopLossPrice) {
+      return { closeReason: "stop_loss", exitPrice: trade.stopLossPrice };
+    }
+    if (trade.takeProfitPrice !== null && trade.currentPrice >= trade.takeProfitPrice) {
+      return { closeReason: "take_profit", exitPrice: trade.takeProfitPrice };
+    }
+  } else {
+    if (trade.stopLossPrice !== null && trade.currentPrice >= trade.stopLossPrice) {
+      return { closeReason: "stop_loss", exitPrice: trade.stopLossPrice };
+    }
+    if (trade.takeProfitPrice !== null && trade.currentPrice <= trade.takeProfitPrice) {
+      return { closeReason: "take_profit", exitPrice: trade.takeProfitPrice };
+    }
+  }
+
+  return { closeReason: "system", exitPrice: trade.currentPrice };
+}
+
 export function createOperationalWorker(
   dependencies: OperationalWorkerDependencies,
 ) {
@@ -738,6 +771,127 @@ export function createOperationalWorker(
           clientOrderId,
           errorMessage: failure.message,
           responseBody: failure.responseBody,
+        });
+      }
+    }
+  }
+
+  /**
+   * Detects trades closed on the exchange (TP/SL hit, liquidation) and
+   * reconciles them in the local snapshot.
+   *
+   * Strategy: call getPositions() once per tick, then for each locally-open
+   * trade verify a matching position still exists. If not, the exchange closed
+   * it and we update local state with the inferred reason and exit price.
+   */
+  async function reconcileOpenTradesWithExchange(
+    lease: AcquiredWorkerLease,
+    snapshot: NonNullable<
+      Awaited<ReturnType<WorkerRuntimeRepository["readOwnedRuntimeSnapshot"]>>
+    >,
+    tickAt: Date,
+  ) {
+    if (!snapshot.activeCredential) {
+      return;
+    }
+
+    const openTrades = await dependencies.repository.listOpenTrades(
+      snapshot.operatorAccountId,
+    );
+
+    if (openTrades.length === 0) {
+      return;
+    }
+
+    let positions: Awaited<ReturnType<InstanceType<typeof PacificaClient>["getPositions"]>>;
+
+    try {
+      const decryptedPrivateKey =
+        await dependencies.credentialEncryption.decryptAgentWalletPrivateKey({
+          encryptedPrivateKeyRef: snapshot.activeCredential.encryptedPrivateKeyRef,
+        });
+      const client = new PacificaClient({
+        apiBaseUrl: dependencies.environment.pacificaRestBaseUrl,
+        account: snapshot.walletAddress,
+        privateKey: decryptedPrivateKey,
+        agentWallet: snapshot.activeCredential.publicKey,
+        builderCode: dependencies.environment.pacificaBuilderCode,
+        expiryWindowMs: dependencies.environment.pacificaSignatureExpiryWindowMs,
+      });
+      positions = await client.getPositions();
+    } catch (error) {
+      logger.warn("worker.reconciliation_skipped_pacifica_unavailable", {
+        operatorAccountId: snapshot.operatorAccountId,
+        walletAddress: lease.walletAddress,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
+
+    const closedAtIso = tickAt.toISOString();
+
+    for (const trade of openTrades) {
+      const positionSide: "bid" | "ask" = trade.side === "long" ? "bid" : "ask";
+      const marketSymbol = toPacificaMarketSymbol(trade.symbol) ?? trade.symbol;
+      const stillOpen = positions.some(
+        (p) => p.symbol === marketSymbol && p.side === positionSide && p.entryPrice,
+      );
+
+      if (stillOpen) {
+        continue;
+      }
+
+      const { closeReason, exitPrice } = resolveDetectedClose(trade);
+      const realizedPnl = calculateUnrealizedPnl({
+        side: trade.side,
+        entryPrice: trade.entryPrice,
+        currentPrice: exitPrice,
+        quantity: trade.quantity,
+      });
+
+      try {
+        await dependencies.repository.closeOpenTrade({
+          tradeId: trade.tradeId,
+          exitPrice,
+          realizedPnl,
+          closeReason,
+          closedAtIso,
+        });
+        await dependencies.repository.appendOperationalEvent({
+          operatorAccountId: snapshot.operatorAccountId,
+          eventType: "order_execution",
+          severity: "info",
+          title: "Trade closed by exchange",
+          message: `${trade.symbol} ${trade.side} position was closed on Pacifica (${closeReason}). Estimated exit: ${exitPrice.toFixed(4)}.`,
+          payloadJson: {
+            tradeId: trade.tradeId,
+            symbol: trade.symbol,
+            side: trade.side,
+            closeReason,
+            exitPrice,
+            realizedPnl,
+            detectedAtIso: closedAtIso,
+          },
+        });
+        logger.info("worker.trade_closed_by_exchange", {
+          operatorAccountId: snapshot.operatorAccountId,
+          walletAddress: lease.walletAddress,
+          tradeId: trade.tradeId,
+          symbol: trade.symbol,
+          side: trade.side,
+          closeReason,
+          exitPrice,
+          realizedPnl,
+        });
+      } catch (persistError) {
+        logger.error("worker.reconciliation_close_persistence_error", {
+          operatorAccountId: snapshot.operatorAccountId,
+          walletAddress: lease.walletAddress,
+          tradeId: trade.tradeId,
+          errorMessage:
+            persistError instanceof Error
+              ? persistError.message
+              : String(persistError),
         });
       }
     }
@@ -1211,6 +1365,8 @@ export function createOperationalWorker(
             return;
           }
         }
+
+        await reconcileOpenTradesWithExchange(lease, snapshot, tickAt);
 
         const shouldRunSignalEvaluation = shouldEvaluateSignals(
           snapshot.lastSignalEvaluationAt,

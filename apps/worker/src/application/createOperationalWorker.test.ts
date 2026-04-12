@@ -7,6 +7,7 @@ import {
   extractPacificaErrorMessage,
   formatProtectedPrice,
   resolveAutomaticClose,
+  resolveDetectedClose,
   shouldEvaluateSignals,
 } from "./createOperationalWorker";
 
@@ -130,6 +131,74 @@ describe("createOperationalWorker pure rules", () => {
     expect(shortProtection.entryPrice).toBeCloseTo(84.01);
     expect(shortProtection.stopLossPrice).toBeCloseTo(84.14);
     expect(shortProtection.takeProfitPrice).toBeCloseTo(83.74);
+  });
+
+  it("infere o motivo de fechamento pela posição do preço em relação ao TP/SL", () => {
+    // long tocou stop loss
+    expect(
+      resolveDetectedClose({
+        side: "long",
+        stopLossPrice: 95,
+        takeProfitPrice: 115,
+        currentPrice: 94,
+        closeReasonPending: null,
+      }),
+    ).toEqual({ closeReason: "stop_loss", exitPrice: 95 });
+
+    // long tocou take profit
+    expect(
+      resolveDetectedClose({
+        side: "long",
+        stopLossPrice: 85,
+        takeProfitPrice: 115,
+        currentPrice: 116,
+        closeReasonPending: null,
+      }),
+    ).toEqual({ closeReason: "take_profit", exitPrice: 115 });
+
+    // short tocou stop loss
+    expect(
+      resolveDetectedClose({
+        side: "short",
+        stopLossPrice: 105,
+        takeProfitPrice: 85,
+        currentPrice: 106,
+        closeReasonPending: null,
+      }),
+    ).toEqual({ closeReason: "stop_loss", exitPrice: 105 });
+
+    // short tocou take profit
+    expect(
+      resolveDetectedClose({
+        side: "short",
+        stopLossPrice: 110,
+        takeProfitPrice: 85,
+        currentPrice: 84,
+        closeReasonPending: null,
+      }),
+    ).toEqual({ closeReason: "take_profit", exitPrice: 85 });
+
+    // manual close pendente prevalece sobre price heuristic
+    expect(
+      resolveDetectedClose({
+        side: "long",
+        stopLossPrice: 95,
+        takeProfitPrice: 115,
+        currentPrice: 94,
+        closeReasonPending: "manual",
+      }),
+    ).toEqual({ closeReason: "manual", exitPrice: 94 });
+
+    // preço ambíguo (entre SL e TP) — fallback system
+    expect(
+      resolveDetectedClose({
+        side: "long",
+        stopLossPrice: 85,
+        takeProfitPrice: 115,
+        currentPrice: 100,
+        closeReasonPending: null,
+      }),
+    ).toEqual({ closeReason: "system", exitPrice: 100 });
   });
 
   it("extrai a mensagem mais útil do payload Pacifica com fallback estável", () => {
