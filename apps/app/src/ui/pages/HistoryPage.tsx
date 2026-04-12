@@ -9,7 +9,6 @@ import { useOperationalPageSession } from "../../features/account/use-operationa
 import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
-import { LoadingPanel } from "../components/LoadingPanel";
 import { PaginationControls } from "../components/PaginationControls";
 
 const HISTORY_PER_PAGE = 12;
@@ -130,6 +129,43 @@ export function HistoryPage() {
     }
   }
 
+  if (historySession.status === "loading") {
+    return (
+      <div className="page-stack">
+        <section className="topbar">
+          <div>
+            <p className="page-card__eyebrow">{t("pageHistoryTitle")}</p>
+            <h2>{t("historyTopbarTitle")}</h2>
+            <p className="subtle">{t("historyTopbarDescription")}</p>
+          </div>
+        </section>
+        <div className="history-screen-grid">
+          <section className="panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="sk-stack" style={{ marginTop: 8 }}>
+                  <div className="sk-line sk-line--sm sk-w-full" />
+                  <div className="sk-line sk-line--xs sk-w-60" />
+                </div>
+              ))}
+            </div>
+          </section>
+          <aside className="panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-60" />
+              <div className="sk-line sk-line--sm sk-w-full" />
+              <div className="sk-line sk-line--sm sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-70" />
+            </div>
+          </aside>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-stack">
       <section className="topbar">
@@ -140,19 +176,11 @@ export function HistoryPage() {
         </div>
       </section>
 
-      {historySession.status === "loading" ||
-      historySession.status === "error" ? (
-        historySession.status === "loading" ? (
-          <LoadingPanel
-            title={t("runtimeStatusLoading")}
-            message={historySession.message}
-          />
-        ) : (
-          <section className="page-card status-banner status-banner--danger">
-            <strong>{t("runtimeStatusError")}</strong>
-            <p>{historySession.message}</p>
-          </section>
-        )
+      {historySession.status === "error" ? (
+        <section className="page-card status-banner status-banner--danger">
+          <strong>{t("runtimeStatusError")}</strong>
+          <p>{historySession.message}</p>
+        </section>
       ) : null}
 
       {shouldShowRuntimeErrorBanner ? (

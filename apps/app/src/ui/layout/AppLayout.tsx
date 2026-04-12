@@ -3,7 +3,6 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import logoUrl from "../../shared/assets/logo.svg";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
-import { LoadingPanel } from "../components/LoadingPanel";
 import { getNavigationItems } from "./navigation";
 
 function NavigationLinks() {
@@ -72,9 +71,37 @@ export function AppLayout() {
 
   if (!isReady) {
     return (
-      <main className="shell-loading">
-        <LoadingPanel compact title="Loading interface" />
-      </main>
+      <div className="shell-skeleton">
+        <div className="shell-skeleton__sidebar">
+          <div className="sk-stack">
+            <div className="sk-line sk-line--md sk-w-50" />
+            <div className="sk-line sk-line--sm sk-w-70" />
+          </div>
+          <div className="sk-stack" style={{ marginTop: 16 }}>
+            <div className="sk-line sk-line--sm sk-w-60" />
+            <div className="sk-line sk-line--sm sk-w-50" />
+            <div className="sk-line sk-line--sm sk-w-55" />
+          </div>
+        </div>
+        <div className="shell-skeleton__content">
+          <div className="sk-stack sk-stack--lg">
+            <div className="sk-line sk-line--xs sk-w-25" />
+            <div className="sk-line sk-line--lg sk-w-50" />
+            <div className="sk-line sk-line--sm sk-w-70" />
+          </div>
+          <div className="metric-grid">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <article key={i} className="stat-panel">
+                <div className="sk-stack">
+                  <div className="sk-line sk-line--xs sk-w-40" />
+                  <div className="sk-line sk-line--xl sk-w-60" />
+                  <div className="sk-line sk-line--xs sk-w-50" />
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
     );
   }
 

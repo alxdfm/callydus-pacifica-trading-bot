@@ -11,7 +11,6 @@ import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runt
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
-import { LoadingPanel } from "../components/LoadingPanel";
 import { PaginationControls } from "../components/PaginationControls";
 
 const TRADES_PER_PAGE = 5;
@@ -219,6 +218,43 @@ export function TradesPage() {
     setClosingTradeId(null);
   }
 
+  if (tradesSession.status === "loading") {
+    return (
+      <div className="page-stack">
+        <section className="topbar">
+          <div>
+            <p className="page-card__eyebrow">{t("pageTradesTitle")}</p>
+            <h2>{t("tradesTopbarTitle")}</h2>
+            <p className="subtle">{t("tradesTopbarDescription")}</p>
+          </div>
+        </section>
+        <div className="trade-screen-grid">
+          <section className="panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="sk-stack" style={{ marginTop: 8 }}>
+                  <div className="sk-line sk-line--sm sk-w-full" />
+                  <div className="sk-line sk-line--sm sk-w-70" />
+                </div>
+              ))}
+            </div>
+          </section>
+          <aside className="panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-60" />
+              <div className="sk-line sk-line--sm sk-w-full" />
+              <div className="sk-line sk-line--sm sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-70" />
+            </div>
+          </aside>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-stack">
       <ConfirmationModal
@@ -259,19 +295,11 @@ export function TradesPage() {
         </div>
       </section>
 
-      {tradesSession.status === "loading" ||
-      tradesSession.status === "error" ? (
-        tradesSession.status === "loading" ? (
-          <LoadingPanel
-            title={t("runtimeStatusLoading")}
-            message={tradesSession.message}
-          />
-        ) : (
-          <section className="page-card status-banner status-banner--danger">
-            <strong>{t("runtimeStatusError")}</strong>
-            <p>{tradesSession.message}</p>
-          </section>
-        )
+      {tradesSession.status === "error" ? (
+        <section className="page-card status-banner status-banner--danger">
+          <strong>{t("runtimeStatusError")}</strong>
+          <p>{tradesSession.message}</p>
+        </section>
       ) : null}
 
       {shouldShowRuntimeErrorBanner ? (

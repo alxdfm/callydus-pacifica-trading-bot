@@ -13,7 +13,6 @@ import {
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
-import { LoadingPanel } from "../components/LoadingPanel";
 
 export function DashboardPage() {
   const location = useLocation();
@@ -239,6 +238,59 @@ export function DashboardPage() {
     });
   }
 
+  if (dashboardSession.status === "loading") {
+    return (
+      <div className="page-stack dashboard-page">
+        <section className="topbar">
+          <div>
+            <p className="page-card__eyebrow">{t("pageDashboardTitle")}</p>
+            <h2>{t("dashboardTopbarTitle")}</h2>
+            <p className="subtle">{t("dashboardTopbarDescription")}</p>
+          </div>
+        </section>
+        <div className="metric-grid">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <article key={i} className="stat-panel">
+              <div className="sk-stack">
+                <div className="sk-line sk-line--xs sk-w-40" />
+                <div className="sk-line sk-line--xl sk-w-60" />
+                <div className="sk-line sk-line--xs sk-w-50" />
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="dashboard-grid">
+          <section className="panel hero-panel-wide">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-full" />
+              <div className="sk-line sk-line--sm sk-w-70" />
+            </div>
+          </section>
+          <section className="panel trades-panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-full" />
+              <div className="sk-line sk-line--sm sk-w-70" />
+              <div className="sk-line sk-line--sm sk-w-60" />
+            </div>
+          </section>
+          <section className="panel recent-panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-full" />
+              <div className="sk-line sk-line--sm sk-w-70" />
+              <div className="sk-line sk-line--sm sk-w-60" />
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-stack dashboard-page">
       <ConfirmationModal
@@ -292,19 +344,11 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {dashboardSession.status === "loading" ||
-      dashboardSession.status === "error" ? (
-        dashboardSession.status === "loading" ? (
-          <LoadingPanel
-            title={t("runtimeStatusLoading")}
-            message={dashboardSession.message}
-          />
-        ) : (
-          <section className="page-card status-banner status-banner--danger">
-            <strong>{t("runtimeStatusError")}</strong>
-            <p>{dashboardSession.message}</p>
-          </section>
-        )
+      {dashboardSession.status === "error" ? (
+        <section className="page-card status-banner status-banner--danger">
+          <strong>{t("runtimeStatusError")}</strong>
+          <p>{dashboardSession.message}</p>
+        </section>
       ) : null}
 
       {shouldShowRuntimeErrorBanner ? (

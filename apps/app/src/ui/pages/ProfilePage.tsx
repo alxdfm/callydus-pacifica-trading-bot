@@ -9,7 +9,6 @@ import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEn
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
-import { LoadingPanel } from "../components/LoadingPanel";
 
 function formatRelativeValidation(value: string | null, fallback: string) {
   if (!value) {
@@ -164,6 +163,48 @@ export function ProfilePage() {
       setIsEndingSession(false);
       navigate("/onboarding", { replace: true });
     }
+  }
+
+  if (profileSession.status === "loading") {
+    return (
+      <div className="page-stack">
+        <section className="topbar">
+          <div>
+            <p className="page-card__eyebrow">{t("navProfile")}</p>
+            <h2>{t("profileTopbarTitle")}</h2>
+            <p className="subtle">{t("profileTopbarDescription")}</p>
+          </div>
+        </section>
+        <div className="dashboard-grid profile-grid">
+          <section className="panel hero-panel-wide">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-full" />
+              <div className="sk-line sk-line--sm sk-w-70" />
+              <div
+                className="sk-line sk-line--md sk-w-full"
+                style={{ marginTop: 8 }}
+              />
+              <div className="sk-line sk-line--md sk-w-full" />
+            </div>
+          </section>
+          <section className="panel trades-panel">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-30" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-full" />
+              <div className="sk-line sk-line--sm sk-w-70" />
+              <div
+                className="sk-line sk-line--md sk-w-full"
+                style={{ marginTop: 8 }}
+              />
+              <div className="sk-line sk-line--md sk-w-full" />
+            </div>
+          </section>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -369,19 +410,11 @@ export function ProfilePage() {
         </div>
       </section>
 
-      {profileSession.status === "loading" ||
-      profileSession.status === "error" ? (
-        profileSession.status === "loading" ? (
-          <LoadingPanel
-            title={t("runtimeStatusLoading")}
-            message={profileSession.message}
-          />
-        ) : (
-          <section className="page-card status-banner status-banner--danger">
-            <strong>{t("runtimeStatusError")}</strong>
-            <p>{profileSession.message}</p>
-          </section>
-        )
+      {profileSession.status === "error" ? (
+        <section className="page-card status-banner status-banner--danger">
+          <strong>{t("runtimeStatusError")}</strong>
+          <p>{profileSession.message}</p>
+        </section>
       ) : null}
 
       <section className="dashboard-grid profile-grid">

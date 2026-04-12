@@ -19,7 +19,6 @@ import {
   previewYourStrategyBacktestViaBackend,
   saveYourStrategyViaBackend,
 } from "../../features/presets/your-strategy-backend";
-import { LoadingPanel } from "../components/LoadingPanel";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
@@ -683,21 +682,49 @@ export function StrategiesPage() {
     }
   }
 
+  if (presetsSession.status === "loading") {
+    return (
+      <div className="page-stack">
+        <section className="page-card">
+          <header className="page-card__header">
+            <div className="sk-stack sk-stack--lg">
+              <div className="sk-line sk-line--xs sk-w-25" />
+              <div className="sk-line sk-line--md sk-w-50" />
+              <div className="sk-line sk-line--sm sk-w-70" />
+            </div>
+          </header>
+        </section>
+        <section className="backtest-preview strategy-builder-panel">
+          <div className="sk-stack sk-stack--lg">
+            <div className="sk-line sk-line--xs sk-w-30" />
+            <div className="sk-line sk-line--md sk-w-50" />
+            <div className="sk-line sk-line--sm sk-w-full" />
+            <div className="sk-line sk-line--sm sk-w-70" />
+          </div>
+          <div className="sk-stack" style={{ marginTop: 24 }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="sk-stack sk-stack--lg"
+                style={{ marginBottom: 16 }}
+              >
+                <div className="sk-line sk-line--sm sk-w-40" />
+                <div className="sk-line sk-line--md sk-w-full" />
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="page-stack">
-      {presetsSession.status === "loading" ||
-      presetsSession.status === "error" ? (
-        presetsSession.status === "loading" ? (
-          <LoadingPanel
-            title={t("runtimeStatusLoading")}
-            message={presetsSession.message}
-          />
-        ) : (
-          <section className="page-card status-banner status-banner--danger">
-            <strong>{t("runtimeStatusError")}</strong>
-            <p>{presetsSession.message}</p>
-          </section>
-        )
+      {presetsSession.status === "error" ? (
+        <section className="page-card status-banner status-banner--danger">
+          <strong>{t("runtimeStatusError")}</strong>
+          <p>{presetsSession.message}</p>
+        </section>
       ) : null}
 
       <section className="page-card">
