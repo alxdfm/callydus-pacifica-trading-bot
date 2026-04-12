@@ -1,5 +1,7 @@
 # Modelagem de Dados e Fluxos do Produto
 
+> **Status:** documento fundacional — reflete o design inicial do MVP. Entidades, fluxos e decisões foram evoluídos desde então. Consulte `RELATIONAL_DATA_MODEL.pt-BR.md` para o schema atual completo. Este documento mantém seu valor como referência histórica de decisões de modelagem e como base dos fluxos principais ainda válidos.
+
 ## Objetivo
 Definir a modelagem inicial de dados do MVP e os fluxos principais entre interface, API, worker, banco e Pacifica, para servir de base aos contratos, ao schema do banco e à implementação.
 
@@ -249,6 +251,68 @@ Campos iniciais sugeridos:
 - `createdAt`
 - `resolvedAt`
 
+### 11. YourStrategy
+Estratégia customizada criada do zero pelo usuário. Máximo de 1 por conta.
+
+Responsabilidades:
+- persistir o estado do builder em edição (`draftJson`)
+- materializar o `PresetTechnicalContract` quando o draft for válido
+- registrar blockers de ativação e fingerprint do último backtest
+
+Campos principais:
+- `id`
+- `operatorAccountId` (unique — 1 por conta)
+- `draftJson` (estado atual do builder)
+- `materializedContractJson` (contrato gerado do draft válido)
+- `activationBlockersJson`
+- `lastBacktestPreviewedAt`
+- `lastBacktestPreviewFingerprint`
+
+### 12. SignalDecision
+Decisão de sinal gerada pelo motor de estratégia com risk plan completo.
+
+Responsabilidades:
+- registrar que um sinal foi identificado (long/short)
+- guardar entry, stop loss e take profit calculados
+- servir de base para a tentativa de execução de ordem
+- garantir deduplicação via `signalFingerprint`
+
+Campos principais:
+- `id`, `operatorAccountId`, `presetActivationId`
+- `signalFingerprint` (deduplicação)
+- `decisionStatus`
+- `signalSide`, `symbol`, `timeframe`
+- `entryReferencePrice`, `stopLossPrice`, `takeProfitPrice`, `riskDistance`
+- `candleOpenTime`, `candleCloseTime`
+
+### 13. OrderExecutionAttempt
+Tentativa de envio de ordem para a Pacifica.
+
+Responsabilidades:
+- registrar o request e response de cada tentativa de ordem
+- rastrear status de execução e falhas com retryable flag
+- linkar ao `SignalDecision` que originou a ordem
+
+Campos principais:
+- `id`, `operatorAccountId`, `presetActivationId`, `signalDecisionId`
+- `executionStatus`, `clientOrderId` (unique)
+- `requestedNotionalUsd`, `requestedQuantity`
+- `entryReferencePrice`, `slippagePercent`
+- `requestJson`, `responseJson`, `failureReason`
+- `pacificaOrderId`
+
+### 14. SymbolOperationalConfig
+Configuração operacional por símbolo por conta, gravada pelo readiness check.
+
+Responsabilidades:
+- persistir leverage real da conta para o símbolo
+- permitir ao worker calcular sizing sem chamar a Pacifica a cada ciclo
+- ser atualizada a cada `StartBotReadinessCheck` bem-sucedido
+
+Campos principais:
+- `id`, `operatorAccountId`, `symbol`
+- `leverage`
+
 ## Relacionamentos Principais
 
 ```mermaid
@@ -473,6 +537,99 @@ sequenceDiagram
     end
 ```
 
+### 6. Avaliação de Sinal e Execução de Ordem (Worker Loop)
+Objetivo:
+- identificar gatilhos de entrada com base nos indicadores configurados
+- executar ordem na Pacifica com proteção de TP/SL
+
+```mermaid
+sequenceDiagram
+    participant W as Worker
+    participant DB as PostgreSQL
+    participant P as Pacifica
+
+    loop a cada 60s (analysis interval)
+        W->>DB: ler candles do cache (MarketCandleSnapshot)
+        W->>W: calcular indicadores (EMA, RSI, ATR, SMA, Volume)
+        W->>W: avaliar TriggerGroups (AND/OR)
+        W->>W: gerar sinal long | short | none
+        alt sinal identificado
+            W->>W: calcular risk plan (entry, SL, TP via ATR)
+            W->>DB: persistir SignalDecision (com fingerprint)
+        end
+    end
+
+    loop a cada 5s (scan interval)
+        W->>DB: ler SignalDecisions com status pending
+        alt há signal pendente
+            W->>DB: ler SymbolOperationalConfig (leverage)
+            W->>W: decriptar chave privada do agent wallet
+            W->>P: createMarketOrder (com builderCode: callydus, TP/SL)
+            P-->>W: order response
+            W->>DB: persistir OrderExecutionAttempt (request + response)
+            W->>DB: criar OpenTrade
+            W->>DB: atualizar SignalDecision status
+        end
+    end
+
+    loop a cada tick
+        W->>DB: atualizar currentPrice e unrealizedPnl dos OpenTrades
+        W->>W: verificar cruzamento de TP/SL
+        alt TP ou SL atingido
+            W->>P: confirmar fechamento (ou aceitar fechamento já ocorrido)
+            W->>DB: remover OpenTrade
+            W->>DB: inserir ClosedTrade (closeReason: take_profit | stop_loss)
+        end
+    end
+```
+
+### 7. Start Bot Readiness Check (gate obrigatório antes do Resume)
+Objetivo:
+- verificar que o preset ativo consegue operar com o saldo, sizing e configuração real da conta naquele momento
+- bloquear o bot se a operação não for viável
+- persistir `SymbolOperationalConfig` com a leverage real da conta
+
+Este gate é executado pelo `ResumeBot` como condição obrigatória antes de qualquer transição para `bot_status = active`.
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as App
+    participant API as API
+    participant DB as PostgreSQL
+    participant P as Pacifica
+
+    U->>A: clica Resume Bot
+    A->>API: POST /bot/resume
+    API->>DB: validar conta, credencial, preset ativo
+
+    API->>P: getAccountInfo (saldo disponível)
+    API->>P: getAccountSettings (leverage real, margin mode)
+    API->>P: getMarketInfo (min_order_size, max_leverage)
+    API->>P: getMarketPrices (preço atual do símbolo)
+
+    API->>API: calcular sizing (notional vs min_order_size)
+    API->>API: validar margem suficiente
+
+    alt sizing abaixo do mínimo
+        API-->>A: erro readiness_failed (trade_below_market_minimum)
+        Note over A: bot NÃO entra em active
+    else leverage acima do máximo
+        API-->>A: erro readiness_failed (leverage_above_market_maximum)
+    else margem insuficiente
+        API-->>A: erro readiness_failed (insufficient_margin)
+    else tudo ok
+        API->>P: criar limit order (probe a 80% do preço)
+        API->>P: cancelar limit order (probe)
+        API->>DB: persistir SymbolOperationalConfig (leverage real)
+        API->>DB: criar RESUME_BOT command
+        API-->>A: readiness ok, bot resuming
+        Note over API,DB: worker processa o comando e atualiza BotRuntimeState
+    end
+```
+
+Códigos de erro mapeados: `wallet_not_connected`, `account_not_ready`, `active_preset_not_found`, `market_not_found`, `account_settings_unavailable`, `leverage_not_configured`, `invalid_leverage_configuration`, `trade_below_market_minimum`, `trade_above_market_maximum`, `leverage_above_market_maximum`, `insufficient_margin`, `signature_rejected`, `agent_wallet_unauthorized_for_account`, `provider_unavailable`, `rate_limited`, `internal_error`
+
 ## Read Models Recomendados
 
 ### DashboardViewModel
@@ -576,22 +733,19 @@ Para `ClosedTrade`:
 - `ClosedTrade.closedByCommandId` deve ser preenchido quando o encerramento for manual
 - comandos destrutivos devem ser idempotentes
 
-## Decisões que Ainda Precisam Ser Fechadas
-- forma exata do contrato da credencial Pacifica
-- como `position size` será representado no contrato final do MVP
-- se `AccountBalanceSnapshot` guardará histórico completo ou só último estado
-- qual granularidade de auditoria será exigida para comandos
-- como tratar trades externos à plataforma quando aparecerem na conta
-- política de retenção para histórico e alerts
+## Decisões Fechadas (atualizado em 2026-04-11)
 
-## Recomendação de Próximo Passo
-A próxima entrega técnica deveria ser a definição dos contratos compartilhados em `packages/contracts`, derivando deste documento:
-- `OnboardingContract`
-- `DashboardContract`
-- `PresetCatalogContract`
-- `PresetActivationContract`
-- `CurrentTradesContract`
-- `HistoryContract`
-- `BotCommandContract`
+| Decisão | Resolução |
+|---------|-----------|
+| forma do contrato da credencial Pacifica | `PacificaCredential` com `lifecycleStatus` (pending/active/replaced), `operationallyVerified`, probe JSON |
+| como `position size` é representado | `PositionSizeType` (fixed_amount / balance_percent) + `positionSizeValue` em `PresetActivation` |
+| `AccountBalanceSnapshot` histórico ou last state | histórico completo com snapshots periódicos |
+| granularidade de auditoria de comandos | `BotCommand` completo + `OperationalEvent` imutável por evento |
+| trades externos à plataforma | `isPlatformTrade` flag nos trades; reconciliação pendente (FM-017) |
+| contrato da estratégia custom | `YourStrategy` com `draftJson` + `materializedContractJson` (PresetTechnicalContract) |
+| readiness check antes do resume | `StartBotReadinessCheck` como gate obrigatório no `ResumeBot` (BG-029 concluído) |
+| contratos compartilhados | implementados em `packages/contracts` com Zod schemas |
 
-Sem essa camada, `app`, `api` e `worker` tendem a divergir cedo no vocabulário e no shape dos dados.
+## Decisões Ainda em Aberto
+- política de retenção de `MarketCandleSnapshot` e `MarketRefreshLog` em produção (BG-027 — dropped para pós-hackathon)
+- reconciliação periódica de `OpenTrade` contra `getPositions()` da Pacifica como source of truth (FM-017 — pendente)
