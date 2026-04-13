@@ -466,7 +466,7 @@ export function DashboardPage() {
               {currentTrades.map((trade) => (
                 <article
                   key={trade.id}
-                  className={`trade-card ${trade.tradeStatus === "open" ? "live" : ""}`}
+                  className={`trade-card ${trade.tradeStatus === "open" ? "live" : ""} dashboard-trade-card`}
                 >
                   <div>
                     <div className="trade-head">
@@ -551,9 +551,7 @@ export function DashboardPage() {
                       {Object.entries(
                         state.presets.yourStrategy.draft.indicators,
                       ).map(([key, indicator]) => (
-                        <li key={key}>
-                          {describeIndicator(key, indicator)}
-                        </li>
+                        <li key={key}>{describeIndicator(key, indicator)}</li>
                       ))}
                     </ul>
                   </div>
@@ -581,8 +579,8 @@ export function DashboardPage() {
                     <strong>{t("yourStrategySummaryRiskTitle")}</strong>
                     <ul className="summary-list">
                       <li>
-                        {state.presets.yourStrategy.draft.risk.stopLoss
-                          .mode === "static"
+                        {state.presets.yourStrategy.draft.risk.stopLoss.mode ===
+                        "static"
                           ? t("yourStrategyRiskStepStaticSummary").replace(
                               "{value}",
                               String(
@@ -594,15 +592,15 @@ export function DashboardPage() {
                               .replace(
                                 "{period}",
                                 String(
-                                  state.presets.yourStrategy.draft.risk
-                                    .stopLoss.period,
+                                  state.presets.yourStrategy.draft.risk.stopLoss
+                                    .period,
                                 ),
                               )
                               .replace(
                                 "{multiplier}",
                                 String(
-                                  state.presets.yourStrategy.draft.risk
-                                    .stopLoss.multiplier,
+                                  state.presets.yourStrategy.draft.risk.stopLoss
+                                    .multiplier,
                                 ),
                               )}
                       </li>
@@ -612,8 +610,8 @@ export function DashboardPage() {
                           ? t("yourStrategyTakeProfitSummary").replace(
                               "{multiple}",
                               String(
-                                state.presets.yourStrategy.draft.risk
-                                  .takeProfit.multiple,
+                                state.presets.yourStrategy.draft.risk.takeProfit
+                                  .multiple,
                               ),
                             )
                           : t("yourStrategyTakeProfitSummaryOff")}
