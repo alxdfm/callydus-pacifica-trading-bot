@@ -1,3 +1,5 @@
+import { redirectToProfileOnUnauthorized } from "../auth/unauthorized-redirect";
+
 type SafeParseResult<T> =
   | { success: true; data: T }
   | { success: false };
@@ -7,6 +9,10 @@ type SafeParseSchema<T> = {
 };
 
 export async function parseJsonResponse(response: Response): Promise<unknown> {
+  if (response.status === 401) {
+    redirectToProfileOnUnauthorized();
+  }
+
   const rawBody = await response.text();
 
   if (!rawBody.trim()) {

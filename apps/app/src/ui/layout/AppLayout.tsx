@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoUrl from "../../shared/assets/logo.svg";
+import { registerUnauthorizedNavigator } from "../../features/auth/unauthorized-redirect";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { getNavigationItems } from "./navigation";
@@ -30,7 +31,12 @@ function NavigationLinks() {
 
 export function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { setLocale, setRuntimeState, state } = useAppState();
+
+  useEffect(() => {
+    registerUnauthorizedNavigator(navigate);
+  }, [navigate]);
   const { isReady, t } = useI18n();
   const isOnboardingRoute = location.pathname === "/onboarding";
   const hasActiveStrategy = Boolean(state.presets.activePreset);
