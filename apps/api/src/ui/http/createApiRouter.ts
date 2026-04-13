@@ -40,6 +40,10 @@ import { createRefreshMarketDataRoute } from "./routes/createRefreshMarketDataRo
 import type { RefreshMarketDataHandler } from "./routes/createRefreshMarketDataRoute";
 import { createSaveYourStrategyRoute } from "./routes/createSaveYourStrategyRoute";
 import type { SaveYourStrategyHandler } from "./routes/createSaveYourStrategyRoute";
+import { createRequestAuthNonceRoute } from "./routes/createRequestAuthNonceRoute";
+import type { RequestAuthNonceHandler } from "./routes/createRequestAuthNonceRoute";
+import { createVerifyAuthSignatureRoute } from "./routes/createVerifyAuthSignatureRoute";
+import type { VerifyAuthSignatureHandler } from "./routes/createVerifyAuthSignatureRoute";
 
 type ApiRouterDependencies = {
   activateYourStrategy: ActivateYourStrategyHandler;
@@ -60,8 +64,10 @@ type ApiRouterDependencies = {
   getOperationalTradesByWallet: GetOperationalTradesByWalletHandler;
   getOperationalHistoryByWallet: GetOperationalHistoryByWalletHandler;
   refreshMarketData: RefreshMarketDataHandler;
+  requestAuthNonce: RequestAuthNonceHandler;
   saveYourStrategy: SaveYourStrategyHandler;
   validatePacificaCredentials: ValidatePacificaCredentialsHandler;
+  verifyAuthSignature: VerifyAuthSignatureHandler;
   verifyPacificaOperational: VerifyPacificaOperationalHandler;
 };
 
@@ -115,8 +121,12 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     refreshMarketData: createRefreshMarketDataRoute(
       dependencies.refreshMarketData,
     ),
+    requestAuthNonce: createRequestAuthNonceRoute(dependencies.requestAuthNonce),
     saveYourStrategy: createSaveYourStrategyRoute(
       dependencies.saveYourStrategy,
+    ),
+    verifyAuthSignature: createVerifyAuthSignatureRoute(
+      dependencies.verifyAuthSignature,
     ),
     verifyPacificaOperational: createVerifyPacificaOperationalRoute(
       dependencies.verifyPacificaOperational,

@@ -96,6 +96,14 @@ import { PersistedMarketDataGateway } from "./infrastructure/market-data/Persist
 import { PrismaMarketDataSnapshotRepository } from "./infrastructure/persistence/PrismaMarketDataSnapshotRepository";
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
+import { BearerTokenService } from "./infrastructure/auth/BearerTokenService";
+import { PrismaAuthRepository } from "./infrastructure/persistence/PrismaAuthRepository";
+import {
+  createRequestAuthNonce,
+} from "./application/request-auth-nonce/RequestAuthNonce";
+import {
+  createVerifyAuthSignature,
+} from "./application/verify-auth-signature/VerifyAuthSignature";
 
 const supportedStrategyMarketSymbols = new Set(["BTC", "ETH", "SOL"]);
 
@@ -517,6 +525,11 @@ export function createApiModule(input: CreateApiModuleInput) {
       defaultCredentialRepository,
   });
 
+  const authRepository = new PrismaAuthRepository(input.prisma);
+  const tokenService = new BearerTokenService(environment.credentialEncryptionKey);
+  const requestAuthNonce = createRequestAuthNonce({ authRepository });
+  const verifyAuthSignature = createVerifyAuthSignature({ authRepository, tokenService });
+
   const validatePacificaCredentials = createValidatePacificaCredentials({
     credentialRepository,
     credentialEncryption,
@@ -534,6 +547,7 @@ export function createApiModule(input: CreateApiModuleInput) {
   return {
     name: "pacifica-api",
     environment,
+    tokenService,
     router: createApiRouter({
       approvePacificaBuilder,
       activateYourStrategy,
@@ -541,6 +555,7 @@ export function createApiModule(input: CreateApiModuleInput) {
       getMarketCandles,
       getMarketPrices,
       refreshMarketData,
+      requestAuthNonce,
       previewYourStrategyBacktest,
       heartbeatRuntime,
       lookupOperationalAccountByWallet,
@@ -554,6 +569,7 @@ export function createApiModule(input: CreateApiModuleInput) {
       getOperationalPresetsByWallet,
       getOperationalTradesByWallet,
       getOperationalHistoryByWallet,
+      verifyAuthSignature,
       verifyPacificaOperational,
       validatePacificaCredentials,
     }),

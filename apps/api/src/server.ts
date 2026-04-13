@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { timingSafeEqual } from "node:crypto";
+import { extractAuthContext } from "./infrastructure/auth/extractAuthContext";
 import { PrismaClient } from "@prisma/client";
 import { createApiModule } from "./createApiModule";
 import {
@@ -85,6 +86,27 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     }
     response.writeHead(204);
     response.end();
+    return;
+  }
+
+  if (request.method === "GET" && request.url?.startsWith("/api/auth/nonce")) {
+    const url = new URL(request.url, `http://localhost`);
+    const walletAddress = url.searchParams.get("wallet") ?? "";
+    const result = await api.router.requestAuthNonce({ walletAddress });
+    response.writeHead(result.status === "ok" ? 200 : 400, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (request.method === "POST" && request.url === "/api/auth/verify") {
+    const body = await readJsonBody(request);
+    const result = await api.router.verifyAuthSignature({ body });
+    response.writeHead(result.status === "ok" ? 200 : 401, {
+      "Content-Type": "application/json",
+    });
+    response.end(JSON.stringify(result));
     return;
   }
 

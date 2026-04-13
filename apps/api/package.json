@@ -11,12 +11,14 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@noble/curves": "^1.4.2",
     "@pacifica/credential-crypto": "workspace:*",
     "@pacifica/contracts": "workspace:*",
     "@pacifica/pacifica-market-data": "workspace:*",
     "@pacifica/pacifica-trading": "workspace:*",
     "@pacifica/preset-engine": "workspace:*",
-    "@prisma/client": "^6.19.2"
+    "@prisma/client": "^6.19.2",
+    "bs58": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
