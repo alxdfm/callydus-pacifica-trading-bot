@@ -1845,11 +1845,17 @@ a {
 .your-strategy-side-header--long {
   background: linear-gradient(180deg, rgba(16, 45, 35, 0.72), rgba(20, 34, 56, 0.64));
   border-color: rgba(39, 192, 125, 0.24);
+  h4 {
+    margin: 0;
+  }
 }
 
 .your-strategy-side-header--short {
   background: linear-gradient(180deg, rgba(60, 29, 33, 0.72), rgba(20, 34, 56, 0.64));
   border-color: rgba(229, 107, 97, 0.24);
+  h4 {
+    margin: 0;
+  }
 }
 
 .position-size-field {
