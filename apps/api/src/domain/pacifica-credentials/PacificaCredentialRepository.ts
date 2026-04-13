@@ -44,7 +44,7 @@ export interface PacificaCredentialRepository {
   findOperationalAccountByWalletAddress(
     walletAddress: string,
   ): Promise<OperationalAccountLookup | null>;
-  findById(credentialId: string): Promise<PacificaCredential | null>;
+  findById(credentialId: string, ownerWalletAddress?: string): Promise<PacificaCredential | null>;
   save(credential: SavePacificaCredentialInput): Promise<PacificaCredential>;
   updateOperationalVerification(
     input: UpdateOperationalVerificationInput,

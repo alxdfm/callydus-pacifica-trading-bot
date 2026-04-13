@@ -140,6 +140,7 @@ export function createStartBotReadinessCheck(
 
     const credential = await dependencies.credentialRepository.findById(
       session.credentialId,
+      input.walletAddress,
     );
 
     if (!credential) {

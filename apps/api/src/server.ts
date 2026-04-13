@@ -462,9 +462,11 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/onboarding/credentials/verify-operational"
   ) {
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const body = await readJsonBody(request);
     const result = await api.router.verifyPacificaOperational({
-      body: body as never,
+      body: { ...(body as Record<string, unknown>), walletAddress } as never,
     });
 
     response.writeHead(result.canProceed ? 200 : 400, {

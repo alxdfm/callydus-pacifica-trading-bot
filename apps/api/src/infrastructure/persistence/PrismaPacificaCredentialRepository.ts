@@ -311,10 +311,13 @@ export class PrismaPacificaCredentialRepository
     });
   }
 
-  async findById(credentialId: string): Promise<PacificaCredential | null> {
-    const credential = await this.prisma.pacificaCredential.findUnique({
+  async findById(credentialId: string, ownerWalletAddress?: string): Promise<PacificaCredential | null> {
+    const credential = await this.prisma.pacificaCredential.findFirst({
       where: {
         id: credentialId,
+        ...(ownerWalletAddress
+          ? { operatorAccount: { walletAddress: ownerWalletAddress } }
+          : {}),
       },
       include: {
         operatorAccount: true,

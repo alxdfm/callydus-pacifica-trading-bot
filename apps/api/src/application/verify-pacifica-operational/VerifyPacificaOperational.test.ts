@@ -11,7 +11,7 @@ describe("createVerifyPacificaOperational", () => {
       operationalVerification: {} as never,
     });
 
-    await expect(verify({ credentialId: "credential-1" })).resolves.toEqual({
+    await expect(verify({ credentialId: "credential-1", walletAddress: "wallet-1" })).resolves.toEqual({
       ok: false,
       operationalVerificationStatus: "error",
       errorCode: "credential_not_found",
@@ -30,7 +30,7 @@ describe("createVerifyPacificaOperational", () => {
       operationalVerification: {} as never,
     });
 
-    await expect(verify({ credentialId: "credential-1" })).resolves.toEqual({
+    await expect(verify({ credentialId: "credential-1", walletAddress: "wallet-1" })).resolves.toEqual({
       ok: false,
       operationalVerificationStatus: "blocked",
       errorCode: "credential_not_valid",
@@ -60,7 +60,7 @@ describe("createVerifyPacificaOperational", () => {
       } as never,
     });
 
-    const result = await verify({ credentialId: "credential-1" });
+    const result = await verify({ credentialId: "credential-1", walletAddress: "wallet-1" });
 
     expect(result).toEqual({
       ok: true,
@@ -100,7 +100,7 @@ describe("createVerifyPacificaOperational", () => {
       } as never,
     });
 
-    const result = await verify({ credentialId: "credential-1" });
+    const result = await verify({ credentialId: "credential-1", walletAddress: "wallet-1" });
 
     expect(result).toEqual({
       ok: false,
@@ -145,7 +145,7 @@ describe("createVerifyPacificaOperational", () => {
       } as never,
     });
 
-    const result = await verify({ credentialId: "credential-1" });
+    const result = await verify({ credentialId: "credential-1", walletAddress: "wallet-1" });
 
     expect(result.ok).toBe(true);
     expect(updateOperationalVerification).toHaveBeenCalledWith({

@@ -22,10 +22,14 @@ export function createVerifyPacificaOperationalRoute(
   return async function handleVerifyPacificaOperational(
     request: VerifyPacificaOperationalHttpRequest,
   ): Promise<PacificaOperationalVerificationResponse> {
-    const body = pacificaOperationalVerificationSubmissionSchema.parse(
+    const { credentialId } = pacificaOperationalVerificationSubmissionSchema.parse(
       request.body,
     );
-    const result = await handler(body);
+    const walletAddress =
+      typeof (request.body as Record<string, unknown>).walletAddress === "string"
+        ? ((request.body as Record<string, unknown>).walletAddress as string)
+        : "";
+    const result = await handler({ credentialId, walletAddress });
     return pacificaOperationalVerificationResponseSchema.parse(
       mapResultToContract(result),
     );

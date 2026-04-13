@@ -5,6 +5,7 @@ import type { PacificaOperationalVerificationPort } from "../../domain/pacifica-
 
 export type VerifyPacificaOperationalInput = {
   credentialId: string;
+  walletAddress: string;
 };
 
 export type VerifyPacificaOperationalOutput =
@@ -58,6 +59,7 @@ export function createVerifyPacificaOperational(
   ): Promise<VerifyPacificaOperationalOutput> {
     const credential = await dependencies.credentialRepository.findById(
       input.credentialId,
+      input.walletAddress,
     );
 
     if (!credential) {
