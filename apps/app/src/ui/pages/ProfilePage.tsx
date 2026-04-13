@@ -175,7 +175,7 @@ export function ProfilePage() {
             <p className="subtle">{t("profileTopbarDescription")}</p>
           </div>
         </section>
-        <div className="dashboard-grid profile-grid">
+        <div className="profile-grid">
           <section className="panel hero-panel-wide">
             <div className="sk-stack sk-stack--lg">
               <div className="sk-line sk-line--xs sk-w-30" />
@@ -417,7 +417,7 @@ export function ProfilePage() {
         </section>
       ) : null}
 
-      <section className="dashboard-grid profile-grid">
+      <section className="profile-grid">
         <section className="panel hero-panel-wide">
           <div className="row-between align-start">
             <div>

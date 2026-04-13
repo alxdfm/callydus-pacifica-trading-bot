@@ -36,7 +36,8 @@ export function AppLayout() {
   const hasActiveStrategy = Boolean(state.presets.activePreset);
   const isStrategyRunning =
     hasActiveStrategy &&
-    (state.runtime.botStatus === "active" || state.runtime.botStatus === "syncing");
+    (state.runtime.botStatus === "active" ||
+      state.runtime.botStatus === "syncing");
   const strategyIndicatorVariant = isStrategyRunning
     ? "running"
     : hasActiveStrategy
@@ -132,7 +133,7 @@ export function AppLayout() {
         </nav>
         <div className="nav-card shell-side-card">
           <div className="row-between align-start">
-            <span className={`badge badge--${strategyBadgeTone}`}>
+            <span className={`badge badge--${strategyBadgeTone} no-margin`}>
               {strategyStatusLabel}
             </span>
             <span
@@ -143,9 +144,7 @@ export function AppLayout() {
             </span>
           </div>
           <strong>
-            {hasActiveStrategy
-              ? "YOUR Strategy"
-              : t("presetSidebarTitle")}
+            {hasActiveStrategy ? "YOUR Strategy" : t("presetSidebarTitle")}
           </strong>
           <p>
             {hasActiveStrategy
@@ -173,7 +172,9 @@ export function AppLayout() {
       <div className="shell-body">
         {state.runtime.actionToast ? (
           <div className="shell-toast-host" role="status" aria-live="polite">
-            <section className={`shell-toast shell-toast--${state.runtime.actionToast.tone}`}>
+            <section
+              className={`shell-toast shell-toast--${state.runtime.actionToast.tone}`}
+            >
               <p>{state.runtime.actionToast.message}</p>
               <button
                 aria-label={t("modalCloseAction")}
