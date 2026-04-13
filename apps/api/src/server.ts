@@ -344,9 +344,10 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/account/session"
   ) {
-    const body = await readJsonBody(request);
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const result = await api.router.getOperationalSessionByWallet({
-      body: body as never,
+      body: { walletAddress } as never,
     });
 
     response.writeHead(result.status === "error" ? 500 : 200, {
@@ -360,9 +361,10 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/account/profile"
   ) {
-    const body = await readJsonBody(request);
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const result = await api.router.getOperationalProfileByWallet({
-      body: body as never,
+      body: { walletAddress } as never,
     });
 
     response.writeHead(result.status === "error" ? 500 : 200, {
@@ -376,9 +378,10 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/account/dashboard"
   ) {
-    const body = await readJsonBody(request);
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const result = await api.router.getOperationalDashboardByWallet({
-      body: body as never,
+      body: { walletAddress } as never,
     });
 
     response.writeHead(result.status === "error" ? 500 : 200, {
@@ -392,9 +395,10 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/account/presets"
   ) {
-    const body = await readJsonBody(request);
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const result = await api.router.getOperationalPresetsByWallet({
-      body: body as never,
+      body: { walletAddress } as never,
     });
 
     response.writeHead(result.status === "error" ? 500 : 200, {
@@ -408,9 +412,10 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/account/trades"
   ) {
-    const body = await readJsonBody(request);
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const result = await api.router.getOperationalTradesByWallet({
-      body: body as never,
+      body: { walletAddress } as never,
     });
 
     response.writeHead(result.status === "error" ? 500 : 200, {
@@ -424,9 +429,10 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/account/history"
   ) {
-    const body = await readJsonBody(request);
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const result = await api.router.getOperationalHistoryByWallet({
-      body: body as never,
+      body: { walletAddress } as never,
     });
 
     response.writeHead(result.status === "error" ? 500 : 200, {
