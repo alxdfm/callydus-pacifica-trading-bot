@@ -490,6 +490,13 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   });
 }
 
+process.once("unhandledRejection", (reason) => {
+  const rawMessage = reason instanceof Error ? reason.message : String(reason);
+  process.stderr.write(
+    `api.unhandled_rejection: ${sanitizeForLog(rawMessage)}\n`,
+  );
+});
+
 function requireAuth(
   request: IncomingMessage,
   response: ServerResponse,
@@ -535,4 +542,9 @@ async function readJsonBody(
   }
 
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+}
+
+function sanitizeForLog(message: string): string {
+  // Redact strings that look like private keys (base58, 64+ chars)
+  return message.replace(/[1-9A-HJ-NP-Za-km-z]{64,}/g, "[REDACTED]");
 }

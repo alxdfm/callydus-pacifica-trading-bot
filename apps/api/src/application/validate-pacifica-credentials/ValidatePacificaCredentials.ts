@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import type { CredentialEncryptionPort } from "../../domain/pacifica-credentials/CredentialEncryptionPort";
 import type { OperationalEventRepository } from "../../domain/operational-events/OperationalEventRepository";
 import type { PacificaCredentialRepository } from "../../domain/pacifica-credentials/PacificaCredentialRepository";
@@ -105,7 +106,10 @@ export function createValidatePacificaCredentials(
           encryptedPrivateKeyRef: latestCredential.encryptedPrivateKeyRef,
         });
 
-      if (decryptedPrivateKey.trim() === input.agentWalletPrivateKey.trim()) {
+      const a = Buffer.from(decryptedPrivateKey.trim());
+      const b = Buffer.from(input.agentWalletPrivateKey.trim());
+      const isReuse = a.length === b.length && timingSafeEqual(a, b);
+      if (isReuse) {
         await dependencies.eventRepository?.appendOperationalEvent({
           walletAddress: input.mainWalletPublicKey,
           eventType: "credential_validation",
