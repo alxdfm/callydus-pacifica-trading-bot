@@ -496,7 +496,7 @@ Para o MVP, a opção 1 é suficiente.
 
 ---
 
-### Fase 5 — Ownership check no `findById` de credencial
+### Fase 5 — Ownership check no `findById` de credencial ✅ CONCLUÍDA (2026-04-13)
 **Vulnerabilidades:** A4 | **Complexidade:** P | **Independente**
 
 Arquivo: `apps/api/src/infrastructure/persistence/PrismaPacificaCredentialRepository.ts`
