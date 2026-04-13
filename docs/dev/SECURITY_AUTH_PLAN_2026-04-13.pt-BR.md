@@ -433,7 +433,7 @@ Todos os arquivos `backend-*.ts` em `apps/app/src/features/` devem receber `auth
 
 ---
 
-### Fase 3 — Auth obrigatória nas rotas de ação
+### Fase 3 — Auth obrigatória nas rotas de ação ✅ CONCLUÍDA (2026-04-13)
 **Vulnerabilidades:** C1 | **Complexidade:** M | **Depende da Fase 2**
 
 Rotas afetadas: `pause`, `resume`, `activate strategy`, `save strategy`, `close trade`.
