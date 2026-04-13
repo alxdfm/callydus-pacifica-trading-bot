@@ -463,7 +463,7 @@ Se nenhuma linha afetada: retornar `{ status: "error", code: "trade_not_found" }
 
 ---
 
-### Fase 4 — Auth obrigatória nas rotas de leitura
+### Fase 4 — Auth obrigatória nas rotas de leitura ✅ CONCLUÍDA (2026-04-13)
 **Vulnerabilidades:** C2 | **Complexidade:** M | **Depende da Fase 2**
 
 **Rotas protegidas** (Bearer token obrigatório):
