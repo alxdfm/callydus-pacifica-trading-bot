@@ -4,3 +4,4 @@
 /deprecated
 **/dist
 .claude
+.sst

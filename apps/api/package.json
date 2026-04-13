@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@noble/curves": "^1.4.2",
-    "@pacifica/credential-crypto": "workspace:*",
     "@pacifica/contracts": "workspace:*",
+    "@pacifica/credential-crypto": "workspace:*",
     "@pacifica/pacifica-market-data": "workspace:*",
     "@pacifica/pacifica-trading": "workspace:*",
     "@pacifica/preset-engine": "workspace:*",
@@ -21,6 +21,7 @@
     "bs58": "^6.0.0"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.161",
     "@types/node": "^24.5.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3"

@@ -9,7 +9,10 @@
     "db:logs": "docker compose logs -f postgres",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sst:dev": "sst dev",
+    "sst:deploy": "sst deploy",
+    "sst:deploy:prod": "sst deploy --stage production"
   },
   "devDependencies": {
     "dotenv-cli": "^8.0.0",
