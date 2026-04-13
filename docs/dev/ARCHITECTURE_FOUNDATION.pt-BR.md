@@ -8,8 +8,8 @@ A stack base do produto fica definida assim:
 
 - `app`: `React + Vite`
 - `api`: `AWS Lambda`
-- `worker`: container sempre ativo (`Fargate`, `App Runner` ou VPS pequeno)
-- `db`: `PostgreSQL`
+- `worker`: processo contínuo privado hospedado na `Oracle Cloud Always Free`
+- `db`: `Supabase Postgres`
 
 ## Princípios
 - separar claramente aplicação operacional e execução do bot
@@ -114,20 +114,21 @@ Motivo:
 
 ### Worker
 - `Node.js` em container sempre ativo
-- deploy alvo: `Fargate`, `App Runner` ou VPS pequeno
+- deploy alvo no MVP: `Oracle Cloud Always Free`
 
 Motivo:
 - o bot precisa de processo contínuo para polling, reconciliação e execução operacional
 - isso não se encaixa bem no ciclo curto de invocação do Lambda
 
 ### Persistência
-- `PostgreSQL`
+- `Supabase Postgres`
 - `Prisma` como ORM e migrations
 
 Motivo:
 - há estado operacional, auditoria básica, preset ativo, credenciais e histórico
 - o produto exige leitura cronológica, consistência e evolução de consultas
-- PostgreSQL oferece uma base mais previsível para esse tipo de domínio
+- `PostgreSQL` oferece uma base mais previsível para esse tipo de domínio
+- `Supabase` reduz atrito inicial de infraestrutura para a API serverless no MVP
 
 ### Testes
 - `Vitest` para unit e integração leve
