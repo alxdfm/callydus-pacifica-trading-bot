@@ -85,9 +85,10 @@ process.once("uncaughtException", (error) => {
 });
 
 process.once("unhandledRejection", (reason) => {
+  const rawMessage = reason instanceof Error ? reason.message : String(reason);
   console.error("worker.unhandled_rejection", {
     workerId: environment.workerId,
-    reason: reason instanceof Error ? reason.message : String(reason),
+    reason: sanitizeForLog(rawMessage),
   });
   void shutdown("unhandledRejection");
 });
@@ -103,6 +104,11 @@ async function shutdown(reason: string) {
   await worker.stop();
   await prisma.$disconnect();
   process.exit(0);
+}
+
+function sanitizeForLog(message: string): string {
+  // Redact strings that look like private keys (base58, 64+ chars)
+  return message.replace(/[1-9A-HJ-NP-Za-km-z]{64,}/g, "[REDACTED]");
 }
 
 function numberFromEnv(rawValue: string | undefined, fallback: number) {

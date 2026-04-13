@@ -35,6 +35,15 @@ function requireNonEmpty(value: string | undefined, name: string): string {
 export function createWorkerEnvironment(
   input: Partial<WorkerEnvironment> = {},
 ): WorkerEnvironment {
+  const signalTraceEnabled = input.signalTraceEnabled ?? false;
+
+  if (process.env.NODE_ENV === "production" && signalTraceEnabled) {
+    console.warn(
+      "[SECURITY] WORKER_SIGNAL_TRACE_ENABLED=true in production. " +
+        "Sensitive financial data (positions, candles, indicators) will be logged.",
+    );
+  }
+
   return {
     workerId: input.workerId ?? `worker-local-${process.pid}`,
     pacificaRestBaseUrl:
@@ -46,7 +55,7 @@ export function createWorkerEnvironment(
     credentialEncryptionKeyId: input.credentialEncryptionKeyId ?? "local-dev-v1",
     marketOrderSlippagePercent: input.marketOrderSlippagePercent ?? "0.5",
     takerFeePercent: input.takerFeePercent ?? 0.05,
-    signalTraceEnabled: input.signalTraceEnabled ?? false,
+    signalTraceEnabled,
     scanIntervalMs: input.scanIntervalMs ?? 5_000,
     heartbeatIntervalMs: input.heartbeatIntervalMs ?? 15_000,
     analysisIntervalMs: input.analysisIntervalMs ?? 60_000,
