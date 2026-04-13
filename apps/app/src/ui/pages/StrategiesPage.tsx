@@ -82,8 +82,14 @@ export function StrategiesPage() {
     ],
   );
 
+  const readPresetsSnapshot = useCallback(
+    (req: Parameters<typeof readOperationalPresetsViaBackend>[0]) =>
+      readOperationalPresetsViaBackend(req, token),
+    [token],
+  );
+
   const presetsSession = useOperationalPageSession({
-    readSnapshot: (req) => readOperationalPresetsViaBackend(req, token),
+    readSnapshot: readPresetsSnapshot,
     applySnapshot: applyPresetsSnapshot,
     requestKey: "presets",
     loadingMessage: t("runtimeStatusLoadingMessage"),
