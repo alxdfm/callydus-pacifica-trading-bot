@@ -130,9 +130,39 @@ Fase 2 (auth infra)      ──► nascer direto em createApiHttpHandler.ts (nã
 Fases 3, 4, 5, 6         ──► dependem da Fase 2
 ```
 
+### Validade das implementações após migração Lambda
+
+Referência: análise realizada em 2026-04-13 após conclusão das Fases 0 e 1.
+
+| Mudança implementada | Arquivo | Validade pós-Lambda |
+|---|---|---|
+| `requireNonEmpty()` nos factories | `createApiEnvironment.ts`, `createWorkerEnvironment.ts` | ✅ Intacto — agnóstico de runtime |
+| KDF HKDF com compatibilidade reversa | `packages/credential-crypto/src/index.ts` | ✅ Intacto — agnóstico de runtime |
+| Guard `process.exit(1)` de env vars | `apps/api/src/server.ts` | ⚠️ Mover para `createApiRuntime.ts` |
+| `applyCorsHeaders()` dinâmico | `apps/api/src/server.ts` | ⚠️ Substituído por config do API Gateway |
+| Proteção de `/api/internal/market/refresh` | `apps/api/src/server.ts` | ⚠️ Some com a rota (EventBridge assume) |
+
+**Ação obrigatória ao criar `createApiRuntime.ts`:**
+O guard de startup deve ser replicado nesse arquivo. Em Lambda, `createApiRuntime.ts` roda no cold start e é o lugar correto para abortar se as secrets estiverem ausentes — o `lambda/httpHandler.ts` é invocado por request e não deve conter esse guard.
+
+```typescript
+// apps/api/src/bootstrap/createApiRuntime.ts
+const REQUIRED_ENV_VARS = ["CREDENTIAL_ENCRYPTION_KEY", "PACIFICA_BUILDER_CODE"] as const;
+for (const key of REQUIRED_ENV_VARS) {
+  if (!process.env[key]?.trim()) {
+    throw new Error(`FATAL: environment variable ${key} is required but absent or empty`);
+  }
+}
+```
+
+Nota: em Lambda, `process.exit(1)` dentro de um handler não encerra o processo de forma confiável — usar `throw new Error(...)` no bootstrap garante que a função falhe no cold start com mensagem visível nos logs do CloudWatch.
+
+**CORS pós-Lambda:**
+Com API Gateway HTTP API, configurar CORS a nível de infra (CDK/console). O `createApiHttpHandler.ts` não precisa definir headers CORS — o API Gateway injeta automaticamente antes de devolver a resposta ao browser. Não replicar `applyCorsHeaders()` no handler Lambda.
+
 ---
 
-### Fase 0 — Secrets obrigatórias + KDF segura
+### Fase 0 — Secrets obrigatórias + KDF segura ✅ CONCLUÍDA (2026-04-13)
 **Vulnerabilidades:** A2, A3 | **Complexidade:** P | **Independente**
 
 #### 0.1 — Abort no startup se secrets ausentes
@@ -181,7 +211,7 @@ Ao fazer deploy, rotacionar `CREDENTIAL_ENCRYPTION_KEY_ID` para `v2` e re-encrip
 
 ---
 
-### Fase 1 — CORS dinâmico + proteção temporária da rota interna
+### Fase 1 — CORS dinâmico + proteção temporária da rota interna ✅ CONCLUÍDA (2026-04-13)
 **Vulnerabilidades:** A1, M3 | **Complexidade:** P | **Independente**
 
 #### 1.1 — CORS dinâmico com validação do Origin
