@@ -7,6 +7,7 @@ import { applyOperationalHistorySessionSnapshot } from "../../features/account/a
 import { readOperationalHistoryViaBackend } from "../../features/account/backend-operational-page-sessions";
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
+import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { PaginationControls } from "../components/PaginationControls";
@@ -23,6 +24,7 @@ export function HistoryPage() {
     state,
   } = useAppState();
   const { t } = useI18n();
+  const { token } = useAuth();
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(
     state.runtime.closedTrades[0]?.id ?? null,
   );
@@ -46,7 +48,7 @@ export function HistoryPage() {
     ],
   );
   const historySession = useOperationalPageSession({
-    readSnapshot: readOperationalHistoryViaBackend,
+    readSnapshot: (req) => readOperationalHistoryViaBackend(req, token),
     applySnapshot: applyHistorySnapshot,
     requestKey: "history",
     loadingMessage: t("runtimeStatusLoadingMessage"),

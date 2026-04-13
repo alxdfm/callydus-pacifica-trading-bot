@@ -187,7 +187,7 @@ export function useAgentWalletReplacementFlow() {
 
     const sessionSnapshot = await readOperationalProfileViaBackend({
       walletAddress,
-    });
+    }, token);
 
     if (sessionSnapshot.status === "found") {
       applyOperationalProfileSessionSnapshot(sessionSnapshot, {

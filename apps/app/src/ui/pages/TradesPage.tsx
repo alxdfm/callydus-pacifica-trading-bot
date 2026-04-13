@@ -55,7 +55,7 @@ export function TradesPage() {
     ],
   );
   const tradesSession = useOperationalPageSession({
-    readSnapshot: readOperationalTradesViaBackend,
+    readSnapshot: (req) => readOperationalTradesViaBackend(req, token),
     applySnapshot: applyTradesSnapshot,
     requestKey: "trades",
     loadingMessage: t("runtimeStatusLoadingMessage"),

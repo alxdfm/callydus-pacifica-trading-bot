@@ -4,6 +4,7 @@ import { applyOperationalDashboardSessionSnapshot } from "../../features/account
 import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { getDashboardRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
+import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { PaginationControls } from "../components/PaginationControls";
@@ -18,6 +19,7 @@ export function OperationsPage() {
     state,
   } = useAppState();
   const { t } = useI18n();
+  const { token } = useAuth();
   const applyDashboardSnapshot = useCallback(
     (snapshot: OperationalDashboardSessionFound) => {
       applyOperationalDashboardSessionSnapshot(snapshot, {
@@ -37,7 +39,7 @@ export function OperationsPage() {
     ],
   );
   const operationsSession = useOperationalPageSession({
-    readSnapshot: readOperationalDashboardViaBackend,
+    readSnapshot: (req) => readOperationalDashboardViaBackend(req, token),
     applySnapshot: applyDashboardSnapshot,
     requestKey: "operations",
     loadingMessage: t("runtimeStatusLoadingMessage"),

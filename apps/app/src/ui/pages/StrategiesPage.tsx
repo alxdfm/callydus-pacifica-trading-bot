@@ -83,7 +83,7 @@ export function StrategiesPage() {
   );
 
   const presetsSession = useOperationalPageSession({
-    readSnapshot: readOperationalPresetsViaBackend,
+    readSnapshot: (req) => readOperationalPresetsViaBackend(req, token),
     applySnapshot: applyPresetsSnapshot,
     requestKey: "presets",
     loadingMessage: t("runtimeStatusLoadingMessage"),

@@ -32,7 +32,7 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     signMessage,
     wallet,
   } = useWallet();
-  const { authenticate, clearAuth } = useAuth();
+  const { authenticate, clearAuth, token } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { lastErrorCode, selectedProviderName } = useSolanaWalletPort();
@@ -390,7 +390,7 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
       (state.onboarding.accountLookupStatus === "existing_account" ||
         state.onboarding.accountReady);
 
-    if (!canHydrateExistingAccount || !mainWalletPublicKey) {
+    if (!canHydrateExistingAccount || !mainWalletPublicKey || !token) {
       if (!connected || !mainWalletPublicKey) {
         hydratedSessionWalletRef.current = null;
         sessionHydrationInFlightWalletRef.current = null;
@@ -409,9 +409,10 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
 
     sessionHydrationInFlightWalletRef.current = mainWalletPublicKey;
 
-    void readAccountSessionViaBackend({
-      walletAddress: mainWalletPublicKey,
-    }).then((sessionSnapshot) => {
+    void readAccountSessionViaBackend(
+      { walletAddress: mainWalletPublicKey },
+      token,
+    ).then((sessionSnapshot) => {
       if (isCancelled) {
         return;
       }
@@ -443,6 +444,7 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   }, [
     connected,
     publicKey,
+    token,
     setBuilderApprovalState,
     setCredentialState,
     setOnboardingState,

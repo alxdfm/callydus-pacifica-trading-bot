@@ -154,7 +154,7 @@ export function DashboardPage() {
     ],
   );
   const dashboardSession = useOperationalPageSession({
-    readSnapshot: readOperationalDashboardViaBackend,
+    readSnapshot: (req) => readOperationalDashboardViaBackend(req, token),
     applySnapshot: applyDashboardSnapshot,
     requestKey: "dashboard",
     loadingMessage: t("runtimeStatusLoadingMessage"),

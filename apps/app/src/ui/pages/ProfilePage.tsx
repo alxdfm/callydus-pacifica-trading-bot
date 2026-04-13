@@ -6,6 +6,7 @@ import { readOperationalProfileViaBackend } from "../../features/account/backend
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { useAgentWalletReplacementFlow } from "../../features/profile/use-agent-wallet-replacement-flow";
 import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEnvironment";
+import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
@@ -92,6 +93,7 @@ export function ProfilePage() {
     state,
   } = useAppState();
   const { t } = useI18n();
+  const { token } = useAuth();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isAgentWalletModalOpen, setIsAgentWalletModalOpen] = useState(false);
   const [isEndingSession, setIsEndingSession] = useState(false);
@@ -115,7 +117,7 @@ export function ProfilePage() {
     ],
   );
   const profileSession = useOperationalPageSession({
-    readSnapshot: readOperationalProfileViaBackend,
+    readSnapshot: (req) => readOperationalProfileViaBackend(req, token),
     applySnapshot: applyProfileSnapshot,
     requestKey: "profile",
     loadingMessage: t("runtimeStatusLoadingMessage"),
