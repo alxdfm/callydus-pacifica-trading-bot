@@ -79,6 +79,9 @@ export function applyOperationalDashboardSessionSnapshot(
     events: snapshot.recentEvents,
     ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
   });
+  dependencies.setPresetState({
+    yourStrategy: snapshot.yourStrategy,
+  });
 }
 
 export function applyOperationalPresetsSessionSnapshot(

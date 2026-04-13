@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import type { OperationalDashboardSessionFound } from "@pacifica/contracts";
+import type {
+  OperationalDashboardSessionFound,
+  PresetIndicatorConfig,
+  PresetTriggerRule,
+} from "@pacifica/contracts";
 import { useLocation, useNavigate } from "react-router-dom";
 import { applyOperationalDashboardSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";
@@ -13,6 +17,29 @@ import {
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
+
+function describeIndicator(key: string, indicator: PresetIndicatorConfig) {
+  switch (indicator.type) {
+    case "volume":
+      return `${key}: Volume baseline`;
+    case "ema":
+      return indicator.source === "volume"
+        ? `${key}: EMA ${indicator.period} on volume`
+        : `${key}: EMA ${indicator.period}`;
+    case "sma":
+      return indicator.source === "volume"
+        ? `${key}: SMA ${indicator.period} on volume`
+        : `${key}: SMA ${indicator.period} on price`;
+    case "rsi":
+      return `${key}: RSI ${indicator.period}`;
+    case "atr":
+      return `${key}: ATR ${indicator.period}`;
+  }
+}
+
+function describeRule(rule: PresetTriggerRule) {
+  return `${rule.indicator} ${rule.operator} ${rule.ref ?? rule.value}`;
+}
 
 export function DashboardPage() {
   const location = useLocation();
@@ -497,18 +524,105 @@ export function DashboardPage() {
         </section>
 
         <section className="panel hero-panel-wide">
-          <div>
-            <p className="panel-label">{activePresetEyebrow}</p>
-            <h3>
-              {state.presets.activePreset
-                ? "YOUR Strategy"
-                : t("dashboardNoPresetTitle")}
-            </h3>
-            <p className="subtle">
-              {state.presets.activePreset
-                ? t("yourStrategyReviewSummary")
-                : t("dashboardNoPresetDescription")}
-            </p>
+          <div className="row-between align-start">
+            <div>
+              <p className="panel-label">{activePresetEyebrow}</p>
+              <h3>
+                {state.presets.activePreset
+                  ? "YOUR Strategy"
+                  : t("dashboardNoPresetTitle")}
+              </h3>
+              <p className="subtle">
+                {state.presets.activePreset
+                  ? t("yourStrategyReviewSummary")
+                  : t("dashboardNoPresetDescription")}
+              </p>
+            </div>
+            {state.presets.activePreset && state.presets.yourStrategy ? (
+              <div className="strategy-info-trigger">
+                <span className="strategy-info-btn">i</span>
+                <div className="strategy-info-popover">
+                  <p className="strategy-info-popover__title">
+                    {t("yourStrategySummaryEyebrow")}
+                  </p>
+                  <div className="strategy-info-popover__section">
+                    <strong>{t("yourStrategySummaryIndicatorsTitle")}</strong>
+                    <ul className="summary-list">
+                      {Object.entries(
+                        state.presets.yourStrategy.draft.indicators,
+                      ).map(([key, indicator]) => (
+                        <li key={key}>
+                          {describeIndicator(key, indicator)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="strategy-info-popover__section">
+                    <strong>{t("yourStrategySummaryLongTitle")}</strong>
+                    <ul className="summary-list">
+                      {state.presets.yourStrategy.draft.entry.long.trigger.rules.map(
+                        (rule, i) => (
+                          <li key={i}>{describeRule(rule)}</li>
+                        ),
+                      )}
+                    </ul>
+                  </div>
+                  <div className="strategy-info-popover__section">
+                    <strong>{t("yourStrategySummaryShortTitle")}</strong>
+                    <ul className="summary-list">
+                      {state.presets.yourStrategy.draft.entry.short.trigger.rules.map(
+                        (rule, i) => (
+                          <li key={i}>{describeRule(rule)}</li>
+                        ),
+                      )}
+                    </ul>
+                  </div>
+                  <div className="strategy-info-popover__section">
+                    <strong>{t("yourStrategySummaryRiskTitle")}</strong>
+                    <ul className="summary-list">
+                      <li>
+                        {state.presets.yourStrategy.draft.risk.stopLoss
+                          .mode === "static"
+                          ? t("yourStrategyRiskStepStaticSummary").replace(
+                              "{value}",
+                              String(
+                                state.presets.yourStrategy.draft.risk.stopLoss
+                                  .value,
+                              ),
+                            )
+                          : t("yourStrategyRiskStepAtrSummary")
+                              .replace(
+                                "{period}",
+                                String(
+                                  state.presets.yourStrategy.draft.risk
+                                    .stopLoss.period,
+                                ),
+                              )
+                              .replace(
+                                "{multiplier}",
+                                String(
+                                  state.presets.yourStrategy.draft.risk
+                                    .stopLoss.multiplier,
+                                ),
+                              )}
+                      </li>
+                      <li>{`${t("presetReviewPositionSizeLabel")}: ${state.presets.yourStrategy.draft.positionSizeValue}%`}</li>
+                      <li>
+                        {state.presets.yourStrategy.draft.risk.takeProfit
+                          ? t("yourStrategyTakeProfitSummary").replace(
+                              "{multiple}",
+                              String(
+                                state.presets.yourStrategy.draft.risk
+                                  .takeProfit.multiple,
+                              ),
+                            )
+                          : t("yourStrategyTakeProfitSummaryOff")}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
           <div className="row-between align-start">
             <span

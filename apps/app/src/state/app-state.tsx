@@ -33,6 +33,7 @@ import {
   type ClosedTrade,
   type SymbolOperationalConfig,
   symbolOperationalConfigSchema,
+  type YourStrategy,
 } from "@pacifica/contracts";
 import {
   createContext,
@@ -90,6 +91,7 @@ export type AppSessionState = {
   operational: OperationalVerificationState;
   presets: {
     activePreset: PresetActivation | null;
+    yourStrategy: YourStrategy | null;
     selectedPresetDefinitionId: string | null;
     draftEditableConfig: PresetEditableConfig | null;
     activationStatus: "idle" | "loading" | "success" | "error";
@@ -170,6 +172,7 @@ export function createInitialAppSessionState(): AppSessionState {
     },
     presets: {
       activePreset: null,
+      yourStrategy: null,
       selectedPresetDefinitionId: null,
       draftEditableConfig: null,
       activationStatus: "idle",
@@ -223,6 +226,7 @@ export function parseStoredState(rawValue: string | null): AppSessionState {
         ...baseState.presets,
         ...parsed.presets,
         activePreset: presetActivationValue(parsed.presets?.activePreset),
+        yourStrategy: null,
         draftEditableConfig: presetEditableConfigValue(parsed.presets?.draftEditableConfig),
         activationStatus: presetActivationUiStatus(parsed.presets?.activationStatus),
       },
