@@ -15,6 +15,13 @@ export type WorkerEnvironment = {
   maxBackoffMs: number;
 };
 
+function requireNonEmpty(value: string | undefined, name: string): string {
+  if (!value?.trim()) {
+    throw new Error(`FATAL: ${name} is required and cannot be empty`);
+  }
+  return value;
+}
+
 /**
  * Creates the runtime configuration for the operational worker loop.
  *
@@ -34,8 +41,8 @@ export function createWorkerEnvironment(
       input.pacificaRestBaseUrl ?? "https://api.pacifica.fi",
     pacificaSignatureExpiryWindowMs:
       input.pacificaSignatureExpiryWindowMs ?? 30000,
-    pacificaBuilderCode: input.pacificaBuilderCode ?? "",
-    credentialEncryptionKey: input.credentialEncryptionKey ?? "",
+    pacificaBuilderCode: requireNonEmpty(input.pacificaBuilderCode, "pacificaBuilderCode"),
+    credentialEncryptionKey: requireNonEmpty(input.credentialEncryptionKey, "credentialEncryptionKey"),
     credentialEncryptionKeyId: input.credentialEncryptionKeyId ?? "local-dev-v1",
     marketOrderSlippagePercent: input.marketOrderSlippagePercent ?? "0.5",
     takerFeePercent: input.takerFeePercent ?? 0.05,

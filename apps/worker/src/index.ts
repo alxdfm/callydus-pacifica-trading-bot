@@ -6,6 +6,14 @@ import { createWorkerEnvironment } from "./infrastructure/config/createWorkerEnv
 import { PersistedWorkerMarketDataGateway } from "./infrastructure/market-data/PersistedWorkerMarketDataGateway";
 import { PrismaWorkerRuntimeRepository } from "./infrastructure/persistence/PrismaWorkerRuntimeRepository";
 
+const REQUIRED_ENV_VARS = ["CREDENTIAL_ENCRYPTION_KEY", "PACIFICA_BUILDER_CODE"] as const;
+for (const key of REQUIRED_ENV_VARS) {
+  if (!process.env[key]?.trim()) {
+    process.stderr.write(`FATAL: environment variable ${key} is required but absent or empty\n`);
+    process.exit(1);
+  }
+}
+
 const prisma = new PrismaClient();
 const environment = createWorkerEnvironment({
   ...(process.env.WORKER_ID ? { workerId: process.env.WORKER_ID } : {}),

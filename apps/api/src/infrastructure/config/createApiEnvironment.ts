@@ -18,7 +18,7 @@ export function createApiEnvironment(
     pacificaRestBaseUrl: input.pacificaRestBaseUrl ?? "https://api.pacifica.fi",
     pacificaSignatureExpiryWindowMs:
       input.pacificaSignatureExpiryWindowMs ?? 30000,
-    pacificaBuilderCode: input.pacificaBuilderCode ?? "",
+    pacificaBuilderCode: requireNonEmpty(input.pacificaBuilderCode, "pacificaBuilderCode"),
     pacificaBuilderMaxFeeRate: input.pacificaBuilderMaxFeeRate ?? "",
     pacificaOperationalProbeSymbol:
       input.pacificaOperationalProbeSymbol ?? "BTC",
@@ -27,7 +27,14 @@ export function createApiEnvironment(
     pacificaOperationalProbeTargetNotionalUsd:
       input.pacificaOperationalProbeTargetNotionalUsd ?? "11",
     pacificaOperationalProbeTif: input.pacificaOperationalProbeTif ?? "ALO",
-    credentialEncryptionKey: input.credentialEncryptionKey ?? "",
+    credentialEncryptionKey: requireNonEmpty(input.credentialEncryptionKey, "credentialEncryptionKey"),
     credentialEncryptionKeyId: input.credentialEncryptionKeyId ?? "local-dev-v1",
   };
+}
+
+function requireNonEmpty(value: string | undefined, name: string): string {
+  if (!value?.trim()) {
+    throw new Error(`FATAL: ${name} is required and cannot be empty`);
+  }
+  return value;
 }

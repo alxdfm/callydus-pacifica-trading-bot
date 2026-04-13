@@ -1,11 +1,26 @@
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { createApiModule } from "./createApiModule";
 import {
   readLocalMarketDataRefreshSchedulerConfigFromEnv,
   startLocalMarketDataRefreshScheduler,
 } from "./infrastructure/market-data/startLocalMarketDataRefreshScheduler";
+
+const REQUIRED_ENV_VARS = [
+  "CREDENTIAL_ENCRYPTION_KEY",
+  "PACIFICA_BUILDER_CODE",
+  "INTERNAL_API_SECRET",
+] as const;
+for (const key of REQUIRED_ENV_VARS) {
+  if (!process.env[key]?.trim()) {
+    process.stderr.write(`FATAL: environment variable ${key} is required but absent or empty\n`);
+    process.exit(1);
+  }
+}
+
+const internalApiSecret = process.env.INTERNAL_API_SECRET!;
 
 const prisma = new PrismaClient();
 const api = createApiModule({
@@ -15,7 +30,7 @@ const api = createApiModule({
     pacificaSignatureExpiryWindowMs: Number(
       process.env.PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS ?? "30000",
     ),
-    pacificaBuilderCode: process.env.PACIFICA_BUILDER_CODE ?? "",
+    pacificaBuilderCode: process.env.PACIFICA_BUILDER_CODE!,
     pacificaBuilderMaxFeeRate:
       process.env.PACIFICA_BUILDER_MAX_FEE_RATE ?? "",
     pacificaOperationalProbeSymbol:
@@ -30,7 +45,7 @@ const api = createApiModule({
         | "GTC"
         | "IOC"
         | undefined) ?? "ALO",
-    credentialEncryptionKey: process.env.CREDENTIAL_ENCRYPTION_KEY ?? "",
+    credentialEncryptionKey: process.env.CREDENTIAL_ENCRYPTION_KEY!,
     credentialEncryptionKeyId:
       process.env.CREDENTIAL_ENCRYPTION_KEY_ID ?? "local-dev-v1",
   },
@@ -59,9 +74,15 @@ const allowedOrigin =
   "http://localhost:5173";
 
 const server = createServer(async (request: IncomingMessage, response: ServerResponse) => {
-  applyCorsHeaders(response);
+  const requestOrigin = request.headers["origin"];
+  applyCorsHeaders(requestOrigin, response);
 
   if (request.method === "OPTIONS") {
+    if (requestOrigin !== allowedOrigin) {
+      response.writeHead(403);
+      response.end();
+      return;
+    }
     response.writeHead(204);
     response.end();
     return;
@@ -248,6 +269,21 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/internal/market/refresh"
   ) {
+    const providedSecret = request.headers["x-internal-secret"];
+    const secretBuffer = Buffer.from(internalApiSecret);
+    const providedBuffer = Buffer.from(
+      typeof providedSecret === "string" ? providedSecret : "",
+    );
+    const authorized =
+      providedBuffer.length === secretBuffer.length &&
+      timingSafeEqual(providedBuffer, secretBuffer);
+
+    if (!authorized) {
+      response.writeHead(403, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({ message: "Forbidden" }));
+      return;
+    }
+
     const body = await readJsonBody(request);
     const result = await api.router.refreshMarketData({
       body: body as never,
@@ -418,11 +454,13 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   });
 }
 
-function applyCorsHeaders(response: ServerResponse) {
-  response.setHeader("Access-Control-Allow-Origin", allowedOrigin);
-  response.setHeader("Vary", "Origin");
-  response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+function applyCorsHeaders(requestOrigin: string | undefined, response: ServerResponse) {
+  if (requestOrigin === allowedOrigin) {
+    response.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+    response.setHeader("Vary", "Origin");
+    response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  }
 }
 
 async function readJsonBody(
