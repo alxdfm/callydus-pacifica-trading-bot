@@ -572,3 +572,16 @@ model MarketRefreshLog {
   @@index([refreshType, startedAt(sort: Desc)])
   @@index([refreshKey, startedAt(sort: Desc)])
 }
+
+model AuthNonce {
+  id            String    @id @default(uuid()) @db.Uuid
+  walletAddress String
+  nonce         String    @unique
+  expiresAt     DateTime  @db.Timestamptz(6)
+  usedAt        DateTime? @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([walletAddress])
+  @@index([nonce])
+  @@index([expiresAt])
+}
