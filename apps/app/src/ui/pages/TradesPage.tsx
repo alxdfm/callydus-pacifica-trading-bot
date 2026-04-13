@@ -8,6 +8,7 @@ import { readOperationalTradesViaBackend } from "../../features/account/backend-
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { closeTradeViaBackend } from "../../features/runtime/backend-bot-commands";
 import { getSecondaryRuntimeSyncPresentation } from "../../features/runtime/runtime-sync-presentation";
+import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
@@ -25,6 +26,7 @@ export function TradesPage() {
     state,
   } = useAppState();
   const { t } = useI18n();
+  const { token } = useAuth();
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(
     state.runtime.currentTrades[0]?.id ?? null,
   );
@@ -187,7 +189,7 @@ export function TradesPage() {
     const commandResult = await closeTradeViaBackend({
       walletAddress,
       tradeId,
-    });
+    }, token);
 
     if (commandResult.status === "error") {
       setRuntimeState({

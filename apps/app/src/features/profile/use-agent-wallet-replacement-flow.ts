@@ -9,6 +9,7 @@ import { readOperationalProfileViaBackend } from "../account/backend-operational
 import { validateAgentWalletViaBackend } from "../onboarding/backend-credential-validation";
 import { verifyAgentWalletOperationallyViaBackend } from "../onboarding/backend-operational-verification";
 import { pauseBotViaBackend } from "../runtime/backend-bot-commands";
+import { useAuth } from "../auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
@@ -52,6 +53,7 @@ function maskSecret(secret: string | null | undefined): string {
 
 export function useAgentWalletReplacementFlow() {
   const { t } = useI18n();
+  const { token } = useAuth();
   const {
     setBuilderApprovalState,
     setCredentialState,
@@ -167,7 +169,7 @@ export function useAgentWalletReplacementFlow() {
       lastRuntimeMessage: null,
     });
 
-    const commandResult = await pauseBotViaBackend({ walletAddress });
+    const commandResult = await pauseBotViaBackend({ walletAddress }, token);
 
     if (commandResult.status === "error") {
       setRuntimeState({

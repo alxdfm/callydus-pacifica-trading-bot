@@ -14,6 +14,7 @@ import {
   pauseBotViaBackend,
   resumeBotViaBackend,
 } from "../../features/runtime/backend-bot-commands";
+import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 import { ConfirmationModal } from "../components/ConfirmationModal";
@@ -55,6 +56,7 @@ export function DashboardPage() {
     state,
   } = useAppState();
   const { t } = useI18n();
+  const { token } = useAuth();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const botStatusPresentation = getBotStatusPresentation(
     state.runtime.botStatus,
@@ -229,8 +231,8 @@ export function DashboardPage() {
     });
 
     const commandResult = isEnteringOperationalState
-      ? await resumeBotViaBackend({ walletAddress })
-      : await pauseBotViaBackend({ walletAddress });
+      ? await resumeBotViaBackend({ walletAddress }, token)
+      : await pauseBotViaBackend({ walletAddress }, token);
 
     if (commandResult.status === "error") {
       setRuntimeState({

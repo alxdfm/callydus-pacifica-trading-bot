@@ -19,6 +19,7 @@ import {
   previewYourStrategyBacktestViaBackend,
   saveYourStrategyViaBackend,
 } from "../../features/presets/your-strategy-backend";
+import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
 
@@ -26,6 +27,7 @@ const allowedStrategySymbols = presetSymbolSchema.options;
 
 export function StrategiesPage() {
   const { t } = useI18n();
+  const { token } = useAuth();
   const {
     canAccessProduct,
     setBuilderApprovalState,
@@ -236,7 +238,7 @@ export function StrategiesPage() {
     const result = await saveYourStrategyViaBackend({
       walletAddress: state.wallet.mainWalletPublicKey,
       draft: yourStrategyDraft,
-    });
+    }, token);
 
     if (result.status === "success") {
       hydrateYourStrategyEditor(result.strategy);
@@ -654,7 +656,7 @@ export function StrategiesPage() {
     const request = activateYourStrategyRequestSchema.parse({
       walletAddress: state.wallet.mainWalletPublicKey,
     });
-    const result = await activateYourStrategyViaBackend(request);
+    const result = await activateYourStrategyViaBackend(request, token);
 
     if (result.status === "success") {
       setPresetState({
