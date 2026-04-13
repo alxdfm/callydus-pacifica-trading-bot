@@ -11,6 +11,7 @@ const apiBaseUrl =
 
 export async function readAccountSessionViaBackend(
   rawRequest: OperationalSessionSnapshotRequest,
+  authToken?: string | null,
 ): Promise<OperationalSessionSnapshotResponse> {
   const request = operationalSessionSnapshotRequestSchema.parse(rawRequest);
 
@@ -19,6 +20,7 @@ export async function readAccountSessionViaBackend(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
       body: JSON.stringify(request),
     });

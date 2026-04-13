@@ -15,6 +15,7 @@ const defaultApiBaseUrl = "http://localhost:3003";
 
 export async function saveYourStrategyViaBackend(
   request: SaveYourStrategyRequest,
+  authToken?: string | null,
 ): Promise<SaveYourStrategyResponse> {
   try {
     const response = await fetch(
@@ -23,6 +24,7 @@ export async function saveYourStrategyViaBackend(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify(request),
       },
@@ -69,6 +71,7 @@ export async function previewYourStrategyBacktestViaBackend(
 
 export async function activateYourStrategyViaBackend(
   request: ActivateYourStrategyRequest,
+  authToken?: string | null,
 ): Promise<ActivateYourStrategyResponse> {
   try {
     const response = await fetch(
@@ -77,6 +80,7 @@ export async function activateYourStrategyViaBackend(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify(request),
       },

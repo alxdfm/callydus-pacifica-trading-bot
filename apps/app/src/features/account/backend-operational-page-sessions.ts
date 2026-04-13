@@ -24,6 +24,7 @@ async function readOperationalPageSessionViaBackend<TResponse>(
     parse: (value: unknown) => TResponse;
     safeParse: (value: unknown) => { success: true; data: TResponse } | { success: false };
   },
+  authToken?: string | null,
 ): Promise<TResponse> {
   const request = operationalSessionSnapshotRequestSchema.parse(rawRequest);
 
@@ -32,6 +33,7 @@ async function readOperationalPageSessionViaBackend<TResponse>(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
       body: JSON.stringify(request),
     });
@@ -66,50 +68,60 @@ async function readOperationalPageSessionViaBackend<TResponse>(
 
 export function readOperationalProfileViaBackend(
   request: OperationalSessionSnapshotRequest,
+  authToken?: string | null,
 ): Promise<OperationalProfileSessionResponse> {
   return readOperationalPageSessionViaBackend(
     request,
     "/api/account/profile",
     operationalProfileSessionResponseSchema,
+    authToken,
   );
 }
 
 export function readOperationalDashboardViaBackend(
   request: OperationalSessionSnapshotRequest,
+  authToken?: string | null,
 ): Promise<OperationalDashboardSessionResponse> {
   return readOperationalPageSessionViaBackend(
     request,
     "/api/account/dashboard",
     operationalDashboardSessionResponseSchema,
+    authToken,
   );
 }
 
 export function readOperationalPresetsViaBackend(
   request: OperationalSessionSnapshotRequest,
+  authToken?: string | null,
 ): Promise<OperationalPresetsSessionResponse> {
   return readOperationalPageSessionViaBackend(
     request,
     "/api/account/presets",
     operationalPresetsSessionResponseSchema,
+    authToken,
   );
 }
 
 export function readOperationalTradesViaBackend(
   request: OperationalSessionSnapshotRequest,
+  authToken?: string | null,
 ): Promise<OperationalTradesSessionResponse> {
   return readOperationalPageSessionViaBackend(
     request,
     "/api/account/trades",
     operationalTradesSessionResponseSchema,
+    authToken,
   );
 }
 
 export function readOperationalHistoryViaBackend(
   request: OperationalSessionSnapshotRequest,
+  authToken?: string | null,
 ): Promise<OperationalHistorySessionResponse> {
   return readOperationalPageSessionViaBackend(
     request,
     "/api/account/history",
     operationalHistorySessionResponseSchema,
+    authToken,
   );
 }

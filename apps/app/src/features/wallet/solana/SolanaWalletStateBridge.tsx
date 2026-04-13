@@ -8,6 +8,7 @@ import { createEmptyRuntimeState } from "../../runtime/runtime-state";
 import { useAppState } from "../../../state/app-state";
 import { useSolanaWalletPort } from "./SolanaWalletEnvironment";
 import { lookupOperationalAccountViaBackend } from "../../onboarding/backend-operational-account-lookup";
+import { useAuth } from "../../auth/AuthContext";
 
 function mapAdapterNameToWalletProvider(
   providerName: string | null,
@@ -28,8 +29,10 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     connected,
     connecting,
     publicKey,
+    signMessage,
     wallet,
   } = useWallet();
+  const { authenticate, clearAuth } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { lastErrorCode, selectedProviderName } = useSolanaWalletPort();
@@ -45,6 +48,26 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   } = useAppState();
   const hydratedSessionWalletRef = useRef<string | null>(null);
   const sessionHydrationInFlightWalletRef = useRef<string | null>(null);
+  const authenticatedWalletRef = useRef<string | null>(null);
+
+  // Authenticate with the backend when the wallet connects or changes.
+  // clearAuth is called on disconnect so stale tokens are not reused.
+  useEffect(() => {
+    const mainWalletPublicKey = publicKey?.toBase58() ?? null;
+
+    if (!connected || !mainWalletPublicKey || !signMessage) {
+      if (!connected) {
+        clearAuth();
+        authenticatedWalletRef.current = null;
+      }
+      return;
+    }
+
+    if (authenticatedWalletRef.current === mainWalletPublicKey) return;
+
+    authenticatedWalletRef.current = mainWalletPublicKey;
+    void authenticate(mainWalletPublicKey, signMessage);
+  }, [authenticate, clearAuth, connected, publicKey, signMessage]);
 
   useEffect(() => {
     const mainWalletPublicKey = publicKey?.toBase58() ?? null;

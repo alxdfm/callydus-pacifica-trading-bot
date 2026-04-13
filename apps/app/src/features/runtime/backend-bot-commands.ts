@@ -13,37 +13,43 @@ const apiBaseUrl =
 
 export async function pauseBotViaBackend(
   rawRequest: BotRuntimeCommandRequest,
+  authToken?: string | null,
 ): Promise<BotCommandResponse> {
   const request = botRuntimeCommandRequestSchema.parse(rawRequest);
-  return postCommand(`${apiBaseUrl}/api/runtime/pause`, request);
+  return postCommand(`${apiBaseUrl}/api/runtime/pause`, request, authToken);
 }
 
 export async function resumeBotViaBackend(
   rawRequest: BotRuntimeCommandRequest,
+  authToken?: string | null,
 ): Promise<BotCommandResponse> {
   const request = botRuntimeCommandRequestSchema.parse(rawRequest);
-  return postCommand(`${apiBaseUrl}/api/runtime/resume`, request);
+  return postCommand(`${apiBaseUrl}/api/runtime/resume`, request, authToken);
 }
 
 export async function closeTradeViaBackend(
   rawRequest: CloseTradeCommandRequest,
+  authToken?: string | null,
 ): Promise<BotCommandResponse> {
   const request = closeTradeCommandRequestSchema.parse(rawRequest);
   return postCommand(
     `${apiBaseUrl}/api/trades/${request.tradeId}/close`,
     { walletAddress: request.walletAddress },
+    authToken,
   );
 }
 
 async function postCommand(
   url: string,
   body: Record<string, unknown>,
+  authToken?: string | null,
 ): Promise<BotCommandResponse> {
   try {
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
       body: JSON.stringify(body),
     });
