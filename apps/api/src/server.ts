@@ -130,9 +130,11 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/strategies/your/activate"
   ) {
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const body = await readJsonBody(request);
     const result = await api.router.activateYourStrategy({
-      body: body as never,
+      body: { ...(body as Record<string, unknown>), walletAddress } as never,
     });
 
     response.writeHead(result.status === "success" ? 200 : 400, {
@@ -146,9 +148,11 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/runtime/pause"
   ) {
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const body = await readJsonBody(request);
     const result = await api.router.pauseBot({
-      body: body as never,
+      body: { ...(body as Record<string, unknown>), walletAddress } as never,
     });
 
     response.writeHead(result.status === "success" ? 200 : 400, {
@@ -194,9 +198,11 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/runtime/resume"
   ) {
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const body = await readJsonBody(request);
     const result = await api.router.resumeBot({
-      body: body as never,
+      body: { ...(body as Record<string, unknown>), walletAddress } as never,
     });
 
     response.writeHead(result.status === "success" ? 200 : 400, {
@@ -210,13 +216,11 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     /^\/api\/trades\/[^/]+\/close$/.test(request.url ?? "")
   ) {
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const tradeId = request.url?.split("/")[3] ?? "";
-    const body = await readJsonBody(request);
     const result = await api.router.closeTrade({
-      body: {
-        ...(body as Record<string, unknown>),
-        tradeId,
-      } as never,
+      body: { walletAddress, tradeId } as never,
     });
 
     response.writeHead(result.status === "success" ? 200 : 400, {
@@ -230,9 +234,11 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     request.method === "POST" &&
     request.url === "/api/strategies/your/save"
   ) {
+    const walletAddress = requireAuth(request, response);
+    if (!walletAddress) return;
     const body = await readJsonBody(request);
     const result = await api.router.saveYourStrategy({
-      body: body as never,
+      body: { ...(body as Record<string, unknown>), walletAddress } as never,
     });
 
     response.writeHead(result.status === "success" ? 200 : 400, {
@@ -474,6 +480,28 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     localMarketDataRefreshScheduler.stop();
   });
+}
+
+function requireAuth(
+  request: IncomingMessage,
+  response: ServerResponse,
+): string | null {
+  const authContext = extractAuthContext(
+    request.headers["authorization"],
+    api.tokenService,
+  );
+  if (!authContext) {
+    response.writeHead(401, { "Content-Type": "application/json" });
+    response.end(
+      JSON.stringify({
+        status: "error",
+        code: "unauthorized",
+        message: "Authentication required.",
+      }),
+    );
+    return null;
+  }
+  return authContext.walletAddress;
 }
 
 function applyCorsHeaders(requestOrigin: string | undefined, response: ServerResponse) {
