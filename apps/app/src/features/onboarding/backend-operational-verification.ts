@@ -11,6 +11,7 @@ const apiBaseUrl =
 
 export async function verifyAgentWalletOperationallyViaBackend(
   rawSubmission: PacificaOperationalVerificationSubmission,
+  authToken?: string | null,
 ): Promise<PacificaOperationalVerificationResponse> {
   const submission =
     pacificaOperationalVerificationSubmissionSchema.parse(rawSubmission);
@@ -22,6 +23,7 @@ export async function verifyAgentWalletOperationallyViaBackend(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify(submission),
       },

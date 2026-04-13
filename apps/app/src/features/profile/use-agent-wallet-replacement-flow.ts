@@ -377,7 +377,7 @@ export function useAgentWalletReplacementFlow() {
 
     const response = await verifyAgentWalletOperationallyViaBackend({
       credentialId: validatedDraft.credentialId,
-    });
+    }, token);
 
     setIsDraftVerifying(false);
     applyOperationalResponse(response);

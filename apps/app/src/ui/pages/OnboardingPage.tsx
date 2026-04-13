@@ -15,6 +15,7 @@ import { approveBuilderCodeViaBackend } from "../../features/onboarding/backend-
 import { validateAgentWalletViaBackend } from "../../features/onboarding/backend-credential-validation";
 import { verifyAgentWalletOperationallyViaBackend } from "../../features/onboarding/backend-operational-verification";
 import { createSignedBuilderApprovalSubmission } from "../../features/onboarding/pacifica-builder-approval";
+import { useAuth } from "../../features/auth/AuthContext";
 import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEnvironment";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import type { MessageKey } from "../../shared/i18n/messages";
@@ -357,6 +358,7 @@ export function OnboardingPage() {
     signWalletMessage,
   } = useSolanaWalletPort();
   const { t } = useI18n();
+  const { token } = useAuth();
   const [fieldErrors, setFieldErrors] = useState<FormFieldErrors>({});
   const [selectedStepIndex, setSelectedStepIndex] = useState(0);
   const [selectedWalletProvider, setSelectedWalletProvider] =
@@ -848,7 +850,7 @@ export function OnboardingPage() {
 
     const response = await verifyAgentWalletOperationallyViaBackend({
       credentialId: state.credentials.credentialId,
-    });
+    }, token);
     applyOperationalVerificationResponse(response);
   }
 
