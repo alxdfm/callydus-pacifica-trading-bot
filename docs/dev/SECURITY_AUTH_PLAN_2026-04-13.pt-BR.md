@@ -261,7 +261,7 @@ Quando migrar para EventBridge, a rota some e esta proteção se torna irrelevan
 
 ---
 
-### Fase 2 — Infraestrutura de autenticação
+### Fase 2 — Infraestrutura de autenticação ✅ CONCLUÍDA (2026-04-13)
 **Vulnerabilidades:** C1, C2 (infraestrutura) | **Complexidade:** G | **Requer API + App**
 
 **Importante:** esta fase deve ser implementada **diretamente na camada HTTP agnóstica** (`apps/api/src/ui/http/createApiHttpHandler.ts`), não em `server.ts`. Se a migração Lambda ainda não tiver ocorrido, implementar em `server.ts` e migrar junto com o refactor.
