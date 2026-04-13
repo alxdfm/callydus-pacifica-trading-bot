@@ -528,7 +528,7 @@ Após a Fase 2, o `walletAddress` autenticado estará disponível como parâmetr
 
 ---
 
-### Fase 6 — Mitigações de vazamento
+### Fase 6 — Mitigações de vazamento ✅ CONCLUÍDA (2026-04-13)
 **Vulnerabilidades:** M1, M2, M5 | **Complexidade:** P | **Independente**
 
 #### 6.1 — M1: sanitizar `unhandledRejection`
