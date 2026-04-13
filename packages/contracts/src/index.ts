@@ -1108,6 +1108,7 @@ export const operationalDashboardSessionFoundSchema = z.object({
   status: z.literal("found"),
   runtime: operationalDashboardRuntimeSnapshotSchema,
   recentEvents: z.array(operationalEventSchema),
+  yourStrategy: yourStrategySchema.nullable(),
 });
 
 export const operationalDashboardSessionResponseSchema = z.union([

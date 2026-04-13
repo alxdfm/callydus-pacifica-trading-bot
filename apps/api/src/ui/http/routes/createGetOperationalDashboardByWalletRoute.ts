@@ -23,6 +23,7 @@ export function createGetOperationalDashboardByWalletRoute(
       status: "found",
       runtime: session.runtime,
       recentEvents: session.recentEvents,
+      yourStrategy: session.yourStrategy,
     }),
   );
 }

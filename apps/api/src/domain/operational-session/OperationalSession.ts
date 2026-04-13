@@ -86,6 +86,7 @@ export type OperationalDashboardSession = OperationalSessionShell & {
     | "activeAlerts"
   >;
   recentEvents: OperationalEvent[];
+  yourStrategy: YourStrategy | null;
 };
 
 export type OperationalPresetsSession = OperationalSessionShell & {

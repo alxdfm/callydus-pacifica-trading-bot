@@ -563,6 +563,11 @@ export class PrismaPacificaCredentialRepository
           },
           take: 1,
         },
+        yourStrategy: {
+          include: {
+            operatorAccount: true,
+          },
+        },
       },
     });
 
@@ -611,6 +616,9 @@ export class PrismaPacificaCredentialRepository
         activeAlerts: operatorAccount.operationalAlerts.map(mapOperationalAlert),
       },
       recentEvents: recentEvents.map(mapOperationalEvent),
+      yourStrategy: operatorAccount.yourStrategy
+        ? mapYourStrategy(operatorAccount.yourStrategy)
+        : null,
     };
   }
 
