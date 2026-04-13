@@ -64,7 +64,7 @@ export function buildSignInMessage(input: {
   expiresAt: string;
 }): string {
   return [
-    "Sign in to Pacifica Bot",
+    "Sign in to Callydus Trading",
     `Wallet: ${input.walletAddress}`,
     `Nonce: ${input.nonce}`,
     `Expires: ${input.expiresAt}`,

@@ -373,7 +373,7 @@ Novo arquivo: `apps/api/src/application/request-auth-nonce/RequestAuthNonce.ts`
 
 Mensagem canônica:
 ```
-Sign in to Pacifica Bot
+Sign in to Callydus Trading
 Wallet: <walletAddress>
 Nonce: <nonce>
 Expires: <expiresAt>
