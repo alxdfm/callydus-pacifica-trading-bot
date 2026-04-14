@@ -5,3 +5,4 @@
 **/dist
 .claude
 .sst
+**/sst-env.d.ts
