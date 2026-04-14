@@ -78,13 +78,15 @@ export function createVerifyAuthSignature(
     }
 
     const currentTime = now();
-    const token = deps.tokenService.issue(input.walletAddress, currentTime);
-    const tokenExpiresAt = new Date(currentTime.getTime() + 60 * 60 * 1000);
+    const { token, expiresAt: tokenExpiresAt } = deps.tokenService.issue(
+      input.walletAddress,
+      currentTime,
+    );
 
     return {
       status: "ok",
       token,
-      expiresAt: tokenExpiresAt.toISOString(),
+      expiresAt: tokenExpiresAt,
     };
   };
 }

@@ -1,17 +1,18 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const TOKEN_TTL_MS = 60 * 60 * 1000; // 1h
+const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 export class BearerTokenService {
   constructor(private readonly signingSecret: string) {}
 
-  issue(walletAddress: string, now: Date): string {
+  issue(walletAddress: string, now: Date): { token: string; expiresAt: string } {
     const expiresAt = new Date(now.getTime() + TOKEN_TTL_MS).toISOString();
     const payload = `${walletAddress}:${expiresAt}`;
     const sig = createHmac("sha256", this.signingSecret)
       .update(payload)
       .digest("hex");
-    return Buffer.from(`${payload}:${sig}`).toString("base64url");
+    const token = Buffer.from(`${payload}:${sig}`).toString("base64url");
+    return { token, expiresAt };
   }
 
   verify(
