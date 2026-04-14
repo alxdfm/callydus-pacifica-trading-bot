@@ -116,12 +116,18 @@ export function ProfilePage() {
       setRuntimeState,
     ],
   );
+  const readProfileSnapshot = useCallback(
+    (req: Parameters<typeof readOperationalProfileViaBackend>[0]) =>
+      readOperationalProfileViaBackend(req, token),
+    [token],
+  );
   const profileSession = useOperationalPageSession({
-    readSnapshot: (req) => readOperationalProfileViaBackend(req, token),
+    readSnapshot: readProfileSnapshot,
     applySnapshot: applyProfileSnapshot,
     requestKey: "profile",
     loadingMessage: t("runtimeStatusLoadingMessage"),
     unavailableMessage: t("runtimeStatusError"),
+    enabled: !!token,
   });
 
   const hasCredentialKeyChanges =

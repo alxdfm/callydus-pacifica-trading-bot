@@ -71,11 +71,11 @@ export function DashboardPage() {
     : undefined;
   const currentTrades = state.runtime.currentTrades.slice(0, 3);
   const recentClosedTrades = state.runtime.closedTrades.slice(0, 4);
-  const closedTodayCount = state.runtime.closedTrades.length;
+  const closedTradesCount = state.runtime.closedTrades.length;
   const wins = state.runtime.closedTrades.filter(
     (trade) => trade.realizedPnl >= 0,
   ).length;
-  const losses = closedTodayCount - wins;
+  const losses = closedTradesCount - wins;
   const runtimeSyncPresentation = getDashboardRuntimeSyncPresentation(
     state.runtime.syncStatus,
     state.runtime.exchangeSnapshotStatus,
@@ -431,12 +431,12 @@ export function DashboardPage() {
             <p>{t("dashboardMetricOpenTradesHint")}</p>
           </article>
           <article className="stat-panel">
-            <span>{t("dashboardMetricClosedToday")}</span>
-            <strong>{closedTodayCount}</strong>
+            <span>{t("dashboardMetricClosedTrades")}</span>
+            <strong>{closedTradesCount}</strong>
             <p>
-              {closedTodayCount > 0
+              {closedTradesCount > 0
                 ? `${wins} ${t("dashboardWinsLabel")} · ${losses} ${t("dashboardLossesLabel")}`
-                : t("dashboardMetricClosedTodayHint")}
+                : t("dashboardMetricClosedTradesHint")}
             </p>
           </article>
         </section>
