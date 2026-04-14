@@ -25,14 +25,8 @@ function mapAdapterNameToWalletProvider(
 }
 
 export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
-  const {
-    connected,
-    connecting,
-    publicKey,
-    signMessage,
-    wallet,
-  } = useWallet();
-  const { authenticate, clearAuth, token } = useAuth();
+  const { connected, connecting, publicKey, signMessage, wallet } = useWallet();
+  const { authenticate, clearAuth, token, walletAddress } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { lastErrorCode, selectedProviderName } = useSolanaWalletPort();
@@ -51,23 +45,48 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
   const authenticatedWalletRef = useRef<string | null>(null);
 
   // Authenticate with the backend when the wallet connects or changes.
+  // Skip if a valid token for this wallet is already present (e.g. persisted
+  // from a previous session loaded before this component mounted).
   // clearAuth is called on disconnect so stale tokens are not reused.
   useEffect(() => {
     const mainWalletPublicKey = publicKey?.toBase58() ?? null;
 
     if (!connected || !mainWalletPublicKey || !signMessage) {
-      if (!connected) {
+      // Only clear auth on a real disconnect (wallet was previously authenticated).
+      // On fresh mount the wallet starts as !connected before auto-connect fires;
+      // clearing auth here would wipe a valid persisted token unnecessarily.
+      if (!connected && authenticatedWalletRef.current !== null) {
         clearAuth();
         authenticatedWalletRef.current = null;
       }
       return;
     }
 
-    if (authenticatedWalletRef.current === mainWalletPublicKey) return;
+    if (authenticatedWalletRef.current === mainWalletPublicKey) {
+      // Already authenticated this wallet — but if the token was cleared
+      // (e.g. after a 401), reset and fall through to re-authenticate.
+      if (token !== null) return;
+      authenticatedWalletRef.current = null;
+    }
+
+    // A valid persisted token for this wallet (e.g. loaded from localStorage)
+    // removes the need to prompt for a new signature.
+    if (token !== null && walletAddress === mainWalletPublicKey) {
+      authenticatedWalletRef.current = mainWalletPublicKey;
+      return;
+    }
 
     authenticatedWalletRef.current = mainWalletPublicKey;
     void authenticate(mainWalletPublicKey, signMessage);
-  }, [authenticate, clearAuth, connected, publicKey, signMessage]);
+  }, [
+    authenticate,
+    clearAuth,
+    connected,
+    publicKey,
+    signMessage,
+    token,
+    walletAddress,
+  ]);
 
   useEffect(() => {
     const mainWalletPublicKey = publicKey?.toBase58() ?? null;
@@ -175,7 +194,8 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     if (connecting || providerName) {
       setWalletSession({
         provider: provider ?? state.wallet.provider,
-        mainWalletPublicKey: mainWalletPublicKey ?? state.wallet.mainWalletPublicKey,
+        mainWalletPublicKey:
+          mainWalletPublicKey ?? state.wallet.mainWalletPublicKey,
         sessionStatus: connecting ? "reconnecting" : "disconnected",
         errorCode: lastErrorCode,
       });

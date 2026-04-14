@@ -387,6 +387,8 @@ export const messages = {
     yourStrategyLeverageTitle: "Runtime leverage",
     yourStrategyAddIndicatorAction: "Add indicator",
     yourStrategyRemoveIndicatorAction: "Remove indicator",
+    yourStrategyIndicatorRemovedWithRules:
+      "{count} rule(s) that referenced the removed indicator were also deleted.",
     yourStrategyIndicatorCardDescription:
       "Price indicators stay separate from RSI, ATR and volume-specific calculations.",
     yourStrategyVolumeDerivedIndicatorDescription:
@@ -528,8 +530,8 @@ export const messages = {
     dashboardMetricExposureHint: "Capital currently in use",
     dashboardMetricOpenTrades: "Open trades",
     dashboardMetricOpenTradesHint: "Positions requiring monitoring now",
-    dashboardMetricClosedToday: "Closed today",
-    dashboardMetricClosedTodayHint: "Wins and losses recorded in this session snapshot",
+    dashboardMetricClosedTrades: "Closed trades",
+    dashboardMetricClosedTradesHint: "Wins and losses recorded in this session snapshot",
     dashboardWinsLabel: "wins",
     dashboardLossesLabel: "losses",
     dashboardEmptyTitle: "No operational data yet",

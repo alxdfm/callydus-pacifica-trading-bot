@@ -525,21 +525,25 @@ export function StrategiesPage() {
   }
 
   function handleRemoveIndicator(indicatorKey: string) {
+    if (!yourStrategyDraft) return;
+
+    const removedKeys = collectRemovedIndicatorKeys(
+      yourStrategyDraft.indicators,
+      indicatorKey,
+    );
+    const removedRulesCount =
+      yourStrategyDraft.entry.long.trigger.rules.filter(
+        (r) => removedKeys.has(r.indicator) || (r.ref && removedKeys.has(r.ref)),
+      ).length +
+      yourStrategyDraft.entry.short.trigger.rules.filter(
+        (r) => removedKeys.has(r.indicator) || (r.ref && removedKeys.has(r.ref)),
+      ).length;
+
     updateYourStrategyDraft((currentDraft) => {
       const nextIndicators: Record<string, PresetIndicatorConfig> = {
         ...currentDraft.indicators,
       };
-      delete nextIndicators[indicatorKey];
-
-      if (currentDraft.indicators[indicatorKey]?.type === "volume") {
-        Object.entries(nextIndicators).forEach(
-          ([candidateKey, candidateIndicator]) => {
-            if (isVolumeDerivedIndicator(candidateIndicator)) {
-              delete nextIndicators[candidateKey];
-            }
-          },
-        );
-      }
+      removedKeys.forEach((k) => delete nextIndicators[k]);
 
       const fallbackKey =
         Object.keys(nextIndicators)[0] ??
@@ -552,19 +556,29 @@ export function StrategiesPage() {
         ...currentDraft,
         indicators: nextIndicators,
         entry: {
-          long: sanitizeEntrySideIndicatorReferences(
+          long: dropRulesForRemovedIndicators(
             currentDraft.entry.long,
-            indicatorKey,
+            removedKeys,
             fallbackKey,
           ),
-          short: sanitizeEntrySideIndicatorReferences(
+          short: dropRulesForRemovedIndicators(
             currentDraft.entry.short,
-            indicatorKey,
+            removedKeys,
             fallbackKey,
           ),
         },
       });
     });
+
+    if (removedRulesCount > 0) {
+      setYourStrategyStatusTone("info");
+      setYourStrategyStatusMessage(
+        t("yourStrategyIndicatorRemovedWithRules").replace(
+          "{count}",
+          String(removedRulesCount),
+        ),
+      );
+    }
   }
 
   function handleUpdateStopLossMode(mode: "static" | "atr") {
@@ -997,6 +1011,44 @@ function addIndicatorToRecord(
 ) {
   record[key] = indicator;
   return key;
+}
+
+function collectRemovedIndicatorKeys(
+  indicators: Record<string, PresetIndicatorConfig>,
+  indicatorKey: string,
+): Set<string> {
+  const removed = new Set<string>([indicatorKey]);
+
+  if (indicators[indicatorKey]?.type === "volume") {
+    Object.entries(indicators).forEach(([k, v]) => {
+      if (isVolumeDerivedIndicator(v)) removed.add(k);
+    });
+  }
+
+  return removed;
+}
+
+function dropRulesForRemovedIndicators(
+  entrySide: YourStrategyDraft["entry"]["long"],
+  removedKeys: Set<string>,
+  fallbackIndicatorKey: string,
+): YourStrategyDraft["entry"]["long"] {
+  const remaining = entrySide.trigger.rules.filter(
+    (rule) =>
+      !removedKeys.has(rule.indicator) &&
+      !(rule.ref && removedKeys.has(rule.ref)),
+  );
+
+  return {
+    ...entrySide,
+    trigger: {
+      ...entrySide.trigger,
+      rules:
+        remaining.length > 0
+          ? remaining
+          : [createDefaultThresholdRule(fallbackIndicatorKey)],
+    },
+  };
 }
 
 function sanitizeEntrySideIndicatorReferences(
@@ -2686,12 +2738,14 @@ function RuleEditorCard(input: {
   const rsiIndicatorKeys = getRsiIndicatorKeys(indicators);
   const volumeIndicatorKeys = getVolumeBaselineKeys(indicators);
   const volumeReferenceKeys = getVolumeReferenceKeys(indicators);
+  // Volume indicators are self-contained and only interact with their own
+  // derived keys.  All other indicators (price + RSI) are always selectable
+  // so the user can freely switch between them; the RSI isolation constraint
+  // is enforced by the ref/value fields below, not by hiding options here.
   const availableIndicatorKeys =
-    selectedContext === "rsi"
-      ? rsiIndicatorKeys
-      : selectedContext === "volume"
-        ? volumeIndicatorKeys
-        : priceIndicatorKeys;
+    selectedContext === "volume"
+      ? volumeIndicatorKeys
+      : [...priceIndicatorKeys, ...rsiIndicatorKeys];
   const thresholdAllowed =
     selectedContext !== "volume" || volumeReferenceKeys.length > 0;
   const crossAllowed = selectedContext !== "volume";
@@ -2776,60 +2830,72 @@ function RuleEditorCard(input: {
             className="onboarding-form__input"
             disabled={disabled}
             onChange={(event) =>
-              onChange((currentRule) =>
-                currentRule.type === "threshold"
-                  ? (() => {
-                      const nextIndicatorKey = event.target.value;
-                      const nextIndicator = indicators[nextIndicatorKey];
+              onChange((currentRule) => {
+                const nextIndicatorKey = event.target.value;
+                const nextIndicator = indicators[nextIndicatorKey];
+                const nextContext = nextIndicator
+                  ? getIndicatorContext(nextIndicator)
+                  : "price";
 
-                      if (
-                        nextIndicator &&
-                        getIndicatorContext(nextIndicator) === "volume"
-                      ) {
-                        const nextReference =
-                          getVolumeReferenceKeys(indicators)[0] ??
-                          nextIndicatorKey;
+                if (currentRule.type === "threshold") {
+                  // Context changed: reset to an appropriate default rule so
+                  // that RSI rules never carry a stale price `ref` and price
+                  // rules never carry a stale numeric `value`.
+                  if (nextContext !== selectedContext) {
+                    return createDefaultRuleForIndicator(
+                      indicators,
+                      nextIndicatorKey,
+                    );
+                  }
 
-                        return {
-                          scope: currentRule.scope,
-                          type: "threshold" as const,
-                          indicator: nextIndicatorKey,
-                          operator: "above" as const,
-                          ref: nextReference,
-                        };
-                      }
-
-                      return {
-                        ...currentRule,
-                        indicator: nextIndicatorKey,
-                      };
-                    })()
-                  : {
-                      ...currentRule,
-                      indicator: event.target.value,
-                      value: undefined,
+                  if (nextContext === "volume") {
+                    return {
+                      scope: currentRule.scope,
+                      type: "threshold" as const,
+                      indicator: nextIndicatorKey,
+                      operator: "above" as const,
                       ref:
-                        (getReferenceContext(indicators, event.target.value) ===
-                        "price"
-                          ? [
-                              "PRICE",
-                              ...getPriceIndicatorKeys(indicators).filter(
-                                (indicatorKey) =>
-                                  indicatorKey !== event.target.value,
-                              ),
-                            ]
-                          : getCompatibleIndicatorKeys(
-                              indicators,
-                              event.target.value,
-                            ).filter(
-                              (indicatorKey) =>
-                                indicatorKey !== event.target.value,
-                            ))[0] ??
-                        currentRule.ref ??
-                        indicatorKeys[0] ??
-                        "EMA1",
-                    },
-              )
+                        getVolumeReferenceKeys(indicators)[0] ??
+                        nextIndicatorKey,
+                    };
+                  }
+
+                  return { ...currentRule, indicator: nextIndicatorKey };
+                }
+
+                // cross rule — RSI uses numeric value, price/volume use ref
+                if (nextContext === "rsi") {
+                  return {
+                    scope: currentRule.scope,
+                    type: "cross" as const,
+                    indicator: nextIndicatorKey,
+                    operator: currentRule.operator,
+                    value: 70,
+                  };
+                }
+
+                return {
+                  ...currentRule,
+                  indicator: nextIndicatorKey,
+                  value: undefined,
+                  ref:
+                    (getReferenceContext(indicators, nextIndicatorKey) ===
+                    "price"
+                      ? [
+                          "PRICE",
+                          ...getPriceIndicatorKeys(indicators).filter(
+                            (k) => k !== nextIndicatorKey,
+                          ),
+                        ]
+                      : getCompatibleIndicatorKeys(
+                          indicators,
+                          nextIndicatorKey,
+                        ).filter((k) => k !== nextIndicatorKey))[0] ??
+                    currentRule.ref ??
+                    indicatorKeys[0] ??
+                    "EMA1",
+                };
+              })
             }
             value={rule.indicator}
           >
