@@ -1,20 +1,18 @@
 version: 1
-applications:
-  - frontend:
-      phases:
-        preBuild:
-          commands:
-            - corepack enable
-            - corepack prepare pnpm@10.11.0 --activate
-            - pnpm install --frozen-lockfile
-        build:
-          commands:
-            - pnpm --filter @pacifica/app build
-      artifacts:
-        baseDirectory: apps/app/dist
-        files:
-          - "**/*"
-      cache:
-        paths:
-          - node_modules/**/*
-    appRoot: apps/app
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - corepack enable
+        - corepack prepare pnpm@10.11.0 --activate
+        - pnpm install --frozen-lockfile
+    build:
+      commands:
+        - pnpm --filter @pacifica/app build
+  artifacts:
+    baseDirectory: apps/app/dist
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
