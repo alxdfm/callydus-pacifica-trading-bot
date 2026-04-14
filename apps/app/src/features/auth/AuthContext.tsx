@@ -3,11 +3,11 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
 import { fetchAuthNonce, verifyAuthSignature } from "./backend-auth";
+import { registerClearAuth } from "./unauthorized-redirect";
 
 type AuthState = {
   token: string | null;
@@ -23,57 +23,50 @@ type AuthContextValue = AuthState & {
   clearAuth: () => void;
 };
 
+const AUTH_STORAGE_KEY = "callydus.auth";
+
+function loadPersistedAuth(): AuthState {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return { token: null, walletAddress: null, expiresAt: null };
+    const parsed = JSON.parse(raw) as AuthState;
+    // Discard if already expired
+    if (parsed.expiresAt && new Date(parsed.expiresAt) <= new Date()) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      return { token: null, walletAddress: null, expiresAt: null };
+    }
+    return parsed;
+  } catch {
+    return { token: null, walletAddress: null, expiresAt: null };
+  }
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const REFRESH_BEFORE_EXPIRY_MS = 10 * 60 * 1000; // refresh 10 min before expiry
-
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [state, setState] = useState<AuthState>({
-    token: null,
-    walletAddress: null,
-    expiresAt: null,
-  });
-  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const signMessageRef = useRef<
-    ((message: Uint8Array) => Promise<Uint8Array>) | null
-  >(null);
+  const [state, setState] = useState<AuthState>(loadPersistedAuth);
+
+  useEffect(() => {
+    if (state.token) {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
+    } else {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+  }, [state]);
 
   const clearAuth = useCallback(() => {
-    if (refreshTimerRef.current) {
-      clearTimeout(refreshTimerRef.current);
-      refreshTimerRef.current = null;
-    }
-    signMessageRef.current = null;
     setState({ token: null, walletAddress: null, expiresAt: null });
   }, []);
 
-  const scheduleRefresh = useCallback(
-    (walletAddress: string, expiresAt: string) => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
-      const msUntilRefresh =
-        new Date(expiresAt).getTime() - Date.now() - REFRESH_BEFORE_EXPIRY_MS;
-
-      if (msUntilRefresh <= 0 || !signMessageRef.current) return;
-
-      refreshTimerRef.current = setTimeout(() => {
-        if (signMessageRef.current) {
-          void authenticate(walletAddress, signMessageRef.current);
-        }
-      }, msUntilRefresh);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  useEffect(() => {
+    registerClearAuth(clearAuth);
+  }, [clearAuth]);
 
   const authenticate = useCallback(
     async (
       walletAddress: string,
       signMessage: (message: Uint8Array) => Promise<Uint8Array>,
     ) => {
-      signMessageRef.current = signMessage;
-
       const nonceResponse = await fetchAuthNonce(walletAddress);
       if (nonceResponse.status !== "ok") return;
 
@@ -104,20 +97,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         walletAddress,
         expiresAt: verifyResponse.expiresAt,
       });
-
-      scheduleRefresh(walletAddress, verifyResponse.expiresAt);
     },
-    [scheduleRefresh],
+    [],
   );
-
-  // Clear auth when component unmounts
-  useEffect(() => {
-    return () => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
-    };
-  }, []);
 
   return (
     <AuthContext.Provider
