@@ -136,6 +136,17 @@ export function AppLayout() {
           />
           <div className="shell-brand__copy">
             <p className="shell-sidebar__eyebrow">{t("appName")}</p>
+            <p className="shell-brand__powered-by">
+              Powered by{" "}
+              <a
+                href="https://www.pacifica.fi/"
+                rel="noopener noreferrer"
+                style={{ color: "inherit", textDecoration: "none" }}
+                target="_blank"
+              >
+                Pacifica
+              </a>
+            </p>
             <h1>{t("appTagline")}</h1>
           </div>
         </div>

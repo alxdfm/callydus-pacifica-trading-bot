@@ -203,6 +203,11 @@ a {
   letter-spacing: 0.18em;
 }
 
+.shell-brand__powered-by {
+  font-size: 12px;
+  margin: 0;
+}
+
 .shell-brand {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -482,6 +487,11 @@ a {
 .onboarding-brand__copy {
   display: grid;
   gap: 2px;
+}
+
+.onboarding-brand__powered-by {
+  font-size: 12px;
+  margin: 0;
 }
 
 .onboarding-side__copy {

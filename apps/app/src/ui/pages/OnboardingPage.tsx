@@ -848,9 +848,12 @@ export function OnboardingPage() {
       showCompletionModal: false,
     });
 
-    const response = await verifyAgentWalletOperationallyViaBackend({
-      credentialId: state.credentials.credentialId,
-    }, token);
+    const response = await verifyAgentWalletOperationallyViaBackend(
+      {
+        credentialId: state.credentials.credentialId,
+      },
+      token,
+    );
     applyOperationalVerificationResponse(response);
   }
 
@@ -1037,6 +1040,17 @@ export function OnboardingPage() {
             />
             <div className="onboarding-brand__copy">
               <p className="page-card__eyebrow">{t("appName")}</p>
+              <p className="onboarding-brand__powered-by">
+                Powered by{" "}
+                <a
+                  href="https://www.pacifica.fi/"
+                  rel="noopener noreferrer"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                  target="_blank"
+                >
+                  Pacifica
+                </a>
+              </p>
               <h1>{t("pageOnboardingTitle")}</h1>
             </div>
           </div>
@@ -1095,6 +1109,17 @@ export function OnboardingPage() {
           />
           <div className="onboarding-brand__copy">
             <p className="page-card__eyebrow">{t("appName")}</p>
+            <p className="onboarding-brand__powered-by">
+              Powered by{" "}
+              <a
+                href="https://www.pacifica.fi/"
+                rel="noopener noreferrer"
+                style={{ color: "inherit", textDecoration: "none" }}
+                target="_blank"
+              >
+                Pacifica
+              </a>
+            </p>
             <h1>{t("pageOnboardingTitle")}</h1>
           </div>
         </div>
@@ -1618,6 +1643,12 @@ export function OnboardingPage() {
                   >
                     {t("onboardingEditAction")}
                   </button>
+                </div>
+              ) : (state.operational.status === "blocked" ||
+                  state.operational.status === "error") ? (
+                <div className="info-note">
+                  <strong>{operationalStatusLabel}</strong>
+                  <p>{operationalMessage}</p>
                 </div>
               ) : null}
 
