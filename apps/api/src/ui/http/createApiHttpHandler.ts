@@ -71,6 +71,11 @@ export function createApiHttpHandler(
   ): Promise<ApiHttpResponse> {
     const { method, path, headers, queryStringParameters, rawBody } = request;
 
+    // Handle CORS preflight
+    if (method === "OPTIONS") {
+      return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: "" };
+    }
+
     // --- Auth endpoints (public) ---
 
     if (method === "GET" && path.startsWith("/api/auth/nonce")) {
