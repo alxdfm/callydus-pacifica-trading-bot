@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Callydus — Automated Trading on Solana</title>
+  <meta name="description" content="Automated DeFi trading powered by Pacifica. Set your strategy. Let it run." />
+  <link rel="icon" type="image/png" href="./favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #09111d;
+      --text: #f3f7fc;
+      --text-soft: #7a95b0;
+      --accent: #2d8cff;
+      --accent-glow: rgba(45, 140, 255, 0.18);
+      --success: #27c07d;
+      --border: rgba(53, 80, 111, 0.5);
+      --radius: 20px;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-image:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(45, 140, 255, 0.14), transparent),
+        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(39, 192, 125, 0.07), transparent),
+        radial-gradient(ellipse 100% 60% at 50% 100%, rgba(18, 92, 179, 0.08), transparent);
+    }
+
+    /* Grid noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(45, 140, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45, 140, 255, 0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* NAV */
+    nav {
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo img {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+
+    .nav-badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      border: 1px solid rgba(45, 140, 255, 0.3);
+      background: rgba(45, 140, 255, 0.06);
+      padding: 4px 10px;
+      border-radius: 100px;
+      text-transform: uppercase;
+    }
+
+    /* HERO */
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px 120px;
+      gap: 0;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--success);
+      border: 1px solid rgba(39, 192, 125, 0.25);
+      background: rgba(39, 192, 125, 0.06);
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 36px;
+    }
+
+    .hero-tag::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero-title {
+      font-size: clamp(48px, 8vw, 88px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.0;
+      margin-bottom: 28px;
+    }
+
+    .hero-title .accent {
+      background: linear-gradient(135deg, #2d8cff 0%, #67a8ff 50%, #27c07d 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(16px, 2.5vw, 20px);
+      font-weight: 500;
+      color: var(--text-soft);
+      line-height: 1.6;
+      max-width: 520px;
+      margin-bottom: 52px;
+    }
+
+    .cta-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: var(--radius);
+      background: var(--accent);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 32px rgba(45, 140, 255, 0.35), 0 4px 16px rgba(0,0,0,0.3);
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 48px rgba(45, 140, 255, 0.5), 0 8px 24px rgba(0,0,0,0.4);
+      background: #3d9aff;
+    }
+
+    .btn-primary svg {
+      transition: transform 120ms ease;
+    }
+
+    .btn-primary:hover svg {
+      transform: translateX(3px);
+    }
+
+    .hero-disclaimer {
+      font-size: 12px;
+      color: var(--text-soft);
+      opacity: 0.6;
+      margin-top: 20px;
+    }
+
+    /* STATS */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      padding: 0 24px 80px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      flex: 1;
+      min-width: 160px;
+      max-width: 200px;
+      padding: 28px 24px;
+      text-align: center;
+      border: 1px solid var(--border);
+      background: rgba(15, 26, 43, 0.6);
+      backdrop-filter: blur(12px);
+    }
+
+    .stat:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+    .stat:last-child  { border-radius: 0 var(--radius) var(--radius) 0; border-left: none; }
+    .stat:not(:first-child):not(:last-child) { border-left: none; }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+
+    /* FOOTER */
+    footer {
+      padding: 24px 40px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-soft);
+      opacity: 0.5;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 20px 24px; }
+      .stat:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+      .stat:last-child  { border-radius: 0 0 var(--radius) var(--radius); border-left: 1px solid var(--border); border-top: none; }
+      .stat:not(:first-child):not(:last-child) { border-left: 1px solid var(--border); border-top: none; }
+      .stats { flex-direction: column; align-items: center; }
+      .stat { width: 100%; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav>
+      <a href="/" class="logo">
+        <img src="./favicon.png" alt="Callydus" />
+        <span class="logo-text">Callydus</span>
+      </a>
+      <span class="nav-badge">Solana · DeFi</span>
+    </nav>
+
+    <section class="hero">
+      <div class="hero-tag">Live on Mainnet</div>
+
+      <h1 class="hero-title">
+        Trade smarter.<br />
+        <span class="accent">Run on-chain.</span>
+      </h1>
+
+      <p class="hero-sub">
+        Automated trading bot built on Solana. Define your strategy, connect your wallet — Callydus executes 24/7 through Pacifica's infrastructure.
+      </p>
+
+      <div class="cta-group">
+        <a href="https://trade.callydus.xyz" class="btn-primary">
+          Launch App
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+
+      <p class="hero-disclaimer">Non-custodial · Solana Mainnet · Powered by Pacifica</p>
+    </section>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">24/7</div>
+        <div class="stat-label">Automated</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">Non-custodial</div>
+        <div class="stat-label">Your keys</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">Solana</div>
+        <div class="stat-label">Network</div>
+      </div>
+    </div>
+
+    <footer>
+      © 2026 Callydus. Built on Solana.
+    </footer>
+  </div>
+</body>
+</html>
