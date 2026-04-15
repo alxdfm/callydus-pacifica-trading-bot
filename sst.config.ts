@@ -11,42 +11,46 @@ export default $config({
   },
 
   async run() {
-    // Resolve the Prisma query engine binary path dynamically so the path
-    // stays correct after pnpm installs or Prisma version bumps.
-    // pnpm isolates packages under node_modules/.pnpm/<pkg@version>/node_modules/,
-    // so we walk from @prisma/client's resolved entry point to find .prisma/client.
     const { createRequire } = await import("module");
     const { dirname, resolve, relative } = await import("path");
+    const { cpSync, mkdirSync, readdirSync, statSync } = await import("fs");
 
-    // @prisma/client is only accessible from packages/database in pnpm's
-    // isolated node_modules. Anchor resolution there so it's found regardless
-    // of where SST evaluates the config from (.sst/platform/).
+    // Resolve the generated Prisma client from pnpm's virtual store.
     const req = createRequire(resolve(process.cwd(), "packages/database/package.json"));
     const clientEntry: string = req.resolve("@prisma/client");
-    // clientEntry: .../node_modules/.pnpm/@prisma+client@X/node_modules/@prisma/client/default.js
-    //   dirname×1 → @prisma/client dir
-    //   dirname×2 → @prisma dir
-    //   dirname×3 → node_modules dir (pnpm virtual store root for this package)
     const nodeModulesDir = dirname(dirname(dirname(clientEntry)));
     const LAMBDA_TARGET = "rhel-openssl-3.0.x";
-    const engineAbsPath = resolve(
-      nodeModulesDir,
-      `.prisma/client/libquery_engine-${LAMBDA_TARGET}.so.node`,
-    );
-    const engineRelPath = relative(process.cwd(), engineAbsPath);
 
-    // Shared nodejs bundling config for all Lambda functions that use Prisma.
-    // - external: esbuild leaves @prisma/client as-is (it's a native module)
-    // - copyFiles: packs the query engine binary into the Lambda zip
+    // Stage the generated .prisma/client/ JS files (no binary) to a flat path.
+    // The engine binary (.so.node) is served from the Lambda Layer at /opt/.
+    const prismaClientSrc = resolve(nodeModulesDir, ".prisma/client");
+    const prismaClientDest = resolve(process.cwd(), ".build/prisma-client");
+    mkdirSync(prismaClientDest, { recursive: true });
+    cpSync(prismaClientSrc, prismaClientDest, { recursive: true });
+
+    // Copy only non-binary .prisma/client files into the Lambda bundle.
+    // The .so.node engine binary comes from the Lambda Layer, not from copyFiles.
+    const prismaClientFiles = readdirSync(prismaClientDest)
+      .filter((file) => {
+        if (!statSync(resolve(prismaClientDest, file)).isFile()) return false;
+        if (file.endsWith(".node")) return false; // binary — served via Layer
+        return true;
+      })
+      .map((file) => ({
+        from: relative(process.cwd(), resolve(prismaClientDest, file)),
+        to: `.prisma/client/${file}`,
+      }));
+
+    // Engine binary is mounted at /opt/ by the Lambda Layer.
+    const LAMBDA_ENGINE_PATH = `/opt/libquery_engine-${LAMBDA_TARGET}.so.node`;
+
+    // Lambda Layer ARN containing the Prisma query engine binary for rhel-openssl-3.0.x.
+    const PRISMA_ENGINE_LAYER = "arn:aws:lambda:us-east-1:943378954443:layer:prisma-engine-rhel-3:1";
+
     const prismaNode = {
       format: "esm" as const,
-      external: ["@prisma/client", ".prisma"],
-      copyFiles: [
-        {
-          from: engineRelPath,
-          to: `libquery_engine-${LAMBDA_TARGET}.so.node`,
-        },
-      ],
+      external: [".prisma"],
+      copyFiles: prismaClientFiles,
     };
 
     const DATABASE_URL = new sst.Secret("DatabaseUrl");
@@ -65,6 +69,7 @@ export default $config({
         process.env.PACIFICA_REST_BASE_URL ?? "https://api.pacifica.fi",
       CREDENTIAL_ENCRYPTION_KEY_ID:
         process.env.CREDENTIAL_ENCRYPTION_KEY_ID ?? "v2",
+      PRISMA_QUERY_ENGINE_LIBRARY: LAMBDA_ENGINE_PATH,
     };
 
     // --- API Gateway + Lambda HTTP handler ---
@@ -82,6 +87,7 @@ export default $config({
       runtime: "nodejs22.x",
       memory: "512 MB",
       timeout: "29 seconds",
+      layers: [PRISMA_ENGINE_LAYER],
       environment: commonEnv,
       nodejs: prismaNode,
     });
@@ -93,6 +99,7 @@ export default $config({
       runtime: "nodejs22.x",
       memory: "256 MB",
       timeout: "55 seconds",
+      layers: [PRISMA_ENGINE_LAYER],
       environment: {
         DATABASE_URL: DATABASE_URL.value,
         DIRECT_DATABASE_URL: DIRECT_DATABASE_URL.value,
@@ -101,6 +108,7 @@ export default $config({
         INTERNAL_API_SECRET: INTERNAL_API_SECRET.value,
         PACIFICA_REST_BASE_URL:
           process.env.PACIFICA_REST_BASE_URL ?? "https://api.pacifica.fi",
+        PRISMA_QUERY_ENGINE_LIBRARY: LAMBDA_ENGINE_PATH,
       },
       nodejs: prismaNode,
     });
