@@ -198,18 +198,6 @@ export function AppLayout() {
               className={`shell-toast shell-toast--${state.runtime.actionToast.tone}`}
             >
               <p>{state.runtime.actionToast.message}</p>
-              <button
-                aria-label={t("modalCloseAction")}
-                className="shell-toast__close"
-                onClick={() =>
-                  setRuntimeState({
-                    actionToast: null,
-                  })
-                }
-                type="button"
-              >
-                {t("modalCloseAction")}
-              </button>
             </section>
           </div>
         ) : null}
