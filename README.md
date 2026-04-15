@@ -1,243 +1,190 @@
 # Pacifica Trading Bot
 
-Monorepo do MVP Pacifica com `app`, contratos compartilhados e base para API/worker.
+Monorepo for an automated trading bot running on [Pacifica](https://www.pacifica.fi/). It includes a React frontend (`app`), a REST API (`api`), a continuous trading worker (`worker`), and shared packages for contracts, database, encryption, market data, and strategy execution.
 
-## Requisitos
+## Requirements
 
-- `Node.js` 20+
-- `pnpm` 10+
+- Node.js 20+
+- pnpm 10+
+- Docker (for local PostgreSQL)
 
-## Instalação
+## Installation
 
-Na raiz do projeto:
+From the repo root:
 
 ```bash
 pnpm install
 ```
 
-Crie seu arquivo local de ambiente a partir do exemplo:
+Copy the environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-## Como rodar
+Fill in the required values — see [Environment variables](#environment-variables) below.
 
-Hoje, o fluxo útil para desenvolvimento está no conjunto `database + api + app`, e o `worker` ja pode ser iniciado com os cortes de `FM-013` e `FM-014`.
+## Running locally
 
-Subir o PostgreSQL local via `docker compose`:
+**1. Start the local PostgreSQL container:**
 
 ```bash
 pnpm db:up
 ```
 
-Aplicar o schema atual no banco local:
+**2. Apply the database schema:**
 
 ```bash
 pnpm --filter @pacifica/database db:push
 ```
 
-Subir a API local do Functional MVP:
+**3. Start the API:**
 
 ```bash
 pnpm --filter @pacifica/api dev
 ```
 
-Subir o worker local em modo dev:
+**4. Start the worker:**
 
 ```bash
 pnpm --filter @pacifica/worker dev
 ```
 
-Subir o app em modo dev:
+**5. Start the frontend:**
 
 ```bash
 pnpm --filter @pacifica/app dev
 ```
 
-O `app`, a `api`, o `worker` e o `database` carregam o `.env` da raiz automaticamente.
+The Vite dev server runs at `http://localhost:5173`. The API listens on port `3003`.
 
-Quando a `api` sobe em desenvolvimento, o scheduler local de market data:
-- refresca `prices` e `market info` a cada `1 minuto`
-- deriva os `candles` a partir dos presets ativos no banco
-- deduplica automaticamente as combinacoes `symbol + timeframe` necessarias para o `worker` e para a simulacao de presets
+All apps load `.env` from the repo root automatically.
 
-O Vite deve abrir em algo como:
+When the API starts in development mode, the local market data scheduler:
+- Refreshes prices and market info every 60 seconds
+- Derives candles for active presets (BTC-PERP, ETH-PERP, SOL-PERP on 5m/15m/1h intervals)
+- Deduplicates `symbol + timeframe` combinations needed by the worker and preset simulation
 
-```txt
-http://localhost:5173
-```
-
-## Comandos úteis
-
-Rodar typecheck do app:
+## Useful commands
 
 ```bash
-pnpm --filter @pacifica/app typecheck
-```
-
-Rodar typecheck do worker:
-
-```bash
-pnpm --filter @pacifica/worker typecheck
-```
-
-Gerar build do app:
-
-```bash
-pnpm --filter @pacifica/app build
-```
-
-Rodar typecheck do workspace:
-
-```bash
+# Type-check everything
 pnpm typecheck
-```
 
-Ver logs do banco:
+# Type-check a specific app
+pnpm --filter @pacifica/app typecheck
+pnpm --filter @pacifica/worker typecheck
 
-```bash
+# Build the frontend
+pnpm --filter @pacifica/app build
+
+# Database
 pnpm db:logs
-```
-
-Derrubar o banco local:
-
-```bash
 pnpm db:down
+
+# Tests
+pnpm test
+pnpm test:watch
 ```
 
-## Teste manual do onboarding
+## Environment variables
 
-1. Rode `pnpm --filter @pacifica/app dev`
-2. Abra `http://localhost:5173`
-3. Tenha a extensão `Phantom` ou `Backpack` instalada no navegador
-4. No card de wallet, escolha `Phantom` ou `Backpack` no dropdown `Wallet to connect`
-5. Clique em `Connect wallet`
-6. Clique em `Approve builder code` e aprove a assinatura na wallet principal
-7. Preencha `Agent Wallet public key` e `Agent Wallet private key`
-8. Use a private key no mesmo formato `base58` entregue pela Pacifica
-9. Clique em `Validate and Continue`
+Key variables from `.env.example`:
 
-### Seleção de wallet no onboarding
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (default port 55432) |
+| `VITE_APP_API_BASE_URL` | API base URL for the frontend (default `http://localhost:3003`) |
+| `APP_ORIGIN` | Allowed CORS origin for the API (default `http://localhost:5173`) |
+| `PACIFICA_ENV` | `mainnet` or `testnet` |
+| `PACIFICA_REST_BASE_URL` | Pacifica REST API base URL |
+| `PACIFICA_API_KEY` | Pacifica API key |
+| `PACIFICA_BUILDER_CODE` | Builder code used when placing orders |
+| `PACIFICA_BUILDER_MAX_FEE_RATE` | Max fee rate for builder code approval |
+| `VITE_PACIFICA_BUILDER_CODE` | Same as above, exposed to the frontend |
+| `VITE_PACIFICA_BUILDER_MAX_FEE_RATE` | Same as above, exposed to the frontend |
+| `CREDENTIAL_ENCRYPTION_KEY` | AES encryption key for agent wallet credentials (32+ chars) |
+| `CREDENTIAL_ENCRYPTION_KEY_ID` | Key ID (`v2-*` for HKDF derivation; legacy SHA-256 if omitted) |
+| `INTERNAL_API_SECRET` | Protects `POST /api/internal/market/refresh` |
+| `WORKER_ID` | Identifier for the worker instance |
+| `WORKER_SIGNAL_TRACE_ENABLED` | Set to `true` to enable verbose signal loop logging |
+| `WORKER_MARKET_ORDER_SLIPPAGE_PERCENT` | Slippage tolerance for market orders (default `0.5`) |
 
-O onboarding agora aceita duas wallets Solana suportadas:
-- `Phantom`
-- `Backpack`
+## Project structure
 
-Comportamento atual:
-- a escolha é feita no dropdown `Wallet to connect` antes de clicar em `Connect wallet`
-- a wallet conectada passa a definir a `Main wallet` da sessão
-- `Change wallet` desconecta a sessão atual e permite escolher outro provider
-- o `Profile` exibe o provider conectado como `Phantom` ou `Backpack`
-
-Observação técnica:
-- o suporte ao `Backpack` usa o adapter `@solana/wallet-adapter-backpack`, que hoje está marcado como `deprecated` no npm, mas permanece como a integração compatível com a stack atual do app
-
-## Estrutura
-
-- `apps/app`: frontend React + Vite
-- `apps/api`: base da API
-- `apps/worker`: worker operacional continuo
-- `packages/contracts`: contratos compartilhados
-- `packages/database`: schema Prisma e base de dados
-- `docker-compose.yml`: PostgreSQL local para desenvolvimento
-
-## Preview de backtest dos presets
-
-A tela de presets agora exibe um preview de backtest logo abaixo do `preset-showcase`.
-
-Comportamento atual:
-- o preview é calculado sob demanda quando o preset é selecionado ou editado
-- o resultado nao é persistido em banco
-- o período é fixo em `ultimos 7 dias`
-- a UI exibe `strategy vs hold`, `max drawdown`, `win rate` e trades simulados
-
-Fidelidade com o runtime:
-- o preview reutiliza a mesma engine de sinal usada pelo bot
-- o contrato efetivo do preset considera `symbol`, `positionSizeValue`, `longEnabled` e `shortEnabled`
-- a entrada simulada ocorre na abertura do próximo candle após o sinal
-
-Endpoint:
-
-```txt
-POST /api/presets/backtest-preview
+```
+apps/
+  app/       — React + Vite frontend
+  api/       — HTTP API (Node.js, port 3003)
+  worker/    — Continuous trading worker
+packages/
+  contracts/           — Zod schemas and shared TypeScript types
+  database/            — Prisma schema and generated client (PostgreSQL)
+  credential-crypto/   — AES encryption/decryption for agent wallet keys
+  pacifica-market-data/— Market data gateway (prices, candles) from Pacifica
+  pacifica-trading/    — Order execution against Pacifica
+  preset-engine/       — Strategy signal engine (indicators, rules evaluation)
+docker-compose.yml     — Local PostgreSQL on port 55432
 ```
 
-Referência técnica completa:
-- [docs/dev/PRESET_BACKTEST_PREVIEW_TECH_DESIGN.pt-BR.md](/home/dev/Projects/callydus-pacifica-trading-bot/docs/dev/PRESET_BACKTEST_PREVIEW_TECH_DESIGN.pt-BR.md)
+## Onboarding flow
+
+1. Run `pnpm --filter @pacifica/app dev` and open `http://localhost:5173`
+2. Have the **Phantom** or **Backpack** browser extension installed
+3. Select your wallet provider in the `Wallet to connect` dropdown
+4. Click **Connect wallet** and approve in the extension
+5. Click **Approve builder code** and sign the transaction with your main wallet
+6. Enter the **Agent Wallet public key** and **Agent Wallet private key** (base58 format, as provided by Pacifica)
+7. Click **Validate and Continue**
 
 ## Worker
 
-No estado atual de `FM-013` + `FM-014`, o `worker`:
-- varre contas com `preset` ativo
-- assume ownership por conta via lease persistida em `BotRuntimeState`
-- registra `heartbeat` real no runtime
-- avalia o preset ativo em loop recorrente
-- usa baseline de analise de `1 minuto`
-- persiste `SignalDecision` deduplicada e pronta para ordem
-- libera ownership em pause, desativacao ou shutdown
+The worker runs continuously and handles the full trade lifecycle:
 
-Ele ainda nao:
-- fecha trades automaticamente
+- Scans accounts with an active preset
+- Acquires per-account ownership via a database lease (`BotRuntimeState`)
+- Evaluates active presets on a recurring analysis loop
+- Persists deduplicated `SignalDecision` records
+- Consumes pending signals, decrypts the agent wallet, and places real market orders on Pacifica
+- Persists `OrderExecutionAttempt` with request, response, and status
+- Creates `OpenTrade` from confirmed order executions, with mandatory stop-loss and take-profit
+- Updates `currentPrice` and `unrealizedPnL` during the trade lifecycle
+- Closes `ClosedTrade` automatically when the latest candle crosses `take_profit` or `stop_loss`
+- Blocks new signals for symbols that already have an open position
+- Auto-pauses the runtime on blocking order errors
+- Releases ownership on pause, deactivation, or shutdown
+- Redacts base58 secrets from logs automatically
 
-No estado atual de `FM-015`, o `worker` tambem:
-- consome `SignalDecision` pendente
-- decripta a `Agent Wallet` ativa
-- cria `market order` real na Pacifica
-- persiste `OrderExecutionAttempt` com request, response e status
-- pausa automaticamente o runtime em erro bloqueante de criacao de ordem
-
-No estado atual de `FM-016`, o `worker` tambem:
-- cria `OpenTrade` a partir da execucao real enviada
-- anexa `stop loss` e `take profit` obrigatorios ao request de entrada
-- atualiza `currentPrice` e `unrealizedPnl` no lifecycle local
-- fecha `ClosedTrade` automaticamente quando o candle mais recente cruza `take_profit` ou `stop_loss`
-- cancela novos sinais para simbolos que ja tenham posicao aberta
-
-Ele ainda nao:
-- reconcilia esse lifecycle local contra a Pacifica como fonte final de verdade
-
-Esse endurecimento final fica para `FM-017`.
-
-Para depurar o loop de sinais do `FM-014`, voce pode habilitar:
+**Verbose signal tracing:**
 
 ```bash
 WORKER_SIGNAL_TRACE_ENABLED=true
 ```
 
-Com isso, o worker passa a logar detalhadamente:
-- busca de candles reais da Pacifica
-- calculo de indicadores
-- avaliacao das regras do preset
-- decisao `long`, `short` ou `none`
-- persistencia da `SignalDecision`
+Logs candle fetching, indicator calculation, rule evaluation, signal decision, and persistence.
 
-Para configuracao da entrada real de ordem do `FM-015`, o worker usa:
+## Preset backtest preview
+
+The presets screen shows an on-demand backtest preview when a preset is selected or edited.
+
+- Calculated on demand, not persisted
+- Fixed window: last 7 days
+- Reuses the same signal engine as the live worker
+- Displays strategy vs. hold, max drawdown, win rate, and simulated trades
+- Simulated entry occurs at the open of the next candle after the signal
+
+**Endpoint:** `POST /api/presets/backtest-preview`
+
+## Deployment
+
+The project deploys to AWS via [SST](https://sst.dev/):
 
 ```bash
-WORKER_MARKET_ORDER_SLIPPAGE_PERCENT=0.5
+# Deploy to staging
+pnpm sst:deploy
+
+# Deploy to production
+pnpm sst:deploy:prod
 ```
 
-## Banco local
-
-O PostgreSQL do projeto sobe por `docker compose` na porta local `55432` por padrao, para evitar conflito com instalacoes locais ja rodando em portas mais comuns.
-
-## Validacao de credenciais
-
-Para o fluxo do `FM-002`, o app espera:
-- `VITE_APP_API_BASE_URL=http://localhost:3003`
-- `APP_ORIGIN=http://localhost:5173`
-- `VITE_PACIFICA_BUILDER_CODE` e `VITE_PACIFICA_BUILDER_MAX_FEE_RATE` iguais aos valores configurados na API
-- API local em execucao
-- banco local aplicado
-- `PACIFICA_REST_BASE_URL`, `PACIFICA_BUILDER_CODE`, `PACIFICA_BUILDER_MAX_FEE_RATE`, `CREDENTIAL_ENCRYPTION_KEY` e `CREDENTIAL_ENCRYPTION_KEY_ID` preenchidos no ambiente da API
-
-Observacao:
-- `PACIFICA_BUILDER_MAX_FEE_RATE` participa do fluxo de aprovacao do builder code
-- criacao de ordem usa `builder_code`, nao `max_fee_rate`
-
-Para o `Run readiness check`, a API usa por padrao:
-- `PACIFICA_OPERATIONAL_PROBE_SYMBOL=BTC`
-- `PACIFICA_OPERATIONAL_PROBE_PRICE=20000`
-- `PACIFICA_OPERATIONAL_PROBE_TARGET_NOTIONAL_USD=11`
-- `PACIFICA_OPERATIONAL_PROBE_TIF=ALO`
+See `docs/dev/DEPLOY_RUNBOOK_2026-04-13.md` for the full deployment runbook including Lambda layer setup, Prisma configuration, and environment variable provisioning.
