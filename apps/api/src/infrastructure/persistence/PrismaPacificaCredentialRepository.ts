@@ -316,7 +316,12 @@ export class PrismaPacificaCredentialRepository
       where: {
         id: credentialId,
         ...(ownerWalletAddress
-          ? { operatorAccount: { walletAddress: ownerWalletAddress } }
+          ? {
+              OR: [
+                { walletAddress: ownerWalletAddress },
+                { operatorAccount: { walletAddress: ownerWalletAddress } },
+              ],
+            }
           : {}),
       },
       include: {
