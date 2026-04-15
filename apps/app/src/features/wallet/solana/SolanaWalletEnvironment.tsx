@@ -58,6 +58,7 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
     connect,
     disconnect,
     select,
+    signMessage,
     wallet,
     wallets: availableWallets,
   } = useWallet();
@@ -134,19 +135,13 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
 
   const signWalletMessage = useCallback(
     async (message: Uint8Array) => {
-      const adapter = wallet?.adapter;
-      const adapterSignMessage =
-        adapter && "signMessage" in adapter
-          ? adapter.signMessage
-          : undefined;
-
-      if (typeof adapterSignMessage !== "function") {
+      if (typeof signMessage !== "function") {
         throw new Error("Wallet message signing is unavailable.");
       }
 
-      return adapterSignMessage.call(adapter, message);
+      return signMessage(message);
     },
-    [wallet],
+    [signMessage],
   );
 
   const value = useMemo<SolanaWalletPort>(
@@ -155,14 +150,10 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
       lastErrorCode,
       connectWallet,
       disconnectWallet,
-      canSignMessages: Boolean(
-        wallet?.adapter &&
-          "signMessage" in wallet.adapter &&
-          typeof wallet.adapter.signMessage === "function",
-      ),
+      canSignMessages: typeof signMessage === "function",
       signWalletMessage,
     }),
-    [connectWallet, disconnectWallet, lastErrorCode, signWalletMessage, wallet],
+    [connectWallet, disconnectWallet, lastErrorCode, signMessage, signWalletMessage, wallet],
   );
 
   return (

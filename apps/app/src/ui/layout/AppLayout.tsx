@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import logoUrl from "../../shared/assets/logo.svg";
 import { registerUnauthorizedNavigator } from "../../features/auth/unauthorized-redirect";
 import { useAppState } from "../../state/app-state";
@@ -30,15 +30,17 @@ function NavigationLinks() {
 }
 
 export function AppLayout() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { setLocale, setRuntimeState, state } = useAppState();
+  const { canAccessProduct, setLocale, setRuntimeState, state } = useAppState();
 
   useEffect(() => {
     registerUnauthorizedNavigator(navigate);
   }, [navigate]);
   const { isReady, t } = useI18n();
-  const isOnboardingRoute = location.pathname === "/onboarding";
+  const canShowFullShell =
+    canAccessProduct ||
+    (state.wallet.sessionStatus === "connected" &&
+      state.onboarding.accountLookupStatus === "existing_account");
   const hasActiveStrategy = Boolean(state.presets.activePreset);
   const isStrategyRunning =
     hasActiveStrategy &&
@@ -77,6 +79,9 @@ export function AppLayout() {
   }, [setRuntimeState, state.runtime.actionToast]);
 
   if (!isReady) {
+    if (!canShowFullShell) {
+      return <main className="onboarding-shell" />;
+    }
     return (
       <div className="shell-skeleton">
         <div className="shell-skeleton__sidebar">
@@ -112,7 +117,7 @@ export function AppLayout() {
     );
   }
 
-  if (isOnboardingRoute) {
+  if (!canShowFullShell) {
     return (
       <main className="onboarding-shell">
         <Outlet />
