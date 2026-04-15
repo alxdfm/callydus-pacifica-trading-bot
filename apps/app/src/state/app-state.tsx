@@ -301,12 +301,12 @@ function operationalVerificationStatus(
 function onboardingLookupStatus(
   value: unknown,
 ): AppSessionState["onboarding"]["accountLookupStatus"] {
-  return value === "checking" ||
-    value === "new_account" ||
-    value === "existing_account" ||
-    value === "error"
-    ? value
-    : "idle";
+  // "checking" and "error" are transient states that should never be persisted.
+  // If they appear in storage (legacy sessions), reset to "idle" so the lookup retries.
+  if (value === "new_account" || value === "existing_account") {
+    return value;
+  }
+  return "idle";
 }
 
 function presetActivationValue(value: unknown): PresetActivation | null {
@@ -490,6 +490,9 @@ export function sanitizeStateForPersistence(state: AppSessionState): AppSessionS
           errorCode: null,
         }
       : state.wallet;
+  const isTransientLookupStatus =
+    state.onboarding.accountLookupStatus === "checking" ||
+    state.onboarding.accountLookupStatus === "error";
   const onboarding =
     state.onboarding.status === "credentials_validating"
       ? {
@@ -497,10 +500,22 @@ export function sanitizeStateForPersistence(state: AppSessionState): AppSessionS
           status: "credentials_pending" as const,
           accountReady: false,
           showCompletionModal: false,
+          accountLookupStatus: isTransientLookupStatus
+            ? ("idle" as const)
+            : state.onboarding.accountLookupStatus,
+          discoveredWalletAddress: isTransientLookupStatus
+            ? null
+            : state.onboarding.discoveredWalletAddress,
         }
       : {
           ...state.onboarding,
           showCompletionModal: false,
+          accountLookupStatus: isTransientLookupStatus
+            ? ("idle" as const)
+            : state.onboarding.accountLookupStatus,
+          discoveredWalletAddress: isTransientLookupStatus
+            ? null
+            : state.onboarding.discoveredWalletAddress,
         };
 
   return {

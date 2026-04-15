@@ -290,7 +290,8 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
 
     if (
       state.onboarding.accountLookupStatus === "checking" ||
-      state.onboarding.discoveredWalletAddress === mainWalletPublicKey
+      (state.onboarding.discoveredWalletAddress === mainWalletPublicKey &&
+        state.onboarding.accountLookupStatus !== "error")
     ) {
       return;
     }
