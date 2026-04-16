@@ -109,7 +109,7 @@ export function createPreviewYourStrategyBacktest(
     const requiredPeriod = getRequiredPeriod(technicalContract);
     const warmupStartTime =
       input.startTime - intervalMs * Math.max(requiredPeriod + 5, 30);
-    const candleLimit = Math.ceil((input.endTime - warmupStartTime) / intervalMs) + 2;
+    const candleLimit = Math.ceil((input.endTime - warmupStartTime) / intervalMs);
 
     const candleRequest = {
       symbol: marketSymbol,

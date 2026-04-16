@@ -93,6 +93,7 @@ import { PacificaMarketDataGateway } from "./infrastructure/pacifica/PacificaMar
 import { PacificaOperationalVerificationGateway } from "./infrastructure/pacifica/PacificaOperationalVerificationGateway";
 import { PacificaStartBotReadinessGateway } from "./infrastructure/pacifica/PacificaStartBotReadinessGateway";
 import { PersistedMarketDataGateway } from "./infrastructure/market-data/PersistedMarketDataGateway";
+import { ReadOnlyMarketDataGateway } from "./infrastructure/market-data/ReadOnlyMarketDataGateway";
 import { PrismaMarketDataSnapshotRepository } from "./infrastructure/persistence/PrismaMarketDataSnapshotRepository";
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
@@ -198,13 +199,10 @@ export function createApiModule(input: CreateApiModuleInput) {
   const previewYourStrategyBacktest = createPreviewYourStrategyBacktest({
     marketData:
       input.previewYourStrategyBacktestDependencies?.marketData ??
-      persistedMarketDataGateway,
+      new ReadOnlyMarketDataGateway(marketDataSnapshotRepository),
     repository:
       input.previewYourStrategyBacktestDependencies?.repository ??
       defaultCredentialRepository,
-    refresher:
-      input.previewYourStrategyBacktestDependencies?.refresher ??
-      marketDataRefresher,
   });
   const refreshMarketData = createRefreshMarketDataManually({
     refresher:
