@@ -50,6 +50,16 @@ function sanitizeForLog(value: string): string {
   return value.replace(/[1-9A-HJ-NP-Za-km-z]{64,}/g, "[REDACTED]");
 }
 
+function isZodError(
+  err: unknown,
+): err is { issues: Array<{ code: string; message: string; path: (string | number)[] }> } {
+  return (
+    err instanceof Error &&
+    err.name === "ZodError" &&
+    Array.isArray((err as unknown as Record<string, unknown>).issues)
+  );
+}
+
 const UNAUTHORIZED = json(401, {
   status: "error",
   code: "unauthorized",
@@ -305,6 +315,14 @@ export function createApiHttpHandler(
 
       return json(404, { message: "Not found" });
     } catch (err) {
+      if (isZodError(err)) {
+        return json(400, {
+          status: "error",
+          code: "validation_error",
+          issues: err.issues,
+        });
+      }
+
       const message = err instanceof Error ? err.message : String(err);
       const stack = err instanceof Error ? err.stack : undefined;
       console.error(

@@ -20,6 +20,11 @@ export async function handler(
   const path = event.rawPath;
   const requestId = event.requestContext.requestId;
 
+  const startedAt = Date.now();
+  console.log(
+    JSON.stringify({ event: "api.request_start", requestId, method, path }),
+  );
+
   try {
     const rawBody = event.isBase64Encoded
       ? Buffer.from(event.body ?? "", "base64").toString("utf8")
@@ -38,6 +43,16 @@ export async function handler(
       rawBody,
     });
 
+    console.log(
+      JSON.stringify({
+        event: "api.request_end",
+        requestId,
+        method,
+        path,
+        statusCode: response.statusCode,
+        durationMs: Date.now() - startedAt,
+      }),
+    );
     return {
       statusCode: response.statusCode,
       headers: response.headers,
