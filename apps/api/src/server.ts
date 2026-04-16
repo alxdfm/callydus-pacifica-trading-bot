@@ -28,6 +28,13 @@ const handleRequest = createApiHttpHandler(api, { internalApiSecret });
 const SCHEDULER_CANDLE_SYMBOLS = ["BTC-PERP", "ETH-PERP", "SOL-PERP"] as const;
 const SCHEDULER_CANDLE_INTERVALS = ["5m", "15m", "1h"] as const;
 
+// Limits chosen to cover 7-day backtest window + 30-candle warmup with buffer
+const SCHEDULER_CANDLE_INTERVAL_LIMITS: Record<(typeof SCHEDULER_CANDLE_INTERVALS)[number], number> = {
+  "5m": 2100,
+  "15m": 750,
+  "1h": 220,
+};
+
 const localMarketDataRefreshScheduler = startLocalMarketDataRefreshScheduler({
   config: readLocalMarketDataRefreshSchedulerConfigFromEnv(process.env),
   refreshMarketData: api.services.refreshMarketData,
@@ -37,6 +44,7 @@ const localMarketDataRefreshScheduler = startLocalMarketDataRefreshScheduler({
         symbol,
         interval,
         priceSource: "market" as const,
+        limit: SCHEDULER_CANDLE_INTERVAL_LIMITS[interval],
       })),
     ),
 });

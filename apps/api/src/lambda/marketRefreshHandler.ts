@@ -4,6 +4,13 @@ import { normalizeCandleRequestConfig } from "../infrastructure/market-data/star
 const CANDLE_SYMBOLS = ["BTC-PERP", "ETH-PERP", "SOL-PERP"] as const;
 const CANDLE_INTERVALS = ["5m", "15m", "1h"] as const;
 
+// Limits chosen to cover 7-day backtest window + 30-candle warmup with buffer
+const CANDLE_INTERVAL_LIMITS: Record<(typeof CANDLE_INTERVALS)[number], number> = {
+  "5m": 2100,   // 7d (2016) + 30 warmup + buffer
+  "15m": 750,   // 7d (672) + 30 warmup + buffer
+  "1h": 220,    // 7d (168) + 30 warmup + buffer
+};
+
 // Initialise once per cold start
 const { api } = getApiRuntime();
 
@@ -17,7 +24,12 @@ export async function handler(): Promise<void> {
 
   const candleRequests = CANDLE_SYMBOLS.flatMap((symbol) =>
     CANDLE_INTERVALS.map((interval) =>
-      normalizeCandleRequestConfig({ symbol, interval, priceSource: "market" }, referenceTime),
+      normalizeCandleRequestConfig({
+        symbol,
+        interval,
+        priceSource: "market",
+        limit: CANDLE_INTERVAL_LIMITS[interval],
+      }, referenceTime),
     ),
   );
 
