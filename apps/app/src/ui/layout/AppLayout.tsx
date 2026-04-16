@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import logoUrl from "../../shared/assets/logo.svg";
-import { registerUnauthorizedNavigator } from "../../features/auth/unauthorized-redirect";
+import { registerUnauthorizedNavigator, registerResetAppState } from "../../features/auth/unauthorized-redirect";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { getNavigationItems } from "./navigation";
@@ -31,11 +31,15 @@ function NavigationLinks() {
 
 export function AppLayout() {
   const navigate = useNavigate();
-  const { canAccessProduct, setLocale, setRuntimeState, state } = useAppState();
+  const { canAccessProduct, resetOnboardingState, setLocale, setRuntimeState, state } = useAppState();
 
   useEffect(() => {
     registerUnauthorizedNavigator(navigate);
   }, [navigate]);
+
+  useEffect(() => {
+    registerResetAppState(resetOnboardingState);
+  }, [resetOnboardingState]);
   const { isReady, t } = useI18n();
   const canShowFullShell =
     canAccessProduct ||
