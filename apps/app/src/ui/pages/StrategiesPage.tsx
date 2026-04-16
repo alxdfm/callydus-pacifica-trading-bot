@@ -2186,22 +2186,26 @@ function YourStrategyWizard(input: {
                   ))}
                 </ul>
               </div>
-              <div className="done-note">
-                <strong>{t("yourStrategySummaryLongTitle")}</strong>
-                <ul className="summary-list">
-                  {draft.entry.long.trigger.rules.map((rule, index) => (
-                    <li key={`long-${index}`}>{describeRule(rule)}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="done-note">
-                <strong>{t("yourStrategySummaryShortTitle")}</strong>
-                <ul className="summary-list">
-                  {draft.entry.short.trigger.rules.map((rule, index) => (
-                    <li key={`short-${index}`}>{describeRule(rule)}</li>
-                  ))}
-                </ul>
-              </div>
+              {draft.entry.long.enabled && (
+                <div className="done-note">
+                  <strong>{t("yourStrategySummaryLongTitle")}</strong>
+                  <ul className="summary-list">
+                    {draft.entry.long.trigger.rules.map((rule, index) => (
+                      <li key={`long-${index}`}>{describeRule(rule)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {draft.entry.short.enabled && (
+                <div className="done-note">
+                  <strong>{t("yourStrategySummaryShortTitle")}</strong>
+                  <ul className="summary-list">
+                    {draft.entry.short.trigger.rules.map((rule, index) => (
+                      <li key={`short-${index}`}>{describeRule(rule)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="done-note">
                 <strong>{t("yourStrategySummaryRiskTitle")}</strong>
                 <ul className="summary-list">
@@ -2738,14 +2742,15 @@ function RuleEditorCard(input: {
   const rsiIndicatorKeys = getRsiIndicatorKeys(indicators);
   const volumeIndicatorKeys = getVolumeBaselineKeys(indicators);
   const volumeReferenceKeys = getVolumeReferenceKeys(indicators);
-  // Volume indicators are self-contained and only interact with their own
-  // derived keys.  All other indicators (price + RSI) are always selectable
-  // so the user can freely switch between them; the RSI isolation constraint
-  // is enforced by the ref/value fields below, not by hiding options here.
+  // Each context is strictly isolated: RSI rules only see RSI indicators,
+  // price rules only see price indicators, volume rules only see volume
+  // indicators. This prevents cross-context mixing in the UI.
   const availableIndicatorKeys =
     selectedContext === "volume"
       ? volumeIndicatorKeys
-      : [...priceIndicatorKeys, ...rsiIndicatorKeys];
+      : selectedContext === "rsi"
+        ? rsiIndicatorKeys
+        : priceIndicatorKeys;
   const thresholdAllowed =
     selectedContext !== "volume" || volumeReferenceKeys.length > 0;
   const crossAllowed = selectedContext !== "volume";
@@ -2765,22 +2770,17 @@ function RuleEditorCard(input: {
 
   function handleRuleTypeChange(nextType: PresetTriggerRule["type"]) {
     if (nextType === "threshold") {
-      const nextIndicatorKey =
-        availableIndicatorKeys[0] ?? indicatorKeys[0] ?? "EMA1";
       onChange(() =>
-        createDefaultRuleForIndicator(indicators, nextIndicatorKey),
+        createDefaultRuleForIndicator(indicators, rule.indicator),
       );
       return;
     }
-
-    const nextIndicatorKey =
-      availableIndicatorKeys[0] ?? indicatorKeys[0] ?? "EMA1";
 
     if (selectedContext === "rsi") {
       onChange(() => ({
         scope: "currentCandle",
         type: "cross",
-        indicator: nextIndicatorKey,
+        indicator: rule.indicator,
         operator: "crossesAbove",
         value: 70,
       }));
@@ -2790,11 +2790,11 @@ function RuleEditorCard(input: {
     onChange(() => ({
       scope: "currentCandle",
       type: "cross",
-      indicator: nextIndicatorKey,
+      indicator: rule.indicator,
       operator: "crossesAbove",
       ref:
         referenceKeys[0] ??
-        (selectedContext === "price" ? "PRICE" : nextIndicatorKey),
+        (selectedContext === "price" ? "PRICE" : rule.indicator),
     }));
   }
 

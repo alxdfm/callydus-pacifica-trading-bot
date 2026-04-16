@@ -5,6 +5,7 @@ import {
   type YourStrategyDraft,
 } from "@pacifica/contracts";
 import {
+  EquityDepletedError,
   getIntervalDurationMs,
   getRequiredPeriod,
   materializeYourStrategyTechnicalContract,
@@ -169,6 +170,15 @@ export function createPreviewYourStrategyBacktest(
           slippagePercent: input.slippagePercent,
         });
       } catch (error) {
+        if (error instanceof EquityDepletedError) {
+          return {
+            status: "error",
+            code: "internal_error",
+            message: error.message,
+            retryable: false,
+          };
+        }
+
         return {
           status: "error",
           code: "insufficient_market_data",

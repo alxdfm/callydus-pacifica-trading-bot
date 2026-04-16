@@ -11,6 +11,15 @@ import type {
   YourStrategyDraft,
 } from "@pacifica/contracts";
 
+export class EquityDepletedError extends Error {
+  constructor() {
+    super(
+      "The strategy's equity was fully depleted during the simulation. Try a longer backtest period, a lower position size, or review your entry and exit rules.",
+    );
+    this.name = "EquityDepletedError";
+  }
+}
+
 type IndicatorSeries = number[];
 
 type IndicatorSnapshot = {
@@ -393,6 +402,11 @@ export function simulatePresetBacktest(
           input.technicalContract,
           equity,
         );
+
+        if (Math.round(capitalAllocated * 100) / 100 <= 0) {
+          throw new EquityDepletedError();
+        }
+
         const notionalUsd = capitalAllocated * leverage;
         const entryPrice = applyAdverseSlippage(
           nextCandle.open,
