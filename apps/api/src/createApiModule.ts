@@ -1,6 +1,3 @@
-import type {
-  MarketInfoItem,
-} from "@pacifica/contracts";
 import type { PrismaClient } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 
@@ -16,22 +13,6 @@ import {
   createCloseTrade,
   type CloseTradeDependencies,
 } from "./application/close-trade/CloseTrade";
-import {
-  createGetMarketCandles,
-  type GetMarketCandlesDependencies,
-} from "./application/get-market-candles/GetMarketCandles";
-import {
-  createGetMarketPrices,
-  type GetMarketPricesDependencies,
-} from "./application/get-market-prices/GetMarketPrices";
-import {
-  createMarketDataRefresher,
-  type RefreshMarketDataDependencies,
-} from "./application/refresh-market-data/RefreshMarketData";
-import {
-  createRefreshMarketDataManually,
-  type RefreshMarketDataManuallyDependencies,
-} from "./application/refresh-market-data/RefreshMarketDataManually";
 import {
   createHeartbeatRuntime,
   type HeartbeatRuntimeDependencies,
@@ -89,63 +70,33 @@ import { AesCredentialEncryptionService } from "./infrastructure/crypto/AesCrede
 import { PacificaBuilderApprovalGateway } from "./infrastructure/pacifica/PacificaBuilderApprovalGateway";
 import { PacificaAccountStateGateway } from "./infrastructure/pacifica/PacificaAccountStateGateway";
 import { PacificaCredentialValidationGateway } from "./infrastructure/pacifica/PacificaCredentialValidationGateway";
-import { PacificaMarketDataGateway } from "./infrastructure/pacifica/PacificaMarketDataGateway";
 import { PacificaOperationalVerificationGateway } from "./infrastructure/pacifica/PacificaOperationalVerificationGateway";
 import { PacificaStartBotReadinessGateway } from "./infrastructure/pacifica/PacificaStartBotReadinessGateway";
-import { PersistedMarketDataGateway } from "./infrastructure/market-data/PersistedMarketDataGateway";
-import { ReadOnlyMarketDataGateway } from "./infrastructure/market-data/ReadOnlyMarketDataGateway";
-import { PrismaMarketDataSnapshotRepository } from "./infrastructure/persistence/PrismaMarketDataSnapshotRepository";
 import { PrismaPacificaCredentialRepository } from "./infrastructure/persistence/PrismaPacificaCredentialRepository";
 import { createApiRouter } from "./ui/http/createApiRouter";
 import { BearerTokenService } from "./infrastructure/auth/BearerTokenService";
 import { PrismaAuthRepository } from "./infrastructure/persistence/PrismaAuthRepository";
-import {
-  createRequestAuthNonce,
-} from "./application/request-auth-nonce/RequestAuthNonce";
-import {
-  createVerifyAuthSignature,
-} from "./application/verify-auth-signature/VerifyAuthSignature";
-
-const supportedStrategyMarketSymbols = new Set(["BTC", "ETH", "SOL"]);
+import { createRequestAuthNonce } from "./application/request-auth-nonce/RequestAuthNonce";
+import { createVerifyAuthSignature } from "./application/verify-auth-signature/VerifyAuthSignature";
 
 type CreateApiModuleInput = {
   environment?: Partial<ApiEnvironment>;
   prisma: PrismaClient;
-  approvePacificaBuilderDependencies?: Partial<
-    ApprovePacificaBuilderDependencies
-  >;
+  approvePacificaBuilderDependencies?: Partial<ApprovePacificaBuilderDependencies>;
   activateYourStrategyDependencies?: Partial<ActivateYourStrategyDependencies>;
   closeTradeDependencies?: Partial<CloseTradeDependencies>;
-  getMarketCandlesDependencies?: Partial<GetMarketCandlesDependencies>;
-  getMarketPricesDependencies?: Partial<GetMarketPricesDependencies>;
-  refreshMarketDataDependencies?: Partial<RefreshMarketDataDependencies>;
-  refreshMarketDataManuallyDependencies?: Partial<
-    RefreshMarketDataManuallyDependencies
-  >;
-  previewYourStrategyBacktestDependencies?: Partial<
-    PreviewYourStrategyBacktestDependencies
-  >;
+  previewYourStrategyBacktestDependencies?: Partial<PreviewYourStrategyBacktestDependencies>;
   heartbeatRuntimeDependencies?: Partial<HeartbeatRuntimeDependencies>;
-  lookupOperationalAccountByWalletDependencies?: Partial<
-    LookupOperationalAccountByWalletDependencies
-  >;
-  getOperationalSessionByWalletDependencies?: Partial<
-    GetOperationalSessionByWalletDependencies
-  >;
-  synchronizePacificaAccountStateDependencies?: Partial<
-    SynchronizePacificaAccountStateDependencies
-  >;
+  lookupOperationalAccountByWalletDependencies?: Partial<LookupOperationalAccountByWalletDependencies>;
+  getOperationalSessionByWalletDependencies?: Partial<GetOperationalSessionByWalletDependencies>;
+  synchronizePacificaAccountStateDependencies?: Partial<SynchronizePacificaAccountStateDependencies>;
   pauseBotDependencies?: Partial<PauseBotDependencies>;
   reconcileRuntimeDependencies?: Partial<ReconcileRuntimeDependencies>;
   resumeBotDependencies?: Partial<ResumeBotDependencies>;
   saveYourStrategyDependencies?: Partial<SaveYourStrategyDependencies>;
   startBotReadinessCheckDependencies?: Partial<StartBotReadinessCheckDependencies>;
-  verifyPacificaOperationalDependencies?: Partial<
-    VerifyPacificaOperationalDependencies
-  >;
-  validatePacificaCredentialsDependencies?: Partial<
-    ValidatePacificaCredentialsDependencies
-  >;
+  verifyPacificaOperationalDependencies?: Partial<VerifyPacificaOperationalDependencies>;
+  validatePacificaCredentialsDependencies?: Partial<ValidatePacificaCredentialsDependencies>;
 };
 
 export function createApiModule(input: CreateApiModuleInput) {
@@ -159,55 +110,16 @@ export function createApiModule(input: CreateApiModuleInput) {
   const defaultCredentialRepository = new PrismaPacificaCredentialRepository(
     input.prisma,
   );
-  const marketDataSnapshotRepository = new PrismaMarketDataSnapshotRepository(
-    input.prisma,
-  );
-  const marketDataGateway = new PacificaMarketDataGateway(environment);
   const startBotReadinessGateway = new PacificaStartBotReadinessGateway(
     environment,
   );
-  const marketDataRefresher = createMarketDataRefresher({
-    marketData:
-      input.refreshMarketDataDependencies?.marketData ?? marketDataGateway,
-    marketInfo:
-      input.refreshMarketDataDependencies?.marketInfo ??
-      startBotReadinessGateway,
-    repository:
-      input.refreshMarketDataDependencies?.repository ??
-      marketDataSnapshotRepository,
-    ...(input.refreshMarketDataDependencies?.now
-      ? { now: input.refreshMarketDataDependencies.now }
-      : {}),
-    ...(input.refreshMarketDataDependencies?.source
-      ? { source: input.refreshMarketDataDependencies.source }
-      : {}),
-  });
-  const persistedMarketDataGateway = new PersistedMarketDataGateway({
-    repository: marketDataSnapshotRepository,
-    refresher: marketDataRefresher,
-  });
-  const getMarketCandles = createGetMarketCandles({
-    marketData:
-      input.getMarketCandlesDependencies?.marketData ??
-      persistedMarketDataGateway,
-  });
-  const getMarketPrices = createGetMarketPrices({
-    marketData:
-      input.getMarketPricesDependencies?.marketData ??
-      persistedMarketDataGateway,
-  });
   const previewYourStrategyBacktest = createPreviewYourStrategyBacktest({
-    marketData:
-      input.previewYourStrategyBacktestDependencies?.marketData ??
-      new ReadOnlyMarketDataGateway(marketDataSnapshotRepository),
+    ...(input.previewYourStrategyBacktestDependencies?.marketData
+      ? { marketData: input.previewYourStrategyBacktestDependencies.marketData }
+      : {}),
     repository:
       input.previewYourStrategyBacktestDependencies?.repository ??
       defaultCredentialRepository,
-  });
-  const refreshMarketData = createRefreshMarketDataManually({
-    refresher:
-      input.refreshMarketDataManuallyDependencies?.refresher ??
-      marketDataRefresher,
   });
 
   const activateYourStrategy = createActivateYourStrategy({
@@ -232,7 +144,8 @@ export function createApiModule(input: CreateApiModuleInput) {
       input.pauseBotDependencies?.commandRepository ??
       defaultCredentialRepository,
     eventRepository:
-      input.pauseBotDependencies?.eventRepository ?? defaultCredentialRepository,
+      input.pauseBotDependencies?.eventRepository ??
+      defaultCredentialRepository,
     ...(input.pauseBotDependencies?.now
       ? { now: input.pauseBotDependencies.now }
       : {}),
@@ -250,9 +163,6 @@ export function createApiModule(input: CreateApiModuleInput) {
     startBotReadiness:
       input.startBotReadinessCheckDependencies?.startBotReadiness ??
       startBotReadinessGateway,
-    marketData:
-      input.startBotReadinessCheckDependencies?.marketData ??
-      persistedMarketDataGateway,
     eventRepository:
       input.startBotReadinessCheckDependencies?.eventRepository ??
       defaultCredentialRepository,
@@ -279,7 +189,8 @@ export function createApiModule(input: CreateApiModuleInput) {
       input.closeTradeDependencies?.commandRepository ??
       defaultCredentialRepository,
     eventRepository:
-      input.closeTradeDependencies?.eventRepository ?? defaultCredentialRepository,
+      input.closeTradeDependencies?.eventRepository ??
+      defaultCredentialRepository,
     ...(input.closeTradeDependencies?.now
       ? { now: input.closeTradeDependencies.now }
       : {}),
@@ -315,17 +226,20 @@ export function createApiModule(input: CreateApiModuleInput) {
       ? { errorAfterMs: input.reconcileRuntimeDependencies.errorAfterMs }
       : {}),
   });
-  const synchronizePacificaAccountState = createSynchronizePacificaAccountState({
-    pacificaAccountState:
-      input.synchronizePacificaAccountStateDependencies?.pacificaAccountState ??
-      new PacificaAccountStateGateway(environment),
-    runtimeMaintenanceRepository:
-      input.synchronizePacificaAccountStateDependencies
-        ?.runtimeMaintenanceRepository ?? defaultCredentialRepository,
-    ...(input.synchronizePacificaAccountStateDependencies?.now
-      ? { now: input.synchronizePacificaAccountStateDependencies.now }
-      : {}),
-  });
+  const synchronizePacificaAccountState = createSynchronizePacificaAccountState(
+    {
+      pacificaAccountState:
+        input.synchronizePacificaAccountStateDependencies
+          ?.pacificaAccountState ??
+        new PacificaAccountStateGateway(environment),
+      runtimeMaintenanceRepository:
+        input.synchronizePacificaAccountStateDependencies
+          ?.runtimeMaintenanceRepository ?? defaultCredentialRepository,
+      ...(input.synchronizePacificaAccountStateDependencies?.now
+        ? { now: input.synchronizePacificaAccountStateDependencies.now }
+        : {}),
+    },
+  );
   const operationalSessionRepository =
     input.getOperationalSessionByWalletDependencies
       ?.operationalSessionRepository ?? defaultCredentialRepository;
@@ -392,7 +306,9 @@ export function createApiModule(input: CreateApiModuleInput) {
   const getOperationalDashboardByWallet =
     createGetOperationalSessionSliceByWallet({
       readSession: (walletAddress) =>
-        operationalSessionRepository.findDashboardByWalletAddress(walletAddress),
+        operationalSessionRepository.findDashboardByWalletAddress(
+          walletAddress,
+        ),
       runtimeMaintenanceRepository,
       ...(input.getOperationalSessionByWalletDependencies?.now
         ? { now: input.getOperationalSessionByWalletDependencies.now }
@@ -424,20 +340,9 @@ export function createApiModule(input: CreateApiModuleInput) {
           return null;
         }
 
-        let marketInfo: MarketInfoItem[] = [];
-
-        try {
-          const markets = await persistedMarketDataGateway.listMarketInfo();
-          marketInfo = markets.filter((market) =>
-            supportedStrategyMarketSymbols.has(market.symbol),
-          );
-        } catch {
-          marketInfo = [];
-        }
-
         return {
           ...session,
-          marketInfo,
+          marketInfo: [],
           yourStrategy: session.yourStrategy,
         };
       },
@@ -462,8 +367,8 @@ export function createApiModule(input: CreateApiModuleInput) {
       refreshPacificaAccountState: true,
       refreshSymbolOperationalConfigs: true,
     });
-  const getOperationalTradesByWallet =
-    createGetOperationalSessionSliceByWallet({
+  const getOperationalTradesByWallet = createGetOperationalSessionSliceByWallet(
+    {
       readSession: (walletAddress) =>
         operationalSessionRepository.findTradesByWalletAddress(walletAddress),
       runtimeMaintenanceRepository,
@@ -484,7 +389,8 @@ export function createApiModule(input: CreateApiModuleInput) {
         : {}),
       synchronizePacificaAccountState,
       refreshPacificaAccountState: true,
-    });
+    },
+  );
   const getOperationalHistoryByWallet =
     createGetOperationalSessionSliceByWallet({
       readSession: (walletAddress) =>
@@ -524,9 +430,14 @@ export function createApiModule(input: CreateApiModuleInput) {
   });
 
   const authRepository = new PrismaAuthRepository(input.prisma);
-  const tokenService = new BearerTokenService(environment.credentialEncryptionKey);
+  const tokenService = new BearerTokenService(
+    environment.credentialEncryptionKey,
+  );
   const requestAuthNonce = createRequestAuthNonce({ authRepository });
-  const verifyAuthSignature = createVerifyAuthSignature({ authRepository, tokenService });
+  const verifyAuthSignature = createVerifyAuthSignature({
+    authRepository,
+    tokenService,
+  });
 
   const validatePacificaCredentials = createValidatePacificaCredentials({
     credentialRepository,
@@ -550,9 +461,6 @@ export function createApiModule(input: CreateApiModuleInput) {
       approvePacificaBuilder,
       activateYourStrategy,
       closeTrade,
-      getMarketCandles,
-      getMarketPrices,
-      refreshMarketData,
       requestAuthNonce,
       previewYourStrategyBacktest,
       heartbeatRuntime,
@@ -571,9 +479,5 @@ export function createApiModule(input: CreateApiModuleInput) {
       verifyPacificaOperational,
       validatePacificaCredentials,
     }),
-    services: {
-      refreshMarketData,
-      marketDataRefresher,
-    },
   };
 }
