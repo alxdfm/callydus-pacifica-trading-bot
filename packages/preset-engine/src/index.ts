@@ -11,6 +11,14 @@ import type {
   YourStrategyDraft,
 } from "@pacifica/contracts";
 
+import {
+  calculateAtrSeries,
+  calculateEmaSeries,
+  calculateRsiSeries,
+  calculateSmaSeries,
+  createIndicatorNaNSeries,
+} from "./technicalIndicatorSeries";
+
 export class EquityDepletedError extends Error {
   constructor() {
     super(
@@ -630,7 +638,7 @@ function buildIndicatorSeriesMap(
     const config = indicators[indicatorName];
 
     if (!config) {
-      cache[indicatorName] = createEmptySeries(candles.length);
+      cache[indicatorName] = createIndicatorNaNSeries(candles.length);
       return cache[indicatorName];
     }
 
@@ -642,14 +650,14 @@ function buildIndicatorSeriesMap(
             : config.source === "close" || config.source === undefined
               ? closeSeries
               : getIndicatorSeries(config.source);
-        cache[indicatorName] = calculateEma(sourceSeries, config.period);
+        cache[indicatorName] = calculateEmaSeries(sourceSeries, config.period);
         break;
       }
       case "rsi":
-        cache[indicatorName] = calculateRsi(closeSeries, config.period);
+        cache[indicatorName] = calculateRsiSeries(closeSeries, config.period);
         break;
       case "atr":
-        cache[indicatorName] = calculateAtr(
+        cache[indicatorName] = calculateAtrSeries(
           highSeries,
           lowSeries,
           closeSeries,
@@ -666,7 +674,7 @@ function buildIndicatorSeriesMap(
             : config.source === "close"
               ? closeSeries
               : getIndicatorSeries(config.source);
-        cache[indicatorName] = calculateSma(sourceSeries, config.period);
+        cache[indicatorName] = calculateSmaSeries(sourceSeries, config.period);
         break;
       }
     }
@@ -1017,163 +1025,6 @@ function findAtrIndicatorName(technicalContract: PresetTechnicalContract) {
   }
 
   return null;
-}
-
-/**
- * Creates an indicator series prefilled with `NaN` placeholders so indexing is
- * preserved even before enough data exists to calculate a real value.
- */
-function createEmptySeries(length: number) {
-  return Array.from({ length }, () => Number.NaN);
-}
-
-/**
- * Calculates a simple moving average aligned to the original series length.
- */
-function calculateSma(values: number[], period: number) {
-  const result = createEmptySeries(values.length);
-
-  for (let index = period - 1; index < values.length; index += 1) {
-    let sum = 0;
-    let valid = true;
-
-    for (let cursor = index - period + 1; cursor <= index; cursor += 1) {
-      const value = values[cursor];
-
-      if (typeof value !== "number" || !Number.isFinite(value)) {
-        valid = false;
-        break;
-      }
-
-      sum += value;
-    }
-
-    if (valid) {
-      result[index] = sum / period;
-    }
-  }
-
-  return result;
-}
-
-/**
- * Calculates an exponential moving average aligned to the original series
- * length, using SMA as the initial seed.
- */
-function calculateEma(values: number[], period: number) {
-  const result = createEmptySeries(values.length);
-  const smoothingMultiplier = 2 / (period + 1);
-  const seedIndex = period - 1;
-
-  if (values.length < period) {
-    return result;
-  }
-
-  let seedSum = 0;
-
-  for (let index = 0; index < period; index += 1) {
-    seedSum += values[index] ?? 0;
-  }
-
-  result[seedIndex] = seedSum / period;
-
-  for (let index = seedIndex + 1; index < values.length; index += 1) {
-    result[index] =
-      (values[index] ?? 0) * smoothingMultiplier +
-      (result[index - 1] ?? 0) * (1 - smoothingMultiplier);
-  }
-
-  return result;
-}
-
-/**
- * Calculates RSI using Wilder-style smoothed average gain/loss.
- */
-function calculateRsi(values: number[], period: number) {
-  const result = createEmptySeries(values.length);
-
-  if (values.length <= period) {
-    return result;
-  }
-
-  let gains = 0;
-  let losses = 0;
-
-  for (let index = 1; index <= period; index += 1) {
-    const delta = (values[index] ?? 0) - (values[index - 1] ?? 0);
-    gains += Math.max(delta, 0);
-    losses += Math.max(-delta, 0);
-  }
-
-  let averageGain = gains / period;
-  let averageLoss = losses / period;
-  result[period] = calculateRsiValue(averageGain, averageLoss);
-
-  for (let index = period + 1; index < values.length; index += 1) {
-    const delta = (values[index] ?? 0) - (values[index - 1] ?? 0);
-    const gain = Math.max(delta, 0);
-    const loss = Math.max(-delta, 0);
-
-    averageGain = (averageGain * (period - 1) + gain) / period;
-    averageLoss = (averageLoss * (period - 1) + loss) / period;
-    result[index] = calculateRsiValue(averageGain, averageLoss);
-  }
-
-  return result;
-}
-
-/**
- * Converts average gain/loss into an RSI value.
- */
-function calculateRsiValue(averageGain: number, averageLoss: number) {
-  if (averageLoss === 0) {
-    return 100;
-  }
-
-  const relativeStrength = averageGain / averageLoss;
-  return 100 - 100 / (1 + relativeStrength);
-}
-
-/**
- * Calculates ATR using true range plus Wilder smoothing.
- */
-function calculateAtr(
-  highs: number[],
-  lows: number[],
-  closes: number[],
-  period: number,
-) {
-  const trueRanges = createEmptySeries(highs.length);
-
-  for (let index = 1; index < highs.length; index += 1) {
-    trueRanges[index] = Math.max(
-      (highs[index] ?? 0) - (lows[index] ?? 0),
-      Math.abs((highs[index] ?? 0) - (closes[index - 1] ?? 0)),
-      Math.abs((lows[index] ?? 0) - (closes[index - 1] ?? 0)),
-    );
-  }
-
-  const result = createEmptySeries(highs.length);
-
-  if (highs.length <= period) {
-    return result;
-  }
-
-  let seedSum = 0;
-
-  for (let index = 1; index <= period; index += 1) {
-    seedSum += trueRanges[index] ?? 0;
-  }
-
-  result[period] = seedSum / period;
-
-  for (let index = period + 1; index < highs.length; index += 1) {
-    result[index] =
-      (((result[index - 1] ?? 0) * (period - 1)) + (trueRanges[index] ?? 0)) /
-      period;
-  }
-
-  return result;
 }
 
 /**
