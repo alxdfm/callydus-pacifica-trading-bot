@@ -2,8 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createWorkerEnvironment } from "./createWorkerEnvironment";
 
 describe("createWorkerEnvironment", () => {
+  const requiredSecrets = {
+    pacificaBuilderCode: "test-builder",
+    credentialEncryptionKey: "x".repeat(32),
+  };
+
   it("aplica defaults operacionais seguros para o worker local", () => {
-    const environment = createWorkerEnvironment();
+    const environment = createWorkerEnvironment(requiredSecrets);
 
     expect(environment.pacificaRestBaseUrl).toBe("https://api.pacifica.fi");
     expect(environment.signalTraceEnabled).toBe(false);
@@ -17,6 +22,7 @@ describe("createWorkerEnvironment", () => {
 
   it("permite override explícito das configurações", () => {
     const environment = createWorkerEnvironment({
+      ...requiredSecrets,
       workerId: "worker-1",
       signalTraceEnabled: true,
       analysisIntervalMs: 30_000,
