@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.next/
+.sst/
+pnpm-lock.yaml
+*.min.js
+*.min.css
+*.d.ts.map
+*.js.map
+*.png
+*.jpg
+*.svg
+*.ico
+*.woff
+*.woff2
