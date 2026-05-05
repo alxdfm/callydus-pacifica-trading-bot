@@ -1,8 +1,22 @@
 # Plano de Refatoração: trading-bot-pacifica
 
 **Data:** 2026-05-05  
+**Última atualização:** 2026-05-05  
 **Status do sistema:** parado — sem necessidade de compatibilidade retroativa  
 **Objetivo:** migrar para Hono + Drizzle + WS-first no Worker, com estrutura de pacotes flat em `packages/`
+
+## Progresso
+
+| Fase | Status |
+|------|--------|
+| 1 — Limpeza de dead code | ✅ Concluída |
+| 2 — Schema Drizzle | ✅ Concluída |
+| 3 — `packages/shared/` | pendente |
+| 4 — `packages/worker/` | pendente |
+| 5 — `packages/api/` (Hono) | pendente |
+| 6 — `packages/frontend/` | pendente |
+| 7 — Deletar pacotes obsoletos | pendente |
+| 8 — SST v3 + Dockerfile | pendente |
 
 ---
 
@@ -22,11 +36,13 @@
 
 ---
 
-## Fase 1 — Preparação e limpeza de dead code
+## Fase 1 — Preparação e limpeza de dead code ✅
 
 **Objetivo:** remover arquivos transitórios e código morto antes de qualquer reestruturação, para ter uma base limpa.
 
 **Critério de conclusão:** `pnpm typecheck` passa; nenhum arquivo dos itens abaixo existe mais.
+
+**Concluída em:** 2026-05-05 — typecheck verde em `@pacifica/api` e `@pacifica/worker`.
 
 ### 1.1 Deletar arquivos transitórios de market data na API
 
@@ -102,11 +118,13 @@ Em `apps/api/src/infrastructure/config/createApiEnvironment.ts`:
 
 ---
 
-## Fase 2 — Novo schema de banco (Drizzle)
+## Fase 2 — Novo schema de banco (Drizzle) ✅
 
 **Objetivo:** definir o schema alvo em Drizzle e gerar a migration SQL de transição. O Prisma continua existindo até a Fase 5.
 
-**Critério de conclusão:** arquivo `packages/api/src/db/schema.ts` compilando com Drizzle; migration SQL gerada e revisada.
+**Critério de conclusão:** arquivo `apps/api/src/db/schema.ts` compilando com Drizzle; migration SQL gerada e revisada.
+
+**Concluída em:** 2026-05-05 — schema em `apps/api/src/db/schema.ts` (será movido para `packages/api/src/db/schema.ts` na Fase 5). Migration SQL em `apps/api/src/db/migrations/0000_military_makkari.sql`. Scripts `db:generate` e `db:migrate` adicionados ao `package.json`. Migration **não executada** no banco — aguarda Fase 7.
 
 ### 2.1 Instalar Drizzle no workspace
 
