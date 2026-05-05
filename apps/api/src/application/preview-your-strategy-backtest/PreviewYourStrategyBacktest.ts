@@ -12,27 +12,17 @@ import {
   simulatePresetBacktest,
   toPacificaMarketSymbol,
 } from "@pacifica/preset-engine";
-import { PacificaApiError } from "../../infrastructure/pacifica/PacificaClient";
-import type { MarketDataPort } from "../../domain/market-data/MarketDataPort";
+import { PacificaApiError } from "@pacifica/pacifica-market-data";
+import type { MarketCandle, MarketCandleRequest } from "@pacifica/contracts";
 import type { YourStrategyRepository } from "../../domain/your-strategy/YourStrategyRepository";
 
+type CandleSource = {
+  getCandles(request: MarketCandleRequest): Promise<MarketCandle[]>;
+};
+
 export type PreviewYourStrategyBacktestDependencies = {
-  marketData: MarketDataPort;
+  marketData?: CandleSource;
   repository: YourStrategyRepository;
-  refresher?: {
-    refreshCandles(input: {
-      requests: Array<{
-        symbol: string;
-        interval: YourStrategyBacktestPreviewRequest["draft"] extends never
-          ? never
-          : "3m" | "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "6h" | "12h" | "1d" | "1m";
-        priceSource: "market" | "mark";
-        startTime: number;
-        endTime: number;
-        limit: number;
-      }>;
-    }): Promise<unknown>;
-  };
 };
 
 /**
@@ -121,34 +111,23 @@ export function createPreviewYourStrategyBacktest(
       limit: candleLimit,
     } as const;
 
+    if (!dependencies.marketData) {
+      return {
+        status: "error",
+        code: "provider_unavailable",
+        message: "Market data provider is not configured.",
+        retryable: false,
+      };
+    }
+
     try {
-      let candles = await loadCandlesWithPreviewFallback({
-        marketData: dependencies.marketData,
-        refresher: dependencies.refresher,
-        request: candleRequest,
-      });
-
-      const inPeriodCandles = candles.filter(
-        (candle) => candle.closeTime >= input.startTime,
-      );
-
-      if (candles.length < requiredPeriod + 3 || inPeriodCandles.length < 2) {
-        candles = await refreshAndReloadCandlesForPreview({
-          marketData: dependencies.marketData,
-          refresher: dependencies.refresher,
-          request: candleRequest,
-          fallbackCandles: candles,
-        });
-      }
+      const candles = await dependencies.marketData.getCandles(candleRequest);
 
       const inPeriodCandlesAfterRefresh = candles.filter(
         (candle) => candle.closeTime >= input.startTime,
       );
 
-      if (
-        candles.length < requiredPeriod + 3 ||
-        inPeriodCandlesAfterRefresh.length < 2
-      ) {
+      if (candles.length < requiredPeriod + 3 || inPeriodCandlesAfterRefresh.length < 2) {
         return {
           status: "error",
           code: "insufficient_market_data",
@@ -321,68 +300,6 @@ function extractPacificaErrorMessage(body: unknown, fallback: string): string {
   }
 
   return fallback;
-}
-
-async function loadCandlesWithPreviewFallback(input: {
-  marketData: MarketDataPort;
-  refresher?: PreviewYourStrategyBacktestDependencies["refresher"];
-  request: {
-    symbol: string;
-    interval: "1m" | "3m" | "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "6h" | "12h" | "1d";
-    priceSource: "market" | "mark";
-    startTime: number;
-    endTime: number;
-    limit: number;
-  };
-}) {
-  try {
-    return await input.marketData.getCandles(input.request);
-  } catch (error) {
-    if (!shouldTriggerHistoricalRefresh(error) || !input.refresher) {
-      throw error;
-    }
-
-    await input.refresher.refreshCandles({
-      requests: [input.request],
-    });
-
-    return input.marketData.getCandles(input.request);
-  }
-}
-
-async function refreshAndReloadCandlesForPreview(input: {
-  marketData: MarketDataPort;
-  refresher?: PreviewYourStrategyBacktestDependencies["refresher"];
-  request: {
-    symbol: string;
-    interval: "1m" | "3m" | "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "6h" | "12h" | "1d";
-    priceSource: "market" | "mark";
-    startTime: number;
-    endTime: number;
-    limit: number;
-  };
-  fallbackCandles: Awaited<ReturnType<MarketDataPort["getCandles"]>>;
-}) {
-  if (!input.refresher) {
-    return input.fallbackCandles;
-  }
-
-  try {
-    await input.refresher.refreshCandles({
-      requests: [input.request],
-    });
-
-    return await input.marketData.getCandles(input.request);
-  } catch {
-    return input.fallbackCandles;
-  }
-}
-
-function shouldTriggerHistoricalRefresh(error: unknown) {
-  return (
-    error instanceof Error &&
-    error.message.trim().includes("snapshot is unavailable")
-  );
 }
 
 function mapGenericPreviewError(error: unknown) {

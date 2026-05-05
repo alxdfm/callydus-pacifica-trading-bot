@@ -210,20 +210,10 @@ describe("createPreviewYourStrategyBacktest", () => {
     });
   });
 
-  it("dispara refresh histórico e tenta de novo quando o snapshot está indisponível", async () => {
+  it("retorna provider_unavailable quando o snapshot de candles falha", async () => {
     const getCandles = vi
       .fn()
-      .mockRejectedValueOnce(new Error("Market candles snapshot is unavailable."))
-      .mockResolvedValueOnce([
-        createCandle(300_000, 100, 80),
-        createCandle(600_000, 102, 90),
-        createCandle(900_000, 104, 110),
-        createCandle(1_200_000, 105, 150),
-        createCandle(1_500_000, 125, 120),
-        createCandle(1_800_000, 126, 130),
-        createCandle(2_100_000, 127, 140),
-      ]);
-    const refreshCandles = vi.fn().mockResolvedValue({});
+      .mockRejectedValueOnce(new Error("Market candles snapshot is unavailable."));
     const preview = createPreviewYourStrategyBacktest({
       repository: {
         findYourStrategyByWalletAddress: vi.fn(),
@@ -231,9 +221,6 @@ describe("createPreviewYourStrategyBacktest", () => {
       marketData: {
         getCandles,
       } as never,
-      refresher: {
-        refreshCandles,
-      },
     });
 
     const result = await preview({
@@ -248,9 +235,10 @@ describe("createPreviewYourStrategyBacktest", () => {
       slippagePercent: 0,
     });
 
-    expect(refreshCandles).toHaveBeenCalledTimes(1);
-    expect(getCandles).toHaveBeenCalledTimes(2);
-    expect(result.status).toBe("success");
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.code).toBe("provider_unavailable");
+    }
   });
 
   it("usa a strategy persistida e registra o fingerprint do preview bem-sucedido", async () => {
