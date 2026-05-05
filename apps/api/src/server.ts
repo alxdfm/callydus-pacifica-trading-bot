@@ -2,10 +2,6 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { getApiRuntime } from "./bootstrap/createApiRuntime";
 import { createApiHttpHandler } from "./ui/http/createApiHttpHandler";
-import {
-  readLocalMarketDataRefreshSchedulerConfigFromEnv,
-  startLocalMarketDataRefreshScheduler,
-} from "./infrastructure/market-data/startLocalMarketDataRefreshScheduler";
 
 const REQUIRED_ENV_VARS = [
   "CREDENTIAL_ENCRYPTION_KEY",
@@ -24,30 +20,6 @@ for (const key of REQUIRED_ENV_VARS) {
 const { api, internalApiSecret, allowedOrigin } = getApiRuntime();
 
 const handleRequest = createApiHttpHandler(api, { internalApiSecret });
-
-const SCHEDULER_CANDLE_SYMBOLS = ["BTC-PERP", "ETH-PERP", "SOL-PERP"] as const;
-const SCHEDULER_CANDLE_INTERVALS = ["5m", "15m", "1h"] as const;
-
-// Limits chosen to cover 7-day backtest window + 30-candle warmup with buffer
-const SCHEDULER_CANDLE_INTERVAL_LIMITS: Record<(typeof SCHEDULER_CANDLE_INTERVALS)[number], number> = {
-  "5m": 2100,
-  "15m": 750,
-  "1h": 220,
-};
-
-const localMarketDataRefreshScheduler = startLocalMarketDataRefreshScheduler({
-  config: readLocalMarketDataRefreshSchedulerConfigFromEnv(process.env),
-  refreshMarketData: api.services.refreshMarketData,
-  resolveCandleRequests: async () =>
-    SCHEDULER_CANDLE_SYMBOLS.flatMap((symbol) =>
-      SCHEDULER_CANDLE_INTERVALS.map((interval) => ({
-        symbol,
-        interval,
-        priceSource: "market" as const,
-        limit: SCHEDULER_CANDLE_INTERVAL_LIMITS[interval],
-      })),
-    ),
-});
 
 const port = Number(process.env.PORT ?? "3003");
 
@@ -93,11 +65,6 @@ server.listen(port, () => {
   console.log(`Pacifica API listening on http://localhost:${port}`);
 });
 
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  process.on(signal, () => {
-    localMarketDataRefreshScheduler.stop();
-  });
-}
 
 process.once("unhandledRejection", (reason) => {
   const rawMessage = reason instanceof Error ? reason.message : String(reason);

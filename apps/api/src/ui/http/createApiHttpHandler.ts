@@ -223,40 +223,6 @@ export function createApiHttpHandler(
         return json(result.status === "success" ? 200 : 400, result);
       }
 
-      // --- Market data endpoints ---
-
-      if (method === "GET" && path === "/api/market/prices") {
-        const result = await api.router.getMarketPrices();
-        return json(result.status === "success" ? 200 : 400, result);
-      }
-
-      if (method === "POST" && path === "/api/market/candles") {
-        const body = parseBody(rawBody);
-        const result = await api.router.getMarketCandles({
-          body: body as never,
-        });
-        return json(result.status === "success" ? 200 : 400, result);
-      }
-
-      if (method === "POST" && path === "/api/internal/market/refresh") {
-        const providedSecret = getHeader(headers, "x-internal-secret") ?? "";
-        const secretBuffer = Buffer.from(internalApiSecret);
-        const providedBuffer = Buffer.from(providedSecret);
-        const authorized =
-          providedBuffer.length === secretBuffer.length &&
-          timingSafeEqual(providedBuffer, secretBuffer);
-
-        if (!authorized) {
-          return json(403, { message: "Forbidden" });
-        }
-
-        const body = parseBody(rawBody);
-        const result = await api.router.refreshMarketData({
-          body: body as never,
-        });
-        return json(200, result);
-      }
-
       // --- Account read endpoints (authenticated) ---
 
       if (method === "POST" && path === "/api/account/session") {

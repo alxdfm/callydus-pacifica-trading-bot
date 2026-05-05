@@ -2,10 +2,6 @@ import { createActivateYourStrategyRoute } from "./routes/createActivateYourStra
 import type { ActivateYourStrategyHandler } from "./routes/createActivateYourStrategyRoute";
 import { createCloseTradeRoute } from "./routes/createCloseTradeRoute";
 import type { CloseTradeHandler } from "./routes/createCloseTradeRoute";
-import { createGetMarketCandlesRoute } from "./routes/createGetMarketCandlesRoute";
-import type { GetMarketCandlesHandler } from "./routes/createGetMarketCandlesRoute";
-import { createGetMarketPricesRoute } from "./routes/createGetMarketPricesRoute";
-import type { GetMarketPricesHandler } from "./routes/createGetMarketPricesRoute";
 import { createPreviewYourStrategyBacktestRoute } from "./routes/createPreviewYourStrategyBacktestRoute";
 import type { PreviewYourStrategyBacktestHandler } from "./routes/createPreviewYourStrategyBacktestRoute";
 import { createPauseBotRoute } from "./routes/createPauseBotRoute";
@@ -36,8 +32,6 @@ import { createGetOperationalHistoryByWalletRoute } from "./routes/createGetOper
 import type { GetOperationalHistoryByWalletHandler } from "./routes/createGetOperationalHistoryByWalletRoute";
 import { createValidatePacificaCredentialsRoute } from "./routes/createValidatePacificaCredentialsRoute";
 import type { ValidatePacificaCredentialsHandler } from "./routes/createValidatePacificaCredentialsRoute";
-import { createRefreshMarketDataRoute } from "./routes/createRefreshMarketDataRoute";
-import type { RefreshMarketDataHandler } from "./routes/createRefreshMarketDataRoute";
 import { createSaveYourStrategyRoute } from "./routes/createSaveYourStrategyRoute";
 import type { SaveYourStrategyHandler } from "./routes/createSaveYourStrategyRoute";
 import { createRequestAuthNonceRoute } from "./routes/createRequestAuthNonceRoute";
@@ -49,8 +43,6 @@ type ApiRouterDependencies = {
   activateYourStrategy: ActivateYourStrategyHandler;
   approvePacificaBuilder: ApprovePacificaBuilderHandler;
   closeTrade: CloseTradeHandler;
-  getMarketCandles: GetMarketCandlesHandler;
-  getMarketPrices: GetMarketPricesHandler;
   previewYourStrategyBacktest: PreviewYourStrategyBacktestHandler;
   heartbeatRuntime: HeartbeatRuntimeHandler;
   lookupOperationalAccountByWallet: LookupOperationalAccountByWalletHandler;
@@ -63,7 +55,6 @@ type ApiRouterDependencies = {
   getOperationalPresetsByWallet: GetOperationalPresetsByWalletHandler;
   getOperationalTradesByWallet: GetOperationalTradesByWalletHandler;
   getOperationalHistoryByWallet: GetOperationalHistoryByWalletHandler;
-  refreshMarketData: RefreshMarketDataHandler;
   requestAuthNonce: RequestAuthNonceHandler;
   saveYourStrategy: SaveYourStrategyHandler;
   validatePacificaCredentials: ValidatePacificaCredentialsHandler;
@@ -80,12 +71,6 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
       dependencies.approvePacificaBuilder,
     ),
     closeTrade: createCloseTradeRoute(dependencies.closeTrade),
-    getMarketCandles: createGetMarketCandlesRoute(
-      dependencies.getMarketCandles,
-    ),
-    getMarketPrices: createGetMarketPricesRoute(
-      dependencies.getMarketPrices,
-    ),
     previewYourStrategyBacktest: createPreviewYourStrategyBacktestRoute(
       dependencies.previewYourStrategyBacktest,
     ),
@@ -117,9 +102,6 @@ export function createApiRouter(dependencies: ApiRouterDependencies) {
     ),
     getOperationalHistoryByWallet: createGetOperationalHistoryByWalletRoute(
       dependencies.getOperationalHistoryByWallet,
-    ),
-    refreshMarketData: createRefreshMarketDataRoute(
-      dependencies.refreshMarketData,
     ),
     requestAuthNonce: createRequestAuthNonceRoute(dependencies.requestAuthNonce),
     saveYourStrategy: createSaveYourStrategyRoute(
