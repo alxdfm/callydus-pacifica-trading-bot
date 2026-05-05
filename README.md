@@ -60,11 +60,6 @@ The Vite dev server runs at `http://localhost:5173`. The API listens on port `30
 
 All apps load `.env` from the repo root automatically.
 
-When the API starts in development mode, the local market data scheduler:
-- Refreshes prices and market info every 60 seconds
-- Derives candles for active presets (BTC-PERP, ETH-PERP, SOL-PERP on 5m/15m/1h intervals)
-- Deduplicates `symbol + timeframe` combinations needed by the worker and preset simulation
-
 ## Useful commands
 
 ```bash
