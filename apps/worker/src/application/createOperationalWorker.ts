@@ -296,6 +296,12 @@ function alignToLastClosedCandleEndTime(
  * - it does not provide the full historical trade view (read model is the source for that)
  */
 
+/**
+ * Infers how a position was closed **after** it disappeared from the exchange.
+ * When both TP and SL levels bracket `currentPrice`, **stop-loss is preferred**
+ * for longs (price already traded through downside) and for shorts (upside).
+ * This differs from candle-wick simulation in backtests, which uses intrabar OHLC.
+ */
 export function resolveDetectedClose(trade: {
   side: "long" | "short";
   stopLossPrice: number | null;
@@ -1316,6 +1322,20 @@ export function createOperationalWorker(
     }
   }
 
+  /**
+   * Single-account tick loop (ordered steps per iteration):
+   *
+   * 1. **Manual close** — `processRequestedTradeClosures` sends reduce-only exits for
+   *    trades in `close_requested` with `closeReasonPending === "manual"`.
+   * 2. **Exchange reconciliation** — `reconcileOpenTradesWithExchange` is the source
+   *    of truth when a position disappears (TP/SL fills, liquidations, external closes).
+   *    Exit reason is inferred via `resolveDetectedClose` (manual pending wins,
+   *    then stop-loss vs take-profit using snapshot `currentPrice` when both could apply).
+   * 3. **Signal evaluation** (on cadence) — fetches candles, updates open-trade **mark**
+   *    snapshots only in `synchronizeOpenTradesWithLatestCandle`, persists new
+   *    `SignalDecision` when rules fire, then `processExecutableSignalDecision`.
+   * 4. **Heartbeat** — renews lease and runtime health fields.
+   */
   async function runOwnedAccountLoop(lease: AcquiredWorkerLease, signal: AbortSignal) {
     let nextBackoffMs = dependencies.environment.heartbeatIntervalMs;
 
