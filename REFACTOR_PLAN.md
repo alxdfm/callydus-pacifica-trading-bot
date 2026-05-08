@@ -1,7 +1,7 @@
 # Plano de Refatoração: trading-bot-pacifica
 
 **Data:** 2026-05-05  
-**Última atualização:** 2026-05-05  
+**Última atualização:** 2026-05-07  
 **Status do sistema:** parado — sem necessidade de compatibilidade retroativa  
 **Objetivo:** migrar para Hono + Drizzle + WS-first no Worker, com estrutura de pacotes flat em `packages/`
 
@@ -11,9 +11,9 @@
 |------|--------|
 | 1 — Limpeza de dead code | ✅ Concluída |
 | 2 — Schema Drizzle | ✅ Concluída |
-| 3 — `packages/shared/` | pendente |
-| 4 — `packages/worker/` | pendente |
-| 5 — `packages/api/` (Hono) | pendente |
+| 3 — `packages/shared/` | ✅ Concluída |
+| 4 — `packages/worker/` | ✅ Concluída |
+| 5 — `packages/api/` (Hono) | ✅ Concluída |
 | 6 — `packages/frontend/` | pendente |
 | 7 — Deletar pacotes obsoletos | pendente |
 | 8 — SST v3 + Dockerfile | pendente |
