@@ -1,6 +1,21 @@
-FROM node:22-slim
+FROM node:22-slim AS builder
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile --prod
-COPY packages/worker/dist/ ./dist/
-CMD ["node", "dist/index.js"]
+RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/worker/package.json packages/worker/
+COPY packages/shared/package.json packages/shared/
+RUN pnpm install --frozen-lockfile
+COPY packages/worker/ packages/worker/
+COPY packages/shared/ packages/shared/
+RUN pnpm --filter @pacifica/worker build
+
+FROM node:22-slim AS runtime
+WORKDIR /app
+RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/worker/package.json packages/worker/
+COPY packages/shared/package.json packages/shared/
+RUN pnpm install --frozen-lockfile --prod
+COPY --from=builder /app/packages/worker/dist/ packages/worker/dist/
+COPY --from=builder /app/packages/shared/dist/ packages/shared/dist/
+CMD ["node", "packages/worker/dist/index.js"]
