@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { OperationalDashboardSessionFound } from "@pacifica/contracts";
+import type { OperationalDashboardSessionFound } from "../../types/contracts";
 import { applyOperationalDashboardSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";

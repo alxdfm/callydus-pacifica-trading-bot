@@ -3,7 +3,7 @@ import type {
   PacificaCredentialValidationResponse,
   PacificaValidationErrorCode,
   PacificaOperationalVerificationResponse,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { applyOperationalProfileSessionSnapshot } from "../account/apply-operational-page-sessions";
 import { readOperationalProfileViaBackend } from "../account/backend-operational-page-sessions";
 import { validateAgentWalletViaBackend } from "../onboarding/backend-credential-validation";

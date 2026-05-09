@@ -1,5 +1,5 @@
 import { useEffect, useRef, type PropsWithChildren } from "react";
-import type { WalletProvider } from "@pacifica/contracts";
+import type { WalletProvider } from "../../../types/contracts";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { applyAccountSessionSnapshot } from "../../account/apply-account-session";

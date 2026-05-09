@@ -1,6 +1,6 @@
 import type {
   OperationalSessionSnapshotFound,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import type {
   AppSessionState,
   BuilderApprovalState,

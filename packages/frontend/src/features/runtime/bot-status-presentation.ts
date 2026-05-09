@@ -1,4 +1,4 @@
-import type { BotStatus } from "@pacifica/contracts";
+import type { BotStatus } from "../../types/contracts";
 
 type BotStatusPresentation = {
   badgeTone: "neutral" | "info" | "warning" | "danger" | "success";

@@ -34,7 +34,7 @@ import {
   type SymbolOperationalConfig,
   symbolOperationalConfigSchema,
   type YourStrategy,
-} from "@pacifica/contracts";
+} from "../types/contracts";
 import {
   createContext,
   type PropsWithChildren,

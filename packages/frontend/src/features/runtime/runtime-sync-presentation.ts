@@ -1,4 +1,4 @@
-import type { ExchangeSnapshotStatus, SyncStatus } from "@pacifica/contracts";
+import type { ExchangeSnapshotStatus, SyncStatus } from "../../types/contracts";
 
 type RuntimeSyncPresentation = {
   show: boolean;

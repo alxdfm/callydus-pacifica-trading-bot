@@ -5,7 +5,7 @@ import {
   type BotCommandResponse,
   type BotRuntimeCommandRequest,
   type CloseTradeCommandRequest,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { parseJsonResponse } from "../onboarding/backend-response";
 
 const apiBaseUrl =

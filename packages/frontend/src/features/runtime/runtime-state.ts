@@ -8,7 +8,7 @@ import type {
   OpenTrade,
   SymbolOperationalConfig,
   SyncStatus,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 
 export type RuntimeToast = {
   id: number;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { OperationalSessionSnapshotRequest } from "@pacifica/contracts";
+import type { OperationalSessionSnapshotRequest } from "../../types/contracts";
 import { useAppState } from "../../state/app-state";
 
 type LoadStateStatus = "idle" | "loading" | "ready" | "error";

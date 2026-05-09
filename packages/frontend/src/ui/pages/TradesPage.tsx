@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type {
   OpenTrade,
   OperationalTradesSessionFound,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { applyOperationalTradesSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalTradesViaBackend } from "../../features/account/backend-operational-page-sessions";
 import { useOperationalPageSession } from "../../features/account/use-operational-page-session";

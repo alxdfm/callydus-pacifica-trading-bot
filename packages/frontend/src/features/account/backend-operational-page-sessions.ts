@@ -11,7 +11,7 @@ import {
   type OperationalProfileSessionResponse,
   type OperationalSessionSnapshotRequest,
   type OperationalTradesSessionResponse,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { parseSchemaOrFallback } from "../onboarding/backend-response";
 
 const apiBaseUrl =

@@ -8,7 +8,7 @@ import {
   type YourStrategyBacktestPreviewRequest,
   type YourStrategyBacktestPreviewResponse,
   yourStrategyBacktestPreviewResponseSchema,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { parseJsonResponse } from "../onboarding/backend-response";
 
 const defaultApiBaseUrl = "http://localhost:3003";

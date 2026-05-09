@@ -13,7 +13,7 @@ import {
 import type {
   WalletErrorCode,
   WalletProvider as SupportedWalletProvider,
-} from "@pacifica/contracts";
+} from "../../../types/contracts";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletReadyState, type WalletName } from "@solana/wallet-adapter-base";
 

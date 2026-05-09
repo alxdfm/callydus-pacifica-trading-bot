@@ -3,7 +3,7 @@ import {
   pacificaOperationalVerificationSubmissionSchema,
   type PacificaOperationalVerificationResponse,
   type PacificaOperationalVerificationSubmission,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { parseSchemaOrFallback } from "./backend-response";
 
 const apiBaseUrl =

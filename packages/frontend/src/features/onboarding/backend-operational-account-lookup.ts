@@ -3,7 +3,7 @@ import {
   operationalAccountLookupResponseSchema,
   type OperationalAccountLookupRequest,
   type OperationalAccountLookupResponse,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { parseSchemaOrFallback } from "./backend-response";
 
 const apiBaseUrl =

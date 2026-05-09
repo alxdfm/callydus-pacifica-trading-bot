@@ -3,7 +3,7 @@ import {
   pacificaCredentialValidationResponseSchema,
   type PacificaCredentialSubmission,
   type PacificaCredentialValidationResponse,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { parseSchemaOrFallback } from "./backend-response";
 
 const apiBaseUrl =

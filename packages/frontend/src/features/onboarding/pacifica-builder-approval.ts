@@ -4,7 +4,7 @@ import {
   pacificaBuilderApprovalSubmissionSchema,
   serializePacificaSigningPayload,
   type PacificaBuilderApprovalSubmission,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 
 const builderCode = import.meta.env.VITE_PACIFICA_BUILDER_CODE?.trim() ?? "";
 const maxFeeRate =

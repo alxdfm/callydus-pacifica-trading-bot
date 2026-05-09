@@ -9,7 +9,7 @@ import {
   type YourStrategy,
   type YourStrategyBacktestPreviewResponse,
   type YourStrategyDraft,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { applyOperationalPresetsSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalPresetsViaBackend } from "../../features/account/backend-operational-page-sessions";

@@ -10,7 +10,7 @@ import type {
   PacificaOperationalVerificationResponse,
   WalletProvider,
   WalletSession,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { approveBuilderCodeViaBackend } from "../../features/onboarding/backend-builder-approval";
 import { validateAgentWalletViaBackend } from "../../features/onboarding/backend-credential-validation";
 import { verifyAgentWalletOperationallyViaBackend } from "../../features/onboarding/backend-operational-verification";

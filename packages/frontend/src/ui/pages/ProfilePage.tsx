@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { OperationalProfileSessionFound } from "@pacifica/contracts";
+import type { OperationalProfileSessionFound } from "../../types/contracts";
 import { useNavigate } from "react-router-dom";
 import { applyOperationalProfileSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalProfileViaBackend } from "../../features/account/backend-operational-page-sessions";

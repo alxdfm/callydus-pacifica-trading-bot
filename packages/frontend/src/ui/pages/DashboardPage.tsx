@@ -3,7 +3,7 @@ import type {
   OperationalDashboardSessionFound,
   PresetIndicatorConfig,
   PresetTriggerRule,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { useLocation, useNavigate } from "react-router-dom";
 import { applyOperationalDashboardSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
 import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";

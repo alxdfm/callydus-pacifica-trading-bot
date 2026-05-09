@@ -3,7 +3,7 @@ import {
   operationalSessionSnapshotResponseSchema,
   type OperationalSessionSnapshotRequest,
   type OperationalSessionSnapshotResponse,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import { parseSchemaOrFallback } from "../onboarding/backend-response";
 
 const apiBaseUrl =

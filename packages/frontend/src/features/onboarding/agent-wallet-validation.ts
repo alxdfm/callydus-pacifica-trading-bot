@@ -5,7 +5,7 @@ import {
   pacificaCredentialValidationResponseSchema,
   type PacificaCredentialSubmission,
   type PacificaCredentialValidationResponse,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 
 function isValidPublicKey(value: string) {
   try {

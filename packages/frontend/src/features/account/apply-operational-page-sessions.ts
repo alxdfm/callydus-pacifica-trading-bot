@@ -4,7 +4,7 @@ import type {
   OperationalPresetsSessionFound,
   OperationalProfileSessionFound,
   OperationalTradesSessionFound,
-} from "@pacifica/contracts";
+} from "../../types/contracts";
 import type {
   AppSessionState,
   BuilderApprovalState,
