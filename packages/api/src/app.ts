@@ -10,6 +10,9 @@ import { builderRoutes } from "./routes/builder.js";
 import { authRoutes } from "./routes/auth.js";
 import { backtestRoutes } from "./routes/backtest.js";
 import { positionsRoutes } from "./routes/positions.js";
+import { onboardingRoutes } from "./routes/onboarding.js";
+import { accountRoutes } from "./routes/account.js";
+import { runtimeRoutes } from "./routes/runtime.js";
 
 export type AppDeps = {
   db: DrizzleDb;
@@ -24,6 +27,8 @@ export function createApp(deps: AppDeps): Hono {
   app.use("/api/trades/*", createAuthMiddleware(deps));
   app.use("/api/events/*", createAuthMiddleware(deps));
   app.use("/api/positions/*", createAuthMiddleware(deps));
+  app.use("/api/account/*", createAuthMiddleware(deps));
+  app.use("/api/runtime/*", createAuthMiddleware(deps));
 
   app.route("/api/strategies", strategiesRoutes(deps));
   app.route("/api/trades", tradesRoutes(deps));
@@ -32,6 +37,9 @@ export function createApp(deps: AppDeps): Hono {
   app.route("/api/auth", authRoutes(deps));
   app.route("/api/backtest", backtestRoutes(deps));
   app.route("/api/positions", positionsRoutes(deps));
+  app.route("/api/onboarding", onboardingRoutes(deps));
+  app.route("/api/account", accountRoutes(deps));
+  app.route("/api/runtime", runtimeRoutes(deps));
 
   return app;
 }

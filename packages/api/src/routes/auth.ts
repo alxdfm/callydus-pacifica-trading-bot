@@ -52,6 +52,36 @@ function verifySolanaWalletSignature(input: {
 export function authRoutes(deps: AppDeps): Hono<HonoEnv> {
   const app = new Hono<HonoEnv>();
 
+  // GET /api/auth/nonce?wallet=<walletAddress>
+  app.get("/nonce", async (c) => {
+    const walletAddress = (c.req.query("wallet") ?? "").trim();
+
+    if (!WALLET_ADDRESS_REGEX.test(walletAddress)) {
+      return c.json(
+        { status: "error", code: "invalid_wallet_address", message: "Invalid wallet address format." },
+        400,
+      );
+    }
+
+    const nonce = randomUUID();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + NONCE_TTL_MS);
+    const message = buildSignInMessage({
+      walletAddress,
+      nonce,
+      expiresAt: expiresAt.toISOString(),
+    });
+
+    await upsertNonce(deps.db, { walletAddress, nonce, expiresAt });
+
+    return c.json({
+      status: "ok",
+      nonce,
+      expiresAt: expiresAt.toISOString(),
+      message,
+    });
+  });
+
   // POST /api/auth/nonce
   app.post("/nonce", async (c) => {
     let body: { walletAddress?: unknown };

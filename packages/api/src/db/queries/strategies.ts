@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import type { DrizzleDb } from "../client.js";
 import { strategies } from "../schema.js";
 
@@ -32,6 +32,32 @@ export async function createStrategy(
   const row = rows[0];
   if (!row) throw new Error("Strategy insert returned no rows.");
   return row;
+}
+
+export async function insertStrategy(
+  db: DrizzleDb,
+  userId: string,
+  input: { config: unknown; symbol: string },
+): Promise<Strategy> {
+  const rows = await db
+    .insert(strategies)
+    .values({ userId, config: input.config, symbol: input.symbol, status: "active" })
+    .returning();
+  const row = rows[0];
+  if (!row) throw new Error("Strategy insert returned no rows.");
+  return row;
+}
+
+export async function getActiveStrategyByUserId(
+  db: DrizzleDb,
+  userId: string,
+): Promise<Strategy | null> {
+  const rows = await db
+    .select()
+    .from(strategies)
+    .where(and(eq(strategies.userId, userId), ne(strategies.status, "stopped")))
+    .limit(1);
+  return rows[0] ?? null;
 }
 
 export async function updateStrategy(

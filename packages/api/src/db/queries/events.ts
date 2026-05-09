@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import type { DrizzleDb } from "../client.js";
 import { events, strategies } from "../schema.js";
 
@@ -25,4 +25,17 @@ export async function insertEvent(
   const row = rows[0];
   if (!row) throw new Error("Event insert returned no rows.");
   return row;
+}
+
+export async function getEventsByStrategyId(
+  db: DrizzleDb,
+  strategyId: string,
+  limit = 20,
+): Promise<Event[]> {
+  return db
+    .select()
+    .from(events)
+    .where(eq(events.strategyId, strategyId))
+    .orderBy(desc(events.createdAt))
+    .limit(limit);
 }
