@@ -3,6 +3,7 @@ import type { DrizzleDb } from "./db/client.js";
 import type { ApiEnv } from "./config/env.js";
 import { createCorsMiddleware } from "./middleware/cors.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
+import { createRateLimitMiddleware } from "./middleware/rate-limit.js";
 import { strategiesRoutes } from "./routes/strategies.js";
 import { tradesRoutes } from "./routes/trades.js";
 import { eventsRoutes } from "./routes/events.js";
@@ -22,7 +23,13 @@ export type AppDeps = {
 export function createApp(deps: AppDeps): Hono {
   const app = new Hono();
 
+  app.get("/health", (c) => c.json({ status: "ok" }));
+
   app.use("*", createCorsMiddleware(deps.env.APP_ORIGIN));
+  app.use(
+    "/api/auth/*",
+    createRateLimitMiddleware({ windowMs: 60_000, max: 30 }),
+  );
   app.use("/api/strategies/*", createAuthMiddleware(deps));
   app.use("/api/trades/*", createAuthMiddleware(deps));
   app.use("/api/events/*", createAuthMiddleware(deps));
