@@ -29,6 +29,20 @@ function requireNonEmpty(value: string | undefined, name: string): string {
   return value;
 }
 
+function requireMinLength(
+  value: string | undefined,
+  name: string,
+  minLength: number,
+): string {
+  const nonEmpty = requireNonEmpty(value, name);
+  if (nonEmpty.length < minLength) {
+    throw new Error(
+      `FATAL: ${name} must be at least ${minLength} characters long`,
+    );
+  }
+  return nonEmpty;
+}
+
 function positiveNumberOrDefault(
   rawValue: string | undefined,
   fallback: number,
@@ -59,9 +73,10 @@ export function loadWorkerEnv(): WorkerEnv {
       process.env.PACIFICA_BUILDER_CODE,
       "PACIFICA_BUILDER_CODE",
     ),
-    CREDENTIAL_ENCRYPTION_KEY: requireNonEmpty(
+    CREDENTIAL_ENCRYPTION_KEY: requireMinLength(
       process.env.CREDENTIAL_ENCRYPTION_KEY,
       "CREDENTIAL_ENCRYPTION_KEY",
+      32,
     ),
     CREDENTIAL_ENCRYPTION_KEY_ID:
       process.env.CREDENTIAL_ENCRYPTION_KEY_ID ?? "local-dev-v1",
