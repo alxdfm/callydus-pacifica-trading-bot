@@ -1,6 +1,6 @@
 version: 1
 applications:
-  - appRoot: apps/app
+  - appRoot: packages/frontend
     frontend:
       phases:
         preBuild:
@@ -11,9 +11,9 @@ applications:
             - pnpm install --frozen-lockfile
         build:
           commands:
-            - pnpm --filter @pacifica/app build
+            - pnpm --filter @pacifica/frontend build
       artifacts:
-        baseDirectory: ../../apps/app/dist
+        baseDirectory: ../../packages/frontend/dist
         files:
           - "**/*"
       cache:
