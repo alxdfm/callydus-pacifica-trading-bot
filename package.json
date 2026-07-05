@@ -17,6 +17,7 @@
   "devDependencies": {
     "dotenv-cli": "^8.0.0",
     "jsdom": "^29.0.1",
+    "sst": "^4.15.2",
     "vitest": "^1.6.1"
   }
 }
