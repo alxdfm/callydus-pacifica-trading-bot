@@ -160,7 +160,7 @@ export function authRoutes(deps: AppDeps): Hono<HonoEnv> {
     }
 
     const { token, expiresAt: tokenExpiresAt } = issueToken(
-      deps.env.CREDENTIAL_ENCRYPTION_KEY,
+      deps.env.AUTH_SIGNING_SECRET,
       walletAddress,
       new Date(),
     );

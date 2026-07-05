@@ -15,8 +15,13 @@ const apiEnvSchema = z.object({
   PACIFICA_OPERATIONAL_PROBE_PRICE: z.string().default("20000"),
   PACIFICA_OPERATIONAL_PROBE_TARGET_NOTIONAL_USD: z.string().default("11"),
   PACIFICA_OPERATIONAL_PROBE_TIF: pacificaTifSchema.default("ALO"),
-  CREDENTIAL_ENCRYPTION_KEY: z.string().min(1),
+  CREDENTIAL_ENCRYPTION_KEY: z
+    .string()
+    .min(32, "CREDENTIAL_ENCRYPTION_KEY must be at least 32 characters"),
   CREDENTIAL_ENCRYPTION_KEY_ID: z.string().default("local-dev-v1"),
+  AUTH_SIGNING_SECRET: z
+    .string()
+    .min(32, "AUTH_SIGNING_SECRET must be at least 32 characters"),
   APP_ORIGIN: z.string().default("http://localhost:5173"),
   PORT: z.string().transform(Number).default("3003"),
 });

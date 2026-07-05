@@ -83,7 +83,7 @@ export function createAuthMiddleware(deps: AppDeps) {
     }
 
     const token = authHeader.slice(7);
-    const result = verifyToken(deps.env.CREDENTIAL_ENCRYPTION_KEY, token);
+    const result = verifyToken(deps.env.AUTH_SIGNING_SECRET, token);
 
     if (!result.valid) {
       return c.json({ error: "Unauthorized" }, 401);
