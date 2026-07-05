@@ -33,6 +33,7 @@ cp .env.example .env
 Variáveis obrigatórias:
 - `DATABASE_URL` — PostgreSQL
 - `CREDENTIAL_ENCRYPTION_KEY` — mínimo 32 chars (gere com `openssl rand -hex 32`)
+- `AUTH_SIGNING_SECRET` — mínimo 32 chars, diferente de `CREDENTIAL_ENCRYPTION_KEY`
 - `PACIFICA_BUILDER_CODE` — código de builder da Pacifica
 
 ### 3. Criar o schema no banco
@@ -88,7 +89,10 @@ npx sst deploy --stage production
 Secrets SST necessários (configurar via `npx sst secret set`):
 - `DatabaseUrl`
 - `CredentialEncryptionKey`
+- `AuthSigningSecret`
 - `PacificaBuilderCode`
+
+Em `production`, `APP_ORIGIN` é obrigatório no ambiente do deploy.
 
 ### Worker — Docker
 

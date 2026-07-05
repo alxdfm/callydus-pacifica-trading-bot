@@ -22,8 +22,28 @@
 ```bash
 npx sst secret set DatabaseUrl           "postgres://..."
 npx sst secret set CredentialEncryptionKey "$(openssl rand -hex 32)"
+npx sst secret set AuthSigningSecret     "$(openssl rand -hex 32)"
 npx sst secret set PacificaBuilderCode   "callydus"
 ```
+
+> `AuthSigningSecret` assina os tokens de sessão e deve ser diferente de
+> `CredentialEncryptionKey` — rotacionar sessões não pode exigir
+> re-criptografar credenciais.
+
+### Variáveis exigidas no deploy
+
+Em `production`, o deploy falha se `APP_ORIGIN` não estiver definido no
+ambiente (evita CORS apontando para localhost):
+
+```bash
+APP_ORIGIN=https://app.exemplo.com npx sst deploy --stage production
+```
+
+### Throttling
+
+O API Gateway aplica throttling global no stage (`throttlingRateLimit: 50`,
+`throttlingBurstLimit: 100`), e as rotas `/api/auth/*` têm rate limit por IP
+na aplicação (30 req/min por instância).
 
 ### Variáveis injetadas automaticamente
 
@@ -79,6 +99,7 @@ Variáveis críticas (obrigatórias em todos os ambientes):
 | `DATABASE_URL` | API + Worker | PostgreSQL connection string |
 | `CREDENTIAL_ENCRYPTION_KEY` | API + Worker | mínimo 32 chars — `openssl rand -hex 32` |
 | `CREDENTIAL_ENCRYPTION_KEY_ID` | API + Worker | IDs `"v2*"` → HKDF; outros → SHA-256 legado |
+| `AUTH_SIGNING_SECRET` | API | mínimo 32 chars, diferente de `CREDENTIAL_ENCRYPTION_KEY` |
 | `PACIFICA_BUILDER_CODE` | API + Worker | código de builder da Pacifica |
 
 ## Frontend
