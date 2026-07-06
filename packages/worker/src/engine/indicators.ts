@@ -1,4 +1,11 @@
-import { ATR, EMA, RSI, SMA } from "technicalindicators";
+// ---------------------------------------------------------------------------
+// Implementações puras dos indicadores (DT-005).
+// A semântica replica exatamente a lib `technicalindicators` que substituem:
+//   - SMA/EMA: output começa no índice period-1; EMA seeda com SMA inicial
+//   - RSI: suavização de Wilder; a lib arredonda para 2 casas decimais
+//   - ATR: true range só a partir do 2º candle; seed = SMA dos primeiros TRs
+// Qualquer mudança aqui precisa passar nos golden tests de paridade.
+// ---------------------------------------------------------------------------
 
 /**
  * Series aligned to input length: leading positions are NaN until the
@@ -23,28 +30,150 @@ function alignTrailingIndicatorSeries(
   return out;
 }
 
+function computeSma(values: number[], period: number): number[] {
+  if (values.length < period) {
+    return [];
+  }
+
+  const out: number[] = [];
+  let windowSum = 0;
+
+  for (let i = 0; i < values.length; i += 1) {
+    windowSum += values[i]!;
+    if (i >= period) {
+      windowSum -= values[i - period]!;
+    }
+    if (i >= period - 1) {
+      out.push(windowSum / period);
+    }
+  }
+
+  return out;
+}
+
+function computeEma(values: number[], period: number): number[] {
+  if (values.length < period) {
+    return [];
+  }
+
+  const smoothing = 2 / (period + 1);
+  let seed = 0;
+  for (let i = 0; i < period; i += 1) {
+    seed += values[i]!;
+  }
+
+  let ema = seed / period;
+  const out: number[] = [ema];
+
+  for (let i = period; i < values.length; i += 1) {
+    ema = values[i]! * smoothing + ema * (1 - smoothing);
+    out.push(ema);
+  }
+
+  return out;
+}
+
+function computeRsi(values: number[], period: number): number[] {
+  if (values.length <= period) {
+    return [];
+  }
+
+  let averageGain = 0;
+  let averageLoss = 0;
+
+  for (let i = 1; i <= period; i += 1) {
+    const delta = values[i]! - values[i - 1]!;
+    if (delta > 0) {
+      averageGain += delta;
+    } else {
+      averageLoss -= delta;
+    }
+  }
+  averageGain /= period;
+  averageLoss /= period;
+
+  const toRsi = (gain: number, loss: number): number => {
+    // loss 0 → RSI 100 mesmo com gain 0 (paridade com a lib substituída)
+    if (loss === 0) {
+      return 100;
+    }
+    const rsi = 100 - 100 / (1 + gain / loss);
+    // A lib arredonda o RSI para 2 casas — mantido pela paridade de sinais
+    return Number.parseFloat(rsi.toFixed(2));
+  };
+
+  const out: number[] = [toRsi(averageGain, averageLoss)];
+
+  for (let i = period + 1; i < values.length; i += 1) {
+    const delta = values[i]! - values[i - 1]!;
+    const gain = delta > 0 ? delta : 0;
+    const loss = delta < 0 ? -delta : 0;
+    averageGain = (averageGain * (period - 1) + gain) / period;
+    averageLoss = (averageLoss * (period - 1) + loss) / period;
+    out.push(toRsi(averageGain, averageLoss));
+  }
+
+  return out;
+}
+
+function computeAtr(
+  highs: number[],
+  lows: number[],
+  closes: number[],
+  period: number,
+): number[] {
+  // True range exige o close anterior, então a série de TR começa no índice 1
+  const trueRanges: number[] = [];
+  for (let i = 1; i < highs.length; i += 1) {
+    const previousClose = closes[i - 1]!;
+    trueRanges.push(
+      Math.max(
+        highs[i]! - lows[i]!,
+        Math.abs(highs[i]! - previousClose),
+        Math.abs(lows[i]! - previousClose),
+      ),
+    );
+  }
+
+  if (trueRanges.length < period) {
+    return [];
+  }
+
+  let seed = 0;
+  for (let i = 0; i < period; i += 1) {
+    seed += trueRanges[i]!;
+  }
+
+  let atr = seed / period;
+  const out: number[] = [atr];
+
+  for (let i = period; i < trueRanges.length; i += 1) {
+    atr = (atr * (period - 1) + trueRanges[i]!) / period;
+    out.push(atr);
+  }
+
+  return out;
+}
+
 export function calculateSmaSeries(values: number[], period: number): number[] {
   if (values.length === 0 || period < 1) {
     return createIndicatorNaNSeries(values.length);
   }
-  const raw = SMA.calculate({ period, values });
-  return alignTrailingIndicatorSeries(raw, values.length);
+  return alignTrailingIndicatorSeries(computeSma(values, period), values.length);
 }
 
 export function calculateEmaSeries(values: number[], period: number): number[] {
   if (values.length === 0 || period < 1) {
     return createIndicatorNaNSeries(values.length);
   }
-  const raw = EMA.calculate({ period, values });
-  return alignTrailingIndicatorSeries(raw, values.length);
+  return alignTrailingIndicatorSeries(computeEma(values, period), values.length);
 }
 
 export function calculateRsiSeries(values: number[], period: number): number[] {
   if (values.length === 0 || period < 1) {
     return createIndicatorNaNSeries(values.length);
   }
-  const raw = RSI.calculate({ period, values });
-  return alignTrailingIndicatorSeries(raw, values.length);
+  return alignTrailingIndicatorSeries(computeRsi(values, period), values.length);
 }
 
 export function calculateAtrSeries(
@@ -60,11 +189,8 @@ export function calculateAtrSeries(
   if (len !== lows.length || len !== closes.length) {
     return createIndicatorNaNSeries(len);
   }
-  const raw = ATR.calculate({
-    period,
-    high: highs,
-    low: lows,
-    close: closes,
-  });
-  return alignTrailingIndicatorSeries(raw, len);
+  return alignTrailingIndicatorSeries(
+    computeAtr(highs, lows, closes, period),
+    len,
+  );
 }
