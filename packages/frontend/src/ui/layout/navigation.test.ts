@@ -6,6 +6,7 @@ describe("getNavigationItems", () => {
     expect(getNavigationItems().map((item) => item.to)).toEqual([
       "/dashboard",
       "/strategies",
+      "/strategies/builder",
       "/trades",
       "/history",
       "/operations",

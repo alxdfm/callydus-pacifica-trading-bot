@@ -5,6 +5,7 @@ import { DashboardPage } from "./ui/pages/DashboardPage";
 import { HistoryPage } from "./ui/pages/HistoryPage";
 import { OperationsPage } from "./ui/pages/OperationsPage";
 import { StrategiesPage } from "./ui/pages/StrategiesPage";
+import { StrategyBuilderPage } from "./ui/pages/StrategyBuilderPage";
 import { TradesPage } from "./ui/pages/TradesPage";
 import { ProfileRouteGuard } from "./ui/router/ProfileRouteGuard";
 import { ProductRouteGuard } from "./ui/router/ProductRouteGuard";
@@ -47,6 +48,10 @@ export const router = createBrowserRouter([
           {
             path: "/strategies",
             element: <StrategiesPage />,
+          },
+          {
+            path: "/strategies/builder",
+            element: <StrategyBuilderPage />,
           },
           {
             path: "/trades",
