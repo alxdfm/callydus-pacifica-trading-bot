@@ -2,8 +2,6 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "./ui/layout/AppLayout";
 import { DashboardPage } from "./ui/pages/DashboardPage";
-import { HistoryPage } from "./ui/pages/HistoryPage";
-import { OperationsPage } from "./ui/pages/OperationsPage";
 import { StrategiesPage } from "./ui/pages/StrategiesPage";
 import { StrategyBuilderPage } from "./ui/pages/StrategyBuilderPage";
 import { TradesPage } from "./ui/pages/TradesPage";
@@ -59,11 +57,11 @@ export const router = createBrowserRouter([
           },
           {
             path: "/history",
-            element: <HistoryPage />,
+            element: <Navigate replace to="/trades" />,
           },
           {
             path: "/operations",
-            element: <OperationsPage />,
+            element: <Navigate replace to="/dashboard" />,
           },
         ],
       },

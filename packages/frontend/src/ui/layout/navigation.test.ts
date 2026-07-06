@@ -8,8 +8,6 @@ describe("getNavigationItems", () => {
       "/strategies",
       "/strategies/builder",
       "/trades",
-      "/history",
-      "/operations",
       "/profile",
     ]);
   });
