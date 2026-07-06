@@ -1,27 +1,15 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { OperationalDashboardSessionFound } from "../../types/contracts";
-import { applyOperationalDashboardSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
-import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";
-import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
+import { useDashboardSession } from "../../features/account/use-dashboard-session";
 import {
   pauseBotViaBackend,
   resumeBotViaBackend,
 } from "../../features/runtime/backend-bot-commands";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
+import { formatSignedUsd, formatUsd, formatWhen } from "../../shared/format";
 import { useAppState } from "../../state/app-state";
 import { LoadingPanel } from "../components/LoadingPanel";
-
-function formatUsd(value: number): string {
-  const sign = value < 0 ? "−" : "";
-  return `${sign}$${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function formatWhen(iso: string): string {
-  const date = new Date(iso);
-  return `${date.toLocaleDateString("en-US", { month: "short", day: "2-digit" })} ${date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
-}
 
 type PillTone = "ok" | "warn" | "bad" | "idle";
 
@@ -37,46 +25,11 @@ function HealthPill(props: { label: string; tone: PillTone; value: string }) {
 export function DashboardPage() {
   const { t } = useI18n();
   const { token } = useAuth();
-  const {
-    setBuilderApprovalState,
-    setCredentialState,
-    setOperationalState,
-    setPresetState,
-    setRuntimeState,
-    state,
-  } = useAppState();
-  const currentPresetsRef = useRef(state.presets);
-  currentPresetsRef.current = state.presets;
+  const { setRuntimeState, state } = useAppState();
 
   const [commandBusy, setCommandBusy] = useState(false);
 
-  const applySnapshot = useCallback(
-    (snapshot: OperationalDashboardSessionFound) => {
-      applyOperationalDashboardSessionSnapshot(snapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-        currentPresets: currentPresetsRef.current,
-      });
-    },
-    [setBuilderApprovalState, setCredentialState, setOperationalState, setPresetState, setRuntimeState],
-  );
-
-  const readSnapshot = useCallback(
-    (req: Parameters<typeof readOperationalDashboardViaBackend>[0]) =>
-      readOperationalDashboardViaBackend(req, token),
-    [token],
-  );
-
-  const session = useOperationalPageSession({
-    readSnapshot,
-    applySnapshot,
-    requestKey: "dashboard",
-    loadingMessage: t("runtimeStatusLoadingMessage"),
-    unavailableMessage: t("runtimeStatusError"),
-  });
+  const session = useDashboardSession();
 
   const runtime = state.runtime;
   const balance = runtime.balance;
@@ -207,13 +160,13 @@ export function DashboardPage() {
         <div className="builder-metric">
           <div className="k">{t("dashTilePnlToday")}</div>
           <div className={`v ${realizedToday >= 0 ? "v--up" : "v--down"}`}>
-            {realizedToday >= 0 ? "+" : ""}{formatUsd(realizedToday)}
+            {formatSignedUsd(realizedToday)}
           </div>
         </div>
         <div className="builder-metric">
           <div className="k">{t("dashTileUnrealized")}</div>
           <div className={`v ${unrealizedPnl >= 0 ? "v--up" : "v--down"}`}>
-            {unrealizedPnl >= 0 ? "+" : ""}{formatUsd(unrealizedPnl)}
+            {formatSignedUsd(unrealizedPnl)}
           </div>
         </div>
         <div className="builder-metric">
@@ -226,7 +179,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="builder-grid" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
+      <div className="dash-panels">
         <section className="builder-card">
           <h2>
             {t("dashRecentTradesTitle")}
@@ -245,7 +198,7 @@ export function DashboardPage() {
                       <td>{trade.symbol}</td>
                       <td><span className={`tl-side tl-side--${trade.side}`}>{trade.side.toUpperCase()}</span></td>
                       <td className={trade.realizedPnl >= 0 ? "tl-pnl--up" : "tl-pnl--down"}>
-                        {trade.realizedPnl >= 0 ? "+" : ""}{formatUsd(trade.realizedPnl)}
+                        {formatSignedUsd(trade.realizedPnl)}
                       </td>
                       <td style={{ color: "var(--text-faint)" }}>{formatWhen(trade.closedAt)}</td>
                     </tr>

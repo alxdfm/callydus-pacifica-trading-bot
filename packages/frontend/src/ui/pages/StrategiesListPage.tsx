@@ -1,64 +1,22 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { OperationalDashboardSessionFound } from "../../types/contracts";
-import { applyOperationalDashboardSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
-import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";
-import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
+import { useDashboardSession } from "../../features/account/use-dashboard-session";
 import { activateYourStrategyViaBackend } from "../../features/presets/your-strategy-backend";
 import { pauseBotViaBackend } from "../../features/runtime/backend-bot-commands";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
+import { formatSignedUsd } from "../../shared/format";
 import { useAppState } from "../../state/app-state";
 import { LoadingPanel } from "../components/LoadingPanel";
-
-function formatUsd(value: number): string {
-  const sign = value < 0 ? "−" : "";
-  return `${sign}$${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 export function StrategiesListPage() {
   const { t } = useI18n();
   const { token } = useAuth();
-  const {
-    setBuilderApprovalState,
-    setCredentialState,
-    setOperationalState,
-    setPresetState,
-    setRuntimeState,
-    state,
-  } = useAppState();
-  const currentPresetsRef = useRef(state.presets);
-  currentPresetsRef.current = state.presets;
+  const { setPresetState, setRuntimeState, state } = useAppState();
 
   const [commandBusy, setCommandBusy] = useState(false);
 
-  const applySnapshot = useCallback(
-    (snapshot: OperationalDashboardSessionFound) => {
-      applyOperationalDashboardSessionSnapshot(snapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-        currentPresets: currentPresetsRef.current,
-      });
-    },
-    [setBuilderApprovalState, setCredentialState, setOperationalState, setPresetState, setRuntimeState],
-  );
-
-  const readSnapshot = useCallback(
-    (req: Parameters<typeof readOperationalDashboardViaBackend>[0]) =>
-      readOperationalDashboardViaBackend(req, token),
-    [token],
-  );
-
-  const session = useOperationalPageSession({
-    readSnapshot,
-    applySnapshot,
-    requestKey: "dashboard",
-    loadingMessage: t("runtimeStatusLoadingMessage"),
-    unavailableMessage: t("runtimeStatusError"),
-  });
+  const session = useDashboardSession();
 
   const yourStrategy = state.presets.yourStrategy;
   const isActive = Boolean(state.presets.activePreset);
@@ -167,7 +125,7 @@ export function StrategiesListPage() {
               <span>
                 {t("strategiesPnlLabel")}{" "}
                 <b className={platformPnl >= 0 ? "tl-pnl--up" : "tl-pnl--down"}>
-                  {platformPnl >= 0 ? "+" : ""}{formatUsd(platformPnl)}
+                  {formatSignedUsd(platformPnl)}
                 </b>
               </span>
             </div>

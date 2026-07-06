@@ -1,19 +1,15 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import type {
-  ClosedTrade,
-  OpenTrade,
-  OperationalDashboardSessionFound,
-} from "../../types/contracts";
-import { applyOperationalDashboardSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
-import { readOperationalDashboardViaBackend } from "../../features/account/backend-operational-page-sessions";
-import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
+import { useMemo, useState } from "react";
+import type { ClosedTrade, OpenTrade } from "../../types/contracts";
+import { useDashboardSession } from "../../features/account/use-dashboard-session";
 import { closeTradeViaBackend } from "../../features/runtime/backend-bot-commands";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
+import { formatPrice, formatQty, formatSignedUsd, formatWhen } from "../../shared/format";
 import { useAppState } from "../../state/app-state";
 import { LoadingPanel } from "../components/LoadingPanel";
 
 type Translate = ReturnType<typeof useI18n>["t"];
+type ToastTone = "success" | "danger";
 
 const PERIOD_OPTIONS = [
   { days: 0, labelKey: "tradesFilterAllPeriods" },
@@ -22,26 +18,10 @@ const PERIOD_OPTIONS = [
   { days: 90, labelKey: "tradesFilterPeriod90d" },
 ] as const;
 
-function formatUsd(value: number): string {
-  const sign = value < 0 ? "−" : "";
-  return `${sign}$${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function formatPrice(value: number | null): string {
-  if (value === null) return "—";
-  return value.toLocaleString("en-US", { maximumFractionDigits: 6 });
-}
-
-function formatWhen(iso: string): string {
-  const date = new Date(iso);
-  return `${date.toLocaleDateString("en-US", { month: "short", day: "2-digit" })} ${date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
-}
-
 function PnlCell(props: { value: number }) {
   return (
     <span className={props.value >= 0 ? "tl-pnl--up" : "tl-pnl--down"}>
-      {props.value >= 0 ? "+" : ""}
-      {formatUsd(props.value)}
+      {formatSignedUsd(props.value)}
     </span>
   );
 }
@@ -53,48 +33,13 @@ function SideTag(props: { side: "long" | "short" }) {
 export function TradesPage() {
   const { t } = useI18n();
   const { token } = useAuth();
-  const {
-    setBuilderApprovalState,
-    setCredentialState,
-    setOperationalState,
-    setPresetState,
-    setRuntimeState,
-    state,
-  } = useAppState();
-  const currentPresetsRef = useRef(state.presets);
-  currentPresetsRef.current = state.presets;
+  const { setRuntimeState, state } = useAppState();
 
   const [tab, setTab] = useState<"open" | "closed">("open");
   const [symbolFilter, setSymbolFilter] = useState<string>("");
   const [periodDays, setPeriodDays] = useState<number>(0);
 
-  const applySnapshot = useCallback(
-    (snapshot: OperationalDashboardSessionFound) => {
-      applyOperationalDashboardSessionSnapshot(snapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-        currentPresets: currentPresetsRef.current,
-      });
-    },
-    [setBuilderApprovalState, setCredentialState, setOperationalState, setPresetState, setRuntimeState],
-  );
-
-  const readSnapshot = useCallback(
-    (req: Parameters<typeof readOperationalDashboardViaBackend>[0]) =>
-      readOperationalDashboardViaBackend(req, token),
-    [token],
-  );
-
-  const session = useOperationalPageSession({
-    readSnapshot,
-    applySnapshot,
-    requestKey: "dashboard",
-    loadingMessage: t("runtimeStatusLoadingMessage"),
-    unavailableMessage: t("runtimeStatusError"),
-  });
+  const session = useDashboardSession();
 
   const openTrades = state.runtime.currentTrades;
   const closedTrades = state.runtime.closedTrades;
@@ -120,6 +65,10 @@ export function TradesPage() {
 
   const openTotal = visibleOpen.reduce((sum, trade) => sum + trade.unrealizedPnl, 0);
   const closedTotal = visibleClosed.reduce((sum, trade) => sum + trade.realizedPnl, 0);
+
+  function showToast(tone: ToastTone, message: string) {
+    setRuntimeState({ actionToast: { id: Date.now(), tone, message } });
+  }
 
   if (session.status === "loading") {
     return <LoadingPanel message={session.message ?? t("runtimeStatusLoadingMessage")} title={t("tradesTitle")} />;
@@ -172,6 +121,7 @@ export function TradesPage() {
         {tab === "open" ? (
           <OpenTradesTable
             onClosed={() => void session.reload()}
+            onResult={showToast}
             t={t}
             token={token}
             total={openTotal}
@@ -188,13 +138,14 @@ export function TradesPage() {
 
 function OpenTradesTable(props: {
   onClosed: () => void;
+  onResult: (tone: ToastTone, message: string) => void;
   t: Translate;
   token: string | null;
   total: number;
   trades: OpenTrade[];
   walletAddress: string | null;
 }) {
-  const { onClosed, t, token, total, trades, walletAddress } = props;
+  const { onClosed, onResult, t, token, total, trades, walletAddress } = props;
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
 
@@ -207,8 +158,9 @@ function OpenTradesTable(props: {
     }
     setConfirmingId(null);
     setClosingId(trade.id);
-    await closeTradeViaBackend({ walletAddress, tradeId: trade.id }, token);
+    const result = await closeTradeViaBackend({ walletAddress, tradeId: trade.id }, token);
     setClosingId(null);
+    onResult(result.status === "success" ? "success" : "danger", result.message);
     onClosed();
   }
 
@@ -243,7 +195,7 @@ function OpenTradesTable(props: {
               <td><SideTag side={trade.side} /></td>
               <td>{formatPrice(trade.entryPrice)}</td>
               <td>{formatPrice(trade.currentPrice)}</td>
-              <td>{trade.quantity}</td>
+              <td>{formatQty(trade.quantity)}</td>
               <td>{formatPrice(trade.stopLossPrice)}</td>
               <td>{formatPrice(trade.takeProfitPrice)}</td>
               <td><PnlCell value={trade.unrealizedPnl} /></td>
@@ -312,7 +264,7 @@ function ClosedTradesTable(props: { t: Translate; total: number; trades: ClosedT
               <td><SideTag side={trade.side} /></td>
               <td>{formatPrice(trade.entryPrice)}</td>
               <td>{formatPrice(trade.exitPrice)}</td>
-              <td>{trade.quantity}</td>
+              <td>{formatQty(trade.quantity)}</td>
               <td><PnlCell value={trade.realizedPnl} /></td>
               <td style={{ color: "var(--text-soft)" }}>{trade.closeReason}</td>
               <td>{formatWhen(trade.closedAt)}</td>
