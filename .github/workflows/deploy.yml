@@ -8,6 +8,12 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  AMPLIFY_APP_ID: ${{ vars.AMPLIFY_APP_ID || 'd1700dfaftvw4h' }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -33,12 +39,23 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Deploy to production
+      - name: Deploy backend (SST)
         run: npx sst deploy --stage production
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
           APP_ORIGIN: ${{ vars.APP_ORIGIN }}
           CREDENTIAL_ENCRYPTION_KEY_ID: ${{ vars.CREDENTIAL_ENCRYPTION_KEY_ID || 'v2' }}
           ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+
+      - name: Deploy frontend (Amplify)
+        run: |
+          JOB_ID=$(aws amplify start-job --app-id "$AMPLIFY_APP_ID" --branch-name master --job-type RELEASE --query "jobSummary.jobId" --output text)
+          echo "Amplify job $JOB_ID started"
+          while true; do
+            STATUS=$(aws amplify get-job --app-id "$AMPLIFY_APP_ID" --branch-name master --job-id "$JOB_ID" --query "job.summary.status" --output text)
+            echo "status: $STATUS"
+            case "$STATUS" in
+              SUCCEED) exit 0 ;;
+              FAILED|CANCELLED) echo "Amplify build failed"; exit 1 ;;
+            esac
+            sleep 20
+          done
