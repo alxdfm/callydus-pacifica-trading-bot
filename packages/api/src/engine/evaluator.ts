@@ -1,5 +1,7 @@
 import {
+  calculateAdxSeries,
   calculateAtrSeries,
+  calculateDonchianSeries,
   calculateEmaSeries,
   calculateRsiSeries,
   calculateSmaSeries,
@@ -72,12 +74,25 @@ type IndicatorSmaConfig = {
   period: number;
 };
 
+type IndicatorDonchianConfig = {
+  type: "donchian";
+  period: number;
+  band: "upper" | "lower" | "middle";
+};
+
+type IndicatorAdxConfig = {
+  type: "adx";
+  period: number;
+};
+
 type IndicatorConfig =
   | IndicatorEmaConfig
   | IndicatorRsiConfig
   | IndicatorAtrConfig
   | IndicatorVolumeConfig
-  | IndicatorSmaConfig;
+  | IndicatorSmaConfig
+  | IndicatorDonchianConfig
+  | IndicatorAdxConfig;
 
 type TriggerScope = "previousCandle" | "currentCandle";
 type ThresholdOperator = "above" | "below" | "atOrAbove" | "atOrBelow" | "equal";
@@ -725,6 +740,12 @@ export function getRequiredPeriod(technicalContract: PresetTechnicalContract): n
         case "atr":
         case "sma":
           return indicator.period;
+        case "donchian":
+          // janela exclui o candle atual → precisa de period + 1 candles
+          return indicator.period + 1;
+        case "adx":
+          // dupla suavização de Wilder (DI e depois ADX)
+          return indicator.period * 2;
         case "volume":
           return 1;
       }
@@ -856,6 +877,22 @@ function buildIndicatorSeriesMap(
         cache[indicatorName] = calculateSmaSeries(sourceSeries, config.period);
         break;
       }
+      case "donchian":
+        cache[indicatorName] = calculateDonchianSeries(
+          highSeries,
+          lowSeries,
+          config.period,
+          config.band,
+        );
+        break;
+      case "adx":
+        cache[indicatorName] = calculateAdxSeries(
+          highSeries,
+          lowSeries,
+          closeSeries,
+          config.period,
+        );
+        break;
     }
 
     return cache[indicatorName];

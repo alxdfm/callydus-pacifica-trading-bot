@@ -7,7 +7,9 @@ import type {
   TriggerRule,
 } from "@pacifica/shared";
 import {
+  calculateAdxSeries,
   calculateAtrSeries,
+  calculateDonchianSeries,
   calculateEmaSeries,
   calculateRsiSeries,
   calculateSmaSeries,
@@ -169,6 +171,12 @@ export function getRequiredPeriod(technicalContract: StrategyConfig): number {
         case "atr":
         case "sma":
           return indicator.period;
+        case "donchian":
+          // janela exclui o candle atual → precisa de period + 1 candles
+          return indicator.period + 1;
+        case "adx":
+          // dupla suavização de Wilder (DI e depois ADX)
+          return indicator.period * 2;
         case "volume":
           return 1;
       }
@@ -287,6 +295,22 @@ function buildIndicatorSeriesMap(
         cache[indicatorName] = calculateSmaSeries(sourceSeries, config.period);
         break;
       }
+      case "donchian":
+        cache[indicatorName] = calculateDonchianSeries(
+          highSeries,
+          lowSeries,
+          config.period,
+          config.band,
+        );
+        break;
+      case "adx":
+        cache[indicatorName] = calculateAdxSeries(
+          highSeries,
+          lowSeries,
+          closeSeries,
+          config.period,
+        );
+        break;
     }
 
     return cache[indicatorName];
