@@ -31,7 +31,7 @@ function NavigationLinks() {
 
 export function AppLayout() {
   const navigate = useNavigate();
-  const { canAccessProduct, resetOnboardingState, setLocale, setRuntimeState, state } = useAppState();
+  const { canAccessProduct, resetOnboardingState, setRuntimeState, state } = useAppState();
 
   useEffect(() => {
     registerUnauthorizedNavigator(navigate);
@@ -87,17 +87,9 @@ export function AppLayout() {
       return <main className="onboarding-shell" />;
     }
     return (
-      <div className="shell-skeleton">
-        <div className="shell-skeleton__sidebar">
-          <div className="sk-stack">
-            <div className="sk-line sk-line--md sk-w-50" />
-            <div className="sk-line sk-line--sm sk-w-70" />
-          </div>
-          <div className="sk-stack" style={{ marginTop: 16 }}>
-            <div className="sk-line sk-line--sm sk-w-60" />
-            <div className="sk-line sk-line--sm sk-w-50" />
-            <div className="sk-line sk-line--sm sk-w-55" />
-          </div>
+      <div className="shell-skeleton shell-skeleton--topbar">
+        <div className="shell-skeleton__topbar">
+          <div className="sk-line sk-line--md sk-w-30" />
         </div>
         <div className="shell-skeleton__content">
           <div className="sk-stack sk-stack--lg">
@@ -130,70 +122,31 @@ export function AppLayout() {
   }
 
   return (
-    <div className="shell">
-      <aside className="shell-sidebar">
-        <div className="shell-brand">
+    <div className="shell shell--topbar">
+      <header className="shell-topnav">
+        <div className="shell-topnav__brand">
           <img
             alt={`${t("appName")} logo`}
-            className="shell-brand__logo"
+            className="shell-topnav__logo"
             src={logoUrl}
           />
-          <div className="shell-brand__copy">
-            <p className="shell-sidebar__eyebrow">{t("appName")}</p>
-            <p className="shell-brand__powered-by">
-              Powered by{" "}
-              <a
-                href="https://www.pacifica.fi/"
-                rel="noopener noreferrer"
-                style={{ color: "inherit", textDecoration: "none" }}
-                target="_blank"
-              >
-                Pacifica
-              </a>
-            </p>
-            <h1>{t("appTagline")}</h1>
-          </div>
+          <span className="shell-topnav__wordmark">{t("appName")}</span>
         </div>
-        <nav className="shell-nav shell-nav--desktop">
+        <nav aria-label={t("navSection")} className="shell-nav shell-nav--desktop">
           <NavigationLinks />
         </nav>
-        <div className="nav-card shell-side-card">
-          <div className="row-between align-start">
-            <span className={`badge badge--${strategyBadgeTone} no-margin`}>
-              {strategyStatusLabel}
-            </span>
-            <span
-              aria-hidden="true"
-              className={`shell-side-card__signal shell-side-card__signal--${strategyIndicatorVariant}`}
-            >
-              <span className="shell-side-card__signal-core"></span>
-            </span>
-          </div>
-          <strong>
-            {hasActiveStrategy ? "YOUR Strategy" : t("presetSidebarTitle")}
-          </strong>
-          <p>
-            {hasActiveStrategy
-              ? `${t("yourStrategyRiskLabel")} · ${state.presets.activePreset?.editableConfig.symbol ?? ""}`
-              : t("presetSidebarHint")}
-          </p>
-        </div>
-        <label
-          className="shell-locale shell-side-controls"
-          htmlFor="locale-select"
-        >
-          <span>{t("localeLabel")}</span>
-          <select
-            id="locale-select"
-            value={state.locale}
-            onChange={(event) =>
-              setLocale(event.target.value as typeof state.locale)
-            }
+        <div className="shell-topnav__status">
+          <span
+            aria-hidden="true"
+            className={`shell-side-card__signal shell-side-card__signal--${strategyIndicatorVariant}`}
           >
-            <option value="en">{t("localeName")}</option>
-          </select>
-        </label>
-      </aside>
+            <span className="shell-side-card__signal-core"></span>
+          </span>
+          <span className={`badge badge--${strategyBadgeTone} no-margin`}>
+            {strategyStatusLabel}
+          </span>
+        </div>
+      </header>
 
       <div className="shell-body">
         {state.runtime.actionToast ? (

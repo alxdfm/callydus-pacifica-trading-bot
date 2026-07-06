@@ -2729,3 +2729,98 @@ td.num,
 .dash-event .sev--warning { background: var(--accent); }
 .dash-event .sev--critical, .dash-event .sev--serious { background: var(--danger); }
 .dash-event p { margin: 0; color: var(--text-soft); }
+
+/* Topbar (fase 5) ------------------------------------------------------------ */
+
+.shell--topbar {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: none;
+  height: 100vh;
+}
+
+.shell-topnav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 20px;
+  height: 54px;
+  flex: none;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.shell-topnav__brand { display: flex; align-items: center; gap: 10px; }
+.shell-topnav__logo { width: 26px; height: 26px; object-fit: contain; display: block; }
+.shell-topnav__wordmark {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.shell--topbar .shell-nav--desktop {
+  flex-direction: row;
+  flex: 1;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.shell--topbar .shell-nav__link {
+  width: auto;
+  border: none;
+  background: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.shell--topbar .shell-nav__link:hover {
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.shell--topbar .shell-nav__link--active {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.shell-topnav__status { display: flex; align-items: center; gap: 10px; flex: none; }
+.shell-topnav__status .badge { margin-right: 0; }
+
+.shell--topbar .shell-body { flex: 1; overflow-y: auto; }
+
+.shell-skeleton--topbar { display: flex; flex-direction: column; height: 100vh; }
+.shell-skeleton__topbar {
+  height: 54px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+.shell-skeleton--topbar .shell-skeleton__content { padding: 24px; }
+
+@media (max-width: 1240px) {
+  .shell--topbar { height: auto; }
+  .shell--topbar .shell-nav--desktop { display: none; }
+}
+
+/* Lista de estratégias (fase 5) ---------------------------------------------- */
+
+.strategy-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+
+.strategy-card__meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-soft);
+  margin: 10px 0 14px;
+}
+.strategy-card__meta b { color: var(--text); font-weight: 600; }
+
+.strategy-card__actions { display: flex; gap: 10px; flex-wrap: wrap; }
