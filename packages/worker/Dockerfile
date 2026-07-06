@@ -1,7 +1,7 @@
 FROM node:22-slim AS builder
 WORKDIR /app
 RUN npm install -g pnpm
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/worker/package.json packages/worker/
 COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile
@@ -17,5 +17,4 @@ COPY packages/worker/package.json packages/worker/
 COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/packages/worker/dist/ packages/worker/dist/
-COPY --from=builder /app/packages/shared/dist/ packages/shared/dist/
 CMD ["node", "packages/worker/dist/index.js"]
