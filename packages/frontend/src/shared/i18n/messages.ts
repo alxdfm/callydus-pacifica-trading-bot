@@ -13,7 +13,6 @@ export const messages = {
     navPresets: "Strategy",
     navTrades: "Trades",
     navProfile: "Profile",
-    navBuilderBeta: "Builder (beta)",
     localeLabel: "Language",
     localeName: "English",
     shellBlockedBadge: "Dashboard locked",
@@ -935,6 +934,15 @@ export const messages = {
     dashEventsTitle: "Recent events",
     dashEventsEmpty: "No recent events.",
     dashAlertsTitle: "Active alerts",
+    strategiesTitle: "Strategies",
+    strategiesCreate: "Create strategy",
+    strategiesEdit: "Edit in builder",
+    strategiesActivate: "Activate",
+    strategiesPause: "Pause",
+    strategiesStatusRunning: "running",
+    strategiesStatusPaused: "paused",
+    strategiesPnlLabel: "Realized PnL",
+    strategiesEmpty: "No strategy configured yet. Build one to start trading.",
   },
 } as const;
 

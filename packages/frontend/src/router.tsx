@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "./ui/layout/AppLayout";
 import { DashboardPage } from "./ui/pages/DashboardPage";
-import { StrategiesPage } from "./ui/pages/StrategiesPage";
+import { StrategiesListPage } from "./ui/pages/StrategiesListPage";
 import { StrategyBuilderPage } from "./ui/pages/StrategyBuilderPage";
 import { TradesPage } from "./ui/pages/TradesPage";
 import { ProfileRouteGuard } from "./ui/router/ProfileRouteGuard";
@@ -45,7 +45,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/strategies",
-            element: <StrategiesPage />,
+            element: <StrategiesListPage />,
           },
           {
             path: "/strategies/builder",
