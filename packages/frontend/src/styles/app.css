@@ -2584,6 +2584,10 @@ td.num,
 .builder-status--danger { color: var(--danger); }
 
 .builder-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.05em;
@@ -2721,6 +2725,11 @@ td.num,
 .health-pill--bad::before { background: var(--danger); }
 
 .dash-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+
+.dash-panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1080px) {
+  .dash-panels { grid-template-columns: 1fr; }
+}
 
 .dash-events { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
 .dash-event { display: flex; gap: 10px; align-items: baseline; }
