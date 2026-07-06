@@ -68,7 +68,7 @@ export function loadWorkerEnv(): WorkerEnv {
     PACIFICA_REST_URL:
       process.env.PACIFICA_REST_URL ?? "https://api.pacifica.fi",
     PACIFICA_WS_URL:
-      process.env.PACIFICA_WS_URL ?? "wss://ws.pacifica.fi",
+      process.env.PACIFICA_WS_URL ?? "wss://ws.pacifica.fi/ws",
     PACIFICA_BUILDER_CODE: requireNonEmpty(
       process.env.PACIFICA_BUILDER_CODE,
       "PACIFICA_BUILDER_CODE",
