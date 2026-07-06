@@ -39,12 +39,30 @@ export interface IndicatorSmaConfig {
   period: number;
 }
 
+/**
+ * Donchian channel over the PREVIOUS `period` candles (current candle
+ * excluded) so breakout cross rules can actually fire.
+ */
+export interface IndicatorDonchianConfig {
+  type: "donchian";
+  period: number;
+  band: "upper" | "lower" | "middle";
+}
+
+/** Wilder's Average Directional Index (0-100 trend-strength oscillator). */
+export interface IndicatorAdxConfig {
+  type: "adx";
+  period: number;
+}
+
 export type IndicatorConfig =
   | IndicatorEmaConfig
   | IndicatorRsiConfig
   | IndicatorAtrConfig
   | IndicatorVolumeConfig
-  | IndicatorSmaConfig;
+  | IndicatorSmaConfig
+  | IndicatorDonchianConfig
+  | IndicatorAdxConfig;
 
 export interface ThresholdValueRule {
   scope: TriggerScope;
