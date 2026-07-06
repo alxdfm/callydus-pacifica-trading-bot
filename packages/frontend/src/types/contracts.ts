@@ -249,12 +249,25 @@ export const presetIndicatorSmaSchema = z.object({
   period: z.number().int().positive(),
 });
 
+export const presetIndicatorDonchianSchema = z.object({
+  type: z.literal("donchian"),
+  period: z.number().int().positive(),
+  band: z.enum(["upper", "lower", "middle"]),
+});
+
+export const presetIndicatorAdxSchema = z.object({
+  type: z.literal("adx"),
+  period: z.number().int().positive(),
+});
+
 export const presetIndicatorConfigSchema = z.discriminatedUnion("type", [
   presetIndicatorEmaSchema,
   presetIndicatorRsiSchema,
   presetIndicatorAtrSchema,
   presetIndicatorVolumeSchema,
   presetIndicatorSmaSchema,
+  presetIndicatorDonchianSchema,
+  presetIndicatorAdxSchema,
 ]);
 
 export const presetThresholdValueRuleSchema = z.object({
@@ -1143,6 +1156,9 @@ function validateYourStrategyEntrySide(
       case "rsi":
         validateRsiRuleContext(rule, path, context);
         break;
+      case "adx":
+        validateRsiRuleContext(rule, path, context, "ADX");
+        break;
       case "volume":
         validateVolumeRuleContext(draft, rule, path, context);
         break;
@@ -1194,11 +1210,12 @@ function validateRsiRuleContext(
   rule: z.infer<typeof presetTriggerRuleSchema>,
   path: readonly (string | number)[],
   context: z.RefinementCtx,
+  label = "RSI",
 ) {
   if (rule.ref !== undefined) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "RSI rules must use a numeric level between 0 and 100.",
+      message: `${label} rules must use a numeric level between 0 and 100.`,
       path: [...path, "ref"],
     });
   }
@@ -1206,7 +1223,7 @@ function validateRsiRuleContext(
   if (rule.value === undefined) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "RSI rules must define a numeric level between 0 and 100.",
+      message: `${label} rules must define a numeric level between 0 and 100.`,
       path: [...path, "value"],
     });
     return;
@@ -1215,7 +1232,7 @@ function validateRsiRuleContext(
   if (rule.value < 0 || rule.value > 100) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "RSI values must stay between 0 and 100.",
+      message: `${label} values must stay between 0 and 100.`,
       path: [...path, "value"],
     });
   }
@@ -1277,7 +1294,7 @@ function validateVolumeRuleContext(
 function resolveYourStrategyIndicatorContext(
   draft: z.infer<typeof yourStrategyDraftSchema>,
   indicatorKey: string,
-): "price" | "rsi" | "volume" | "atr" | "unknown" {
+): "price" | "rsi" | "adx" | "volume" | "atr" | "unknown" {
   const indicator = draft.indicators[indicatorKey];
 
   if (!indicator) {
@@ -1286,6 +1303,15 @@ function resolveYourStrategyIndicatorContext(
 
   if (indicator.type === "rsi") {
     return "rsi";
+  }
+
+  if (indicator.type === "adx") {
+    return "adx";
+  }
+
+  if (indicator.type === "donchian") {
+    // bandas do donchian vivem no gráfico de preço — comparáveis a PRICE/EMA/SMA
+    return "price";
   }
 
   if (indicator.type === "atr") {

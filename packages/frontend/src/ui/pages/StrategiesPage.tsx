@@ -2548,7 +2548,7 @@ function IndicatorEditorCard(input: {
                   }
 
                   onChange(volumeCompanionKey, {
-                    type: volumeMovingAverage.type,
+                    type: volumeMovingAverage.type === "ema" ? "ema" : "sma",
                     source: "volume",
                     period: Number(event.target.value),
                   });
