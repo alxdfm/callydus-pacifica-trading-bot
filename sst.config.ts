@@ -24,7 +24,10 @@ export default $config({
 
     const api = new sst.aws.ApiGatewayV2("PacificaApi", {
       cors: {
-        allowOrigins: [process.env.APP_ORIGIN ?? "http://localhost:5173"],
+        allowOrigins: (process.env.APP_ORIGIN ?? "http://localhost:5173")
+          .split(",")
+          .map((origin) => origin.trim())
+          .filter(Boolean),
         allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowHeaders: ["Content-Type", "Authorization"],
       },
@@ -45,6 +48,7 @@ export default $config({
       timeout: "29 seconds",
       nodejs: { format: "esm" as const },
       environment: {
+        NODE_ENV: "production",
         DATABASE_URL: DATABASE_URL.value,
         CREDENTIAL_ENCRYPTION_KEY: CREDENTIAL_ENCRYPTION_KEY.value,
         CREDENTIAL_ENCRYPTION_KEY_ID:
