@@ -2604,3 +2604,128 @@ td.num,
   font-weight: 700;
 }
 .builder-btn--ghost { background: transparent; }
+
+/* Trades & Dashboard v2 (fase 3) --------------------------------------------- */
+
+.tl-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.tl-tab {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 8px 14px;
+}
+.tl-tab:hover { color: var(--text); }
+.tl-tab--active { color: var(--text); border-bottom-color: var(--accent); }
+.tl-tab .count { color: var(--text-faint); margin-left: 6px; }
+
+.tl-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.tl-filters select {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+
+.tl-table-wrap { overflow-x: auto; }
+.tl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tl-table th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+  text-align: right;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.tl-table td {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.tl-table th:first-child,
+.tl-table td:first-child { text-align: left; }
+.tl-table tbody tr:hover td { background: var(--bg-elevated); }
+.tl-table tfoot td {
+  border-bottom: none;
+  border-top: 2px solid var(--border);
+  font-weight: 700;
+}
+.tl-empty { color: var(--text-soft); font-size: 13px; padding: 18px 0; }
+
+.tl-pnl--up { color: var(--success); }
+.tl-pnl--down { color: var(--danger); }
+
+.tl-side {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+.tl-side--long { background: var(--success-soft); color: var(--success); }
+.tl-side--short { background: var(--danger-soft); color: var(--danger); }
+
+.tl-badge-ext {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+}
+
+.health-strip {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.health-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  color: var(--text-soft);
+}
+.health-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--text-faint); }
+.health-pill--ok { border-color: var(--success); color: var(--success); }
+.health-pill--ok::before { background: var(--success); }
+.health-pill--warn { border-color: var(--accent); color: var(--accent); }
+.health-pill--warn::before { background: var(--accent); }
+.health-pill--bad { border-color: var(--danger); color: var(--danger); }
+.health-pill--bad::before { background: var(--danger); }
+
+.dash-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+
+.dash-events { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.dash-event { display: flex; gap: 10px; align-items: baseline; }
+.dash-event time { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); white-space: nowrap; }
+.dash-event .sev { width: 7px; height: 7px; border-radius: 50%; flex: none; align-self: center; background: var(--text-faint); }
+.dash-event .sev--warning { background: var(--accent); }
+.dash-event .sev--critical, .dash-event .sev--serious { background: var(--danger); }
+.dash-event p { margin: 0; color: var(--text-soft); }
