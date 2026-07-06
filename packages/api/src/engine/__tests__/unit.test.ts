@@ -4,6 +4,8 @@ import {
   calculateEmaSeries,
   calculateRsiSeries,
   calculateAtrSeries,
+  calculateDonchianSeries,
+  calculateAdxSeries,
 } from "../indicators.js";
 import { indicatorGoldens } from "./indicator-goldens.js";
 
@@ -61,5 +63,18 @@ describe("indicators (semantics)", () => {
     expect(calculateEmaSeries([1, 2], 0).every(Number.isNaN)).toBe(true);
     expect(calculateSmaSeries([1, 2], 5).every(Number.isNaN)).toBe(true);
     expect(calculateAtrSeries([1, 2, 3], [1, 2], [1, 2, 3], 1).every(Number.isNaN)).toBe(true);
+  });
+
+  it("donchian bands use the previous period candles (current excluded)", () => {
+    const upper = calculateDonchianSeries([10, 12, 11, 15], [8, 9, 10, 13], 2, "upper");
+    expect(upper[2]).toBe(12);
+    expect(upper[3]).toBe(12);
+  });
+
+  it("adx saturates at 100 in a one-directional trend", () => {
+    const closes = Array.from({ length: 20 }, (_, i) => 100 + i * 2);
+    const highs = closes.map((c) => c + 1);
+    const lows = closes.map((c) => c - 1);
+    expect(calculateAdxSeries(highs, lows, closes, 3).at(-1)).toBeCloseTo(100, 6);
   });
 });

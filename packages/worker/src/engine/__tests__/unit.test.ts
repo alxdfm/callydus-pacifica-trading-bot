@@ -11,6 +11,8 @@ import {
   calculateEmaSeries,
   calculateRsiSeries,
   calculateAtrSeries,
+  calculateDonchianSeries,
+  calculateAdxSeries,
 } from "../indicators.js";
 import { indicatorGoldens } from "./indicator-goldens.js";
 
@@ -325,5 +327,138 @@ describe("indicators (semantics)", () => {
     expect(calculateRsiSeries([1, 2, 3], 3).every(Number.isNaN)).toBe(true);
     // ATR com arrays de tamanhos diferentes é inválido → tudo NaN
     expect(calculateAtrSeries([1, 2, 3], [1, 2], [1, 2, 3], 1).every(Number.isNaN)).toBe(true);
+  });
+});
+
+describe("calculateDonchianSeries", () => {
+  const highs = [10, 12, 11, 15];
+  const lows = [8, 9, 10, 13];
+
+  it("computes bands over the PREVIOUS period candles (current excluded)", () => {
+    const upper = calculateDonchianSeries(highs, lows, 2, "upper");
+    const lower = calculateDonchianSeries(highs, lows, 2, "lower");
+    const middle = calculateDonchianSeries(highs, lows, 2, "middle");
+
+    expect(upper[0]).toBeNaN();
+    expect(upper[1]).toBeNaN();
+    expect(upper[2]).toBe(12); // max(h[0], h[1])
+    expect(upper[3]).toBe(12); // max(h[1], h[2])
+    expect(lower[2]).toBe(8); // min(l[0], l[1])
+    expect(lower[3]).toBe(9); // min(l[1], l[2])
+    expect(middle[2]).toBe(10);
+    expect(middle[3]).toBe(10.5);
+  });
+
+  it("returns all-NaN when there are not enough candles", () => {
+    expect(calculateDonchianSeries([1, 2], [1, 2], 2, "upper").every(Number.isNaN)).toBe(true);
+    expect(calculateDonchianSeries([1, 2, 3], [1, 2], 2, "upper").every(Number.isNaN)).toBe(true);
+  });
+});
+
+describe("calculateAdxSeries", () => {
+  function trendCandles(closes: number[]) {
+    return {
+      highs: closes.map((c) => c + 1),
+      lows: closes.map((c) => c - 1),
+      closes,
+    };
+  }
+
+  it("first value appears at index 2*period-1 and stays within [0, 100]", () => {
+    const { highs, lows, closes } = trendCandles(
+      Array.from({ length: 20 }, (_, i) => 100 + Math.sin(i) * 5),
+    );
+    const adx = calculateAdxSeries(highs, lows, closes, 3);
+
+    for (let i = 0; i < 5; i += 1) {
+      expect(adx[i]).toBeNaN();
+    }
+    for (let i = 5; i < adx.length; i += 1) {
+      expect(adx[i]).toBeGreaterThanOrEqual(0);
+      expect(adx[i]).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it("saturates at 100 in a one-directional trend and reads 0 in a flat market", () => {
+    const up = trendCandles(Array.from({ length: 20 }, (_, i) => 100 + i * 2));
+    expect(calculateAdxSeries(up.highs, up.lows, up.closes, 3).at(-1)).toBeCloseTo(100, 6);
+
+    const flat = trendCandles(Array.from({ length: 20 }, () => 100));
+    expect(calculateAdxSeries(flat.highs, flat.lows, flat.closes, 3).at(-1)).toBeCloseTo(0, 6);
+  });
+
+  it("scores a strong trend above a choppy market", () => {
+    const trend = trendCandles(Array.from({ length: 30 }, (_, i) => 100 + i));
+    const chop = trendCandles(
+      Array.from({ length: 30 }, (_, i) => 100 + (i % 2 === 0 ? 3 : -3)),
+    );
+
+    const trendAdx = calculateAdxSeries(trend.highs, trend.lows, trend.closes, 5).at(-1)!;
+    const chopAdx = calculateAdxSeries(chop.highs, chop.lows, chop.closes, 5).at(-1)!;
+
+    expect(trendAdx).toBeGreaterThan(chopAdx);
+  });
+
+  it("returns all-NaN when there are not enough candles for double smoothing", () => {
+    const { highs, lows, closes } = trendCandles(Array.from({ length: 5 }, (_, i) => 100 + i));
+    // period 3 exige 2*3 = 6 candles → 5 é insuficiente
+    expect(calculateAdxSeries(highs, lows, closes, 3).every(Number.isNaN)).toBe(true);
+  });
+});
+
+describe("evaluateSignal with donchian and adx", () => {
+  it("fires a breakout signal when price crosses above the donchian upper band", () => {
+    const config = buildStrategyConfig({
+      indicators: { donchianUpper: { type: "donchian", period: 3, band: "upper" } },
+      longRules: [
+        {
+          scope: "currentCandle",
+          type: "cross",
+          indicator: "PRICE",
+          operator: "crossesAbove",
+          ref: "donchianUpper",
+        },
+      ],
+    });
+
+    // banda superior = max(high dos 3 anteriores) = close+1 → 11; breakout em 15
+    const breakout = evaluateSignal(config, buildCandles([10, 10, 10, 10, 15]));
+    expect(breakout.signal).toBe("long");
+
+    // sem breakout: preço segue dentro do canal
+    const inside = evaluateSignal(config, buildCandles([10, 10, 10, 10, 10.5]));
+    expect(inside.signal).toBe("none");
+  });
+
+  it("uses adx as a regime filter via threshold rules", () => {
+    const config = buildStrategyConfig({
+      indicators: { adx5: { type: "adx", period: 5 } },
+      longRules: [
+        {
+          scope: "currentCandle",
+          type: "threshold",
+          indicator: "adx5",
+          operator: "above",
+          value: 25,
+        },
+      ],
+    });
+
+    const trending = Array.from({ length: 30 }, (_, i) => 100 + i);
+    const flat = Array.from({ length: 30 }, () => 100);
+
+    expect(evaluateSignal(config, buildCandles(trending)).signal).toBe("long");
+    expect(evaluateSignal(config, buildCandles(flat)).signal).toBe("none");
+  });
+
+  it("getRequiredPeriod accounts for donchian exclusion window and adx double smoothing", () => {
+    const config = buildStrategyConfig({
+      indicators: {
+        donchianUpper: { type: "donchian", period: 20, band: "upper" },
+        adx14: { type: "adx", period: 14 },
+      },
+    });
+
+    expect(getRequiredPeriod(config)).toBe(28); // adx 14*2 > donchian 20+1
   });
 });
