@@ -56,8 +56,13 @@ export class PacificaClient {
   private readonly agentWallet: string;
   private readonly builderCode: string | null;
   private readonly expiryWindowMs: number;
-  private readonly signingKey: KeyObject;
-  private readonly signerPublicKey: string;
+  private readonly privateKey: string;
+  // Derivada sob demanda: endpoints públicos (market info, candles) não
+  // precisam de chave, então o client raiz pode usar placeholders.
+  private signingMaterial: {
+    signingKey: KeyObject;
+    signerPublicKey: string;
+  } | null = null;
 
   constructor(input: PacificaClientInput) {
     this.apiBaseUrl = cleanBaseUrl(input.apiBaseUrl);
@@ -65,21 +70,31 @@ export class PacificaClient {
     this.agentWallet = normalizeAddress(input.agentWallet);
     this.builderCode = normalizeOptionalString(input.builderCode);
     this.expiryWindowMs = input.expiryWindowMs;
+    this.privateKey = input.privateKey;
+  }
 
-    const { signingKey, publicKeyBase58 } = buildSigningKeyFromPrivateKey(
-      input.privateKey,
-    );
-    this.signingKey = signingKey;
-    this.signerPublicKey = publicKeyBase58;
-
-    if (
-      this.signerPublicKey !== this.account &&
-      this.signerPublicKey !== this.agentWallet
-    ) {
-      throw new Error(
-        `Pacifica signer key mismatch: derived=${this.signerPublicKey}, account=${this.account}, agent_wallet=${this.agentWallet}`,
+  private getSigningMaterial(): {
+    signingKey: KeyObject;
+    signerPublicKey: string;
+  } {
+    if (!this.signingMaterial) {
+      const { signingKey, publicKeyBase58 } = buildSigningKeyFromPrivateKey(
+        this.privateKey,
       );
+
+      if (
+        publicKeyBase58 !== this.account &&
+        publicKeyBase58 !== this.agentWallet
+      ) {
+        throw new Error(
+          `Pacifica signer key mismatch: derived=${publicKeyBase58}, account=${this.account}, agent_wallet=${this.agentWallet}`,
+        );
+      }
+
+      this.signingMaterial = { signingKey, signerPublicKey: publicKeyBase58 };
     }
+
+    return this.signingMaterial;
   }
 
   async getMarketInfo(): Promise<unknown> {
@@ -470,7 +485,8 @@ export class PacificaClient {
   }
 
   private buildUnsignedBody(data: Record<string, unknown>) {
-    const includeAgentWallet = this.signerPublicKey === this.agentWallet;
+    const includeAgentWallet =
+      this.getSigningMaterial().signerPublicKey === this.agentWallet;
 
     return {
       account: this.account,
@@ -486,7 +502,10 @@ export class PacificaClient {
     unsignedBody: Record<string, unknown>,
     signingPayload: Record<string, unknown>,
   ) {
-    const signature = signPayload(this.signingKey, signingPayload);
+    const signature = signPayload(
+      this.getSigningMaterial().signingKey,
+      signingPayload,
+    );
     const requestBody = {
       ...unsignedBody,
       signature,
