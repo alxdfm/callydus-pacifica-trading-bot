@@ -6,6 +6,13 @@ import {
   getRequiredPeriod,
   toPacificaMarketSymbol,
 } from "../evaluator.js";
+import {
+  calculateSmaSeries,
+  calculateEmaSeries,
+  calculateRsiSeries,
+  calculateAtrSeries,
+} from "../indicators.js";
+import { indicatorGoldens } from "./indicator-goldens.js";
 
 function buildCandles(closes: number[]): Candle[] {
   return closes.map((close, index) => ({
@@ -235,5 +242,88 @@ describe("toPacificaMarketSymbol", () => {
     expect(toPacificaMarketSymbol("BTC/USDT")).toBeNull();
     expect(toPacificaMarketSymbol("btc/usdc")).toBeNull();
     expect(toPacificaMarketSymbol("BTC")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Indicadores puros — golden tests de paridade com technicalindicators@3.1.0
+// ---------------------------------------------------------------------------
+
+function expectSeriesMatch(actual: number[], expectedTail: readonly number[]) {
+  const fullLength = actual.length;
+  const offset = fullLength - expectedTail.length;
+
+  for (let i = 0; i < offset; i += 1) {
+    expect(actual[i]).toBeNaN();
+  }
+  for (let i = 0; i < expectedTail.length; i += 1) {
+    expect(actual[offset + i]).toBeCloseTo(expectedTail[i]!, 9);
+  }
+}
+
+describe("indicators (golden parity)", () => {
+  const g = indicatorGoldens;
+
+  it("SMA matches the replaced library output", () => {
+    expectSeriesMatch(calculateSmaSeries([...g.closes], g.period), g.sma);
+  });
+
+  it("EMA matches the replaced library output", () => {
+    expectSeriesMatch(calculateEmaSeries([...g.closes], g.period), g.ema);
+  });
+
+  it("RSI matches the replaced library output", () => {
+    expectSeriesMatch(calculateRsiSeries([...g.closes], g.period), g.rsi);
+  });
+
+  it("ATR matches the replaced library output", () => {
+    expectSeriesMatch(
+      calculateAtrSeries([...g.highs], [...g.lows], [...g.closes], g.period),
+      g.atr,
+    );
+  });
+});
+
+describe("indicators (semantics)", () => {
+  const values = [10, 11, 12, 11.5, 13, 12.5, 14, 13.8, 15, 14.2];
+
+  it("SMA/EMA start at index period-1; RSI/ATR at index period", () => {
+    const sma = calculateSmaSeries(values, 3);
+    const ema = calculateEmaSeries(values, 3);
+    const rsi = calculateRsiSeries(values, 3);
+
+    expect(sma[1]).toBeNaN();
+    expect(sma[2]).toBeCloseTo(11, 9);
+    expect(ema[2]).toBeCloseTo(11, 9);
+    expect(ema[3]).toBeCloseTo(11.25, 9);
+    expect(rsi[2]).toBeNaN();
+    expect(rsi[3]).toBeCloseTo(80, 9);
+  });
+
+  it("RSI rounds to 2 decimals and returns 100 when there are no losses", () => {
+    const rising = [1, 2, 3, 4, 5, 6, 7, 8];
+    const flat = [5, 5, 5, 5, 5, 5];
+
+    expect(calculateRsiSeries(rising, 3).at(-1)).toBe(100);
+    expect(calculateRsiSeries(flat, 3).at(-1)).toBe(100);
+  });
+
+  it("ATR uses true range with gaps against previous close", () => {
+    // gap de alta: TR deve usar |high - prevClose|, não high - low
+    const highs = [11, 20];
+    const lows = [9, 19];
+    const closes = [10, 19.5];
+
+    const atr = calculateAtrSeries(highs, lows, closes, 1);
+    expect(atr[1]).toBeCloseTo(10, 9); // |20 - 10| domina
+  });
+
+  it("returns all-NaN series for empty input, period < 1 or insufficient data", () => {
+    expect(calculateSmaSeries([], 3)).toEqual([]);
+    expect(calculateEmaSeries([1, 2], 0).every(Number.isNaN)).toBe(true);
+    expect(calculateSmaSeries([1, 2], 5).every(Number.isNaN)).toBe(true);
+    expect(calculateRsiSeries([1, 2, 3], 3).every(Number.isNaN)).toBe(true);
+    // ATR com arrays de tamanhos diferentes é inválido → tudo NaN
+    expect(calculateAtrSeries([1, 2, 3], [1, 2], [1, 2, 3], 1).every(Number.isNaN)).toBe(true);
   });
 });
