@@ -156,4 +156,5 @@ O JWT é enviado como `Authorization: Bearer <token>` nas rotas protegidas.
 | DT-002 | WebSocket na API para push de eventos ao frontend |
 | DT-003 | Circuit breaker formal no bot |
 | DT-004 | Testes de integração para bot.ts |
-| DT-005 | Substituir `technicalindicators` por implementações puras |
+
+Resolvidos: DT-005 (indicadores puros com golden tests de paridade em `engine/indicators.ts`).
