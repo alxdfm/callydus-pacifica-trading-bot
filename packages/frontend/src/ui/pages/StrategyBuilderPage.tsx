@@ -18,6 +18,7 @@ import {
   previewYourStrategyBacktestViaBackend,
   saveYourStrategyViaBackend,
 } from "../../features/presets/your-strategy-backend";
+import { pauseBotViaBackend } from "../../features/runtime/backend-bot-commands";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
@@ -180,7 +181,7 @@ export function StrategyBuilderPage() {
   const [preview, setPreview] = useState<YourStrategyBacktestPreviewResponse | null>(null);
   const [previewFingerprint, setPreviewFingerprint] = useState<string | null>(null);
   const [periodDays, setPeriodDays] = useState<number>(30);
-  const [busy, setBusy] = useState<"save" | "activate" | "backtest" | null>(null);
+  const [busy, setBusy] = useState<"save" | "activate" | "backtest" | "pause" | null>(null);
   const [statusTone, setStatusTone] = useState<"info" | "success" | "danger" | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -437,6 +438,23 @@ export function StrategyBuilderPage() {
     }
   }
 
+  async function handlePauseBot() {
+    if (!walletAddress || busy !== null) return;
+    setBusy("pause");
+    setStatusTone("info");
+    setStatusMessage(t("builderPausing"));
+
+    const result = await pauseBotViaBackend({ walletAddress }, token);
+    setBusy(null);
+    setStatusTone(result.status === "success" ? "success" : "danger");
+    setStatusMessage(result.message);
+
+    if (result.status === "success") {
+      setRuntimeState({ botStatus: "paused" });
+      void session.reload();
+    }
+  }
+
   function handleDiscard() {
     if (record) {
       setDraft(record.draft);
@@ -492,8 +510,17 @@ export function StrategyBuilderPage() {
 
       {isEditingBlocked ? (
         <div className="builder-stale">
-          <b>{t("builderBacktestStaleTag")}</b>
+          <b>{t("builderEditingBlockedTag")}</b>
           {t("builderEditingBlocked")}
+          <button
+            className="builder-btn"
+            disabled={busy !== null}
+            onClick={() => void handlePauseBot()}
+            style={{ marginLeft: "auto" }}
+            type="button"
+          >
+            {busy === "pause" ? t("builderPausing") : t("dashPause")}
+          </button>
         </div>
       ) : null}
 

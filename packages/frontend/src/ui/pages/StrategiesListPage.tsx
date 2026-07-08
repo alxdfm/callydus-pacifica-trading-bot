@@ -19,9 +19,12 @@ export function StrategiesListPage() {
   const session = useDashboardSession();
 
   const yourStrategy = state.presets.yourStrategy;
-  const isActive = Boolean(state.presets.activePreset);
   const isBotRunning =
     state.runtime.botStatus === "active" || state.runtime.botStatus === "syncing";
+  const isActive =
+    Boolean(state.presets.activePreset) ||
+    isBotRunning ||
+    state.runtime.botStatus === "paused";
 
   const platformPnl = useMemo(
     () =>
@@ -133,7 +136,7 @@ export function StrategiesListPage() {
               <Link className="builder-btn" to="/strategies/builder">
                 {t("strategiesEdit")}
               </Link>
-              {isActive && isBotRunning ? (
+              {isBotRunning ? (
                 <button
                   className="builder-btn"
                   disabled={commandBusy}

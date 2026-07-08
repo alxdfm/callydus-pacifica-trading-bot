@@ -881,6 +881,8 @@ export const messages = {
     builderSaving: "Saving…",
     builderActivating: "Activating…",
     builderEditingBlocked: "Editing is blocked while the bot is running. Pause it first.",
+    builderEditingBlockedTag: "locked",
+    builderPausing: "Pausing…",
     builderLoadedFromSaved: "Loaded saved strategy.",
     builderNoSavedDraft: "No saved strategy yet — starting from the default draft.",
     builderDataTableToggle: "view simulation data",

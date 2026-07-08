@@ -118,7 +118,7 @@ export function DashboardPage() {
               runtime.exchangeLastSyncedAt ? formatWhen(runtime.exchangeLastSyncedAt) : t("dashHealthNever")
             }`}
           />
-          {state.presets.activePreset ? (
+          {isBotRunning || runtime.botStatus === "paused" ? (
             <button
               className="builder-btn"
               disabled={commandBusy}
