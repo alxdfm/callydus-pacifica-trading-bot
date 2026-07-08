@@ -41,7 +41,7 @@ export async function insertStrategy(
 ): Promise<Strategy> {
   const rows = await db
     .insert(strategies)
-    .values({ userId, config: input.config, symbol: input.symbol, status: "active" })
+    .values({ userId, config: input.config, symbol: input.symbol, status: "paused" })
     .returning();
   const row = rows[0];
   if (!row) throw new Error("Strategy insert returned no rows.");
