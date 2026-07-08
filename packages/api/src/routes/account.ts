@@ -9,6 +9,7 @@ import {
 import { getStrategiesByUserId, getActiveStrategyByUserId, type Strategy } from "../db/queries/strategies.js";
 import { getTradesByUserId, type Trade } from "../db/queries/trades.js";
 import { getEventsByStrategyId, getEventsByUserId, type Event } from "../db/queries/events.js";
+import { mapStrategyToPresetActivation, mapStrategyToYourStrategy } from "./strategies.js";
 
 // ---------------------------------------------------------------------------
 // Trade mappers
@@ -154,7 +155,7 @@ export function accountRoutes(deps: AppDeps): Hono<HonoEnv> {
         keyFingerprint: credential?.keyFingerprint ?? null,
         builderApproved: true,
         operationallyVerified: credential?.operationallyVerified ?? false,
-        activePreset: null,
+        activePreset: strategy ? mapStrategyToPresetActivation(strategy) : null,
         runtime: {
           balance: null,
           botStatus,
@@ -263,7 +264,7 @@ export function accountRoutes(deps: AppDeps): Hono<HonoEnv> {
           activeAlerts: [],
         },
         recentEvents,
-        yourStrategy: null,
+        yourStrategy: strategy ? mapStrategyToYourStrategy(strategy) : null,
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -294,7 +295,7 @@ export function accountRoutes(deps: AppDeps): Hono<HonoEnv> {
           symbolOperationalConfigs: [],
         },
         marketInfo: [],
-        yourStrategy: null,
+        yourStrategy: strategy ? mapStrategyToYourStrategy(strategy) : null,
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";

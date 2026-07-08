@@ -22,7 +22,7 @@ import {
 
 const YOUR_STRATEGY_PRESET_DEFINITION_ID = "0f7f0d67-1b51-43b1-a7d0-9c7a4d7f9123";
 
-function mapStrategyToYourStrategy(strategy: Strategy) {
+export function mapStrategyToYourStrategy(strategy: Strategy) {
   return {
     id: strategy.id,
     operatorAccountId: strategy.id,
@@ -34,6 +34,35 @@ function mapStrategyToYourStrategy(strategy: Strategy) {
     lastBacktestPreviewFingerprint: null,
     createdAt: strategy.createdAt.toISOString(),
     updatedAt: strategy.updatedAt.toISOString(),
+  };
+}
+
+export function mapStrategyToPresetActivation(strategy: Strategy) {
+  const config = (strategy.config ?? {}) as {
+    symbol?: unknown;
+    positionSizeType?: unknown;
+    positionSizeValue?: unknown;
+    entry?: { long?: { enabled?: boolean }; short?: { enabled?: boolean } };
+  };
+
+  return {
+    id: strategy.id,
+    operatorAccountId: strategy.id,
+    presetDefinitionId: YOUR_STRATEGY_PRESET_DEFINITION_ID,
+    activationStatus: strategy.status === "paused" ? ("paused" as const) : ("active" as const),
+    editableConfig: {
+      symbol: typeof config.symbol === "string" ? config.symbol : "BTC/USDC",
+      positionSizeType:
+        config.positionSizeType === "fixed_amount" ? "fixed_amount" : "balance_percent",
+      positionSizeValue:
+        typeof config.positionSizeValue === "number" && config.positionSizeValue > 0
+          ? config.positionSizeValue
+          : 100,
+      longEnabled: config.entry?.long?.enabled ?? true,
+      shortEnabled: config.entry?.short?.enabled ?? false,
+    },
+    activatedAt: strategy.updatedAt.toISOString(),
+    deactivatedAt: null,
   };
 }
 
@@ -218,27 +247,10 @@ export function strategiesRoutes(deps: AppDeps): Hono<HonoEnv> {
       });
 
       const activeStrategy = updated ?? strategy;
-      const now = new Date().toISOString();
 
       return c.json({
         status: "success",
-        activation: {
-          id: activeStrategy.id,
-          operatorAccountId: activeStrategy.id,
-          presetDefinitionId: YOUR_STRATEGY_PRESET_DEFINITION_ID,
-          activationStatus: "active",
-          editableConfig: {
-            symbol: typeof (activeStrategy.config as Record<string, unknown>)?.symbol === "string"
-              ? (activeStrategy.config as Record<string, unknown>).symbol
-              : "BTC/USDC",
-            positionSizeType: "fixed_amount",
-            positionSizeValue: 100,
-            longEnabled: true,
-            shortEnabled: false,
-          },
-          activatedAt: now,
-          deactivatedAt: null,
-        },
+        activation: mapStrategyToPresetActivation(activeStrategy),
         runtime: {
           botStatus: "active",
           pacificaConnectionStatus: "connected",
