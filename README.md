@@ -1,185 +1,102 @@
-# Pacifica Trading Bot
+# Callydus — Pacifica Trading Bot
 
-Monorepo for an automated trading bot running on [Pacifica](https://www.pacifica.fi/). It includes a React frontend (`app`), a REST API (`api`), a continuous trading worker (`worker`), and shared packages for contracts, database, encryption, market data, and strategy execution.
+Monorepo for an automated trading bot running on [Pacifica](https://www.pacifica.fi/) (Solana perps). React frontend, REST API, and a WS-first trading worker — deployed as a single stack on AWS.
+
+**Production:** [trade.callydus.xyz](https://trade.callydus.xyz)
+
+## Structure
+
+```
+packages/
+  api/        Hono + Drizzle — REST API, AWS Lambda via SST
+  worker/     WS-first bot — in-memory CandleBuffer, signal engine, order executor (ECS Fargate)
+  frontend/   React + Vite — deployed on AWS Amplify
+  shared/     Shared primitive types (candle, trade, signal, exchange)
+  config/     Shared TypeScript config
+apps/
+  landing/    Landing page
+docs/         Technical documentation (architecture, API, worker, design system)
+```
 
 ## Requirements
 
-- Node.js 20+
+- Node.js 22 (`.nvmrc`)
 - pnpm 10+
-- Docker (for local PostgreSQL)
+- Docker (local PostgreSQL)
 
-## Installation
-
-From the repo root:
+## Local development
 
 ```bash
 pnpm install
-```
+cp .env.example .env   # fill in the REQUIRED values
 
-Copy the environment file:
-
-```bash
-cp .env.example .env
-```
-
-Fill in the required values — see [Environment variables](#environment-variables) below.
-
-## Running locally
-
-**1. Start the local PostgreSQL container:**
-
-```bash
+# 1. Local PostgreSQL
 pnpm db:up
+
+# 2. Apply migrations
+pnpm --filter @pacifica/api db:migrate
+
+# 3. Run the services (one terminal each)
+pnpm --filter @pacifica/api dev        # API on :3003
+pnpm --filter @pacifica/worker dev     # trading worker
+pnpm --filter @pacifica/frontend dev   # UI on :5173
 ```
 
-**2. Apply the database schema:**
+## Required environment variables
 
-```bash
-pnpm --filter @pacifica/database db:push
-```
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `CREDENTIAL_ENCRYPTION_KEY` | AES key for agent wallet credentials — min 32 chars (`openssl rand -hex 32`) |
+| `AUTH_SIGNING_SECRET` | HMAC secret for session tokens — min 32 chars, **different** from the encryption key |
+| `PACIFICA_BUILDER_CODE` | Pacifica builder code (required on every order) |
 
-**3. Start the API:**
-
-```bash
-pnpm --filter @pacifica/api dev
-```
-
-**4. Start the worker:**
-
-```bash
-pnpm --filter @pacifica/worker dev
-```
-
-**5. Start the frontend:**
-
-```bash
-pnpm --filter @pacifica/app dev
-```
-
-The Vite dev server runs at `http://localhost:5173`. The API listens on port `3003`.
-
-All apps load `.env` from the repo root automatically.
+See `.env.example` for the full list with defaults.
 
 ## Useful commands
 
 ```bash
-# Type-check everything
-pnpm typecheck
-
-# Type-check a specific app
-pnpm --filter @pacifica/app typecheck
-pnpm --filter @pacifica/worker typecheck
-
-# Build the frontend
-pnpm --filter @pacifica/app build
-
-# Database
-pnpm db:logs
-pnpm db:down
-
-# Tests
-pnpm test
-pnpm test:watch
+pnpm -r typecheck        # type-check all packages
+pnpm test                # run the test suite (vitest)
+pnpm --filter @pacifica/api build
+pnpm --filter @pacifica/worker build
+pnpm --filter @pacifica/frontend build
+pnpm --filter @pacifica/api db:studio   # inspect the database
 ```
-
-## Environment variables
-
-Key variables from `.env.example`:
-
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string (default port 55432) |
-| `VITE_APP_API_BASE_URL` | API base URL for the frontend (default `http://localhost:3003`) |
-| `APP_ORIGIN` | Allowed CORS origin for the API (default `http://localhost:5173`) |
-| `PACIFICA_ENV` | `mainnet` or `testnet` |
-| `PACIFICA_REST_BASE_URL` | Pacifica REST API base URL |
-| `PACIFICA_API_KEY` | Pacifica API key |
-| `PACIFICA_BUILDER_CODE` | Builder code used when placing orders |
-| `PACIFICA_BUILDER_MAX_FEE_RATE` | Max fee rate for builder code approval |
-| `VITE_PACIFICA_BUILDER_CODE` | Same as above, exposed to the frontend |
-| `VITE_PACIFICA_BUILDER_MAX_FEE_RATE` | Same as above, exposed to the frontend |
-| `CREDENTIAL_ENCRYPTION_KEY` | AES encryption key for agent wallet credentials (32+ chars) |
-| `CREDENTIAL_ENCRYPTION_KEY_ID` | Key ID (`v2-*` for HKDF derivation; legacy SHA-256 if omitted) |
-| `INTERNAL_API_SECRET` | Protects `POST /api/internal/market/refresh` |
-| `WORKER_ID` | Identifier for the worker instance |
-| `WORKER_SIGNAL_TRACE_ENABLED` | Set to `true` to enable verbose signal loop logging |
-| `WORKER_MARKET_ORDER_SLIPPAGE_PERCENT` | Slippage tolerance for market orders (default `0.5`) |
-
-## Project structure
-
-```
-apps/
-  app/       — React + Vite frontend
-  api/       — HTTP API (Node.js, port 3003)
-  worker/    — Continuous trading worker
-packages/
-  contracts/           — Zod schemas and shared TypeScript types
-  database/            — Prisma schema and generated client (PostgreSQL)
-  credential-crypto/   — AES encryption/decryption for agent wallet keys
-  pacifica-market-data/— Market data gateway (prices, candles) from Pacifica
-  pacifica-trading/    — Order execution against Pacifica
-  preset-engine/       — Strategy signal engine (indicators, rules evaluation)
-docker-compose.yml     — Local PostgreSQL on port 55432
-```
-
-## Onboarding flow
-
-1. Run `pnpm --filter @pacifica/app dev` and open `http://localhost:5173`
-2. Have the **Phantom** or **Backpack** browser extension installed
-3. Select your wallet provider in the `Wallet to connect` dropdown
-4. Click **Connect wallet** and approve in the extension
-5. Click **Approve builder code** and sign the transaction with your main wallet
-6. Enter the **Agent Wallet public key** and **Agent Wallet private key** (base58 format, as provided by Pacifica)
-7. Click **Validate and Continue**
-
-## Worker
-
-The worker runs continuously and handles the full trade lifecycle:
-
-- Scans accounts with an active preset
-- Acquires per-account ownership via a database lease (`BotRuntimeState`)
-- Evaluates active presets on a recurring analysis loop
-- Persists deduplicated `SignalDecision` records
-- Consumes pending signals, decrypts the agent wallet, and places real market orders on Pacifica
-- Persists `OrderExecutionAttempt` with request, response, and status
-- Creates `OpenTrade` from confirmed order executions, with mandatory stop-loss and take-profit
-- Updates `currentPrice` and `unrealizedPnL` during the trade lifecycle
-- Closes `ClosedTrade` automatically when the latest candle crosses `take_profit` or `stop_loss`
-- Blocks new signals for symbols that already have an open position
-- Auto-pauses the runtime on blocking order errors
-- Releases ownership on pause, deactivation, or shutdown
-- Redacts base58 secrets from logs automatically
-
-**Verbose signal tracing:**
-
-```bash
-WORKER_SIGNAL_TRACE_ENABLED=true
-```
-
-Logs candle fetching, indicator calculation, rule evaluation, signal decision, and persistence.
-
-## Preset backtest preview
-
-The presets screen shows an on-demand backtest preview when a preset is selected or edited.
-
-- Calculated on demand, not persisted
-- Fixed window: last 7 days
-- Reuses the same signal engine as the live worker
-- Displays strategy vs. hold, max drawdown, win rate, and simulated trades
-- Simulated entry occurs at the open of the next candle after the signal
-
-**Endpoint:** `POST /api/presets/backtest-preview`
 
 ## Deployment
 
-The project deploys to AWS via [SST](https://sst.dev/):
+Everything ships together when a **GitHub release is published**: the `Deploy` workflow runs typecheck + tests, then `sst deploy --stage production` (API Lambda, worker on ECS Fargate, SNS/CloudWatch alerts) and triggers the Amplify frontend build. Pushes to `master` only run CI.
+
+Manual deploy from a machine with AWS credentials:
 
 ```bash
-# Deploy to staging
-pnpm sst:deploy
-
-# Deploy to production
-pnpm sst:deploy:prod
+npx sst deploy --stage production
 ```
 
-See `docs/dev/DEPLOY_RUNBOOK_2026-04-13.md` for the full deployment runbook including Lambda layer setup, Prisma configuration, and environment variable provisioning.
+SST secrets (one-time setup per stage): `DatabaseUrl`, `CredentialEncryptionKey`, `AuthSigningSecret`, `PacificaBuilderCode` — via `npx sst secret set`. `APP_ORIGIN` must be present in the deploy environment for production (comma-separated CORS origins).
+
+See [docs/DEPLOY.md](docs/DEPLOY.md) for details.
+
+## Architecture in one diagram
+
+```
+Pacifica WS ──▶ Worker (CandleBuffer) ──▶ Engine (evaluateSignal)
+                      │                          │
+                      ▼                          ▼
+                  DbWatcher              Executor (orders w/ SL+TP)
+                  (strategies)               │
+                      └──────────────▶ PostgreSQL ◀──▶ API (Hono) ◀── Frontend
+```
+
+Non-negotiable rules: every order carries stop-loss, take-profit and the builder code; the worker never calls the API (database only); private keys never appear in logs. Full list in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Documentation
+
+| Doc | Contents |
+|-----|----------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Data flows, service boundaries, invariants |
+| [docs/API.md](docs/API.md) | REST endpoints and auth |
+| [docs/WORKER.md](docs/WORKER.md) | Bot internals, signal engine, indicators |
+| [docs/DESIGN.md](docs/DESIGN.md) | Design system and UX blueprints |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Infrastructure and release pipeline |

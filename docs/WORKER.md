@@ -1,6 +1,6 @@
 # Worker (`@pacifica/worker`)
 
-Bot WS-first de trading automatizado. Roda em Docker, acessa o banco diretamente via Drizzle.
+Bot WS-first de trading automatizado. Roda em **ECS Fargate** (provisionado pelo `sst.config.ts`, imagem via `packages/worker/Dockerfile`), acessa o banco diretamente via Drizzle. Instância única — exclusão mútua garantida por lease no banco.
 
 ## Estrutura de módulos
 
@@ -15,7 +15,8 @@ packages/worker/src/
 │   └── env.ts        carregamento e validação de env vars
 ├── db/               queries Drizzle
 ├── engine/
-│   └── evaluator.ts  avaliação de sinais e backtesting
+│   ├── evaluator.ts  avaliação de sinais e backtesting
+│   └── indicators.ts implementações puras dos indicadores (golden tests)
 └── exchange/
     └── pacifica/
         ├── client.ts   cliente REST assinado
@@ -155,7 +156,7 @@ type EvaluatedSignal = {
 ```
 
 Fluxo:
-1. `buildIndicatorSeriesMap()` — calcula EMA, RSI, ATR, SMA sobre os candles
+1. `buildIndicatorSeriesMap()` — calcula EMA, SMA, RSI, ATR, Donchian e ADX sobre os candles (implementações puras em `engine/indicators.ts`, sem dependência externa; paridade numérica com a lib substituída garantida por golden tests)
 2. Extrai valores `previous` e `current` (últimos 2) de cada indicador
 3. Avalia regras (threshold ou cross) para entry long e short
 4. TriggerGroupType `"all"` = AND, `"any"` = OR
@@ -190,7 +191,7 @@ class PacificaClient {
 }
 ```
 
-**Assinatura:** ed25519 com agent wallet private key. Inclui `timestamp` + `builderCode` + payload.
+**Assinatura:** ed25519 com agent wallet private key. Inclui `timestamp` + `builderCode` + payload. A chave de assinatura é derivada **sob demanda** (lazy) — endpoints públicos (market info, candles) funcionam com o client raiz de placeholders.
 
 Replay protection: requisições com `timestamp` fora da janela `expiryWindowMs` são rejeitadas.
 
@@ -199,10 +200,10 @@ Replay protection: requisições com `timestamp` fora da janela `expiryWindowMs`
 | Variável | Padrão | Obrigatória |
 |----------|--------|-------------|
 | `DATABASE_URL` | — | sim |
-| `CREDENTIAL_ENCRYPTION_KEY` | — | sim |
-| `CREDENTIAL_ENCRYPTION_KEY_ID` | — | sim |
+| `CREDENTIAL_ENCRYPTION_KEY` | — (mín. 32 chars) | sim |
+| `CREDENTIAL_ENCRYPTION_KEY_ID` | `local-dev-v1` | não |
 | `PACIFICA_BUILDER_CODE` | — | sim |
-| `PACIFICA_WS_URL` | `wss://ws.pacifica.fi` | não |
+| `PACIFICA_WS_URL` | `wss://ws.pacifica.fi/ws` | não |
 | `PACIFICA_REST_URL` | `https://api.pacifica.fi` | não |
 | `WORKER_ID` | `worker-local-1` | não |
 | `MARKET_ORDER_SLIPPAGE_PERCENT` | `0.5` | não |
