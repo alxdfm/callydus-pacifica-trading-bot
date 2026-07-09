@@ -381,16 +381,19 @@ export function StrategyBuilderPage() {
     setStatusMessage(t("builderBacktestRunning"));
 
     const endTime = Date.now();
-    const result = await previewYourStrategyBacktestViaBackend({
-      walletAddress,
-      priceSource: "market",
-      startTime: endTime - periodDays * 24 * 60 * 60 * 1000,
-      endTime,
-      initialCapitalUsd,
-      leverage: selectedLeverage,
-      feePercent: 0.06,
-      slippagePercent: 0.03,
-    });
+    const result = await previewYourStrategyBacktestViaBackend(
+      {
+        walletAddress,
+        priceSource: "market",
+        startTime: endTime - periodDays * 24 * 60 * 60 * 1000,
+        endTime,
+        initialCapitalUsd,
+        leverage: selectedLeverage,
+        feePercent: 0.06,
+        slippagePercent: 0.03,
+      },
+      token,
+    );
 
     setBusy(null);
     setPreview(result);

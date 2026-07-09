@@ -43,6 +43,7 @@ export async function saveYourStrategyViaBackend(
 
 export async function previewYourStrategyBacktestViaBackend(
   request: YourStrategyBacktestPreviewRequest,
+  authToken?: string | null,
 ): Promise<YourStrategyBacktestPreviewResponse> {
   try {
     const response = await fetch(
@@ -51,6 +52,7 @@ export async function previewYourStrategyBacktestViaBackend(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify(request),
       },
