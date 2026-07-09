@@ -7,9 +7,7 @@ import {
   type PropsWithChildren,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import type {
@@ -58,8 +56,6 @@ function mapWalletError(error: unknown): WalletErrorCode {
 function SolanaWalletPortProvider({ children }: PropsWithChildren) {
   const {
     connect,
-    connected,
-    connecting,
     disconnect,
     select,
     signMessage,
@@ -67,7 +63,6 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
     wallets: availableWallets,
   } = useWallet();
   const [lastErrorCode, setLastErrorCode] = useState<WalletErrorCode | null>(null);
-  const pendingConnectAdapterRef = useRef<string | null>(null);
 
   const connectWallet = useCallback(async (provider?: SupportedWalletProvider) => {
     const requestedAdapterName = provider ? providerAdapterNames[provider] : null;
@@ -119,9 +114,6 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
       setLastErrorCode(null);
 
       if (!wallet || wallet.adapter.name !== supportedWallet.adapter.name) {
-        // select() só troca o adapter; o connect acontece no effect abaixo
-        // quando o wallet propagar — senão o usuário precisa clicar duas vezes
-        pendingConnectAdapterRef.current = supportedWallet.adapter.name;
         select(supportedWallet.adapter.name as WalletName);
         return;
       }
@@ -131,20 +123,6 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
       setLastErrorCode(mapWalletError(error));
     }
   }, [availableWallets, connect, select, wallet]);
-
-  useEffect(() => {
-    if (!wallet || pendingConnectAdapterRef.current !== wallet.adapter.name) {
-      return;
-    }
-
-    pendingConnectAdapterRef.current = null;
-
-    if (connected || connecting) {
-      return;
-    }
-
-    connect().catch((error) => setLastErrorCode(mapWalletError(error)));
-  }, [connect, connected, connecting, wallet]);
 
   const disconnectWallet = useCallback(async () => {
     try {
