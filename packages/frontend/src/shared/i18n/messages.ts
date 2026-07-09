@@ -156,6 +156,7 @@ export const messages = {
     onboardingCredentialMicrocopyInvalid: "Review your Agent Wallet details and try again.",
     onboardingCredentialMicrocopyRetry: "Validation is temporarily unavailable. Try again.",
     onboardingWalletAction: "Connect wallet",
+    onboardingWalletActionSignIn: "Sign message to continue",
     onboardingWalletActionDisconnect: "Change wallet",
     onboardingWalletActionHint: "Connect Phantom or Backpack to continue with account setup.",
     onboardingWalletSelectionHint:

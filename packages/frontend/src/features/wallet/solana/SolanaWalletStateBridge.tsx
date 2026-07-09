@@ -77,7 +77,13 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     }
 
     authenticatedWalletRef.current = mainWalletPublicKey;
-    void authenticate(mainWalletPublicKey, signMessage);
+    void authenticate(mainWalletPublicKey, signMessage).then((didAuthenticate) => {
+      // Falha (assinatura rejeitada/ignorada) libera o ref para um novo
+      // sign-in manual pelo passo de wallet do onboarding
+      if (!didAuthenticate && authenticatedWalletRef.current === mainWalletPublicKey) {
+        authenticatedWalletRef.current = null;
+      }
+    });
   }, [
     authenticate,
     clearAuth,

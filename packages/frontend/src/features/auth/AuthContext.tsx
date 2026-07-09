@@ -19,7 +19,7 @@ type AuthContextValue = AuthState & {
   authenticate: (
     walletAddress: string,
     signMessage: (message: Uint8Array) => Promise<Uint8Array>,
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   clearAuth: () => void;
 };
 
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       signMessage: (message: Uint8Array) => Promise<Uint8Array>,
     ) => {
       const nonceResponse = await fetchAuthNonce(walletAddress);
-      if (nonceResponse.status !== "ok") return;
+      if (nonceResponse.status !== "ok") return false;
 
       const { nonce, expiresAt, message } = nonceResponse;
 
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         signatureBytes = await signMessage(messageBytes);
       } catch {
         // User rejected the signing request
-        return;
+        return false;
       }
 
       const signature = uint8ArrayToBase64(signatureBytes);
@@ -90,13 +90,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
         signature,
       });
 
-      if (verifyResponse.status !== "ok") return;
+      if (verifyResponse.status !== "ok") return false;
 
       setState({
         token: verifyResponse.token,
         walletAddress,
         expiresAt: verifyResponse.expiresAt,
       });
+      return true;
     },
     [],
   );

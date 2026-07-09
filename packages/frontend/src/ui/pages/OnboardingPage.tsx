@@ -285,12 +285,14 @@ function mapValidationCodeField(code: PacificaValidationErrorCode | null) {
 
 function buildProgressSteps(
   walletStatus: WalletSession["sessionStatus"],
+  hasAuthToken: boolean,
   builderStatus: BuilderApprovalStatus,
   credentialStatus: CredentialValidationStatus,
   operationalStatus: OperationalVerificationStatus,
   labels: Pick<ReturnType<typeof useI18n>, "t">["t"],
 ): ProgressStep[] {
-  const walletComplete = walletStatus === "connected";
+  // Conectar = adapter conectado + sign-in SIWS concluído (token emitido)
+  const walletComplete = walletStatus === "connected" && hasAuthToken;
   const builderComplete = builderStatus === "approved";
   const credentialComplete = credentialStatus === "valid";
   const operationalComplete = operationalStatus === "verified";
@@ -358,7 +360,7 @@ export function OnboardingPage() {
     signWalletMessage,
   } = useSolanaWalletPort();
   const { t } = useI18n();
-  const { token } = useAuth();
+  const { authenticate, token } = useAuth();
   const [fieldErrors, setFieldErrors] = useState<FormFieldErrors>({});
   // Private key fica em estado local do formulário — nunca entra no contexto global
   const [agentWalletPrivateKey, setAgentWalletPrivateKey] = useState("");
@@ -386,6 +388,7 @@ export function OnboardingPage() {
   );
   const progressSteps = buildProgressSteps(
     state.wallet.sessionStatus,
+    Boolean(token),
     state.builderApproval.approvalStatus,
     state.credentials.validationStatus,
     state.operational.status,
@@ -729,6 +732,11 @@ export function OnboardingPage() {
         retryable: !unavailable,
       });
     }
+  }
+
+  async function handleSignIn() {
+    if (!state.wallet.mainWalletPublicKey || !canSignMessages) return;
+    await authenticate(state.wallet.mainWalletPublicKey, signWalletMessage);
   }
 
   function validateRequiredFields() {
@@ -1265,13 +1273,17 @@ export function OnboardingPage() {
                       className="btn secondary"
                       onClick={() =>
                         void (walletConnected
-                          ? disconnectWallet()
+                          ? token
+                            ? disconnectWallet()
+                            : handleSignIn()
                           : connectWallet(selectedWalletProvider))
                       }
                       type="button"
                     >
                       {walletConnected
-                        ? t("onboardingWalletActionDisconnect")
+                        ? token
+                          ? t("onboardingWalletActionDisconnect")
+                          : t("onboardingWalletActionSignIn")
                         : t("onboardingWalletAction")}
                     </button>
                   )}
