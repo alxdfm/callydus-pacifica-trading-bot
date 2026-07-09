@@ -55,18 +55,12 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
       // Only clear auth on a real disconnect (wallet was previously authenticated).
       // On fresh mount the wallet starts as !connected before auto-connect fires;
       // clearing auth here would wipe a valid persisted token unnecessarily.
+      // O ref NÃO é zerado aqui: adapters (Backpack) oscilam connected
+      // transitoriamente e o reset re-armaria o auto-SIWS a cada oscilação (loop).
       if (!connected && authenticatedWalletRef.current !== null) {
         clearAuth();
-        authenticatedWalletRef.current = null;
       }
       return;
-    }
-
-    if (authenticatedWalletRef.current === mainWalletPublicKey) {
-      // Already authenticated this wallet — but if the token was cleared
-      // (e.g. after a 401), reset and fall through to re-authenticate.
-      if (token !== null) return;
-      authenticatedWalletRef.current = null;
     }
 
     // A valid persisted token for this wallet (e.g. loaded from localStorage)
@@ -76,14 +70,17 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
       return;
     }
 
+    // Uma tentativa automática por wallet por montagem. O adapter da Backpack
+    // oscila connected/signMessage quando a extensão está travada — re-disparar
+    // aqui a cada oscilação gera loop de nonce e empilha popups de assinatura
+    // (cada nonce novo invalida a assinatura pendente do anterior). Falhou?
+    // A recuperação é o botão "Sign message to continue" do passo de wallet.
+    if (authenticatedWalletRef.current === mainWalletPublicKey) {
+      return;
+    }
+
     authenticatedWalletRef.current = mainWalletPublicKey;
-    void authenticate(mainWalletPublicKey, signMessage).then((didAuthenticate) => {
-      // Falha (assinatura rejeitada/ignorada) libera o ref para um novo
-      // sign-in manual pelo passo de wallet do onboarding
-      if (!didAuthenticate && authenticatedWalletRef.current === mainWalletPublicKey) {
-        authenticatedWalletRef.current = null;
-      }
-    });
+    void authenticate(mainWalletPublicKey, signMessage);
   }, [
     authenticate,
     clearAuth,
