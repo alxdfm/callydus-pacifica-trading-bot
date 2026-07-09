@@ -9,7 +9,6 @@ import {
   onboardingStatusSchema,
   openTradeSchema,
   presetActivationSchema,
-  presetEditableConfigSchema,
   syncStatusSchema,
   walletProviderSchema,
   walletSessionStatusSchema,
@@ -26,7 +25,6 @@ import {
   type PacificaValidationErrorCode,
   type OpenTrade,
   type PresetActivation,
-  type PresetEditableConfig,
   type SyncStatus,
   type WalletProvider,
   type WalletSession,
@@ -49,11 +47,9 @@ import {
   type RuntimeState,
   type RuntimeToast,
 } from "../features/runtime/runtime-state";
-import { defaultLocale, type AppLocale } from "../shared/i18n/messages";
 
 export type CredentialState = {
   agentWalletPublicKey: string | null;
-  agentWalletPrivateKey: string | null;
   credentialAlias: string | null;
   credentialId: string | null;
   keyFingerprint: string | null;
@@ -84,7 +80,6 @@ export type OperationalVerificationState = {
 };
 
 export type AppSessionState = {
-  locale: AppLocale;
   wallet: WalletSession;
   builderApproval: BuilderApprovalState;
   credentials: CredentialState;
@@ -92,10 +87,6 @@ export type AppSessionState = {
   presets: {
     activePreset: PresetActivation | null;
     yourStrategy: YourStrategy | null;
-    selectedPresetDefinitionId: string | null;
-    draftEditableConfig: PresetEditableConfig | null;
-    activationStatus: "idle" | "loading" | "success" | "error";
-    activationMessage: string | null;
   };
   onboarding: {
     status: OnboardingStatus;
@@ -115,7 +106,6 @@ export type AppSessionState = {
 type AppStateContextValue = {
   state: AppSessionState;
   canAccessProduct: boolean;
-  setLocale: (locale: AppLocale) => void;
   setWalletSession: (nextWallet: Partial<WalletSession>) => void;
   setBuilderApprovalState: (nextBuilderApproval: Partial<BuilderApprovalState>) => void;
   setCredentialState: (nextCredentials: Partial<CredentialState>) => void;
@@ -128,12 +118,13 @@ type AppStateContextValue = {
   resetOnboardingState: () => void;
 };
 
-const storageKey = "pacifica.app-state";
+// v2: bump da chave descarta storages antigos que continham campos removidos
+// (locale, presets.selected*/draft*/activation*, runtime.screenStatus, privkey)
+const storageKey = "pacifica.app-state.v2";
 const AppStateContext = createContext<AppStateContextValue | null>(null);
 
 export function createInitialAppSessionState(): AppSessionState {
   return {
-    locale: defaultLocale,
     wallet: {
       provider: null,
       mainWalletPublicKey: null,
@@ -151,7 +142,6 @@ export function createInitialAppSessionState(): AppSessionState {
     },
     credentials: {
       agentWalletPublicKey: null,
-      agentWalletPrivateKey: null,
       credentialAlias: null,
       credentialId: null,
       keyFingerprint: null,
@@ -173,10 +163,6 @@ export function createInitialAppSessionState(): AppSessionState {
     presets: {
       activePreset: null,
       yourStrategy: null,
-      selectedPresetDefinitionId: null,
-      draftEditableConfig: null,
-      activationStatus: "idle",
-      activationMessage: null,
     },
     onboarding: {
       status: "wallet_pending",
@@ -214,7 +200,6 @@ export function parseStoredState(rawValue: string | null): AppSessionState {
       credentials: {
         ...baseState.credentials,
         ...parsed.credentials,
-        agentWalletPrivateKey: null,
         validationStatus: credentialValidationStatus(parsed.credentials?.validationStatus),
       },
       operational: {
@@ -223,12 +208,8 @@ export function parseStoredState(rawValue: string | null): AppSessionState {
         status: operationalVerificationStatus(parsed.operational?.status),
       },
       presets: {
-        ...baseState.presets,
-        ...parsed.presets,
         activePreset: presetActivationValue(parsed.presets?.activePreset),
         yourStrategy: null,
-        draftEditableConfig: presetEditableConfigValue(parsed.presets?.draftEditableConfig),
-        activationStatus: presetActivationUiStatus(parsed.presets?.activationStatus),
       },
       runtime: {
         ...baseState.runtime,
@@ -243,7 +224,6 @@ export function parseStoredState(rawValue: string | null): AppSessionState {
         closedTrades: closedTradesValue(parsed.runtime?.closedTrades),
         alerts: operationalAlertsValue(parsed.runtime?.alerts),
         events: operationalEventsValue(parsed.runtime?.events),
-        screenStatus: runtimeScreenStatus(parsed.runtime?.screenStatus),
         actionToast: runtimeToastValue(parsed.runtime?.actionToast),
       },
       onboarding: {
@@ -318,19 +298,6 @@ function presetActivationValue(value: unknown): PresetActivation | null {
   return result.success ? result.data : null;
 }
 
-function presetEditableConfigValue(value: unknown): PresetEditableConfig | null {
-  if (!value) {
-    return null;
-  }
-
-  const result = presetEditableConfigSchema.safeParse(value);
-  return result.success ? result.data : null;
-}
-
-function presetActivationUiStatus(value: unknown): AppSessionState["presets"]["activationStatus"] {
-  return value === "loading" || value === "success" || value === "error" ? value : "idle";
-}
-
 function balanceSnapshotValue(value: unknown): BalanceSnapshot | null {
   if (!value) {
     return null;
@@ -392,10 +359,6 @@ function operationalEventsValue(value: unknown): OperationalEvent[] {
     const result = operationalEventSchema.safeParse(item);
     return result.success ? [result.data] : [];
   });
-}
-
-function runtimeScreenStatus(value: unknown): RuntimeState["screenStatus"] {
-  return value === "loading" || value === "ready" || value === "error" ? value : "idle";
 }
 
 function runtimeToastValue(value: unknown): RuntimeToast | null {
@@ -522,19 +485,12 @@ export function sanitizeStateForPersistence(state: AppSessionState): AppSessionS
     ...state,
     wallet: walletSession,
     builderApproval,
-    credentials: {
-      ...credentials,
-      agentWalletPrivateKey: null,
-    },
+    credentials,
     operational,
     onboarding,
     runtime: {
       ...state.runtime,
       actionToast: null,
-      screenStatus:
-        state.runtime.screenStatus === "loading"
-          ? "idle"
-          : state.runtime.screenStatus,
     },
   };
 }
@@ -568,19 +524,6 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       JSON.stringify(sanitizeStateForPersistence(state)),
     );
   }, [state]);
-
-  const setLocale = useCallback((locale: AppLocale) => {
-    setState((currentState) => {
-      if (currentState.locale === locale) {
-        return currentState;
-      }
-
-      return {
-        ...currentState,
-        locale,
-      };
-    });
-  }, []);
 
   const setWalletSession = useCallback((nextWallet: Partial<WalletSession>) => {
     setState((currentState) => {
@@ -716,10 +659,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
 
   const resetOnboardingState = useCallback(() => {
     setState((currentState) => {
-      const nextState = {
-        ...createInitialAppSessionState(),
-        locale: currentState.locale,
-      };
+      const nextState = createInitialAppSessionState();
 
       return JSON.stringify(currentState) === JSON.stringify(nextState)
         ? currentState
@@ -731,7 +671,6 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     () => ({
       state,
       canAccessProduct: deriveCanAccessProduct(state),
-      setLocale,
       setWalletSession,
       setBuilderApprovalState,
       setCredentialState,
@@ -746,7 +685,6 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setBuilderApprovalState,
       setCredentialState,
       setOperationalState,
-      setLocale,
       setOnboardingState,
       setPresetState,
       setRuntimeState,

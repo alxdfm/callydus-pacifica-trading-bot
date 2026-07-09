@@ -164,16 +164,10 @@ export function useAgentWalletReplacementFlow() {
       return;
     }
 
-    setRuntimeState({
-      screenStatus: "loading",
-      lastRuntimeMessage: null,
-    });
-
     const commandResult = await pauseBotViaBackend({ walletAddress }, token);
 
     if (commandResult.status === "error") {
       setRuntimeState({
-        screenStatus: "ready",
         actionToast: {
           id: Date.now(),
           tone: "danger",
@@ -206,10 +200,6 @@ export function useAgentWalletReplacementFlow() {
       sessionSnapshot.status === "error"
         ? sessionSnapshot.message
         : "Could not refresh the account session after pausing the bot.";
-    setRuntimeState({
-      screenStatus: "error",
-      lastRuntimeMessage: fallbackMessage,
-    });
     setModalFeedback(fallbackMessage);
     setModalFeedbackTone("danger");
   }
@@ -296,7 +286,6 @@ export function useAgentWalletReplacementFlow() {
     if (response.canProceed) {
       setCredentialState({
         agentWalletPublicKey: validatedDraft.agentWalletPublicKey,
-        agentWalletPrivateKey: null,
         credentialAlias: validatedDraft.credentialAlias,
         credentialId: validatedDraft.credentialId,
         keyFingerprint: validatedDraft.keyFingerprint,
@@ -350,7 +339,6 @@ export function useAgentWalletReplacementFlow() {
     ) {
       setCredentialState({
         agentWalletPublicKey: validatedDraft.agentWalletPublicKey,
-        agentWalletPrivateKey: null,
         credentialAlias: validatedDraft.credentialAlias,
         credentialId: validatedDraft.credentialId,
         keyFingerprint: validatedDraft.keyFingerprint,

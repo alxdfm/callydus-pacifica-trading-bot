@@ -28,8 +28,6 @@ export type RuntimeState = {
   closedTrades: ClosedTrade[];
   alerts: OperationalAlert[];
   events: OperationalEvent[];
-  screenStatus: "idle" | "loading" | "ready" | "error";
-  lastRuntimeMessage: string | null;
   actionToast: RuntimeToast | null;
 };
 
@@ -46,22 +44,6 @@ export function createEmptyRuntimeState(): RuntimeState {
     closedTrades: [],
     alerts: [],
     events: [],
-    screenStatus: "idle",
-    lastRuntimeMessage: null,
     actionToast: null,
   };
-}
-
-export function createRuntimePersistentFeedback(
-  lastRuntimeMessage: string | null,
-): Pick<RuntimeState, "screenStatus" | "lastRuntimeMessage"> {
-  return lastRuntimeMessage
-    ? {
-        screenStatus: "error",
-        lastRuntimeMessage,
-      }
-    : {
-        screenStatus: "ready",
-        lastRuntimeMessage: null,
-      };
 }

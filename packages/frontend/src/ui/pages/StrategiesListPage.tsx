@@ -49,14 +49,10 @@ export function StrategiesListPage() {
     if (result.status === "success") {
       setPresetState({
         activePreset: result.activation,
-        draftEditableConfig: result.activation.editableConfig,
-        activationStatus: "success",
-        activationMessage: result.message,
       });
       setRuntimeState({
         botStatus: result.runtime.botStatus,
         syncStatus: result.runtime.syncStatus,
-        screenStatus: "ready",
       });
       showToast("success", result.message);
     } else {

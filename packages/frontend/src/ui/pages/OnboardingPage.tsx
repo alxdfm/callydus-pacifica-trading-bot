@@ -360,6 +360,8 @@ export function OnboardingPage() {
   const { t } = useI18n();
   const { token } = useAuth();
   const [fieldErrors, setFieldErrors] = useState<FormFieldErrors>({});
+  // Private key fica em estado local do formulário — nunca entra no contexto global
+  const [agentWalletPrivateKey, setAgentWalletPrivateKey] = useState("");
   const [selectedStepIndex, setSelectedStepIndex] = useState(0);
   const [selectedWalletProvider, setSelectedWalletProvider] =
     useState<WalletProvider>("phantom");
@@ -409,7 +411,7 @@ export function OnboardingPage() {
   const credentialsValidated = state.credentials.validationStatus === "valid";
   const isCredentialFormFilled = Boolean(
     state.credentials.agentWalletPublicKey?.trim() &&
-    state.credentials.agentWalletPrivateKey?.trim(),
+    agentWalletPrivateKey.trim(),
   );
   const credentialFormStateLabel = t(
     mapCredentialFormState(
@@ -538,8 +540,11 @@ export function OnboardingPage() {
       probeSymbol: null,
       probeClientOrderId: null,
     });
+    if (field === "agentWalletPrivateKey") {
+      setAgentWalletPrivateKey(value);
+    }
     setCredentialState({
-      [field]: value || null,
+      ...(field !== "agentWalletPrivateKey" ? { [field]: value || null } : {}),
       validationStatus:
         state.credentials.validationStatus === "valid" ||
         state.credentials.validationStatus === "invalid" ||
@@ -733,7 +738,7 @@ export function OnboardingPage() {
       nextErrors.agentWalletPublicKey = "Agent Wallet public key is required.";
     }
 
-    if (!state.credentials.agentWalletPrivateKey?.trim()) {
+    if (!agentWalletPrivateKey.trim()) {
       nextErrors.agentWalletPrivateKey =
         "Agent Wallet private key is required.";
     }
@@ -809,7 +814,7 @@ export function OnboardingPage() {
     const response = await validateAgentWalletViaBackend({
       mainWalletPublicKey: state.wallet.mainWalletPublicKey,
       agentWalletPublicKey: state.credentials.agentWalletPublicKey ?? "",
-      agentWalletPrivateKey: state.credentials.agentWalletPrivateKey ?? "",
+      agentWalletPrivateKey,
       credentialAlias: state.credentials.credentialAlias,
     } satisfies PacificaCredentialSubmission);
 
@@ -923,9 +928,9 @@ export function OnboardingPage() {
 
   function clearCredentialForm() {
     setFieldErrors({});
+    setAgentWalletPrivateKey("");
     setCredentialState({
       agentWalletPublicKey: null,
-      agentWalletPrivateKey: null,
       credentialAlias: null,
       credentialId: null,
       keyFingerprint: null,
@@ -1433,7 +1438,7 @@ export function OnboardingPage() {
                       )
                     }
                     placeholder={t("onboardingValueAwaitingPrivateKey")}
-                    value={state.credentials.agentWalletPrivateKey ?? ""}
+                    value={agentWalletPrivateKey}
                   />
                   {fieldErrors.agentWalletPrivateKey ? (
                     <em className="onboarding-form__error">

@@ -7,10 +7,7 @@ import type {
   CredentialState,
   OperationalVerificationState,
 } from "../../state/app-state";
-import {
-  createRuntimePersistentFeedback,
-  type RuntimeState,
-} from "../runtime/runtime-state";
+import type { RuntimeState } from "../runtime/runtime-state";
 
 type ApplyAccountSessionDependencies = {
   setBuilderApprovalState: (value: Partial<BuilderApprovalState>) => void;
@@ -34,7 +31,6 @@ export function applyAccountSessionSnapshot(
   dependencies.setCredentialState({
     credentialId: snapshot.credentialId,
     agentWalletPublicKey: snapshot.agentWalletPublicKey,
-    agentWalletPrivateKey: null,
     credentialAlias: snapshot.credentialAlias,
     keyFingerprint: snapshot.keyFingerprint,
     validationStatus: snapshot.credentialId ? "valid" : "pending",
@@ -54,10 +50,6 @@ export function applyAccountSessionSnapshot(
   });
   dependencies.setPresetState({
     activePreset: snapshot.activePreset,
-    selectedPresetDefinitionId: snapshot.activePreset?.presetDefinitionId ?? null,
-    draftEditableConfig: snapshot.activePreset?.editableConfig ?? null,
-    activationStatus: "idle",
-    activationMessage: null,
   });
   dependencies.setRuntimeState({
     balance: snapshot.runtime.balance,
@@ -71,7 +63,6 @@ export function applyAccountSessionSnapshot(
     closedTrades: snapshot.runtime.closedTrades,
     alerts: snapshot.runtime.activeAlerts,
     events: snapshot.recentEvents,
-    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
   });
 
   dependencies.setOnboardingState?.({

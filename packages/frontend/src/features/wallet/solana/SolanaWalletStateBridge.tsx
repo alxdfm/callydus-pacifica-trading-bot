@@ -126,10 +126,6 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
       });
       setPresetState({
         activePreset: null,
-        selectedPresetDefinitionId: null,
-        draftEditableConfig: null,
-        activationStatus: "idle",
-        activationMessage: null,
       });
       setRuntimeState({
         ...createEmptyRuntimeState(),
@@ -240,10 +236,6 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
     });
     setPresetState({
       activePreset: null,
-      selectedPresetDefinitionId: null,
-      draftEditableConfig: null,
-      activationStatus: "idle",
-      activationMessage: null,
     });
     setRuntimeState({
       ...createEmptyRuntimeState(),
@@ -321,7 +313,6 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
         setCredentialState({
           credentialId: result.credentialId,
           agentWalletPublicKey: result.agentWalletPublicKey,
-          agentWalletPrivateKey: null,
           credentialAlias: result.credentialAlias,
           keyFingerprint: result.keyFingerprint,
           validationStatus: "valid",
@@ -341,15 +332,9 @@ export function SolanaWalletStateBridge({ children }: PropsWithChildren) {
         });
         setPresetState({
           activePreset: null,
-          selectedPresetDefinitionId: null,
-          draftEditableConfig: null,
-          activationStatus: "idle",
-          activationMessage: null,
         });
         setRuntimeState({
           ...createEmptyRuntimeState(),
-          screenStatus: "idle",
-          lastRuntimeMessage: null,
         });
         setOnboardingState({
           status: "ready",

@@ -420,14 +420,10 @@ export function StrategyBuilderPage() {
     if (result.status === "success") {
       setPresetState({
         activePreset: result.activation,
-        draftEditableConfig: result.activation.editableConfig,
-        activationStatus: "success",
-        activationMessage: result.message,
       });
       setRuntimeState({
         botStatus: result.runtime.botStatus,
         syncStatus: result.runtime.syncStatus,
-        screenStatus: "ready",
         actionToast: { id: Date.now(), tone: "success", message: result.message },
       });
       setStatusTone("success");
