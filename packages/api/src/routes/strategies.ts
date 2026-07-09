@@ -209,11 +209,19 @@ export function strategiesRoutes(deps: AppDeps): Hono<HonoEnv> {
       );
     }
 
-    const draft = body.draft as YourStrategyDraft | undefined;
+    let draft = body.draft as YourStrategyDraft | undefined;
+
+    if (!draft) {
+      // O builder salva antes de backtestar e não envia o draft no body —
+      // a strategy salva é a fonte de verdade
+      const walletAddress = c.get("walletAddress");
+      const strategy = await getActiveStrategyByUserId(deps.db, walletAddress);
+      draft = (strategy?.config as YourStrategyDraft | undefined) ?? undefined;
+    }
 
     if (!draft) {
       return c.json(
-        { status: "error", code: "strategy_not_found", message: "Provide a strategy draft.", retryable: false },
+        { status: "error", code: "strategy_not_found", message: "Save your strategy before running the backtest.", retryable: false },
         400,
       );
     }
