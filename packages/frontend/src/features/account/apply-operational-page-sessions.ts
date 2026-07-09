@@ -1,9 +1,7 @@
 import type {
   OperationalDashboardSessionFound,
-  OperationalHistorySessionFound,
   OperationalPresetsSessionFound,
   OperationalProfileSessionFound,
-  OperationalTradesSessionFound,
 } from "../../types/contracts";
 import type {
   AppSessionState,
@@ -11,10 +9,7 @@ import type {
   CredentialState,
   OperationalVerificationState,
 } from "../../state/app-state";
-import {
-  createRuntimePersistentFeedback,
-  type RuntimeState,
-} from "../runtime/runtime-state";
+import type { RuntimeState } from "../runtime/runtime-state";
 
 type ApplyOperationalPageSessionDependencies = {
   setBuilderApprovalState: (value: Partial<BuilderApprovalState>) => void;
@@ -38,7 +33,6 @@ export function applyOperationalProfileSessionSnapshot(
   dependencies.setCredentialState({
     credentialId: snapshot.credentialId,
     agentWalletPublicKey: snapshot.agentWalletPublicKey,
-    agentWalletPrivateKey: null,
     credentialAlias: snapshot.credentialAlias,
     keyFingerprint: snapshot.keyFingerprint,
     validationStatus: snapshot.credentialId ? "valid" : "pending",
@@ -58,7 +52,6 @@ export function applyOperationalProfileSessionSnapshot(
   });
   dependencies.setRuntimeState({
     botStatus: snapshot.runtime.botStatus,
-    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
   });
 }
 
@@ -77,7 +70,6 @@ export function applyOperationalDashboardSessionSnapshot(
     closedTrades: snapshot.runtime.closedTrades,
     alerts: snapshot.runtime.activeAlerts,
     events: snapshot.recentEvents,
-    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
   });
   dependencies.setPresetState({
     yourStrategy: snapshot.yourStrategy,
@@ -95,32 +87,3 @@ export function applyOperationalPresetsSessionSnapshot(
   });
 }
 
-export function applyOperationalTradesSessionSnapshot(
-  snapshot: OperationalTradesSessionFound,
-  dependencies: ApplyOperationalPageSessionDependencies,
-) {
-  dependencies.setRuntimeState({
-    botStatus: snapshot.runtime.botStatus,
-    syncStatus: snapshot.runtime.syncStatus,
-    exchangeSnapshotStatus: snapshot.runtime.exchangeSnapshotStatus,
-    exchangeLastSyncedAt: snapshot.runtime.exchangeLastSyncedAt,
-    exchangeSnapshotMessage: snapshot.runtime.exchangeSnapshotMessage,
-    currentTrades: snapshot.runtime.currentTrades,
-    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
-  });
-}
-
-export function applyOperationalHistorySessionSnapshot(
-  snapshot: OperationalHistorySessionFound,
-  dependencies: ApplyOperationalPageSessionDependencies,
-) {
-  dependencies.setRuntimeState({
-    botStatus: snapshot.runtime.botStatus,
-    syncStatus: snapshot.runtime.syncStatus,
-    exchangeSnapshotStatus: snapshot.runtime.exchangeSnapshotStatus,
-    exchangeLastSyncedAt: snapshot.runtime.exchangeLastSyncedAt,
-    exchangeSnapshotMessage: snapshot.runtime.exchangeSnapshotMessage,
-    closedTrades: snapshot.runtime.closedTrades,
-    ...createRuntimePersistentFeedback(snapshot.runtime.lastErrorMessage),
-  });
-}

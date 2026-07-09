@@ -1,16 +1,12 @@
 import {
   operationalDashboardSessionResponseSchema,
-  operationalHistorySessionResponseSchema,
   operationalPresetsSessionResponseSchema,
   operationalProfileSessionResponseSchema,
   operationalSessionSnapshotRequestSchema,
-  operationalTradesSessionResponseSchema,
   type OperationalDashboardSessionResponse,
-  type OperationalHistorySessionResponse,
   type OperationalPresetsSessionResponse,
   type OperationalProfileSessionResponse,
   type OperationalSessionSnapshotRequest,
-  type OperationalTradesSessionResponse,
 } from "../../types/contracts";
 import { parseSchemaOrFallback } from "../onboarding/backend-response";
 
@@ -102,26 +98,3 @@ export function readOperationalPresetsViaBackend(
   );
 }
 
-export function readOperationalTradesViaBackend(
-  request: OperationalSessionSnapshotRequest,
-  authToken?: string | null,
-): Promise<OperationalTradesSessionResponse> {
-  return readOperationalPageSessionViaBackend(
-    request,
-    "/api/account/trades",
-    operationalTradesSessionResponseSchema,
-    authToken,
-  );
-}
-
-export function readOperationalHistoryViaBackend(
-  request: OperationalSessionSnapshotRequest,
-  authToken?: string | null,
-): Promise<OperationalHistorySessionResponse> {
-  return readOperationalPageSessionViaBackend(
-    request,
-    "/api/account/history",
-    operationalHistorySessionResponseSchema,
-    authToken,
-  );
-}
