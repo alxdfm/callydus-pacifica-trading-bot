@@ -4,10 +4,12 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 import {
   createContext,
+  type MutableRefObject,
   type PropsWithChildren,
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type {
@@ -53,7 +55,10 @@ function mapWalletError(error: unknown): WalletErrorCode {
   return "wallet_connection_failed";
 }
 
-function SolanaWalletPortProvider({ children }: PropsWithChildren) {
+function SolanaWalletPortProvider({
+  children,
+  manualConnectRef,
+}: PropsWithChildren<{ manualConnectRef: MutableRefObject<boolean> }>) {
   const {
     connect,
     disconnect,
@@ -114,15 +119,23 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
       setLastErrorCode(null);
 
       if (!wallet || wallet.adapter.name !== supportedWallet.adapter.name) {
+        // select() dispara o auto-connect interno da lib FORA do gesto do clique;
+        // com a extensão travada isso falha sem abrir o popup de unlock e ainda
+        // desseleciona o adapter no erro. manualConnectRef desarma esse auto-connect
+        // e o connect acontece direto no adapter, ainda dentro do gesto.
+        manualConnectRef.current = true;
         select(supportedWallet.adapter.name as WalletName);
+        await supportedWallet.adapter.connect();
         return;
       }
 
       await connect();
     } catch (error) {
       setLastErrorCode(mapWalletError(error));
+    } finally {
+      manualConnectRef.current = false;
     }
-  }, [availableWallets, connect, select, wallet]);
+  }, [availableWallets, connect, manualConnectRef, select, wallet]);
 
   const disconnectWallet = useCallback(async () => {
     try {
@@ -164,10 +177,20 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
 }
 
 export function SolanaWalletEnvironment({ children }: PropsWithChildren) {
+  const manualConnectRef = useRef(false);
+  // Reconnect silencioso no mount continua; só é suprimido enquanto um
+  // connect manual (clique) está em andamento, para não competirem
+  const shouldAutoConnect = useCallback(
+    async () => !manualConnectRef.current,
+    [],
+  );
+
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider autoConnect wallets={wallets}>
-        <SolanaWalletPortProvider>{children}</SolanaWalletPortProvider>
+      <WalletProvider autoConnect={shouldAutoConnect} wallets={wallets}>
+        <SolanaWalletPortProvider manualConnectRef={manualConnectRef}>
+          {children}
+        </SolanaWalletPortProvider>
       </WalletProvider>
     </ConnectionProvider>
   );
