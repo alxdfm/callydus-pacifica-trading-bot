@@ -2,12 +2,10 @@ import { clusterApiUrl } from "@solana/web3.js";
 import { WalletProvider, ConnectionProvider } from "@solana/wallet-adapter-react";
 import {
   createContext,
-  type MutableRefObject,
   type PropsWithChildren,
   useCallback,
   useContext,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import type {
@@ -77,10 +75,7 @@ function mapWalletError(error: unknown): WalletErrorCode {
   return "wallet_connection_failed";
 }
 
-function SolanaWalletPortProvider({
-  children,
-  manualConnectRef,
-}: PropsWithChildren<{ manualConnectRef: MutableRefObject<boolean> }>) {
+function SolanaWalletPortProvider({ children }: PropsWithChildren) {
   const {
     connect,
     disconnect,
@@ -141,23 +136,20 @@ function SolanaWalletPortProvider({
       setLastErrorCode(null);
 
       if (!wallet || wallet.adapter.name !== supportedWallet.adapter.name) {
-        // select() dispara o auto-connect interno da lib FORA do gesto do clique;
-        // com a extensão travada isso falha sem abrir o popup de unlock e ainda
-        // desseleciona o adapter no erro. manualConnectRef desarma esse auto-connect
-        // e o connect acontece direto no adapter, ainda dentro do gesto.
-        manualConnectRef.current = true;
+        // Só seleciona: o próprio WalletProvider dispara adapter.connect() no
+        // effect pós-commit dele, DEPOIS de anexar os listeners de 'connect'.
+        // Conectar aqui no clique perde o emit síncrono do adapter quando a
+        // extensão resolve de cache (domínio trusted) — o evento dispara antes
+        // de existir listener e o estado nunca vira connected até o reload.
         select(supportedWallet.adapter.name as WalletName);
-        await withTimeout(supportedWallet.adapter.connect(), CONNECT_TIMEOUT_MS);
         return;
       }
 
       await withTimeout(connect(), CONNECT_TIMEOUT_MS);
     } catch (error) {
       setLastErrorCode(mapWalletError(error));
-    } finally {
-      manualConnectRef.current = false;
     }
-  }, [availableWallets, connect, manualConnectRef, select, wallet]);
+  }, [availableWallets, connect, select, wallet]);
 
   const disconnectWallet = useCallback(async () => {
     try {
@@ -199,20 +191,10 @@ function SolanaWalletPortProvider({
 }
 
 export function SolanaWalletEnvironment({ children }: PropsWithChildren) {
-  const manualConnectRef = useRef(false);
-  // Reconnect silencioso no mount continua; só é suprimido enquanto um
-  // connect manual (clique) está em andamento, para não competirem
-  const shouldAutoConnect = useCallback(
-    async () => !manualConnectRef.current,
-    [],
-  );
-
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider autoConnect={shouldAutoConnect} wallets={wallets}>
-        <SolanaWalletPortProvider manualConnectRef={manualConnectRef}>
-          {children}
-        </SolanaWalletPortProvider>
+      <WalletProvider autoConnect wallets={wallets}>
+        <SolanaWalletPortProvider>{children}</SolanaWalletPortProvider>
       </WalletProvider>
     </ConnectionProvider>
   );
