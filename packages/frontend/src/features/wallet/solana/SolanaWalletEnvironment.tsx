@@ -1,7 +1,5 @@
 import { clusterApiUrl } from "@solana/web3.js";
 import { WalletProvider, ConnectionProvider } from "@solana/wallet-adapter-react";
-import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 import {
   createContext,
   type MutableRefObject,
@@ -34,8 +32,32 @@ const providerAdapterNames: Record<SupportedWalletProvider, string> = {
 };
 const supportedWalletNames = Object.values(providerAdapterNames) as string[];
 const endpoint = clusterApiUrl("mainnet-beta");
-const wallets = [new PhantomWalletAdapter(), new BackpackWalletAdapter()];
+// Phantom e Backpack se registram via Wallet Standard — adapters legados
+// deprecados criavam uma segunda instância com transporte quebrado (connect
+// pendurava sem erro nem popup no primeiro clique)
+const wallets: never[] = [];
 const SolanaWalletPortContext = createContext<SolanaWalletPort | null>(null);
+
+const CONNECT_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(
+      () => reject(new Error("wallet connect timed out")),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      },
+    );
+  });
+}
 
 function mapWalletError(error: unknown): WalletErrorCode {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
@@ -125,11 +147,11 @@ function SolanaWalletPortProvider({
         // e o connect acontece direto no adapter, ainda dentro do gesto.
         manualConnectRef.current = true;
         select(supportedWallet.adapter.name as WalletName);
-        await supportedWallet.adapter.connect();
+        await withTimeout(supportedWallet.adapter.connect(), CONNECT_TIMEOUT_MS);
         return;
       }
 
-      await connect();
+      await withTimeout(connect(), CONNECT_TIMEOUT_MS);
     } catch (error) {
       setLastErrorCode(mapWalletError(error));
     } finally {
