@@ -40,7 +40,7 @@ export function AppLayout() {
   useEffect(() => {
     registerResetAppState(resetOnboardingState);
   }, [resetOnboardingState]);
-  const { isReady, t } = useI18n();
+  const { t } = useI18n();
   const canShowFullShell =
     canAccessProduct ||
     (state.wallet.sessionStatus === "connected" &&
@@ -81,37 +81,6 @@ export function AppLayout() {
       window.clearTimeout(timeoutId);
     };
   }, [setRuntimeState, state.runtime.actionToast]);
-
-  if (!isReady) {
-    if (!canShowFullShell) {
-      return <main className="onboarding-shell" />;
-    }
-    return (
-      <div className="shell-skeleton shell-skeleton--topbar">
-        <div className="shell-skeleton__topbar">
-          <div className="sk-line sk-line--md sk-w-30" />
-        </div>
-        <div className="shell-skeleton__content">
-          <div className="sk-stack sk-stack--lg">
-            <div className="sk-line sk-line--xs sk-w-25" />
-            <div className="sk-line sk-line--lg sk-w-50" />
-            <div className="sk-line sk-line--sm sk-w-70" />
-          </div>
-          <div className="metric-grid">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <article key={i} className="stat-panel">
-                <div className="sk-stack">
-                  <div className="sk-line sk-line--xs sk-w-40" />
-                  <div className="sk-line sk-line--xl sk-w-60" />
-                  <div className="sk-line sk-line--xs sk-w-50" />
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (!canShowFullShell) {
     return (

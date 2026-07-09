@@ -1,56 +1,19 @@
-import {
-  createContext,
-  type PropsWithChildren,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { useAppState } from "../../state/app-state";
-import { messages, type MessageKey } from "./messages";
+import { createContext, type PropsWithChildren, useContext, useMemo } from "react";
+import { defaultLocale, messages, type MessageKey } from "./messages";
 
 type I18nContextValue = {
-  isReady: boolean;
   t: (key: MessageKey) => string;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-async function loadMessages(locale: keyof typeof messages) {
-  return Promise.resolve(messages[locale]);
-}
-
 export function AppI18nProvider({ children }: PropsWithChildren) {
-  const {
-    state: { locale },
-  } = useAppState();
-  const [isReady, setIsReady] = useState(false);
-  const [activeMessages, setActiveMessages] = useState(messages[locale]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    setIsReady(false);
-    void loadMessages(locale).then((nextMessages) => {
-      if (!isMounted) {
-        return;
-      }
-
-      setActiveMessages(nextMessages);
-      setIsReady(true);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [locale]);
-
+  // App é en-only desde a fase 5 do redesign — mensagens são estáticas, provider síncrono
   const value = useMemo<I18nContextValue>(
     () => ({
-      isReady,
-      t: (key) => activeMessages[key],
+      t: (key) => messages[defaultLocale][key],
     }),
-    [activeMessages, isReady],
+    [],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
