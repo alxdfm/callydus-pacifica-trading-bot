@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import logoUrl from "../../shared/assets/logo.svg";
+import { useAuth } from "../../features/auth/AuthContext";
 import { registerUnauthorizedNavigator, registerResetAppState } from "../../features/auth/unauthorized-redirect";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
@@ -41,10 +42,16 @@ export function AppLayout() {
     registerResetAppState(resetOnboardingState);
   }, [resetOnboardingState]);
   const { t } = useI18n();
+  const { token } = useAuth();
+  // Sem token o shell fica estável no modo onboarding: alternar o wrapper
+  // REMONTA a subárvore (OnboardingRoute → WalletEnvironment → bridge), e o
+  // flap connected/existing_account durante o SIWS vira loop infinito de
+  // remount + nonce + popup
   const canShowFullShell =
-    canAccessProduct ||
-    (state.wallet.sessionStatus === "connected" &&
-      state.onboarding.accountLookupStatus === "existing_account");
+    Boolean(token) &&
+    (canAccessProduct ||
+      (state.wallet.sessionStatus === "connected" &&
+        state.onboarding.accountLookupStatus === "existing_account"));
   const hasActiveStrategy = Boolean(state.presets.activePreset);
   const isStrategyRunning =
     hasActiveStrategy &&
