@@ -254,47 +254,71 @@ export function strategiesRoutes(deps: AppDeps): Hono<HonoEnv> {
     const intervalMs = getIntervalDurationMs(technicalContract.timeframe as MarketCandleInterval);
     const requiredPeriod = getRequiredPeriod(technicalContract);
     const warmupStartTime = startTime - intervalMs * Math.max(requiredPeriod + 5, 30);
-    const candleLimit = Math.ceil((endTime - warmupStartTime) / intervalMs);
 
     try {
-      const response = await fetch(
-        `${deps.env.PACIFICA_REST_BASE_URL}/api/v1/klines?symbol=${marketSymbol}&interval=${technicalContract.timeframe}&startTime=${Math.max(0, warmupStartTime)}&endTime=${endTime}&limit=${candleLimit}`,
-        { headers: { Accept: "application/json" } },
-      );
+      // A Pacifica limita cada request de kline a 4000 candles — períodos maiores
+      // (ex.: 30d de 5m = 8640) são buscados em janelas sequenciais e deduplicados
+      const MAX_CANDLES_PER_REQUEST = 4000;
+      const chunkMs = MAX_CANDLES_PER_REQUEST * intervalMs;
+      const fetchStartTime = Math.max(0, warmupStartTime);
+      const candlesByOpenTime = new Map<
+        number,
+        {
+          symbol: string;
+          interval: string;
+          openTime: number;
+          closeTime: number;
+          open: number;
+          high: number;
+          low: number;
+          close: number;
+          volume: number;
+        }
+      >();
 
-      if (!response.ok) {
-        return c.json(
-          { status: "error", code: "provider_unavailable", message: "Market data provider is unavailable.", retryable: true },
-          503,
+      for (let chunkStart = fetchStartTime; chunkStart < endTime; chunkStart += chunkMs) {
+        const chunkEnd = Math.min(chunkStart + chunkMs, endTime);
+        const response = await fetch(
+          `${deps.env.PACIFICA_REST_BASE_URL}/api/v1/kline?symbol=${marketSymbol}&interval=${technicalContract.timeframe}&start_time=${chunkStart}&end_time=${chunkEnd}`,
+          { headers: { Accept: "application/json" } },
         );
+
+        if (!response.ok) {
+          return c.json(
+            { status: "error", code: "provider_unavailable", message: "Market data provider is unavailable.", retryable: true },
+            503,
+          );
+        }
+
+        const rawPayload = await response.json() as unknown;
+        const rawData =
+          rawPayload && typeof rawPayload === "object" && "data" in rawPayload
+            ? (rawPayload as { data?: unknown }).data
+            : rawPayload;
+
+        if (!Array.isArray(rawData)) {
+          return c.json(
+            { status: "error", code: "insufficient_market_data", message: "No market data returned.", retryable: true },
+            400,
+          );
+        }
+
+        for (const item of rawData) {
+          if (!item || typeof item !== "object") continue;
+          const row = item as Record<string, unknown>;
+          const openTime = Number(row.openTime ?? row.open_time ?? row.t);
+          const closeTime = Number(row.closeTime ?? row.close_time ?? row.T);
+          const open = Number(row.open ?? row.o);
+          const high = Number(row.high ?? row.h);
+          const low = Number(row.low ?? row.l);
+          const close = Number(row.close ?? row.c);
+          const volume = Number(row.volume ?? row.v ?? 0);
+          if (!Number.isFinite(openTime) || !Number.isFinite(closeTime) || !Number.isFinite(open) || !Number.isFinite(high) || !Number.isFinite(low) || !Number.isFinite(close)) continue;
+          candlesByOpenTime.set(openTime, { symbol: marketSymbol, interval: technicalContract.timeframe, openTime, closeTime, open, high, low, close, volume });
+        }
       }
 
-      const rawPayload = await response.json() as unknown;
-      const rawData =
-        rawPayload && typeof rawPayload === "object" && "data" in rawPayload
-          ? (rawPayload as { data?: unknown }).data
-          : rawPayload;
-
-      if (!Array.isArray(rawData)) {
-        return c.json(
-          { status: "error", code: "insufficient_market_data", message: "No market data returned.", retryable: true },
-          400,
-        );
-      }
-
-      const candles = rawData.flatMap((item) => {
-        if (!item || typeof item !== "object") return [];
-        const row = item as Record<string, unknown>;
-        const openTime = Number(row.openTime ?? row.open_time ?? row.t);
-        const closeTime = Number(row.closeTime ?? row.close_time ?? row.T);
-        const open = Number(row.open ?? row.o);
-        const high = Number(row.high ?? row.h);
-        const low = Number(row.low ?? row.l);
-        const close = Number(row.close ?? row.c);
-        const volume = Number(row.volume ?? row.v ?? 0);
-        if (!Number.isFinite(openTime) || !Number.isFinite(closeTime) || !Number.isFinite(open) || !Number.isFinite(high) || !Number.isFinite(low) || !Number.isFinite(close)) return [];
-        return [{ symbol: marketSymbol, interval: technicalContract.timeframe, openTime, closeTime, open, high, low, close, volume }];
-      });
+      const candles = [...candlesByOpenTime.values()].sort((a, b) => a.openTime - b.openTime);
 
       const inPeriodCandles = candles.filter((cv) => cv.closeTime >= startTime);
 
