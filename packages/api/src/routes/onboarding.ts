@@ -377,7 +377,11 @@ export function onboardingRoutes(deps: AppDeps): Hono<HonoEnv> {
       decryptedPrivateKey = await encryptionService.decryptAgentWalletPrivateKey({
         encryptedPrivateKeyRef: credential.encryptedPrivateKeyRef,
       });
-    } catch {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.error(
+        `[onboarding/credentials/verify-operational] decrypt failed for credential ${credential.id}: ${message}`,
+      );
       return c.json(
         {
           status: "error",
