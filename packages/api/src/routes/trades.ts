@@ -2,17 +2,9 @@ import { Hono } from "hono";
 import type { AppDeps } from "../app.js";
 import type { HonoEnv } from "../middleware/auth.js";
 import { getTradesByUserId, updateTrade } from "../db/queries/trades.js";
-import { getStrategyById } from "../db/queries/strategies.js";
 
 export function tradesRoutes(deps: AppDeps): Hono<HonoEnv> {
   const app = new Hono<HonoEnv>();
-
-  // GET /api/trades
-  app.get("/", async (c) => {
-    const walletAddress = c.get("walletAddress");
-    const trades = await getTradesByUserId(deps.db, walletAddress);
-    return c.json({ trades });
-  });
 
   // POST /api/trades/:id/close
   app.post("/:id/close", async (c) => {

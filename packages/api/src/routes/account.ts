@@ -6,9 +6,9 @@ import {
   getCredentialByAccountId,
   type Credential,
 } from "../db/queries/accounts.js";
-import { getStrategiesByUserId, getActiveStrategyByUserId, type Strategy } from "../db/queries/strategies.js";
+import { getActiveStrategyByUserId, type Strategy } from "../db/queries/strategies.js";
 import { getTradesByUserId, type Trade } from "../db/queries/trades.js";
-import { getEventsByStrategyId, getEventsByUserId, type Event } from "../db/queries/events.js";
+import { getEventsByStrategyId, type Event } from "../db/queries/events.js";
 import { mapStrategyToPresetActivation, mapStrategyToYourStrategy } from "./strategies.js";
 
 // ---------------------------------------------------------------------------
@@ -300,84 +300,6 @@ export function accountRoutes(deps: AppDeps): Hono<HonoEnv> {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown error";
       console.error("[account/presets]", message);
-      return c.json(buildAccountError(walletAddress, "internal_error", "An internal error occurred."), 500);
-    }
-  });
-
-  // POST /api/account/trades
-  app.post("/trades", async (c) => {
-    const walletAddress = c.get("walletAddress");
-
-    try {
-      const account = await getAccountByWallet(deps.db, walletAddress);
-
-      if (!account) {
-        return c.json(buildAccountNotFound(walletAddress));
-      }
-
-      const strategy = await getActiveStrategyByUserId(deps.db, walletAddress);
-      const allTrades = await getTradesByUserId(deps.db, walletAddress);
-
-      const openTrades = allTrades
-        .filter((t) => t.status !== "closed")
-        .map(mapOpenTrade);
-
-      const botStatus = deriveStrategyBotStatus(strategy);
-
-      return c.json({
-        status: "found",
-        runtime: {
-          botStatus,
-          syncStatus: "synced",
-          exchangeSnapshotStatus: "ok",
-          exchangeLastSyncedAt: null,
-          exchangeSnapshotMessage: null,
-          lastErrorMessage: null,
-          currentTrades: openTrades,
-        },
-      });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      console.error("[account/trades]", message);
-      return c.json(buildAccountError(walletAddress, "internal_error", "An internal error occurred."), 500);
-    }
-  });
-
-  // POST /api/account/history
-  app.post("/history", async (c) => {
-    const walletAddress = c.get("walletAddress");
-
-    try {
-      const account = await getAccountByWallet(deps.db, walletAddress);
-
-      if (!account) {
-        return c.json(buildAccountNotFound(walletAddress));
-      }
-
-      const strategy = await getActiveStrategyByUserId(deps.db, walletAddress);
-      const allTrades = await getTradesByUserId(deps.db, walletAddress);
-
-      const closedTrades = allTrades
-        .filter((t) => t.status === "closed")
-        .map(mapClosedTrade);
-
-      const botStatus = deriveStrategyBotStatus(strategy);
-
-      return c.json({
-        status: "found",
-        runtime: {
-          botStatus,
-          syncStatus: "synced",
-          exchangeSnapshotStatus: "ok",
-          exchangeLastSyncedAt: null,
-          exchangeSnapshotMessage: null,
-          lastErrorMessage: null,
-          closedTrades,
-        },
-      });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      console.error("[account/history]", message);
       return c.json(buildAccountError(walletAddress, "internal_error", "An internal error occurred."), 500);
     }
   });
