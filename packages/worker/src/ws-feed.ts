@@ -129,19 +129,30 @@ export function createWsFeed(input: WsFeedInput): {
     input.buffer.push(symbol, interval, candle);
   }
 
+  function intervalToMs(interval: string): number {
+    const match = interval.match(/^(\d+)([mh])$/);
+    if (!match) return 300_000;
+    const value = Number(match[1]);
+    return match[2] === "h" ? value * 3_600_000 : value * 60_000;
+  }
+
   async function warmUpBuffers() {
     const restBaseUrl = input.restBaseUrl.replace(/\/+$/, "");
+    const WARMUP_CANDLE_COUNT = 300;
 
     for (const symbol of input.symbols) {
       for (const interval of input.intervals) {
         try {
+          // /api/v1/kline exige start_time; o range cobre as N velas do warm-up
+          const endTime = Date.now();
           const params = new URLSearchParams({
             symbol,
             interval,
-            limit: "300",
+            start_time: String(endTime - WARMUP_CANDLE_COUNT * intervalToMs(interval)),
+            end_time: String(endTime),
           });
           const response = await fetch(
-            `${restBaseUrl}/api/v1/klines?${params.toString()}`,
+            `${restBaseUrl}/api/v1/kline?${params.toString()}`,
             { headers: { Accept: "application/json" } },
           );
 
