@@ -155,8 +155,10 @@ export function strategiesRoutes(deps: AppDeps): Hono<HonoEnv> {
         runtime: {
           botStatus: "active",
           pacificaConnectionStatus: "connected",
-          syncStatus: "synced",
-          exchangeSnapshotStatus: "ok",
+          // valores precisam pertencer aos enums do contrato do frontend
+          // (syncStatusSchema / exchangeSnapshotStatusSchema)
+          syncStatus: "healthy",
+          exchangeSnapshotStatus: "last_known",
           exchangeLastSyncedAt: null,
           exchangeSnapshotMessage: null,
           activePresetActivationId: activeStrategy.id,
