@@ -119,7 +119,10 @@ Legend: **UI** trigger → **FE** frontend function → **API** endpoint/handler
 - **FE**: `handleClose` (`TradesPage.tsx:152`) → `closeTradeViaBackend`
 - **API**: `POST /api/trades/:id/close` (`trades.ts:10`) — ownership check, then
   `trades.status=close_requested` (no exchange call from the API)
-- **Worker**: `bot.ts` picks up `close_requested` (`bot.ts:362,507`) and executes the close on Pacifica
+- **Worker**: reconcile submits a reduce-only market order for `close_requested` trades
+  (signed with the strategy owner's credential), marks the trade `closing`, and the next
+  tick detects the vanished position and finalizes it as `closed` with `closeReason=manual`
+  (implemented 2026-07-10 — before that the button only flipped the DB status)
 - **State**: `session.reload()` refreshes trades
 
 ---
