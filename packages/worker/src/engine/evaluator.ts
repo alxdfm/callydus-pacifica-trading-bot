@@ -516,3 +516,110 @@ function compareCross(
 function toNullableFinite(value: number | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
+
+// ---------------------------------------------------------------------------
+// Materialização do draft (paridade com packages/api/src/engine/evaluator.ts)
+// O banco guarda o DRAFT cru do builder; o contrato executável (StrategyConfig)
+// só existe depois da materialização — que preenche execution e garante os
+// indicadores de suporte de risco (ex.: ATR do stop loss)
+// ---------------------------------------------------------------------------
+
+export type YourStrategyActivationBlocker =
+  | "unsupported_position_size_type"
+  | "take_profit_missing"
+  | "stop_loss_missing"
+  | "no_entry_rules"
+  | "symbol_not_supported";
+
+export type YourStrategyDraft = {
+  name: string;
+  timeframe: string;
+  symbol: string;
+  indicators: Record<string, IndicatorConfig>;
+  entry: StrategyConfig["entry"];
+  risk: {
+    stopLoss: StrategyConfig["risk"]["stopLoss"];
+    takeProfit: StrategyConfig["risk"]["takeProfit"] | null;
+  };
+  positionSizeType: "fixed_amount" | "balance_percent";
+  positionSizeValue: number;
+};
+
+export type MaterializedYourStrategy = {
+  technicalContract: StrategyConfig | null;
+  activationBlockers: YourStrategyActivationBlocker[];
+};
+
+function ensureRiskSupportIndicators(
+  draft: YourStrategyDraft,
+): Record<string, IndicatorConfig> {
+  const indicators = { ...draft.indicators };
+
+  if (draft.risk.stopLoss.mode === "atr") {
+    const atrPeriod = draft.risk.stopLoss.period;
+    const atrAlreadyExists = Object.values(indicators).some(
+      (indicator) => indicator.type === "atr" && indicator.period === atrPeriod,
+    );
+
+    if (!atrAlreadyExists) {
+      indicators[`ATR_AUTO_${atrPeriod}`] = {
+        type: "atr",
+        period: atrPeriod,
+      };
+    }
+  }
+
+  return indicators;
+}
+
+export function materializeYourStrategyTechnicalContract(
+  draft: YourStrategyDraft,
+): MaterializedYourStrategy {
+  const activationBlockers: YourStrategyActivationBlocker[] = [];
+  const takeProfit = draft.risk.takeProfit;
+  const indicators = ensureRiskSupportIndicators(draft);
+
+  if (draft.positionSizeType !== "balance_percent") {
+    activationBlockers.push("unsupported_position_size_type");
+  }
+
+  if (takeProfit === null) {
+    activationBlockers.push("take_profit_missing");
+  }
+
+  if (activationBlockers.length > 0) {
+    return {
+      technicalContract: null,
+      activationBlockers,
+    };
+  }
+
+  return {
+    technicalContract: {
+      name: draft.name,
+      version: 1,
+      timeframe: draft.timeframe,
+      symbol: draft.symbol,
+      indicators,
+      entry: draft.entry,
+      risk: {
+        stopLoss: draft.risk.stopLoss,
+        takeProfit:
+          takeProfit ?? {
+            mode: "rr",
+            multiple: 99,
+          },
+      },
+      execution: {
+        positionSize: {
+          type: "fixedPercent",
+          value: draft.positionSizeValue,
+        },
+        onePositionPerSymbol: true,
+        manualCloseAllowed: true,
+        closeOppositePositionOnSignal: false,
+      },
+    },
+    activationBlockers,
+  };
+}
