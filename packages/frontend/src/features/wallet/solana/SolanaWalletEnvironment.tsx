@@ -2,10 +2,13 @@ import { clusterApiUrl } from "@solana/web3.js";
 import { WalletProvider, ConnectionProvider } from "@solana/wallet-adapter-react";
 import {
   createContext,
+  type MutableRefObject,
   type PropsWithChildren,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type {
@@ -36,7 +39,8 @@ const endpoint = clusterApiUrl("mainnet-beta");
 const wallets: never[] = [];
 const SolanaWalletPortContext = createContext<SolanaWalletPort | null>(null);
 
-const CONNECT_TIMEOUT_MS = 15_000;
+// Longo o suficiente para o usuário deliberar no popup de aprovação da extensão
+const CONNECT_TIMEOUT_MS = 60_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -75,16 +79,33 @@ function mapWalletError(error: unknown): WalletErrorCode {
   return "wallet_connection_failed";
 }
 
-function SolanaWalletPortProvider({ children }: PropsWithChildren) {
+function SolanaWalletPortProvider({
+  children,
+  connectIntentRef,
+  lastErrorCode,
+  setLastErrorCode,
+}: PropsWithChildren<{
+  connectIntentRef: MutableRefObject<boolean>;
+  lastErrorCode: WalletErrorCode | null;
+  setLastErrorCode: (code: WalletErrorCode | null) => void;
+}>) {
   const {
     connect,
+    connected,
     disconnect,
     select,
     signMessage,
     wallet,
     wallets: availableWallets,
   } = useWallet();
-  const [lastErrorCode, setLastErrorCode] = useState<WalletErrorCode | null>(null);
+
+  // Conexão estabelecida encerra a intenção de connect — erros posteriores do
+  // adapter (ex.: autoConnect silencioso de outra aba) não são do clique
+  useEffect(() => {
+    if (connected) {
+      connectIntentRef.current = false;
+    }
+  }, [connected, connectIntentRef]);
 
   const connectWallet = useCallback(async (provider?: SupportedWalletProvider) => {
     const requestedAdapterName = provider ? providerAdapterNames[provider] : null;
@@ -141,6 +162,9 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
         // Conectar aqui no clique perde o emit síncrono do adapter quando a
         // extensão resolve de cache (domínio trusted) — o evento dispara antes
         // de existir listener e o estado nunca vira connected até o reload.
+        // Erros desse caminho chegam via onError do WalletProvider, filtrados
+        // pela intenção registrada aqui.
+        connectIntentRef.current = true;
         select(supportedWallet.adapter.name as WalletName);
         return;
       }
@@ -149,7 +173,7 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
     } catch (error) {
       setLastErrorCode(mapWalletError(error));
     }
-  }, [availableWallets, connect, select, wallet]);
+  }, [availableWallets, connect, connectIntentRef, select, setLastErrorCode, wallet]);
 
   const disconnectWallet = useCallback(async () => {
     try {
@@ -191,10 +215,28 @@ function SolanaWalletPortProvider({ children }: PropsWithChildren) {
 }
 
 export function SolanaWalletEnvironment({ children }: PropsWithChildren) {
+  const [lastErrorCode, setLastErrorCode] = useState<WalletErrorCode | null>(null);
+  // Erros do connect pós-select chegam pelo onError do provider (a lib os
+  // "dropa" internamente); só interessam quando houve clique do usuário
+  const connectIntentRef = useRef(false);
+  const handleWalletError = useCallback((error: unknown) => {
+    if (!connectIntentRef.current) {
+      return;
+    }
+    connectIntentRef.current = false;
+    setLastErrorCode(mapWalletError(error));
+  }, []);
+
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider autoConnect wallets={wallets}>
-        <SolanaWalletPortProvider>{children}</SolanaWalletPortProvider>
+      <WalletProvider autoConnect onError={handleWalletError} wallets={wallets}>
+        <SolanaWalletPortProvider
+          connectIntentRef={connectIntentRef}
+          lastErrorCode={lastErrorCode}
+          setLastErrorCode={setLastErrorCode}
+        >
+          {children}
+        </SolanaWalletPortProvider>
       </WalletProvider>
     </ConnectionProvider>
   );
