@@ -43,6 +43,10 @@ export const tradeSchema = z.object({
   closedAt: isoDateTimeSchema.nullable(),
 });
 
+// closedTrades cresce sem teto — GET /api/v2/trades aceita ?limit (máximo de
+// closedTrades retornados) com este default
+export const TRADES_DEFAULT_CLOSED_LIMIT = 50;
+
 export const tradesResponseSchema = z.union([
   z.object({
     status: z.literal("ok"),

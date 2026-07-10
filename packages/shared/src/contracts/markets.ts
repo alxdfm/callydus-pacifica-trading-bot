@@ -9,6 +9,8 @@ import { marketSymbolSchema } from "./strategy.js";
 // ---------------------------------------------------------------------------
 
 export const marketSchema = z.object({
+  // A Pacifica retorna o símbolo BASE ("SOL"); o endpoint mapeia base→par
+  // ("SOL/USDC") antes de responder — o parse falha se esquecer
   symbol: marketSymbolSchema,
   maxLeverage: z.number().positive(),
   tickSize: z.string().min(1),
