@@ -68,9 +68,7 @@ const dbWatcher = createDbWatcher({
   onStrategiesChanged: (strategies) => {
     // Estratégia ativada depois do boot precisa entrar no feed (subscribe+warm-up)
     wsFeed.setSymbols(resolveSymbols(strategies));
-    // Forward new strategies to the bot
-    (bot as unknown as { onStrategiesChanged?: (s: typeof strategies) => void })
-      .onStrategiesChanged?.(strategies);
+    bot.onStrategiesChanged(strategies);
   },
 });
 

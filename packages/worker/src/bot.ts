@@ -2,8 +2,10 @@ import { randomUUID } from "node:crypto";
 import type { CandleInterval, ExchangeInterface, StrategyConfig } from "@pacifica/shared";
 import type { CandleBuffer } from "./candle-buffer.js";
 import type { WorkerEnv } from "./config/env.js";
+import { AesCredentialDecryptionService } from "./crypto/credential-encryption.js";
 import type { DrizzleDb } from "./db/client.js";
 import {
+  getActiveCredentialForWallet,
   getActiveStrategies,
   getOpenTradesForStrategy,
   insertEvent,
@@ -17,12 +19,14 @@ import {
   evaluateSignal,
   getIntervalDurationMs,
   getRequiredPeriod,
+  materializeYourStrategyTechnicalContract,
   toPacificaMarketSymbol,
+  type YourStrategyDraft,
 } from "./engine/evaluator.js";
 import {
-  findMarketInfo,
   normalizeMarketOrderInput,
   PacificaApiError,
+  PacificaClient,
 } from "./exchange/pacifica/client.js";
 
 // ---------------------------------------------------------------------------
@@ -52,24 +56,6 @@ const defaultLogger: BotLogger = {
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
 // ---------------------------------------------------------------------------
-
-export function buildLeaseExpiryIso(
-  reference: Date,
-  leaseDurationMs: number,
-): string {
-  return new Date(reference.getTime() + leaseDurationMs).toISOString();
-}
-
-export function shouldEvaluateSignals(
-  lastSignalEvaluationAt: Date | null,
-  tickAt: Date,
-  analysisIntervalMs: number,
-): boolean {
-  return (
-    lastSignalEvaluationAt === null ||
-    tickAt.getTime() - lastSignalEvaluationAt.getTime() >= analysisIntervalMs
-  );
-}
 
 export function calculateUnrealizedPnl(input: {
   side: "long" | "short";
@@ -316,13 +302,23 @@ function classifyOrderExecutionFailure(error: unknown): {
 export function createBot(input: BotInput): {
   start(): Promise<void>;
   stop(): Promise<void>;
+  onStrategiesChanged(strategies: Strategy[]): void;
 } {
   const logger = input.logger ?? defaultLogger;
   const { db, exchange, candleBuffer, env } = input;
 
   let stopped = false;
   let activeStrategies: Strategy[] = [];
-  const lastSignalEvaluationAt = new Map<string, Date>();
+  // Avaliação por candle fechado (paridade com o backtest): guarda o openTime
+  // do último candle avaliado por strategy — sinal sem ordem e ordem falhada
+  // NÃO reavaliam o mesmo candle
+  const lastEvaluatedCandleOpenTime = new Map<string, number>();
+  const decryption = new AesCredentialDecryptionService(
+    env.CREDENTIAL_ENCRYPTION_KEY,
+  );
+  // Client assinado por wallet (credencial do usuário); invalida se a credencial trocar
+  const clientCache = new Map<string, { credentialId: string; client: PacificaClient }>();
+  const loggedBlockers = new Set<string>();
 
   // Called by DbWatcher when strategy list changes
   function onStrategiesChanged(strategies: Strategy[]): void {
@@ -330,23 +326,143 @@ export function createBot(input: BotInput): {
     logger.info("[bot] strategies updated", { count: strategies.length });
   }
 
-  // Expose for external callers (db-watcher callback)
-  (input as BotInput & { onStrategiesChanged?: (s: Strategy[]) => void }).onStrategiesChanged =
-    onStrategiesChanged;
+  async function getStrategyClient(strategy: Strategy): Promise<PacificaClient> {
+    const credential = await getActiveCredentialForWallet(db, strategy.userId);
+
+    if (!credential) {
+      throw new Error(
+        `No active credential found for wallet of strategy ${strategy.id}.`,
+      );
+    }
+
+    const cached = clientCache.get(strategy.userId);
+    if (cached && cached.credentialId === credential.id) {
+      return cached.client;
+    }
+
+    const privateKey = await decryption.decryptAgentWalletPrivateKey({
+      encryptedPrivateKeyRef: credential.encryptedPrivateKeyRef,
+    });
+
+    const client = new PacificaClient({
+      apiBaseUrl: env.PACIFICA_REST_URL,
+      account: strategy.userId,
+      privateKey,
+      agentWallet: credential.publicKey,
+      builderCode: env.PACIFICA_BUILDER_CODE,
+      expiryWindowMs: env.PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS,
+    });
+
+    clientCache.set(strategy.userId, { credentialId: credential.id, client });
+    return client;
+  }
+
+  function materializeStrategy(strategy: Strategy): StrategyConfig | null {
+    const materialized = materializeYourStrategyTechnicalContract(
+      strategy.config as YourStrategyDraft,
+    );
+
+    if (!materialized.technicalContract) {
+      if (!loggedBlockers.has(strategy.id)) {
+        loggedBlockers.add(strategy.id);
+        logger.warn("[bot] strategy not executable", {
+          strategyId: strategy.id,
+          blockers: materialized.activationBlockers,
+        });
+      }
+      return null;
+    }
+
+    return materialized.technicalContract;
+  }
+
+  async function fetchAvailableBalanceUsd(
+    walletAddress: string,
+  ): Promise<number | null> {
+    try {
+      const baseUrl = env.PACIFICA_REST_URL.replace(/\/+$/, "");
+      const response = await fetch(
+        `${baseUrl}/api/v1/account?account=${encodeURIComponent(walletAddress)}`,
+        { headers: { Accept: "application/json" } },
+      );
+
+      if (!response.ok) return null;
+
+      const payload = (await response.json()) as {
+        data?: { available_to_spend?: string };
+      };
+      const value = Number(payload.data?.available_to_spend);
+      return Number.isFinite(value) && value > 0 ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function latestBufferClose(
+    marketSymbol: string,
+    timeframe: string,
+  ): number | null {
+    const candles = candleBuffer.get(marketSymbol, timeframe as CandleInterval);
+    const last = candles[candles.length - 1];
+    return last ? last.close : null;
+  }
 
   async function reconcileOpenTradesWithExchange(
     strategy: Strategy,
     tickAt: Date,
   ): Promise<void> {
-    const config = strategy.config as unknown as StrategyConfig;
+    const timeframe = (strategy.config as { timeframe?: string }).timeframe ?? "";
     const openTrades = await getOpenTradesForStrategy(db, strategy.id);
 
     if (openTrades.length === 0) return;
 
-    let positions: Awaited<ReturnType<typeof exchange.getPositions>>;
+    let client: PacificaClient;
+    try {
+      client = await getStrategyClient(strategy);
+    } catch (error) {
+      logger.warn("[bot] reconciliation skipped — credential unavailable", {
+        strategyId: strategy.id,
+        errorMessage:
+          error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
+
+    // Fecha na exchange os trades com fechamento solicitado pelo usuário
+    for (const trade of openTrades) {
+      if (trade.status !== "close_requested") continue;
+
+      const marketSymbol = toPacificaMarketSymbol(trade.symbol) ?? trade.symbol;
+
+      try {
+        await client.createMarketOrder({
+          symbol: marketSymbol,
+          side: trade.side === "long" ? "ask" : "bid",
+          amount: trade.amount,
+          slippagePercent: env.MARKET_ORDER_SLIPPAGE_PERCENT,
+          clientOrderId: randomUUID(),
+          reduceOnly: true,
+        });
+        await updateTrade(db, trade.id, { status: "closing" });
+        logger.info("[bot] close order submitted", {
+          strategyId: strategy.id,
+          tradeId: trade.id,
+          symbol: trade.symbol,
+        });
+      } catch (error) {
+        logger.error("[bot] close order failed", {
+          strategyId: strategy.id,
+          tradeId: trade.id,
+          errorMessage:
+            error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    let positions: Awaited<ReturnType<typeof client.getPositions>>;
 
     try {
-      positions = await exchange.getPositions();
+      positions = await client.getPositions();
     } catch (error) {
       logger.warn("[bot] reconciliation skipped — exchange unavailable", {
         strategyId: strategy.id,
@@ -359,7 +475,13 @@ export function createBot(input: BotInput): {
     const closedAtIso = tickAt.toISOString();
 
     for (const trade of openTrades) {
-      if (trade.status !== "open" && trade.status !== "close_requested" && trade.status !== "closing") {
+      if (trade.status !== "open" && trade.status !== "closing") {
+        continue;
+      }
+
+      // Grace period: posição pode demorar a aparecer após o fill — não
+      // confundir com fechamento
+      if (tickAt.getTime() - trade.openedAt.getTime() < 120_000) {
         continue;
       }
 
@@ -380,14 +502,15 @@ export function createBot(input: BotInput): {
       const tpNum = trade.tp !== null ? Number(trade.tp) : null;
       const entryNum = Number(trade.entryPrice);
 
-      // Determine current price for detection heuristic
-      const currentPrice = slNum ?? tpNum ?? entryNum;
+      // Preço atual real do buffer; fallback para os níveis se o buffer estiver frio
+      const currentPrice =
+        latestBufferClose(marketSymbol, timeframe) ?? slNum ?? tpNum ?? entryNum;
       const { closeReason, exitPrice } = resolveDetectedClose({
         side: trade.side,
         stopLossPrice: slNum,
         takeProfitPrice: tpNum,
         currentPrice,
-        closeReasonPending: null,
+        closeReasonPending: trade.status === "closing" ? "manual" : null,
       });
 
       const feeRate = env.TAKER_FEE_PERCENT / 100;
@@ -453,7 +576,10 @@ export function createBot(input: BotInput): {
     strategy: Strategy,
     tickAt: Date,
   ): Promise<void> {
-    const config = strategy.config as unknown as StrategyConfig;
+    const config = materializeStrategy(strategy);
+
+    if (!config) return;
+
     const marketSymbol = toPacificaMarketSymbol(config.symbol);
 
     if (!marketSymbol) {
@@ -492,6 +618,17 @@ export function createBot(input: BotInput): {
       return;
     }
 
+    const latestCandle = candles[candles.length - 1];
+
+    if (!latestCandle) return;
+
+    // Um candle fechado = uma avaliação (paridade com o backtest); marca antes
+    // para que sinal sem ordem ou ordem falhada não re-tente no mesmo candle
+    if (lastEvaluatedCandleOpenTime.get(strategy.id) === latestCandle.openTime) {
+      return;
+    }
+    lastEvaluatedCandleOpenTime.set(strategy.id, latestCandle.openTime);
+
     const evaluation = evaluateSignal(config, candles);
 
     if (evaluation.signal === "none") {
@@ -516,10 +653,6 @@ export function createBot(input: BotInput): {
       });
       return;
     }
-
-    const latestCandle = candles[candles.length - 1];
-
-    if (!latestCandle) return;
 
     const signalSide = evaluation.signal as "long" | "short";
     const entryRefPrice = applyAdverseEntrySlippage(
@@ -549,12 +682,24 @@ export function createBot(input: BotInput): {
       return;
     }
 
+    // Sizing real: percentual do saldo disponível na Pacifica
+    const availableBalanceUsd = await fetchAvailableBalanceUsd(strategy.userId);
+
+    if (availableBalanceUsd === null) {
+      logger.warn("[bot] signal skipped — balance unavailable", {
+        strategyId: strategy.id,
+        symbol: config.symbol,
+      });
+      return;
+    }
+
     const positionSizePercent = config.execution.positionSize.value;
-    const targetNotionalUsd = positionSizePercent; // Simplified; real sizing needs balance
+    const targetNotionalUsd = (availableBalanceUsd * positionSizePercent) / 100;
     const side: "bid" | "ask" = signalSide === "long" ? "bid" : "ask";
     const clientOrderId = randomUUID();
 
     try {
+      const client = await getStrategyClient(strategy);
       const marketInfoPayload = await exchange.getMarketInfo();
       const marketInfo = marketInfoPayload.find(
         (m) => m.symbol.toUpperCase() === marketSymbol.toUpperCase(),
@@ -575,16 +720,30 @@ export function createBot(input: BotInput): {
         targetNotionalUsd,
       });
 
-      const response = await exchange.createMarketOrder({
+      // SL/TP inline na ordem de entrada (regra: toda ordem nasce protegida);
+      // após o fill, os níveis são reancorados no preço real de entrada
+      const response = await client.createMarketOrder({
         symbol: normalizedOrder.symbol,
         side,
         amount: normalizedOrder.amount,
         slippagePercent: env.MARKET_ORDER_SLIPPAGE_PERCENT,
         clientOrderId,
+        takeProfit: {
+          stopPrice: formatProtectedPrice(
+            riskPlan.takeProfitPrice,
+            marketInfo.tickSize,
+          ),
+        },
+        stopLoss: {
+          stopPrice: formatProtectedPrice(
+            riskPlan.stopLossPrice,
+            marketInfo.tickSize,
+          ),
+        },
       });
 
       // Wait briefly and then check for the actual position
-      const positions = await exchange.getPositions();
+      const positions = await client.getPositions();
       const matchingPosition = positions.find(
         (p) => p.symbol === marketSymbol && p.side === side && p.entryPrice,
       );
@@ -601,7 +760,7 @@ export function createBot(input: BotInput): {
         plannedTakeProfitPrice: riskPlan.takeProfitPrice,
       });
 
-      await exchange.setPositionTpsl({
+      await client.setPositionTpsl({
         symbol: marketSymbol,
         side: signalSide === "long" ? "ask" : "bid",
         takeProfit: {
@@ -659,8 +818,6 @@ export function createBot(input: BotInput): {
         sl: protectionPlan.stopLossPrice,
         tp: protectionPlan.takeProfitPrice,
       });
-
-      lastSignalEvaluationAt.set(strategy.id, tickAt);
     } catch (error) {
       const failure = classifyOrderExecutionFailure(error);
 
@@ -693,12 +850,7 @@ export function createBot(input: BotInput): {
     for (const strategy of strategies) {
       try {
         await reconcileOpenTradesWithExchange(strategy, tickAt);
-
-        const lastEval = lastSignalEvaluationAt.get(strategy.id) ?? null;
-
-        if (shouldEvaluateSignals(lastEval, tickAt, env.ANALYSIS_INTERVAL_MS)) {
-          await evaluateAndExecute(strategy, tickAt);
-        }
+        await evaluateAndExecute(strategy, tickAt);
       } catch (error) {
         const errorMessage =
           error instanceof PacificaApiError
@@ -752,5 +904,7 @@ export function createBot(input: BotInput): {
       }
       logger.info("[bot] stopped");
     },
+
+    onStrategiesChanged,
   };
 }
