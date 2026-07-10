@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
@@ -20,6 +21,7 @@ type AuthContextValue = AuthState & {
     walletAddress: string,
     signMessage: (message: Uint8Array) => Promise<Uint8Array>,
   ) => Promise<boolean>;
+  authenticating: boolean;
   clearAuth: () => void;
 };
 
@@ -45,6 +47,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AuthState>(loadPersistedAuth);
+  const [authenticating, setAuthenticating] = useState(false);
+  // Idempotência: um segundo authenticate para a mesma wallet (ex.: clique no
+  // sign-in manual com o popup automático aberto) reutiliza a promise em voo —
+  // um nonce novo invalidaria a assinatura do popup já aberto
+  const inFlightRef = useRef<{ walletAddress: string; promise: Promise<boolean> } | null>(null);
 
   useEffect(() => {
     if (state.token) {
@@ -67,37 +74,53 @@ export function AuthProvider({ children }: PropsWithChildren) {
       walletAddress: string,
       signMessage: (message: Uint8Array) => Promise<Uint8Array>,
     ) => {
-      const nonceResponse = await fetchAuthNonce(walletAddress);
-      if (nonceResponse.status !== "ok") return false;
-
-      const { nonce, expiresAt, message } = nonceResponse;
-
-      const messageBytes = new TextEncoder().encode(message);
-      let signatureBytes: Uint8Array;
-      try {
-        signatureBytes = await signMessage(messageBytes);
-      } catch {
-        // User rejected the signing request
-        return false;
+      if (inFlightRef.current?.walletAddress === walletAddress) {
+        return inFlightRef.current.promise;
       }
 
-      const signature = uint8ArrayToBase64(signatureBytes);
+      const run = (async () => {
+        const nonceResponse = await fetchAuthNonce(walletAddress);
+        if (nonceResponse.status !== "ok") return false;
 
-      const verifyResponse = await verifyAuthSignature({
-        walletAddress,
-        nonce,
-        expiresAt,
-        signature,
-      });
+        const { nonce, expiresAt, message } = nonceResponse;
 
-      if (verifyResponse.status !== "ok") return false;
+        const messageBytes = new TextEncoder().encode(message);
+        let signatureBytes: Uint8Array;
+        try {
+          signatureBytes = await signMessage(messageBytes);
+        } catch {
+          // User rejected the signing request
+          return false;
+        }
 
-      setState({
-        token: verifyResponse.token,
-        walletAddress,
-        expiresAt: verifyResponse.expiresAt,
-      });
-      return true;
+        const signature = uint8ArrayToBase64(signatureBytes);
+
+        const verifyResponse = await verifyAuthSignature({
+          walletAddress,
+          nonce,
+          expiresAt,
+          signature,
+        });
+
+        if (verifyResponse.status !== "ok") return false;
+
+        setState({
+          token: verifyResponse.token,
+          walletAddress,
+          expiresAt: verifyResponse.expiresAt,
+        });
+        return true;
+      })();
+
+      inFlightRef.current = { walletAddress, promise: run };
+      setAuthenticating(true);
+
+      try {
+        return await run;
+      } finally {
+        inFlightRef.current = null;
+        setAuthenticating(false);
+      }
     },
     [],
   );
@@ -107,6 +130,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       value={{
         ...state,
         authenticate,
+        authenticating,
         clearAuth,
       }}
     >

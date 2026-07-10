@@ -360,7 +360,7 @@ export function OnboardingPage() {
     signWalletMessage,
   } = useSolanaWalletPort();
   const { t } = useI18n();
-  const { authenticate, token } = useAuth();
+  const { authenticate, authenticating, token } = useAuth();
   const [fieldErrors, setFieldErrors] = useState<FormFieldErrors>({});
   // Private key fica em estado local do formulário — nunca entra no contexto global
   const [agentWalletPrivateKey, setAgentWalletPrivateKey] = useState("");
@@ -1271,6 +1271,7 @@ export function OnboardingPage() {
                   ) : (
                     <button
                       className="btn secondary"
+                      disabled={authenticating}
                       onClick={() =>
                         void (walletConnected
                           ? token
@@ -1283,7 +1284,9 @@ export function OnboardingPage() {
                       {walletConnected
                         ? token
                           ? t("onboardingWalletActionDisconnect")
-                          : t("onboardingWalletActionSignIn")
+                          : authenticating
+                            ? t("onboardingWalletActionSigningIn")
+                            : t("onboardingWalletActionSignIn")
                         : t("onboardingWalletAction")}
                     </button>
                   )}
