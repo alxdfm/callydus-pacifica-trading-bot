@@ -1,28 +1,32 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  presetSymbolSchema,
-  yourStrategyDraftSchema,
-  type OperationalPresetsSessionFound,
-  type MarketInfoItem,
-  type PresetIndicatorConfig,
-  type PresetTriggerRule,
-  type YourStrategy,
-  type YourStrategyBacktestPreviewResponse,
-  type YourStrategyDraft,
-} from "../../types/contracts";
-import { applyOperationalPresetsSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
-import { readOperationalPresetsViaBackend } from "../../features/account/backend-operational-page-sessions";
-import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
-import {
-  activateYourStrategyViaBackend,
-  previewYourStrategyBacktestViaBackend,
-  saveYourStrategyViaBackend,
-} from "../../features/presets/your-strategy-backend";
-import { pauseBotViaBackend } from "../../features/runtime/backend-bot-commands";
+  marketSymbolSchema,
+  strategyDraftSchema,
+  type BacktestResponse,
+  type IndicatorConfig,
+  type StrategyDraft,
+  type StrategyRecord,
+  type TriggerRule,
+} from "@pacifica/shared/contracts";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
+import {
+  activateStrategy,
+  pauseStrategy,
+  runBacktest,
+  saveStrategy,
+} from "../../v2/client";
+import { validateDraftSemantics } from "../../v2/draft-validation";
+import { useSession } from "../../v2/session";
 import { LoadingPanel } from "../components/LoadingPanel";
+
+// Aliases locais: o miolo da página (seções de indicadores/regras) foi escrito
+// sobre os nomes do contrato v1 — os shapes são idênticos no v2
+type PresetIndicatorConfig = IndicatorConfig;
+type PresetTriggerRule = TriggerRule;
+type YourStrategyDraft = StrategyDraft;
+const presetSymbolSchema = marketSymbolSchema;
 
 // ---------------------------------------------------------------------------
 // Constantes e helpers puros
@@ -162,114 +166,73 @@ function draftFingerprint(draft: YourStrategyDraft): string {
 export function StrategyBuilderPage() {
   const { t } = useI18n();
   const { token } = useAuth();
-  const {
-    setBuilderApprovalState,
-    setCredentialState,
-    setOperationalState,
-    setPresetState,
-    setRuntimeState,
-    state,
-  } = useAppState();
+  const { setRuntimeState } = useAppState();
+  const { session, status: sessionStatus, reload: reloadSession } = useSession();
 
-  const currentPresetsRef = useRef(state.presets);
-  currentPresetsRef.current = state.presets;
-
-  const [record, setRecord] = useState<YourStrategy | null>(null);
+  const [record, setRecord] = useState<StrategyRecord | null>(null);
   const [draft, setDraft] = useState<YourStrategyDraft | null>(null);
   const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null);
-  const [marketInfo, setMarketInfo] = useState<MarketInfoItem[]>([]);
-  const [preview, setPreview] = useState<YourStrategyBacktestPreviewResponse | null>(null);
+  const [preview, setPreview] = useState<BacktestResponse | null>(null);
   const [previewFingerprint, setPreviewFingerprint] = useState<string | null>(null);
   const [periodDays, setPeriodDays] = useState<number>(30);
   const [busy, setBusy] = useState<"save" | "activate" | "backtest" | "pause" | null>(null);
   const [statusTone, setStatusTone] = useState<"info" | "success" | "danger" | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const applyPresetsSnapshot = useCallback(
-    (snapshot: OperationalPresetsSessionFound) => {
-      setMarketInfo(snapshot.marketInfo);
-      if (snapshot.yourStrategy) {
-        setRecord(snapshot.yourStrategy);
-        setDraft(snapshot.yourStrategy.draft);
-        setSavedFingerprint(draftFingerprint(snapshot.yourStrategy.draft));
-        setStatusTone("info");
-        setStatusMessage(t("builderLoadedFromSaved"));
-      } else {
-        const starter = createDefaultDraft();
-        setRecord(null);
-        setDraft(starter);
-        setSavedFingerprint(null);
-        setStatusTone("info");
-        setStatusMessage(t("builderNoSavedDraft"));
-      }
-      applyOperationalPresetsSessionSnapshot(snapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-        currentPresets: currentPresetsRef.current,
-      });
-    },
-    [
-      setBuilderApprovalState,
-      setCredentialState,
-      setOperationalState,
-      setPresetState,
-      setRuntimeState,
-      t,
-    ],
-  );
+  // O draft local inicializa UMA vez a partir do snapshot de sessão; edições
+  // subsequentes vivem só aqui até o save
+  const initializedRef = useRef(false);
 
-  const readPresetsSnapshot = useCallback(
-    (req: Parameters<typeof readOperationalPresetsViaBackend>[0]) =>
-      readOperationalPresetsViaBackend(req, token),
-    [token],
-  );
+  useEffect(() => {
+    if (initializedRef.current || sessionStatus !== "ready") return;
+    initializedRef.current = true;
 
-  const session = useOperationalPageSession({
-    readSnapshot: readPresetsSnapshot,
-    applySnapshot: applyPresetsSnapshot,
-    requestKey: "presets",
-    loadingMessage: t("runtimeStatusLoadingMessage"),
-    unavailableMessage: t("runtimeStatusError"),
-  });
+    const strategy = session?.strategy ?? null;
 
-  const walletAddress = state.wallet.mainWalletPublicKey;
-  const isEditingBlocked =
-    state.runtime.botStatus === "active" || state.runtime.botStatus === "syncing";
-  const isStrategyActive = Boolean(state.presets.activePreset);
+    if (strategy) {
+      setRecord(strategy);
+      setDraft(strategy.draft);
+      setSavedFingerprint(draftFingerprint(strategy.draft));
+      setStatusTone("info");
+      setStatusMessage(t("builderLoadedFromSaved"));
+    } else {
+      setDraft(createDefaultDraft());
+      setStatusTone("info");
+      setStatusMessage(t("builderNoSavedDraft"));
+    }
+  }, [session, sessionStatus, t]);
 
-  const selectedMarketInfo = useMemo(
-    () => marketInfo.find((item) => item.symbol === draft?.symbol.split("/")[0]),
-    [marketInfo, draft?.symbol],
-  );
-  const selectedSymbolConfig = useMemo(
-    () =>
-      state.runtime.symbolOperationalConfigs.find(
-        (config) => config.symbol === draft?.symbol,
-      ) ?? null,
-    [draft?.symbol, state.runtime.symbolOperationalConfigs],
-  );
-  const selectedLeverage =
-    selectedSymbolConfig?.leverage ?? selectedMarketInfo?.maxLeverage ?? 1;
-  const initialCapitalUsd =
-    state.runtime.balance?.availableBalance ??
-    state.runtime.balance?.totalBalance ??
-    1000;
+  const isEditingBlocked = session?.strategy?.status === "active";
+  const isStrategyActive = session?.strategy?.status === "active";
+
+  // Paridade com a execução real: o worker dimensiona por notional sem
+  // multiplicador de alavancagem, então o backtest usa leverage 1 e o saldo
+  // real da conta como capital inicial
+  const backtestLeverage = 1;
+  const initialCapitalUsd = session?.balanceUsd ?? 1000;
 
   const validation = useMemo(
-    () => (draft ? yourStrategyDraftSchema.safeParse(draft) : null),
+    () => (draft ? strategyDraftSchema.safeParse(draft) : null),
     [draft],
   );
-  const validationIssues = validation && !validation.success
-    ? validation.error.issues.slice(0, 5)
-    : [];
+  const semanticIssues = useMemo(
+    () => (draft ? validateDraftSemantics(draft) : []),
+    [draft],
+  );
+  const validationIssues: { path: string; message: string }[] = [
+    ...(validation && !validation.success
+      ? validation.error.issues
+          .slice(0, 5)
+          .map((issue) => ({ path: issue.path.join("."), message: issue.message }))
+      : []),
+    ...semanticIssues.slice(0, 5),
+  ];
+  const isDraftValid = Boolean(validation?.success) && semanticIssues.length === 0;
 
   const fingerprint = draft ? draftFingerprint(draft) : null;
   const isDirty = fingerprint !== null && fingerprint !== savedFingerprint;
   const isPreviewStale =
-    preview?.status === "success" && fingerprint !== previewFingerprint;
+    preview?.status === "ok" && fingerprint !== previewFingerprint;
 
   const hasEnabledRules =
     Boolean(draft) &&
@@ -350,20 +313,21 @@ export function StrategyBuilderPage() {
   // -------------------------------------------------------------------------
 
   async function handleSave(): Promise<boolean> {
-    if (!walletAddress || !draft) return false;
+    if (!draft) return false;
     setBusy("save");
     setStatusTone("info");
     setStatusMessage(t("builderSaving"));
 
-    const result = await saveYourStrategyViaBackend({ walletAddress, draft }, token);
+    const result = await saveStrategy(token, draft);
     setBusy(null);
 
-    if (result.status === "success") {
+    if (result.status === "ok") {
       setRecord(result.strategy);
       setDraft(result.strategy.draft);
       setSavedFingerprint(draftFingerprint(result.strategy.draft));
       setStatusTone("success");
-      setStatusMessage(result.message);
+      setStatusMessage(t("builderSavedMessage"));
+      void reloadSession();
       return true;
     }
     setStatusTone("danger");
@@ -372,7 +336,7 @@ export function StrategyBuilderPage() {
   }
 
   async function handleBacktest() {
-    if (!walletAddress || !draft) return;
+    if (!draft) return;
     const saved = await handleSave();
     if (!saved) return;
 
@@ -381,25 +345,20 @@ export function StrategyBuilderPage() {
     setStatusMessage(t("builderBacktestRunning"));
 
     const endTime = Date.now();
-    const result = await previewYourStrategyBacktestViaBackend(
-      {
-        walletAddress,
-        priceSource: "market",
-        startTime: endTime - periodDays * 24 * 60 * 60 * 1000,
-        endTime,
-        initialCapitalUsd,
-        leverage: selectedLeverage,
-        feePercent: 0.06,
-        slippagePercent: 0.03,
-      },
-      token,
-    );
+    const result = await runBacktest(token, {
+      startTime: endTime - periodDays * 24 * 60 * 60 * 1000,
+      endTime,
+      initialCapitalUsd,
+      leverage: backtestLeverage,
+      feePercent: 0.06,
+      slippagePercent: 0.03,
+    });
 
     setBusy(null);
     setPreview(result);
     setPreviewFingerprint(draft ? draftFingerprint(draft) : null);
 
-    if (result.status === "success") {
+    if (result.status === "ok") {
       setStatusTone("success");
       setStatusMessage(null);
     } else {
@@ -409,7 +368,6 @@ export function StrategyBuilderPage() {
   }
 
   async function handleActivate() {
-    if (!walletAddress) return;
     const saved = await handleSave();
     if (!saved) return;
 
@@ -417,20 +375,21 @@ export function StrategyBuilderPage() {
     setStatusTone("info");
     setStatusMessage(t("builderActivating"));
 
-    const result = await activateYourStrategyViaBackend({ walletAddress }, token);
+    const result = await activateStrategy(token);
     setBusy(null);
 
-    if (result.status === "success") {
-      setPresetState({
-        activePreset: result.activation,
-      });
+    if (result.status === "ok") {
+      setRecord(result.strategy);
       setRuntimeState({
-        botStatus: result.runtime.botStatus,
-        syncStatus: result.runtime.syncStatus,
-        actionToast: { id: Date.now(), tone: "success", message: result.message },
+        actionToast: {
+          id: Date.now(),
+          tone: "success",
+          message: t("builderActivatedMessage"),
+        },
       });
       setStatusTone("success");
-      setStatusMessage(result.message);
+      setStatusMessage(t("builderActivatedMessage"));
+      void reloadSession();
     } else {
       setStatusTone("danger");
       setStatusMessage(result.message);
@@ -438,19 +397,22 @@ export function StrategyBuilderPage() {
   }
 
   async function handlePauseBot() {
-    if (!walletAddress || busy !== null) return;
+    if (busy !== null) return;
     setBusy("pause");
     setStatusTone("info");
     setStatusMessage(t("builderPausing"));
 
-    const result = await pauseBotViaBackend({ walletAddress }, token);
+    const result = await pauseStrategy(token);
     setBusy(null);
-    setStatusTone(result.status === "success" ? "success" : "danger");
-    setStatusMessage(result.message);
 
-    if (result.status === "success") {
-      setRuntimeState({ botStatus: "paused" });
-      void session.reload();
+    if (result.status === "ok") {
+      setRecord(result.strategy);
+      setStatusTone("success");
+      setStatusMessage(t("builderPausedMessage"));
+      void reloadSession();
+    } else {
+      setStatusTone("danger");
+      setStatusMessage(result.message);
     }
   }
 
@@ -468,16 +430,16 @@ export function StrategyBuilderPage() {
   // Render
   // -------------------------------------------------------------------------
 
-  if (session.status === "loading" || !draft) {
+  if (sessionStatus === "loading" || !draft) {
     return (
       <LoadingPanel
-        message={session.message ?? t("runtimeStatusLoadingMessage")}
+        message={t("runtimeStatusLoadingMessage")}
         title={t("builderTitleFallback")}
       />
     );
   }
 
-  const successPreview = preview?.status === "success" ? preview : null;
+  const successPreview = preview?.status === "ok" ? preview : null;
 
   return (
     <div className="builder-page">
@@ -498,7 +460,7 @@ export function StrategyBuilderPage() {
           </button>
           <button
             className="builder-btn builder-btn--primary"
-            disabled={busy !== null || isEditingBlocked || !validation?.success}
+            disabled={busy !== null || isEditingBlocked || !isDraftValid}
             onClick={() => void handleActivate()}
             type="button"
           >
@@ -725,15 +687,15 @@ export function StrategyBuilderPage() {
               <div className={`item ${hasRisk ? "" : "item--pending"}`}>
                 {t("builderChecklistRisk")}
               </div>
-              <div className={`item ${validation?.success ? "" : "item--pending"}`}>
+              <div className={`item ${isDraftValid ? "" : "item--pending"}`}>
                 {t("builderChecklistValid")}
               </div>
               <div className={`item ${successPreview && !isPreviewStale ? "" : "item--pending"}`}>
                 {t("builderChecklistBacktest")}
               </div>
               {validationIssues.map((issue, index) => (
-                <div className="item item--pending" key={`${issue.path.join(".")}-${index}`}>
-                  {issue.path.join(".")}: {issue.message}
+                <div className="item item--pending" key={`${issue.path}-${index}`}>
+                  {issue.path}: {issue.message}
                 </div>
               ))}
               {record?.activationBlockers.map((blocker) => (
@@ -1070,7 +1032,7 @@ function RulesSection(props: {
 // Backtest: métricas + curva de equity
 // ---------------------------------------------------------------------------
 
-type SuccessPreview = Extract<YourStrategyBacktestPreviewResponse, { status: "success" }>;
+type SuccessPreview = Extract<BacktestResponse, { status: "ok" }>;
 
 function BacktestResult(props: { preview: SuccessPreview; t: Translate }) {
   const { preview, t } = props;

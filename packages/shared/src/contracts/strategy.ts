@@ -227,6 +227,8 @@ export const backtestResponseSchema = z.union([
 
 export type MarketSymbol = z.infer<typeof marketSymbolSchema>;
 export type Timeframe = z.infer<typeof timeframeSchema>;
+export type IndicatorConfig = z.infer<typeof indicatorConfigSchema>;
+export type TriggerRule = z.infer<typeof triggerRuleSchema>;
 export type StrategyDraft = z.infer<typeof strategyDraftSchema>;
 export type StrategyRecord = z.infer<typeof strategySchema>;
 export type StrategyResponse = z.infer<typeof strategyResponseSchema>;
