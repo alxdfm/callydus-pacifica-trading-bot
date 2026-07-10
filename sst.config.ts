@@ -44,7 +44,9 @@ export default $config({
     api.route("$default", {
       handler: "packages/api/src/index.handler",
       runtime: "nodejs22.x",
-      memory: "512 MB",
+      // 1024 MB dobra a CPU alocada (backtest é CPU-bound); custo irrelevante
+      // neste tráfego
+      memory: "1024 MB",
       timeout: "29 seconds",
       nodejs: { format: "esm" as const },
       environment: {
