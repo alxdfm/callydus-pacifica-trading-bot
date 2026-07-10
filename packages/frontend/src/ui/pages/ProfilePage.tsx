@@ -1,14 +1,10 @@
-import { useCallback, useState } from "react";
-import type { OperationalProfileSessionFound } from "../../types/contracts";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { applyOperationalProfileSessionSnapshot } from "../../features/account/apply-operational-page-sessions";
-import { readOperationalProfileViaBackend } from "../../features/account/backend-operational-page-sessions";
-import { useOperationalPageSession } from "../../features/account/use-operational-page-session";
 import { useAgentWalletReplacementFlow } from "../../features/profile/use-agent-wallet-replacement-flow";
 import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEnvironment";
-import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
+import { useSession } from "../../v2/session";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 
 function formatRelativeValidation(value: string | null, fallback: string) {
@@ -83,52 +79,13 @@ function deriveAgentWalletBadgeState(
 export function ProfilePage() {
   const navigate = useNavigate();
   const { disconnectWallet } = useSolanaWalletPort();
-  const {
-    resetOnboardingState,
-    setBuilderApprovalState,
-    setCredentialState,
-    setOperationalState,
-    setPresetState,
-    setRuntimeState,
-    state,
-  } = useAppState();
+  const { resetOnboardingState, state } = useAppState();
   const { t } = useI18n();
-  const { token } = useAuth();
+  const { status: sessionStatus, errorMessage: sessionError } = useSession();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isAgentWalletModalOpen, setIsAgentWalletModalOpen] = useState(false);
   const [isEndingSession, setIsEndingSession] = useState(false);
   const replacementFlow = useAgentWalletReplacementFlow();
-  const applyProfileSnapshot = useCallback(
-    (snapshot: OperationalProfileSessionFound) => {
-      applyOperationalProfileSessionSnapshot(snapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-      });
-    },
-    [
-      setBuilderApprovalState,
-      setCredentialState,
-      setOperationalState,
-      setPresetState,
-      setRuntimeState,
-    ],
-  );
-  const readProfileSnapshot = useCallback(
-    (req: Parameters<typeof readOperationalProfileViaBackend>[0]) =>
-      readOperationalProfileViaBackend(req, token),
-    [token],
-  );
-  const profileSession = useOperationalPageSession({
-    readSnapshot: readProfileSnapshot,
-    applySnapshot: applyProfileSnapshot,
-    requestKey: "profile",
-    loadingMessage: t("runtimeStatusLoadingMessage"),
-    unavailableMessage: t("runtimeStatusError"),
-    enabled: !!token,
-  });
 
   const hasCredentialKeyChanges =
     isAgentWalletModalOpen &&
@@ -173,7 +130,7 @@ export function ProfilePage() {
     }
   }
 
-  if (profileSession.status === "loading") {
+  if (sessionStatus === "loading") {
     return (
       <div className="page-stack">
         <section className="topbar">
@@ -418,10 +375,10 @@ export function ProfilePage() {
         </div>
       </section>
 
-      {profileSession.status === "error" ? (
+      {sessionStatus === "error" ? (
         <section className="page-card status-banner status-banner--danger">
           <strong>{t("runtimeStatusError")}</strong>
-          <p>{profileSession.message}</p>
+          <p>{sessionError}</p>
         </section>
       ) : null}
 

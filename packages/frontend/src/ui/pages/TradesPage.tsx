@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
-import type { ClosedTrade, OpenTrade } from "../../types/contracts";
-import { useDashboardSession } from "../../features/account/use-dashboard-session";
-import { closeTradeViaBackend } from "../../features/runtime/backend-bot-commands";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Trade } from "@pacifica/shared/contracts";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { formatPrice, formatQty, formatSignedUsd, formatWhen } from "../../shared/format";
 import { useAppState } from "../../state/app-state";
+import { closeTrade, getTrades } from "../../v2/client";
 import { LoadingPanel } from "../components/LoadingPanel";
 
 type Translate = ReturnType<typeof useI18n>["t"];
@@ -33,16 +32,27 @@ function SideTag(props: { side: "long" | "short" }) {
 export function TradesPage() {
   const { t } = useI18n();
   const { token } = useAuth();
-  const { setRuntimeState, state } = useAppState();
+  const { setRuntimeState } = useAppState();
 
   const [tab, setTab] = useState<"open" | "closed">("open");
   const [symbolFilter, setSymbolFilter] = useState<string>("");
   const [periodDays, setPeriodDays] = useState<number>(0);
+  const [openTrades, setOpenTrades] = useState<Trade[]>([]);
+  const [closedTrades, setClosedTrades] = useState<Trade[]>([]);
+  const [dataStatus, setDataStatus] = useState<"loading" | "ready">("loading");
 
-  const session = useDashboardSession();
+  const loadTrades = useCallback(async () => {
+    const response = await getTrades(token, 200);
+    if (response.status === "ok") {
+      setOpenTrades(response.openTrades);
+      setClosedTrades(response.closedTrades);
+    }
+    setDataStatus("ready");
+  }, [token]);
 
-  const openTrades = state.runtime.currentTrades;
-  const closedTrades = state.runtime.closedTrades;
+  useEffect(() => {
+    void loadTrades();
+  }, [loadTrades]);
 
   const symbols = useMemo(() => {
     const set = new Set<string>();
@@ -59,19 +69,31 @@ export function TradesPage() {
     const cutoff = periodDays > 0 ? Date.now() - periodDays * 24 * 60 * 60 * 1000 : 0;
     return closedTrades
       .filter((trade) => !symbolFilter || trade.symbol === symbolFilter)
-      .filter((trade) => cutoff === 0 || new Date(trade.closedAt).getTime() >= cutoff)
-      .sort((a, b) => new Date(b.closedAt).getTime() - new Date(a.closedAt).getTime());
+      .filter(
+        (trade) =>
+          cutoff === 0 ||
+          (trade.closedAt !== null && new Date(trade.closedAt).getTime() >= cutoff),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.closedAt ?? b.openedAt).getTime() -
+          new Date(a.closedAt ?? a.openedAt).getTime(),
+      );
   }, [closedTrades, symbolFilter, periodDays]);
 
-  const openTotal = visibleOpen.reduce((sum, trade) => sum + trade.unrealizedPnl, 0);
-  const closedTotal = visibleClosed.reduce((sum, trade) => sum + trade.realizedPnl, 0);
+  const closedTotal = visibleClosed.reduce(
+    (sum, trade) => sum + (trade.realizedPnl ?? 0),
+    0,
+  );
 
   function showToast(tone: ToastTone, message: string) {
     setRuntimeState({ actionToast: { id: Date.now(), tone, message } });
   }
 
-  if (session.status === "loading") {
-    return <LoadingPanel message={session.message ?? t("runtimeStatusLoadingMessage")} title={t("tradesTitle")} />;
+  if (dataStatus === "loading") {
+    return (
+      <LoadingPanel message={t("runtimeStatusLoadingMessage")} title={t("tradesTitle")} />
+    );
   }
 
   return (
@@ -120,13 +142,11 @@ export function TradesPage() {
 
         {tab === "open" ? (
           <OpenTradesTable
-            onClosed={() => void session.reload()}
+            onClosed={() => void loadTrades()}
             onResult={showToast}
             t={t}
             token={token}
-            total={openTotal}
             trades={visibleOpen}
-            walletAddress={state.wallet.mainWalletPublicKey}
           />
         ) : (
           <ClosedTradesTable t={t} total={closedTotal} trades={visibleClosed} />
@@ -141,16 +161,13 @@ function OpenTradesTable(props: {
   onResult: (tone: ToastTone, message: string) => void;
   t: Translate;
   token: string | null;
-  total: number;
-  trades: OpenTrade[];
-  walletAddress: string | null;
+  trades: Trade[];
 }) {
-  const { onClosed, onResult, t, token, total, trades, walletAddress } = props;
+  const { onClosed, onResult, t, token, trades } = props;
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
 
-  async function handleClose(trade: OpenTrade) {
-    if (!walletAddress) return;
+  async function handleClose(trade: Trade) {
     if (confirmingId !== trade.id) {
       setConfirmingId(trade.id);
       window.setTimeout(() => setConfirmingId((id) => (id === trade.id ? null : id)), 4000);
@@ -158,9 +175,12 @@ function OpenTradesTable(props: {
     }
     setConfirmingId(null);
     setClosingId(trade.id);
-    const result = await closeTradeViaBackend({ walletAddress, tradeId: trade.id }, token);
+    const result = await closeTrade(token, trade.id);
     setClosingId(null);
-    onResult(result.status === "success" ? "success" : "danger", result.message);
+    onResult(
+      result.status === "ok" ? "success" : "danger",
+      result.status === "ok" ? t("tradesCloseRequested") : result.message,
+    );
     onClosed();
   }
 
@@ -176,11 +196,9 @@ function OpenTradesTable(props: {
             <th>{t("tradesColSymbol")}</th>
             <th>{t("tradesColSide")}</th>
             <th>{t("tradesColEntry")}</th>
-            <th>{t("tradesColCurrent")}</th>
             <th>{t("tradesColQty")}</th>
             <th>{t("tradesColStop")}</th>
             <th>{t("tradesColTarget")}</th>
-            <th>{t("tradesColPnl")}</th>
             <th>{t("tradesColOpened")}</th>
             <th aria-label="actions" />
           </tr>
@@ -188,20 +206,15 @@ function OpenTradesTable(props: {
         <tbody>
           {trades.map((trade) => (
             <tr key={trade.id}>
-              <td>
-                {trade.symbol}
-                {trade.isPlatformTrade ? null : <span className="tl-badge-ext">{t("tradesExternalBadge")}</span>}
-              </td>
+              <td>{trade.symbol}</td>
               <td><SideTag side={trade.side} /></td>
               <td>{formatPrice(trade.entryPrice)}</td>
-              <td>{formatPrice(trade.currentPrice)}</td>
-              <td>{formatQty(trade.quantity)}</td>
-              <td>{formatPrice(trade.stopLossPrice)}</td>
-              <td>{formatPrice(trade.takeProfitPrice)}</td>
-              <td><PnlCell value={trade.unrealizedPnl} /></td>
+              <td>{formatQty(trade.amount)}</td>
+              <td>{trade.stopLossPrice !== null ? formatPrice(trade.stopLossPrice) : "—"}</td>
+              <td>{trade.takeProfitPrice !== null ? formatPrice(trade.takeProfitPrice) : "—"}</td>
               <td>{formatWhen(trade.openedAt)}</td>
               <td>
-                {trade.isPlatformTrade ? (
+                {trade.status === "open" ? (
                   <button
                     className="builder-btn"
                     disabled={closingId !== null}
@@ -215,24 +228,21 @@ function OpenTradesTable(props: {
                         ? t("tradesCloseConfirm")
                         : t("tradesCloseAction")}
                   </button>
-                ) : null}
+                ) : (
+                  <span style={{ color: "var(--text-soft)", fontSize: 11 }}>
+                    {trade.status.replace(/_/g, " ")}
+                  </span>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={7}>{t("tradesTotalLabel")}</td>
-            <td><PnlCell value={total} /></td>
-            <td colSpan={2} />
-          </tr>
-        </tfoot>
       </table>
     </div>
   );
 }
 
-function ClosedTradesTable(props: { t: Translate; total: number; trades: ClosedTrade[] }) {
+function ClosedTradesTable(props: { t: Translate; total: number; trades: Trade[] }) {
   const { t, total, trades } = props;
 
   if (trades.length === 0) {
@@ -257,17 +267,14 @@ function ClosedTradesTable(props: { t: Translate; total: number; trades: ClosedT
         <tbody>
           {trades.map((trade) => (
             <tr key={trade.id}>
-              <td>
-                {trade.symbol}
-                {trade.isPlatformTrade ? null : <span className="tl-badge-ext">{t("tradesExternalBadge")}</span>}
-              </td>
+              <td>{trade.symbol}</td>
               <td><SideTag side={trade.side} /></td>
               <td>{formatPrice(trade.entryPrice)}</td>
-              <td>{formatPrice(trade.exitPrice)}</td>
-              <td>{formatQty(trade.quantity)}</td>
-              <td><PnlCell value={trade.realizedPnl} /></td>
-              <td style={{ color: "var(--text-soft)" }}>{trade.closeReason}</td>
-              <td>{formatWhen(trade.closedAt)}</td>
+              <td>{trade.exitPrice !== null ? formatPrice(trade.exitPrice) : "—"}</td>
+              <td>{formatQty(trade.amount)}</td>
+              <td><PnlCell value={trade.realizedPnl ?? 0} /></td>
+              <td style={{ color: "var(--text-soft)" }}>{trade.closeReason ?? "—"}</td>
+              <td>{trade.closedAt ? formatWhen(trade.closedAt) : "—"}</td>
             </tr>
           ))}
         </tbody>

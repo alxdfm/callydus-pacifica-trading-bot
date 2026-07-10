@@ -348,6 +348,7 @@ export const messages = {
     tradesExternalBadge: "external",
     tradesCloseAction: "Close",
     tradesCloseConfirm: "Confirm?",
+    tradesCloseRequested: "Close requested — the bot will execute it shortly.",
     tradesCloseBusy: "Closing…",
     dashTitle: "Dashboard",
     dashTileAvailable: "Available",

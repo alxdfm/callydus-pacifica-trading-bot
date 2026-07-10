@@ -4,14 +4,13 @@ import type {
   PacificaValidationErrorCode,
   PacificaOperationalVerificationResponse,
 } from "../../types/contracts";
-import { applyOperationalProfileSessionSnapshot } from "../account/apply-operational-page-sessions";
-import { readOperationalProfileViaBackend } from "../account/backend-operational-page-sessions";
 import { validateAgentWalletViaBackend } from "../onboarding/backend-credential-validation";
 import { verifyAgentWalletOperationallyViaBackend } from "../onboarding/backend-operational-verification";
-import { pauseBotViaBackend } from "../runtime/backend-bot-commands";
 import { useAuth } from "../auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { useAppState } from "../../state/app-state";
+import { pauseStrategy } from "../../v2/client";
+import { useSession } from "../../v2/session";
 
 type FieldErrors = {
   agentWalletPublicKey?: string;
@@ -54,12 +53,11 @@ function maskSecret(secret: string | null | undefined): string {
 export function useAgentWalletReplacementFlow() {
   const { t } = useI18n();
   const { token } = useAuth();
+  const { session, reload: reloadSession } = useSession();
   const {
-    setBuilderApprovalState,
     setCredentialState,
     setOnboardingState,
     setOperationalState,
-    setPresetState,
     setRuntimeState,
     state,
   } = useAppState();
@@ -80,8 +78,7 @@ export function useAgentWalletReplacementFlow() {
   const trimmedDraftPublicKey = draftPublicKey.trim();
   const trimmedDraftPrivateKey = draftPrivateKey.trim();
   const trimmedDraftAlias = draftAlias.trim();
-  const isBotRunning =
-    state.runtime.botStatus === "active" || state.runtime.botStatus === "syncing";
+  const isBotRunning = session?.strategy?.status === "active";
   const criticalEditBlocked = isBotRunning;
   const canValidateAgentWallet =
     !criticalEditBlocked &&
@@ -156,52 +153,25 @@ export function useAgentWalletReplacementFlow() {
 
   async function handleStopBot() {
     setHasStartedReplacementFlow(true);
-    const walletAddress = state.wallet.mainWalletPublicKey;
 
-    if (!walletAddress) {
-      setModalFeedback("Connect the main wallet before stopping the bot.");
-      setModalFeedbackTone("danger");
-      return;
-    }
+    const result = await pauseStrategy(token);
 
-    const commandResult = await pauseBotViaBackend({ walletAddress }, token);
-
-    if (commandResult.status === "error") {
+    if (result.status !== "ok") {
       setRuntimeState({
         actionToast: {
           id: Date.now(),
           tone: "danger",
-          message: commandResult.message,
+          message: result.message,
         },
       });
-      setModalFeedback(commandResult.message);
+      setModalFeedback(result.message);
       setModalFeedbackTone("danger");
       return;
     }
 
-    const sessionSnapshot = await readOperationalProfileViaBackend({
-      walletAddress,
-    }, token);
-
-    if (sessionSnapshot.status === "found") {
-      applyOperationalProfileSessionSnapshot(sessionSnapshot, {
-        setBuilderApprovalState,
-        setCredentialState,
-        setOperationalState,
-        setPresetState,
-        setRuntimeState,
-      });
-      setModalFeedback("Bot paused successfully. You can now validate the replacement Agent Wallet.");
-      setModalFeedbackTone("info");
-      return;
-    }
-
-    const fallbackMessage =
-      sessionSnapshot.status === "error"
-        ? sessionSnapshot.message
-        : "Could not refresh the account session after pausing the bot.";
-    setModalFeedback(fallbackMessage);
-    setModalFeedbackTone("danger");
+    await reloadSession();
+    setModalFeedback("Bot paused successfully. You can now validate the replacement Agent Wallet.");
+    setModalFeedbackTone("info");
   }
 
   function applyValidationResponse(response: PacificaCredentialValidationResponse) {
