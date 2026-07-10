@@ -5,15 +5,18 @@ import { router } from "./router";
 import { AppI18nProvider } from "./shared/i18n/I18nProvider";
 import { AppStateProvider } from "./state/app-state";
 import { AuthProvider } from "./features/auth/AuthContext";
+import { SessionProvider } from "./v2/session";
 import "./styles/app.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <AppStateProvider>
       <AuthProvider>
-        <AppI18nProvider>
-          <RouterProvider router={router} />
-        </AppI18nProvider>
+        <SessionProvider>
+          <AppI18nProvider>
+            <RouterProvider router={router} />
+          </AppI18nProvider>
+        </SessionProvider>
       </AuthProvider>
     </AppStateProvider>
   </React.StrictMode>,
