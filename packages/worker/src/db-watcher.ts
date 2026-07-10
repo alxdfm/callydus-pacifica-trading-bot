@@ -26,20 +26,20 @@ export function createDbWatcher(input: DbWatcherInput): {
   const pollIntervalMs = input.pollIntervalMs ?? 30_000;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
-  let previousIds = new Set<string>();
+  let previousSignature = "";
 
   async function poll() {
     try {
       const strategies = await getActiveStrategies(input.db);
-      const currentIds = new Set(strategies.map((s) => s.id));
+      // updatedAt na assinatura: edições de config com a strategy ativa
+      // também precisam propagar, não só entrada/saída do conjunto
+      const signature = strategies
+        .map((s) => `${s.id}:${s.updatedAt.getTime()}`)
+        .sort()
+        .join("|");
 
-      const changed =
-        currentIds.size !== previousIds.size ||
-        [...currentIds].some((id) => !previousIds.has(id)) ||
-        [...previousIds].some((id) => !currentIds.has(id));
-
-      if (changed) {
-        previousIds = currentIds;
+      if (signature !== previousSignature) {
+        previousSignature = signature;
         logger.info("[db-watcher] strategies changed", {
           count: strategies.length,
         });
