@@ -5,6 +5,7 @@ import {
   text,
   jsonb,
   numeric,
+  boolean,
   timestamp,
   index,
   uniqueIndex,
@@ -119,6 +120,57 @@ export const events = pgTable(
     index("events_strategy_id_idx").on(t.strategyId),
     index("events_type_idx").on(t.type),
     index("events_consumed_at_idx").on(t.consumedAt),
+  ],
+);
+
+export const accounts = pgTable(
+  "accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    walletAddress: text("wallet_address").notNull().unique(),
+    onboardingStatus: text("onboarding_status").notNull().default("wallet_pending"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("accounts_wallet_address_idx").on(t.walletAddress),
+  ],
+);
+
+export const credentials = pgTable(
+  "credentials",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    publicKey: text("public_key").notNull(),
+    encryptedPrivateKeyRef: text("encrypted_private_key_ref").notNull(),
+    keyFingerprint: text("key_fingerprint").notNull(),
+    credentialAlias: text("credential_alias"),
+    validationStatus: text("validation_status").notNull().default("pending"),
+    lifecycleStatus: text("lifecycle_status").notNull().default("pending"),
+    operationallyVerified: boolean("operationally_verified")
+      .notNull()
+      .default(false),
+    lastValidatedAt: timestamp("last_validated_at", { withTimezone: true }),
+    lastValidationErrorCode: text("last_validation_error_code"),
+    lastOperationalVerifiedAt: timestamp("last_operational_verified_at", {
+      withTimezone: true,
+    }),
+    lastOperationalErrorCode: text("last_operational_error_code"),
+    lastOperationalProbeJson: jsonb("last_operational_probe_json"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("credentials_account_id_idx").on(t.accountId),
+    index("credentials_public_key_idx").on(t.publicKey),
   ],
 );
 

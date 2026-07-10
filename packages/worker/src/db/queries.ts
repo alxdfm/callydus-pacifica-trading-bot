@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import type { DrizzleDb } from "./client.js";
-import { strategies, trades, events } from "./schema.js";
+import { accounts, credentials, strategies, trades, events } from "./schema.js";
 
 // ---------------------------------------------------------------------------
 // Inferred types from schema
@@ -9,6 +9,7 @@ import { strategies, trades, events } from "./schema.js";
 export type Strategy = typeof strategies.$inferSelect;
 export type Trade = typeof trades.$inferSelect;
 export type Event = typeof events.$inferSelect;
+export type Credential = typeof credentials.$inferSelect;
 
 export type InsertTrade = typeof trades.$inferInsert;
 export type InsertEvent = typeof events.$inferInsert;
@@ -46,7 +47,28 @@ export async function getOpenTradesForStrategy(
   return db
     .select()
     .from(trades)
-    .where(eq(trades.strategyId, strategyId));
+    .where(
+      and(eq(trades.strategyId, strategyId), ne(trades.status, "closed")),
+    );
+}
+
+export async function getActiveCredentialForWallet(
+  db: DrizzleDb,
+  walletAddress: string,
+): Promise<Credential | null> {
+  const rows = await db
+    .select({ credential: credentials })
+    .from(credentials)
+    .innerJoin(accounts, eq(credentials.accountId, accounts.id))
+    .where(
+      and(
+        eq(accounts.walletAddress, walletAddress),
+        eq(credentials.validationStatus, "valid"),
+        eq(credentials.lifecycleStatus, "active"),
+      ),
+    )
+    .limit(1);
+  return rows[0]?.credential ?? null;
 }
 
 export async function insertEvent(
