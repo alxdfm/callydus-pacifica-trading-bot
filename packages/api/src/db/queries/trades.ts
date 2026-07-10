@@ -1,16 +1,9 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { DrizzleDb } from "../client.js";
 import { trades, strategies } from "../schema.js";
 
 export type Trade = typeof trades.$inferSelect;
 export type NewTrade = typeof trades.$inferInsert;
-
-export async function getTradesByStrategyId(
-  db: DrizzleDb,
-  strategyId: string,
-): Promise<Trade[]> {
-  return db.select().from(trades).where(eq(trades.strategyId, strategyId));
-}
 
 export async function getTradesByUserId(
   db: DrizzleDb,
@@ -21,7 +14,22 @@ export async function getTradesByUserId(
     .from(trades)
     .innerJoin(strategies, eq(trades.strategyId, strategies.id))
     .where(eq(strategies.userId, userId))
+    .orderBy(desc(trades.openedAt))
     .then((rows) => rows.map((r) => r.trade));
+}
+
+export async function getTradeByIdForUser(
+  db: DrizzleDb,
+  tradeId: string,
+  userId: string,
+): Promise<Trade | null> {
+  const rows = await db
+    .select({ trade: trades })
+    .from(trades)
+    .innerJoin(strategies, eq(trades.strategyId, strategies.id))
+    .where(and(eq(trades.id, tradeId), eq(strategies.userId, userId)))
+    .limit(1);
+  return rows[0]?.trade ?? null;
 }
 
 export async function insertTrade(

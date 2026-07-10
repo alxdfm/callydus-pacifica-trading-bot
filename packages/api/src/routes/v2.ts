@@ -26,7 +26,12 @@ import {
   updateStrategy,
   type Strategy,
 } from "../db/queries/strategies.js";
-import { getTradesByUserId, updateTrade, type Trade } from "../db/queries/trades.js";
+import {
+  getTradeByIdForUser,
+  getTradesByUserId,
+  updateTrade,
+  type Trade,
+} from "../db/queries/trades.js";
 import { getEventsByStrategyId, type Event } from "../db/queries/events.js";
 import {
   EquityDepletedError,
@@ -222,6 +227,11 @@ export function v2Routes(deps: AppDeps): Hono<HonoEnv> {
         .map(tradeToContract);
       const closedTrades = allTrades
         .filter((t) => t.status === "closed")
+        .sort(
+          (a, b) =>
+            (b.closedAt ?? b.openedAt).getTime() -
+            (a.closedAt ?? a.openedAt).getTime(),
+        )
         .slice(0, closedLimit)
         .map(tradeToContract);
 
@@ -242,8 +252,7 @@ export function v2Routes(deps: AppDeps): Hono<HonoEnv> {
     const tradeId = c.req.param("id");
 
     try {
-      const userTrades = await getTradesByUserId(deps.db, walletAddress);
-      const trade = userTrades.find((t) => t.id === tradeId);
+      const trade = await getTradeByIdForUser(deps.db, tradeId, walletAddress);
 
       if (!trade) {
         return errorJson(c, 404, "trade_not_found", "Trade not found.");
@@ -381,6 +390,15 @@ export function v2Routes(deps: AppDeps): Hono<HonoEnv> {
     try {
       const draft = parsed.data.draft;
       const existing = await getActiveStrategyByUserId(deps.db, walletAddress);
+
+      if (existing?.status === "active") {
+        return errorJson(
+          c,
+          409,
+          "strategy_running",
+          "Editing is blocked while the strategy is active. Pause it first.",
+        );
+      }
 
       const strategy = existing
         ? ((await updateStrategy(deps.db, existing.id, walletAddress, {
