@@ -159,9 +159,9 @@ export function accountRoutes(deps: AppDeps): Hono<HonoEnv> {
         runtime: {
           balance: null,
           botStatus,
-          syncStatus: "synced",
+          syncStatus: "healthy",
           pacificaConnectionStatus: "connected",
-          exchangeSnapshotStatus: "ok",
+          exchangeSnapshotStatus: "last_known",
           exchangeLastSyncedAt: null,
           exchangeSnapshotMessage: null,
           activePresetActivationId: strategy?.id ?? null,
@@ -254,8 +254,8 @@ export function accountRoutes(deps: AppDeps): Hono<HonoEnv> {
         runtime: {
           balance: null,
           botStatus,
-          syncStatus: "synced",
-          exchangeSnapshotStatus: "ok",
+          syncStatus: "healthy",
+          exchangeSnapshotStatus: "last_known",
           exchangeLastSyncedAt: null,
           exchangeSnapshotMessage: null,
           lastErrorMessage: null,
