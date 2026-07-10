@@ -13,8 +13,19 @@ export class CandleBuffer {
   push(symbol: string, interval: CandleInterval, candle: Candle): void {
     const key: CandleBufferKey = `${symbol}_${interval}`;
     const buffer = this.buffers.get(key) ?? [];
-    buffer.push(candle);
-    if (buffer.length > this.capacity) buffer.shift();
+    const last = buffer[buffer.length - 1];
+
+    if (last && last.openTime === candle.openTime) {
+      // Atualização do mesmo candle (ex.: warm-up repetido) — substitui
+      buffer[buffer.length - 1] = candle;
+    } else if (last && candle.openTime < last.openTime) {
+      // Fora de ordem (re-warm-up de histórico já presente) — ignora
+      return;
+    } else {
+      buffer.push(candle);
+      if (buffer.length > this.capacity) buffer.shift();
+    }
+
     this.buffers.set(key, buffer);
   }
 
