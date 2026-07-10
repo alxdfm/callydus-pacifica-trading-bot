@@ -407,6 +407,85 @@ export function createBot(input: BotInput): {
     return last ? last.close : null;
   }
 
+  // Fill real do fechamento no histórico público da Pacifica — fonte da verdade
+  // para exitPrice em vez da heurística de níveis
+  async function fetchLatestCloseFill(input: {
+    walletAddress: string;
+    marketSymbol: string;
+    tradeSide: "long" | "short";
+    sinceMs: number;
+  }): Promise<{ price: number } | null> {
+    try {
+      const baseUrl = env.PACIFICA_REST_URL.replace(/\/+$/, "");
+      const response = await fetch(
+        `${baseUrl}/api/v1/positions/history?account=${encodeURIComponent(input.walletAddress)}&limit=50`,
+        { headers: { Accept: "application/json" } },
+      );
+
+      if (!response.ok) return null;
+
+      const payload = (await response.json()) as {
+        data?: {
+          symbol?: string;
+          side?: string;
+          price?: string;
+          created_at?: number;
+        }[];
+      };
+
+      if (!Array.isArray(payload.data)) return null;
+
+      const wantedSide = `close_${input.tradeSide}`;
+      // A lista vem em ordem decrescente — o primeiro match é o fill mais recente
+      for (const fill of payload.data) {
+        if (
+          fill.symbol === input.marketSymbol &&
+          fill.side === wantedSide &&
+          Number(fill.created_at) >= input.sinceMs
+        ) {
+          const price = Number(fill.price);
+          return Number.isFinite(price) ? { price } : null;
+        }
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function classifyCloseByFillPrice(input: {
+    fillPrice: number;
+    stopLossPrice: number | null;
+    takeProfitPrice: number | null;
+  }): "stop_loss" | "take_profit" | "system" {
+    const withinTolerance = (level: number) =>
+      Math.abs(input.fillPrice - level) / level <= 0.005;
+
+    const slDistance =
+      input.stopLossPrice !== null
+        ? Math.abs(input.fillPrice - input.stopLossPrice)
+        : Number.POSITIVE_INFINITY;
+    const tpDistance =
+      input.takeProfitPrice !== null
+        ? Math.abs(input.fillPrice - input.takeProfitPrice)
+        : Number.POSITIVE_INFINITY;
+
+    if (
+      input.stopLossPrice !== null &&
+      slDistance <= tpDistance &&
+      withinTolerance(input.stopLossPrice)
+    ) {
+      return "stop_loss";
+    }
+
+    if (input.takeProfitPrice !== null && withinTolerance(input.takeProfitPrice)) {
+      return "take_profit";
+    }
+
+    return "system";
+  }
+
   async function reconcileOpenTradesWithExchange(
     strategy: Strategy,
     tickAt: Date,
@@ -502,16 +581,41 @@ export function createBot(input: BotInput): {
       const tpNum = trade.tp !== null ? Number(trade.tp) : null;
       const entryNum = Number(trade.entryPrice);
 
-      // Preço atual real do buffer; fallback para os níveis se o buffer estiver frio
-      const currentPrice =
-        latestBufferClose(marketSymbol, timeframe) ?? slNum ?? tpNum ?? entryNum;
-      const { closeReason, exitPrice } = resolveDetectedClose({
-        side: trade.side,
-        stopLossPrice: slNum,
-        takeProfitPrice: tpNum,
-        currentPrice,
-        closeReasonPending: trade.status === "closing" ? "manual" : null,
+      // Fonte da verdade: o fill real do fechamento no histórico da exchange
+      const closeFill = await fetchLatestCloseFill({
+        walletAddress: strategy.userId,
+        marketSymbol,
+        tradeSide: trade.side,
+        sinceMs: trade.openedAt.getTime(),
       });
+
+      let closeReason: "take_profit" | "stop_loss" | "manual" | "system";
+      let exitPrice: number;
+
+      if (closeFill) {
+        exitPrice = closeFill.price;
+        closeReason =
+          trade.status === "closing"
+            ? "manual"
+            : classifyCloseByFillPrice({
+                fillPrice: closeFill.price,
+                stopLossPrice: slNum,
+                takeProfitPrice: tpNum,
+              });
+      } else {
+        // Fallback: heurística por níveis com o preço atual do buffer
+        const currentPrice =
+          latestBufferClose(marketSymbol, timeframe) ?? slNum ?? tpNum ?? entryNum;
+        const detected = resolveDetectedClose({
+          side: trade.side,
+          stopLossPrice: slNum,
+          takeProfitPrice: tpNum,
+          currentPrice,
+          closeReasonPending: trade.status === "closing" ? "manual" : null,
+        });
+        closeReason = detected.closeReason;
+        exitPrice = detected.exitPrice;
+      }
 
       const feeRate = env.TAKER_FEE_PERCENT / 100;
       const quantity = Number(trade.amount);
