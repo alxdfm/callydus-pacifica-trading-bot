@@ -583,7 +583,14 @@ export function simulatePresetBacktest(
 
     if (!openPosition) {
       const nextCandle = input.candles[index + 1];
-      const candleWindow = input.candles.slice(0, index + 1);
+      // Janela limitada espelhando o CandleBuffer do worker (capacity 300):
+      // é como o bot avalia ao vivo, e a janela crescente era O(n²) — com RSI
+      // em 14k candles estourava o timeout de 29s da Lambda
+      const evaluationWindow = Math.max(requiredPeriod + 5, 300);
+      const candleWindow = input.candles.slice(
+        Math.max(0, index + 1 - evaluationWindow),
+        index + 1,
+      );
       const evaluation = evaluateSignal(input.technicalContract, candleWindow);
 
       if (evaluation.signal !== "none" && nextCandle) {
