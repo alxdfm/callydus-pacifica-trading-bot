@@ -12,22 +12,26 @@ const env = loadWorkerEnv();
 const db = createDrizzleClient(env.DATABASE_URL);
 const buffer = new CandleBuffer(300);
 
-// Resolve initial symbols/intervals from DB before starting the feed
+function resolveSymbols(strategies: { config: unknown }[]): string[] {
+  return [
+    ...new Set(
+      strategies.flatMap((s) => {
+        const config = s.config as { symbol?: string };
+        const sym = config.symbol;
+        if (!sym) return [];
+        const match = sym.match(/^([A-Z]+)\/USDC$/);
+        return match?.[1] ? [match[1]] : [];
+      }),
+    ),
+  ];
+}
+
+// Resolve initial symbols from DB before starting the feed
 const initialStrategies = await getActiveStrategies(db);
+const symbols = resolveSymbols(initialStrategies);
 
-const symbols = [
-  ...new Set(
-    initialStrategies.flatMap((s) => {
-      const config = s.config as { symbol?: string };
-      const sym = config.symbol;
-      if (!sym) return [];
-      const match = sym.match(/^([A-Z]+)\/USDC$/);
-      return match?.[1] ? [match[1]] : [];
-    }),
-  ),
-];
-
-const intervals = ["1m", "5m", "15m", "1h", "4h"] as const;
+// Cobre todos os timeframes que o builder oferece (3m/5m/15m) + 1m de margem
+const intervals = ["1m", "3m", "5m", "15m"] as const;
 
 const pacificaClient = new PacificaClient({
   apiBaseUrl: env.PACIFICA_REST_URL,
@@ -62,6 +66,8 @@ const dbWatcher = createDbWatcher({
   db,
   pollIntervalMs: 30_000,
   onStrategiesChanged: (strategies) => {
+    // Estratégia ativada depois do boot precisa entrar no feed (subscribe+warm-up)
+    wsFeed.setSymbols(resolveSymbols(strategies));
     // Forward new strategies to the bot
     (bot as unknown as { onStrategiesChanged?: (s: typeof strategies) => void })
       .onStrategiesChanged?.(strategies);
