@@ -25,12 +25,31 @@ const defaultLogger: WsFeedLogger = {
 export function createWsFeed(input: WsFeedInput): {
   start(): void;
   stop(): void;
+  setSymbols(next: string[]): void;
 } {
   const logger = input.logger ?? defaultLogger;
   let ws: WebSocket | null = null;
   let stopped = false;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let reconnectAttempt = 0;
+  let symbols = [...new Set(input.symbols)];
+  // Último update recebido por par — o candle anterior é considerado fechado
+  // quando chega um update com openTime mais novo (o WS não tem flag isClosed)
+  const pendingByKey = new Map<string, Candle>();
+
+  function subscribeTo(socket: WebSocket, targetSymbols: string[]) {
+    for (const symbol of targetSymbols) {
+      for (const interval of input.intervals) {
+        // Formato validado contra o WS real: method/params com source "candle"
+        socket.send(
+          JSON.stringify({
+            method: "subscribe",
+            params: { source: "candle", symbol, interval },
+          }),
+        );
+      }
+    }
+  }
 
   function connect() {
     if (stopped) return;
@@ -40,23 +59,10 @@ export function createWsFeed(input: WsFeedInput): {
 
     socket.on("open", () => {
       reconnectAttempt = 0;
-      logger.info("[ws-feed] connected", { url: input.wsUrl });
+      logger.info("[ws-feed] connected", { url: input.wsUrl, symbols });
 
-      // Subscribe to candle streams for each symbol/interval combination
-      for (const symbol of input.symbols) {
-        for (const interval of input.intervals) {
-          const subscribeMessage = JSON.stringify({
-            op: "subscribe",
-            channel: "kline",
-            symbol,
-            interval,
-          });
-          socket.send(subscribeMessage);
-        }
-      }
-
-      // Warm up buffers via REST for all symbol/interval pairs
-      void warmUpBuffers();
+      subscribeTo(socket, symbols);
+      void warmUpBuffers(symbols);
     });
 
     socket.on("message", (data) => {
@@ -83,36 +89,29 @@ export function createWsFeed(input: WsFeedInput): {
   function handleMessage(message: unknown) {
     if (!message || typeof message !== "object") return;
 
-    const msg = message as Record<string, unknown>;
+    const msg = message as { channel?: unknown; data?: unknown };
 
-    // Typical Pacifica WS candle message shape — adjust field names as needed
-    const channel = msg.channel ?? msg.type ?? msg.e;
-    if (channel !== "kline" && channel !== "candlestick") return;
+    // Formato real: { channel: "candle", data: { t,T,s,i,o,c,h,l,v } }
+    if (msg.channel !== "candle" || !msg.data || typeof msg.data !== "object") {
+      return;
+    }
 
-    const kline = msg.k ?? msg.data ?? msg.kline;
-    if (!kline || typeof kline !== "object") return;
-
-    const k = kline as Record<string, unknown>;
-    const isClosed = Boolean(k.x ?? k.isClosed ?? k.is_closed ?? false);
-
-    if (!isClosed) return;
-
-    const symbol = String(msg.symbol ?? msg.s ?? k.s ?? "").trim();
-    const intervalRaw = String(k.i ?? msg.interval ?? "").trim();
-    const interval = intervalRaw as CandleInterval;
+    const k = msg.data as Record<string, unknown>;
+    const symbol = String(k.s ?? "").trim();
+    const interval = String(k.i ?? "").trim() as CandleInterval;
 
     if (!symbol || !interval) return;
 
     const candle: Candle = {
       symbol,
       interval,
-      openTime: Number(k.t ?? k.openTime ?? k.open_time),
-      closeTime: Number(k.T ?? k.closeTime ?? k.close_time),
-      open: Number(k.o ?? k.open),
-      high: Number(k.h ?? k.high),
-      low: Number(k.l ?? k.low),
-      close: Number(k.c ?? k.close),
-      volume: Number(k.v ?? k.volume ?? 0),
+      openTime: Number(k.t),
+      closeTime: Number(k.T),
+      open: Number(k.o),
+      high: Number(k.h),
+      low: Number(k.l),
+      close: Number(k.c),
+      volume: Number(k.v ?? 0),
     };
 
     if (
@@ -126,7 +125,16 @@ export function createWsFeed(input: WsFeedInput): {
       return;
     }
 
-    input.buffer.push(symbol, interval, candle);
+    const key = `${symbol}_${interval}`;
+    const pending = pendingByKey.get(key);
+
+    if (pending && pending.openTime < candle.openTime) {
+      // Chegou candle novo — o anterior fechou e entra no buffer,
+      // preservando a semântica do backtest (avaliação só em candle fechado)
+      input.buffer.push(symbol, interval, pending);
+    }
+
+    pendingByKey.set(key, candle);
   }
 
   function intervalToMs(interval: string): number {
@@ -136,11 +144,11 @@ export function createWsFeed(input: WsFeedInput): {
     return match[2] === "h" ? value * 3_600_000 : value * 60_000;
   }
 
-  async function warmUpBuffers() {
+  async function warmUpBuffers(targetSymbols: string[]) {
     const restBaseUrl = input.restBaseUrl.replace(/\/+$/, "");
     const WARMUP_CANDLE_COUNT = 300;
 
-    for (const symbol of input.symbols) {
+    for (const symbol of targetSymbols) {
       for (const interval of input.intervals) {
         try {
           // /api/v1/kline exige start_time; o range cobre as N velas do warm-up
@@ -253,6 +261,20 @@ export function createWsFeed(input: WsFeedInput): {
       if (ws !== null) {
         ws.close();
         ws = null;
+      }
+    },
+    setSymbols(next: string[]) {
+      const nextSymbols = [...new Set(next)];
+      const added = nextSymbols.filter((symbol) => !symbols.includes(symbol));
+      symbols = nextSymbols;
+
+      if (added.length === 0) return;
+
+      logger.info("[ws-feed] symbols updated", { symbols, added });
+
+      if (ws !== null && ws.readyState === WebSocket.OPEN) {
+        subscribeTo(ws, added);
+        void warmUpBuffers(added);
       }
     },
   };
