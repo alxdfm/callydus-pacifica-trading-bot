@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Trade } from "@pacifica/shared/contracts";
 import { useAuth } from "../../features/auth/AuthContext";
+import { useActionToast } from "../../features/runtime/use-action-toast";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { formatSignedUsd } from "../../shared/format";
-import { useAppState } from "../../state/app-state";
 import { activateStrategy, getTrades, pauseStrategy } from "../../v2/client";
 import { useSession } from "../../v2/session";
 import { LoadingPanel } from "../components/LoadingPanel";
@@ -12,14 +12,14 @@ import { LoadingPanel } from "../components/LoadingPanel";
 export function StrategiesListPage() {
   const { t } = useI18n();
   const { token } = useAuth();
-  const { setRuntimeState } = useAppState();
+  const showToast = useActionToast();
   const { session, status: sessionStatus, reload: reloadSession } = useSession();
 
   const [commandBusy, setCommandBusy] = useState(false);
   const [closedTrades, setClosedTrades] = useState<Trade[]>([]);
 
   const loadTrades = useCallback(async () => {
-    const response = await getTrades(token);
+    const response = await getTrades(token, 200);
     if (response.status === "ok") {
       setClosedTrades(response.closedTrades);
     }
@@ -36,10 +36,6 @@ export function StrategiesListPage() {
     () => closedTrades.reduce((sum, trade) => sum + (trade.realizedPnl ?? 0), 0),
     [closedTrades],
   );
-
-  function showToast(tone: "success" | "danger", message: string) {
-    setRuntimeState({ actionToast: { id: Date.now(), tone, message } });
-  }
 
   async function handleActivate() {
     if (commandBusy) return;

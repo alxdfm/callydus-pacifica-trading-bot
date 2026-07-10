@@ -49,7 +49,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    setStatus("loading");
+    // Refresh em background (pós-comando) não regride para "loading": as
+    // páginas fazem early-return de skeleton nesse status e a tela inteira
+    // piscaria a cada pause/resume/save
+    setStatus((current) => (current === "ready" ? "ready" : "loading"));
 
     const response = await getSession(token);
 

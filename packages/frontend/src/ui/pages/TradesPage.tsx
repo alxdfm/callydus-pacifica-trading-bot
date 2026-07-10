@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Trade } from "@pacifica/shared/contracts";
 import { useAuth } from "../../features/auth/AuthContext";
+import { useActionToast } from "../../features/runtime/use-action-toast";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { formatPrice, formatQty, formatSignedUsd, formatWhen } from "../../shared/format";
-import { useAppState } from "../../state/app-state";
 import { closeTrade, getTrades } from "../../v2/client";
 import { LoadingPanel } from "../components/LoadingPanel";
 
@@ -32,7 +32,7 @@ function SideTag(props: { side: "long" | "short" }) {
 export function TradesPage() {
   const { t } = useI18n();
   const { token } = useAuth();
-  const { setRuntimeState } = useAppState();
+  const showToast = useActionToast();
 
   const [tab, setTab] = useState<"open" | "closed">("open");
   const [symbolFilter, setSymbolFilter] = useState<string>("");
@@ -85,10 +85,6 @@ export function TradesPage() {
     (sum, trade) => sum + (trade.realizedPnl ?? 0),
     0,
   );
-
-  function showToast(tone: ToastTone, message: string) {
-    setRuntimeState({ actionToast: { id: Date.now(), tone, message } });
-  }
 
   if (dataStatus === "loading") {
     return (

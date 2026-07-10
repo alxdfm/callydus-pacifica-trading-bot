@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { OperationalEvent, Trade } from "@pacifica/shared/contracts";
 import { useAuth } from "../../features/auth/AuthContext";
+import { useActionToast } from "../../features/runtime/use-action-toast";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { formatSignedUsd, formatUsd, formatWhen } from "../../shared/format";
-import { useAppState } from "../../state/app-state";
 import { activateStrategy, getEvents, getTrades, pauseStrategy } from "../../v2/client";
 import { useSession } from "../../v2/session";
 import { LoadingPanel } from "../components/LoadingPanel";
@@ -23,7 +23,7 @@ function HealthPill(props: { label: string; tone: PillTone; value: string }) {
 export function DashboardPage() {
   const { t } = useI18n();
   const { token } = useAuth();
-  const { setRuntimeState } = useAppState();
+  const showToast = useActionToast();
   const { session, status: sessionStatus, reload: reloadSession } = useSession();
 
   const [commandBusy, setCommandBusy] = useState(false);
@@ -100,18 +100,14 @@ export function DashboardPage() {
       ? await pauseStrategy(token)
       : await activateStrategy(token);
     setCommandBusy(false);
-    setRuntimeState({
-      actionToast: {
-        id: Date.now(),
-        tone: result.status === "ok" ? "success" : "danger",
-        message:
-          result.status === "ok"
-            ? result.strategy.status === "active"
-              ? t("dashToastResumed")
-              : t("dashToastPaused")
-            : result.message,
-      },
-    });
+    showToast(
+      result.status === "ok" ? "success" : "danger",
+      result.status === "ok"
+        ? result.strategy.status === "active"
+          ? t("dashToastResumed")
+          : t("dashToastPaused")
+        : result.message,
+    );
     void reloadSession();
   }
 

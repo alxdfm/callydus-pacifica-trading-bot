@@ -9,8 +9,8 @@ import {
   type TriggerRule,
 } from "@pacifica/shared/contracts";
 import { useAuth } from "../../features/auth/AuthContext";
+import { useActionToast } from "../../features/runtime/use-action-toast";
 import { useI18n } from "../../shared/i18n/I18nProvider";
-import { useAppState } from "../../state/app-state";
 import {
   activateStrategy,
   pauseStrategy,
@@ -166,7 +166,7 @@ function draftFingerprint(draft: YourStrategyDraft): string {
 export function StrategyBuilderPage() {
   const { t } = useI18n();
   const { token } = useAuth();
-  const { setRuntimeState } = useAppState();
+  const showToast = useActionToast();
   const { session, status: sessionStatus, reload: reloadSession } = useSession();
 
   const [record, setRecord] = useState<StrategyRecord | null>(null);
@@ -207,9 +207,13 @@ export function StrategyBuilderPage() {
 
   // Paridade com a execução real: o worker dimensiona por notional sem
   // multiplicador de alavancagem, então o backtest usa leverage 1 e o saldo
-  // real da conta como capital inicial
+  // real da conta como capital inicial. Saldo zerado (capital todo em posição)
+  // cai no default — o contrato exige capital positivo
   const backtestLeverage = 1;
-  const initialCapitalUsd = session?.balanceUsd ?? 1000;
+  const initialCapitalUsd =
+    session?.balanceUsd != null && session.balanceUsd > 0
+      ? session.balanceUsd
+      : 1000;
 
   const validation = useMemo(
     () => (draft ? strategyDraftSchema.safeParse(draft) : null),
@@ -312,8 +316,10 @@ export function StrategyBuilderPage() {
   // Ações
   // -------------------------------------------------------------------------
 
-  async function handleSave(): Promise<boolean> {
-    if (!draft) return false;
+  // Devolve o fingerprint do draft salvo (eco do servidor — jsonb reordena
+  // chaves, então serializar o objeto local geraria um fingerprint diferente)
+  async function handleSave(): Promise<string | null> {
+    if (!draft) return null;
     setBusy("save");
     setStatusTone("info");
     setStatusMessage(t("builderSaving"));
@@ -322,23 +328,31 @@ export function StrategyBuilderPage() {
     setBusy(null);
 
     if (result.status === "ok") {
+      const savedFp = draftFingerprint(result.strategy.draft);
       setRecord(result.strategy);
       setDraft(result.strategy.draft);
-      setSavedFingerprint(draftFingerprint(result.strategy.draft));
+      setSavedFingerprint(savedFp);
       setStatusTone("success");
       setStatusMessage(t("builderSavedMessage"));
       void reloadSession();
-      return true;
+      return savedFp;
     }
     setStatusTone("danger");
     setStatusMessage(result.message);
-    return false;
+    return null;
   }
 
   async function handleBacktest() {
     if (!draft) return;
-    const saved = await handleSave();
-    if (!saved) return;
+
+    // Salva só quando há mudança: com a strategy ativa a API recusa o save
+    // (strategy_running) e o backtest roda sobre o draft já salvo
+    let previewFp = fingerprint;
+    if (isDirty) {
+      const savedFp = await handleSave();
+      if (!savedFp) return;
+      previewFp = savedFp;
+    }
 
     setBusy("backtest");
     setStatusTone("info");
@@ -356,7 +370,7 @@ export function StrategyBuilderPage() {
 
     setBusy(null);
     setPreview(result);
-    setPreviewFingerprint(draft ? draftFingerprint(draft) : null);
+    setPreviewFingerprint(previewFp);
 
     if (result.status === "ok") {
       setStatusTone("success");
@@ -368,8 +382,10 @@ export function StrategyBuilderPage() {
   }
 
   async function handleActivate() {
-    const saved = await handleSave();
-    if (!saved) return;
+    if (isDirty || !record) {
+      const saved = await handleSave();
+      if (!saved) return;
+    }
 
     setBusy("activate");
     setStatusTone("info");
@@ -380,13 +396,7 @@ export function StrategyBuilderPage() {
 
     if (result.status === "ok") {
       setRecord(result.strategy);
-      setRuntimeState({
-        actionToast: {
-          id: Date.now(),
-          tone: "success",
-          message: t("builderActivatedMessage"),
-        },
-      });
+      showToast("success", t("builderActivatedMessage"));
       setStatusTone("success");
       setStatusMessage(t("builderActivatedMessage"));
       void reloadSession();
