@@ -140,18 +140,27 @@ Legend: **UI** trigger → **FE** frontend function → **API** endpoint/handler
 
 ## 6. Page data loading (read-only snapshots)
 
-All via `useOperationalPageSession` (dedupe + reload) with per-page appliers —
-**this whole layer is replaced by the single session loader in task #4.**
+**Rewritten 2026-07-10 (contract v2)**: the per-page snapshot layer was deleted.
+All pages hydrate from the single `SessionProvider` (`src/v2/session.tsx`) plus
+page-local fetches via the typed client (`src/v2/client.ts`). Contract lives in
+`@pacifica/shared/contracts`; every API response is schema-validated server-side
+before sending.
 
-| Page | Hook | Endpoint |
-|---|---|---|
-| Dashboard, Strategies, Trades | `useDashboardSession` | `POST /api/account/dashboard` |
-| Builder | `useOperationalPageSession("presets")` | `POST /api/account/presets` |
-| Profile | `useOperationalPageSession("profile")` | `POST /api/account/profile` |
-| (sign-in, bridge) | — | `POST /api/onboarding/account/lookup`, `POST /api/account/session` |
+| Data | Source |
+|---|---|
+| wallet/access/credential/strategy/balance | `GET /api/v2/session` (SessionProvider, root) |
+| open/closed trades | `GET /api/v2/trades` (page-local) |
+| worker events | `GET /api/v2/events` (page-local) |
+| market metadata | `GET /api/v2/markets` |
+| save/activate/pause/backtest | `POST /api/v2/strategy[...]` |
+| close trade | `POST /api/v2/trades/:id/close` |
+| (sign-in, bridge) | `POST /api/onboarding/account/lookup` + `GET /api/v2/session` |
 
-`yourStrategy` is real in dashboard/presets since 2026-07-08; `marketInfo`,
-`symbolOperationalConfigs`, `balance`, `syncStatus`, `exchangeSnapshotStatus` are still stubs.
+API surface is now `auth + onboarding + v2` only — the v1 routes
+(`/api/account/*`, `/api/runtime/*`, `/api/strategies/*`, `/api/trades/*`)
+were removed. Frontend `contracts.ts` shrank to onboarding/auth/wallet
+vocabulary (1443 → 305 lines); global app-state keeps only onboarding slices
+and the toast.
 
 ---
 

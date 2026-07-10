@@ -1,37 +1,18 @@
 import {
-  balanceSnapshotSchema,
-  botStatusSchema,
   builderApprovalStatusSchema,
   credentialValidationStatusSchema,
-  operationalAlertSchema,
-  operationalEventSchema,
-  operationalVerificationStatusSchema,
   onboardingStatusSchema,
-  openTradeSchema,
-  presetActivationSchema,
-  syncStatusSchema,
+  operationalVerificationStatusSchema,
   walletProviderSchema,
   walletSessionStatusSchema,
-  closedTradeSchema,
-  type BalanceSnapshot,
-  type BotStatus,
   type BuilderApprovalStatus,
   type CredentialValidationStatus,
   type OnboardingStatus,
-  type OperationalAlert,
-  type OperationalEvent,
   type OperationalVerificationStatus,
   type PacificaOperationalVerificationErrorCode,
   type PacificaValidationErrorCode,
-  type OpenTrade,
-  type PresetActivation,
-  type SyncStatus,
   type WalletProvider,
   type WalletSession,
-  type ClosedTrade,
-  type SymbolOperationalConfig,
-  symbolOperationalConfigSchema,
-  type YourStrategy,
 } from "../types/contracts";
 import {
   createContext,
@@ -45,7 +26,6 @@ import {
 import {
   createEmptyRuntimeState,
   type RuntimeState,
-  type RuntimeToast,
 } from "../features/runtime/runtime-state";
 
 export type CredentialState = {
@@ -84,10 +64,6 @@ export type AppSessionState = {
   builderApproval: BuilderApprovalState;
   credentials: CredentialState;
   operational: OperationalVerificationState;
-  presets: {
-    activePreset: PresetActivation | null;
-    yourStrategy: YourStrategy | null;
-  };
   onboarding: {
     status: OnboardingStatus;
     accountReady: boolean;
@@ -112,7 +88,6 @@ type AppStateContextValue = {
   setOperationalState: (
     nextOperational: Partial<OperationalVerificationState>,
   ) => void;
-  setPresetState: (nextPresets: Partial<AppSessionState["presets"]>) => void;
   setRuntimeState: (nextRuntime: Partial<RuntimeState>) => void;
   setOnboardingState: (nextOnboarding: Partial<AppSessionState["onboarding"]>) => void;
   resetOnboardingState: () => void;
@@ -160,10 +135,6 @@ export function createInitialAppSessionState(): AppSessionState {
       probeSymbol: null,
       probeClientOrderId: null,
     },
-    presets: {
-      activePreset: null,
-      yourStrategy: null,
-    },
     onboarding: {
       status: "wallet_pending",
       accountReady: false,
@@ -207,25 +178,8 @@ export function parseStoredState(rawValue: string | null): AppSessionState {
         ...parsed.operational,
         status: operationalVerificationStatus(parsed.operational?.status),
       },
-      presets: {
-        activePreset: presetActivationValue(parsed.presets?.activePreset),
-        yourStrategy: null,
-      },
-      runtime: {
-        ...baseState.runtime,
-        ...parsed.runtime,
-        balance: balanceSnapshotValue(parsed.runtime?.balance),
-        botStatus: botStatusValue(parsed.runtime?.botStatus),
-        syncStatus: syncStatusValue(parsed.runtime?.syncStatus),
-        symbolOperationalConfigs: symbolOperationalConfigsValue(
-          parsed.runtime?.symbolOperationalConfigs,
-        ),
-        currentTrades: openTradesValue(parsed.runtime?.currentTrades),
-        closedTrades: closedTradesValue(parsed.runtime?.closedTrades),
-        alerts: operationalAlertsValue(parsed.runtime?.alerts),
-        events: operationalEventsValue(parsed.runtime?.events),
-        actionToast: runtimeToastValue(parsed.runtime?.actionToast),
-      },
+      // Toast é efêmero — runtime nunca é reidratado do storage
+      runtime: createEmptyRuntimeState(),
       onboarding: {
         ...baseState.onboarding,
         ...parsed.onboarding,
@@ -289,113 +243,15 @@ function onboardingLookupStatus(
   return "idle";
 }
 
-function presetActivationValue(value: unknown): PresetActivation | null {
-  if (!value) {
-    return null;
-  }
 
-  const result = presetActivationSchema.safeParse(value);
-  return result.success ? result.data : null;
-}
 
-function balanceSnapshotValue(value: unknown): BalanceSnapshot | null {
-  if (!value) {
-    return null;
-  }
 
-  const result = balanceSnapshotSchema.safeParse(value);
-  return result.success ? result.data : null;
-}
 
-function botStatusValue(value: unknown): BotStatus {
-  const result = botStatusSchema.safeParse(value);
-  return result.success ? result.data : "inactive";
-}
 
-function syncStatusValue(value: unknown): SyncStatus {
-  const result = syncStatusSchema.safeParse(value);
-  return result.success ? result.data : "idle";
-}
 
-function openTradesValue(value: unknown): OpenTrade[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
 
-  return value.flatMap((item) => {
-    const result = openTradeSchema.safeParse(item);
-    return result.success ? [result.data] : [];
-  });
-}
 
-function closedTradesValue(value: unknown): ClosedTrade[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
 
-  return value.flatMap((item) => {
-    const result = closedTradeSchema.safeParse(item);
-    return result.success ? [result.data] : [];
-  });
-}
-
-function operationalAlertsValue(value: unknown): OperationalAlert[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((item) => {
-    const result = operationalAlertSchema.safeParse(item);
-    return result.success ? [result.data] : [];
-  });
-}
-
-function operationalEventsValue(value: unknown): OperationalEvent[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((item) => {
-    const result = operationalEventSchema.safeParse(item);
-    return result.success ? [result.data] : [];
-  });
-}
-
-function runtimeToastValue(value: unknown): RuntimeToast | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const candidate = value as Partial<RuntimeToast>;
-
-  if (
-    typeof candidate.id !== "number" ||
-    (candidate.tone !== "info" &&
-      candidate.tone !== "success" &&
-      candidate.tone !== "danger") ||
-    typeof candidate.message !== "string" ||
-    candidate.message.trim().length === 0
-  ) {
-    return null;
-  }
-
-  return {
-    id: candidate.id,
-    tone: candidate.tone,
-    message: candidate.message,
-  };
-}
-
-function symbolOperationalConfigsValue(value: unknown): SymbolOperationalConfig[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((item) => {
-    const result = symbolOperationalConfigSchema.safeParse(item);
-    return result.success ? [result.data] : [];
-  });
-}
 
 export function deriveCanAccessProduct(state: AppSessionState) {
   return (
@@ -600,23 +456,6 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     [],
   );
 
-  const setPresetState = useCallback((nextPresets: Partial<AppSessionState["presets"]>) => {
-    setState((currentState) => {
-      const presets = {
-        ...currentState.presets,
-        ...nextPresets,
-      };
-
-      if (areObjectsShallowEqual(currentState.presets, presets)) {
-        return currentState;
-      }
-
-      return {
-        ...currentState,
-        presets,
-      };
-    });
-  }, []);
 
   const setRuntimeState = useCallback((nextRuntime: Partial<RuntimeState>) => {
     setState((currentState) => {
@@ -675,7 +514,6 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setBuilderApprovalState,
       setCredentialState,
       setOperationalState,
-      setPresetState,
       setRuntimeState,
       setOnboardingState,
       resetOnboardingState,
@@ -686,7 +524,6 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setCredentialState,
       setOperationalState,
       setOnboardingState,
-      setPresetState,
       setRuntimeState,
       setWalletSession,
       state,

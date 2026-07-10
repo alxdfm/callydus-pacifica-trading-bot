@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import logoUrl from "../../shared/assets/logo.svg";
 import { useAuth } from "../../features/auth/AuthContext";
 import { registerUnauthorizedNavigator, registerResetAppState } from "../../features/auth/unauthorized-redirect";
+import { useSession } from "../../v2/session";
 import { useAppState } from "../../state/app-state";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { getNavigationItems } from "./navigation";
@@ -52,11 +53,9 @@ export function AppLayout() {
     (canAccessProduct ||
       (state.wallet.sessionStatus === "connected" &&
         state.onboarding.accountLookupStatus === "existing_account"));
-  const hasActiveStrategy = Boolean(state.presets.activePreset);
-  const isStrategyRunning =
-    hasActiveStrategy &&
-    (state.runtime.botStatus === "active" ||
-      state.runtime.botStatus === "syncing");
+  const { session } = useSession();
+  const hasActiveStrategy = Boolean(session?.strategy);
+  const isStrategyRunning = session?.strategy?.status === "active";
   const strategyIndicatorVariant = isStrategyRunning
     ? "running"
     : hasActiveStrategy

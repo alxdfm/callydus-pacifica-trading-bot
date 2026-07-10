@@ -1,49 +1,15 @@
-import type {
-  BalanceSnapshot,
-  BotStatus,
-  ClosedTrade,
-  ExchangeSnapshotStatus,
-  OperationalEvent,
-  OperationalAlert,
-  OpenTrade,
-  SymbolOperationalConfig,
-  SyncStatus,
-} from "../../types/contracts";
-
 export type RuntimeToast = {
   id: number;
   tone: "info" | "success" | "danger";
   message: string;
 };
 
+// Pós-migração v2 o runtime global é só o toast — dados de servidor vivem no
+// SessionProvider (v2/session.tsx) e nos estados locais das páginas
 export type RuntimeState = {
-  balance: BalanceSnapshot | null;
-  botStatus: BotStatus;
-  syncStatus: SyncStatus;
-  exchangeSnapshotStatus: ExchangeSnapshotStatus;
-  exchangeLastSyncedAt: string | null;
-  exchangeSnapshotMessage: string | null;
-  symbolOperationalConfigs: SymbolOperationalConfig[];
-  currentTrades: OpenTrade[];
-  closedTrades: ClosedTrade[];
-  alerts: OperationalAlert[];
-  events: OperationalEvent[];
   actionToast: RuntimeToast | null;
 };
 
 export function createEmptyRuntimeState(): RuntimeState {
-  return {
-    balance: null,
-    botStatus: "inactive",
-    syncStatus: "idle",
-    exchangeSnapshotStatus: "last_known",
-    exchangeLastSyncedAt: null,
-    exchangeSnapshotMessage: null,
-    symbolOperationalConfigs: [],
-    currentTrades: [],
-    closedTrades: [],
-    alerts: [],
-    events: [],
-    actionToast: null,
-  };
+  return { actionToast: null };
 }

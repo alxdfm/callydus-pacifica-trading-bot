@@ -12,7 +12,7 @@ describe("app-state pure logic", () => {
     const state = createInitialAppSessionState();
 
     expect(state.onboarding.status).toBe("wallet_pending");
-    expect(state.runtime.botStatus).toBe("inactive");
+    expect(state.runtime.actionToast).toBeNull();
   });
 
   it("normaliza estados inválidos vindos do storage", () => {
