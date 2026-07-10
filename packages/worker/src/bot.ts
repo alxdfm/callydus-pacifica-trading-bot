@@ -459,27 +459,31 @@ export function createBot(input: BotInput): {
     stopLossPrice: number | null;
     takeProfitPrice: number | null;
   }): "stop_loss" | "take_profit" | "system" {
-    const withinTolerance = (level: number) =>
-      Math.abs(input.fillPrice - level) / level <= 0.005;
+    const { fillPrice, stopLossPrice, takeProfitPrice } = input;
+
+    // Tolerância relativa ao GAP entre os níveis: com stops apertados uma
+    // tolerância fixa sobre o preço engloba o range inteiro e reclassifica
+    // fechamentos manuais/system como SL/TP
+    const levelGap =
+      stopLossPrice !== null && takeProfitPrice !== null
+        ? Math.abs(takeProfitPrice - stopLossPrice)
+        : null;
+    const tolerance = levelGap !== null ? levelGap * 0.25 : fillPrice * 0.001;
 
     const slDistance =
-      input.stopLossPrice !== null
-        ? Math.abs(input.fillPrice - input.stopLossPrice)
+      stopLossPrice !== null
+        ? Math.abs(fillPrice - stopLossPrice)
         : Number.POSITIVE_INFINITY;
     const tpDistance =
-      input.takeProfitPrice !== null
-        ? Math.abs(input.fillPrice - input.takeProfitPrice)
+      takeProfitPrice !== null
+        ? Math.abs(fillPrice - takeProfitPrice)
         : Number.POSITIVE_INFINITY;
 
-    if (
-      input.stopLossPrice !== null &&
-      slDistance <= tpDistance &&
-      withinTolerance(input.stopLossPrice)
-    ) {
+    if (slDistance <= tpDistance && slDistance <= tolerance) {
       return "stop_loss";
     }
 
-    if (input.takeProfitPrice !== null && withinTolerance(input.takeProfitPrice)) {
+    if (tpDistance < slDistance && tpDistance <= tolerance) {
       return "take_profit";
     }
 
