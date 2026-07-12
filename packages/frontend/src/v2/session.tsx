@@ -37,32 +37,46 @@ export function SessionProvider({ children }: PropsWithChildren) {
   // Apenas a resposta do request mais recente é aplicada (reloads concorrentes
   // e trocas de token não podem sobrescrever com dado antigo)
   const requestSeqRef = useRef(0);
+  // Token que produziu a sessão em memória — dado de uma wallet nunca pode
+  // ficar na tela enquanto outra carrega
+  const sessionTokenRef = useRef<string | null>(null);
 
   const reload = useCallback(async () => {
     const seq = requestSeqRef.current + 1;
     requestSeqRef.current = seq;
 
     if (!token) {
+      sessionTokenRef.current = null;
       setSession(null);
       setStatus("idle");
       setErrorMessage(null);
       return;
     }
 
-    // Refresh em background (pós-comando) não regride para "loading": as
-    // páginas fazem early-return de skeleton nesse status e a tela inteira
-    // piscaria a cada pause/resume/save
-    setStatus((current) => (current === "ready" ? "ready" : "loading"));
+    if (sessionTokenRef.current === token) {
+      // Refresh em background (pós-comando) do MESMO token não regride para
+      // "loading": as páginas fazem early-return de skeleton nesse status e a
+      // tela inteira piscaria a cada pause/resume/save
+      setStatus((current) => (current === "ready" ? "ready" : "loading"));
+    } else {
+      // Token novo (login ou troca de wallet): a sessão anterior é de outra
+      // conta e some da tela imediatamente
+      setSession(null);
+      setStatus("loading");
+      setErrorMessage(null);
+    }
 
     const response = await getSession(token);
 
     if (requestSeqRef.current !== seq) return;
 
     if (response.status === "ok") {
+      sessionTokenRef.current = token;
       setSession(response);
       setStatus("ready");
       setErrorMessage(null);
     } else {
+      sessionTokenRef.current = null;
       setSession(null);
       setStatus("error");
       setErrorMessage(response.message);
