@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAgentWalletReplacementFlow } from "../../features/profile/use-agent-wallet-replacement-flow";
 import { useSolanaWalletPort } from "../../features/wallet/solana/SolanaWalletEnvironment";
 import { useI18n } from "../../shared/i18n/I18nProvider";
-import { useAppState } from "../../state/app-state";
+import { APP_STATE_STORAGE_KEY, useAppState } from "../../state/app-state";
 import { useSession } from "../../v2/session";
 import { ConfirmationModal } from "../components/ConfirmationModal";
 
@@ -114,7 +114,7 @@ export function ProfilePage() {
 
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem("pacifica.dashboard-flash");
-      window.localStorage.removeItem("pacifica.app-state");
+      window.localStorage.removeItem(APP_STATE_STORAGE_KEY);
       window.localStorage.removeItem("walletName");
     }
 

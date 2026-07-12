@@ -95,7 +95,8 @@ type AppStateContextValue = {
 
 // v2: bump da chave descarta storages antigos que continham campos removidos
 // (locale, presets.selected*/draft*/activation*, runtime.screenStatus, privkey)
-const storageKey = "pacifica.app-state.v2";
+export const APP_STATE_STORAGE_KEY = "pacifica.app-state.v2";
+const storageKey = APP_STATE_STORAGE_KEY;
 const AppStateContext = createContext<AppStateContextValue | null>(null);
 
 export function createInitialAppSessionState(): AppSessionState {
