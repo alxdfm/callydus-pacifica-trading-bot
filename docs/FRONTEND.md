@@ -29,11 +29,11 @@ Identidade visual e blueprints das telas: ver [DESIGN.md](DESIGN.md) ("terminal 
 | `TradesPage` | Abas Open/Closed, filtros por símbolo/período, totais, fechamento manual com confirmação |
 | `ProfilePage` | Troca de agent wallet com re-validação, status do builder code, logout |
 
-## Infra compartilhada
+## Infra compartilhada (pós-rewrite v2, 2026-07-10)
 
-- `features/account/use-dashboard-session.ts` — hook da sessão do snapshot operacional (trades + saúde + YOUR strategy); `requestKey` compartilhado deduplica fetches entre Dashboard, Trades e Strategies
+- `v2/session.tsx` — `SessionProvider` único (snapshot de `GET /api/v2/session`, só em memória); `v2/client.ts` — fetchers tipados que parseiam com os schemas de `@pacifica/shared/contracts`; `v2/draft-validation.ts` — validação semântica do draft (regras vs indicadores). Ver `docs/modules/frontend-v2.md`
 - `shared/format.ts` — formatadores (`formatUsd`, `formatSignedUsd`, `formatPrice`, `formatQty`, `formatWhen`); nunca renderizar número cru
-- `types/contracts.ts` — schemas zod dos contratos com a API, incluindo validação contextual de regras (price/rsi/adx/volume/atr)
+- `types/contracts.ts` — apenas vocabulário de onboarding/auth/wallet (v1 remanescente); o contrato de dados vive em `@pacifica/shared/contracts`
 
 ## Auth
 

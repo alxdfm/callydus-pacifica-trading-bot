@@ -26,47 +26,53 @@ interface Candle {
 type Signal = "none" | "long" | "short"
 ```
 
-## StrategyConfig
+## StrategyDraft (wire + persistido) vs contrato materializado
 
-Configuração completa de uma estratégia. Persistida como JSONB na tabela `strategies.config`.
+Desde o contrato v2 (2026-07-10), o que trafega no wire e é persistido como
+JSONB em `strategies.config` é o **draft** — fonte única em
+`@pacifica/shared/contracts` (`strategyDraftSchema`):
 
 ```typescript
-interface StrategyConfig {
-  name:      string
-  version:   number
-  timeframe: string    // ex: "1h"
-  symbol:    string    // ex: "BTC/USDC"
+interface StrategyDraft {
+  name:      string              // 1–80 chars
+  symbol:    "BTC/USDC" | "ETH/USDC" | "SOL/USDC"
+  timeframe: "3m" | "5m" | "15m"
 
   indicators: Record<string, IndicatorConfig>
 
   entry: {
     long:  { enabled: boolean; trigger: TriggerGroup }
     short: { enabled: boolean; trigger: TriggerGroup }
-  }
+  }                              // refine: pelo menos um lado enabled
 
   risk: {
     stopLoss:   StopLossConfig
-    takeProfit: TakeProfitConfig
+    takeProfit: TakeProfitConfig | null
   }
 
-  execution: {
-    positionSize:                  { type: "fixedPercent"; value: number }
-    onePositionPerSymbol:          boolean
-    manualCloseAllowed:            boolean
-    closeOppositePositionOnSignal: boolean
-  }
+  positionSizeType:  "fixed_amount" | "balance_percent"
+  positionSizeValue: number      // > 0
 }
 ```
+
+O shape com `version` + bloco `execution` (`positionSize.type: "fixedPercent"`,
+`onePositionPerSymbol`, `manualCloseAllowed`, `closeOppositePositionOnSignal`)
+é o **contrato técnico materializado**, derivado do draft em runtime por
+`materializeYourStrategyTechnicalContract` — portado byte a byte em
+`api/src/engine/evaluator.ts` E `worker/src/engine/evaluator.ts` (paridade
+obrigatória, ver `docs/modules/worker.md`). Ele nunca é persistido nem trafega.
 
 ### IndicatorConfig
 
 ```typescript
 type IndicatorConfig =
-  | { type: "ema";    period: number; source?: string }
-  | { type: "rsi";    period: number }
-  | { type: "atr";    period: number }
+  | { type: "ema";      period: number; source?: string }
+  | { type: "rsi";      period: number }
+  | { type: "atr";      period: number }
   | { type: "volume" }
-  | { type: "sma";    source: string; period: number }
+  | { type: "sma";      source: string; period: number }
+  | { type: "donchian"; period: number; band: "upper" | "lower" | "middle" }
+  | { type: "adx";      period: number }
 ```
 
 ### TriggerGroup e TriggerRule
@@ -107,7 +113,7 @@ type TakeProfitConfig =
 
 ```typescript
 type TradeSide   = "long" | "short"
-type TradeStatus = "open" | "close_requested" | "closing" | "sync_error"
+type TradeStatus = "open" | "close_requested" | "closing" | "closed"
 type CloseReason = "take_profit" | "stop_loss" | "manual" | "system" | "error"
 ```
 

@@ -66,9 +66,9 @@ createWsFeed({
 })
 ```
 
-**Warm-up:** `GET /api/v1/klines?symbol={}&interval={}&limit=300` para cada par (symbol, interval).
+**Warm-up:** `GET /api/v1/kline?symbol={}&interval={}&start_time={}&end_time={}` para cada par (symbol, interval) — endpoint no singular, janelas em ms.
 
-**Candle fechado:** quando a mensagem WS tem `k.isClosed` (ou `k.x`) === true → `buffer.push()`.
+**Candle fechado:** o WS da Pacifica NÃO tem flag `isClosed` — o fechamento é detectado por rollover de `openTime` (`pendingByKey`: quando chega candle com `t` maior, o anterior é considerado fechado e vai pro `buffer.push()`). Ver `docs/modules/worker.md`.
 
 **Reconexão:** backoff exponencial: `min(1000 * 2^attempt, 60000)` ms.
 
@@ -84,7 +84,7 @@ createDbWatcher({
 })
 ```
 
-Compara IDs com a lista anterior. Se mudou → chama `onStrategiesChanged()`.
+Compara a assinatura `id:updatedAt` da lista com a anterior — edições de config em strategy ativa também disparam `onStrategiesChanged()` (hot-reload), não só ativar/pausar.
 
 **DT-001:** substituir por LISTEN/NOTIFY do PostgreSQL.
 
