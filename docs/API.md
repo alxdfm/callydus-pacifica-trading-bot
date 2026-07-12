@@ -1,6 +1,6 @@
 # API (`@pacifica/api`)
 
-Framework: **Hono v4**. Local port: **3003**. Lambda-ready via SST v3 (1024 MB / 29s).
+Framework: **Hono v4**. Local port: **3003**. Lambda-ready via SST v4 (1024 MB / 29s).
 
 Surface since the contract-v2 rewrite (2026-07-10): **auth + onboarding + v2**.
 The v1 routes (`/api/account/*`, `/api/runtime/*`, `/api/strategies/*`,

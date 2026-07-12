@@ -1,150 +1,161 @@
-# Action Flows — Current State (pre-rewrite reference)
+# Action Flows — Current State
 
-Mapped 2026-07-09 against the live codebase. This is the authoritative reference for the
-contract-v2 rewrite (tasks #2–#8): every user-facing action, its full path through the stack,
-and the dead surface scheduled for removal.
+Every user-facing action and its full path through the stack. Rewritten
+2026-07-12 against the post-contract-v2 codebase (the pre-rewrite version of
+this file described the v1 surface, which no longer exists — the dead surface
+inventory is kept in §7 as a historical record).
 
 Legend: **UI** trigger → **FE** frontend function → **API** endpoint/handler → **DB/side effects** → **state** writes.
+
+Data layer in one line: `SessionProvider` (`src/v2/session.tsx`) holds the single
+server snapshot from `GET /api/v2/session`; every mutation goes through the typed
+client (`src/v2/client.ts`) and ends with `reload()`. See
+`docs/modules/frontend-v2.md` and `docs/modules/api-v2.md`.
 
 ---
 
 ## 1. Session & auth
 
 ### 1.1 Connect wallet + SIWS sign-in
-- **UI**: wallet adapter modal (provider picked in `OnboardingPage`, default phantom)
-- **FE**: `SolanaWalletStateBridge` reacts to adapter `connected` → sets `wallet.sessionStatus`;
-  `authenticate()` in `features/auth/AuthContext.tsx:65`
-- **API**: `GET /api/auth/nonce?wallet=` (`auth.ts:46`, nonce TTL 5 min) → wallet signs message →
-  `POST /api/auth/verify` (`auth.ts:76`, ed25519 check → JWT)
-- **Side effects**: JWT persisted in localStorage `callydus.auth` (`AuthContext.tsx:26`), discarded when expired
-- **State**: `useAuth().token/walletAddress/expiresAt`
+- **UI**: wallet-standard modal (`SolanaWalletEnvironment`); the click only
+  `select()`s the adapter — `WalletProvider` performs the connect (see
+  `docs/modules/wallet-solana.md`, rule 1)
+- **FE**: `SolanaWalletStateBridge` reacts to `connected` → `authenticate()`
+  (`features/auth/AuthContext.tsx:72`), once per wallet per mount
+- **API**: `GET /api/auth/nonce?wallet=` (TTL 5 min) → wallet signs →
+  `POST /api/auth/verify` (ed25519 → session token, TTL 24h)
+- **Side effects**: token persisted in localStorage `callydus.auth`
+- **State**: `useAuth().token/walletAddress/expiresAt`; the new token makes
+  `SessionProvider` drop any previous session and load a fresh one
 
 ### 1.2 Account discovery (on connect)
-- **FE**: bridge effect → `lookupOperationalAccountViaBackend` (`SolanaWalletStateBridge.tsx:299`)
+- **FE**: bridge effect → `lookupOperationalAccountViaBackend`
 - **API**: `POST /api/onboarding/account/lookup`
-- **State**: found → seeds `builderApproval=approved`, `credentials=valid`, `operational=verified`,
-  `onboarding=ready` (`bridge:306-355`); not found → user stays in onboarding
+- **State**: found → seeds `builderApproval=approved`, `credentials=valid`,
+  `operational=verified`, `onboarding=ready`, and redirects `/onboarding` → `/dashboard`;
+  not found → the user stays in onboarding
 
 ### 1.3 Session hydration (existing account + token)
-- **FE**: bridge effect (`SolanaWalletStateBridge.tsx:391-449`), guarded by refs against re-entry
-- **API**: `POST /api/account/session` (`account.ts`) — since 2026-07-08 returns real `activePreset`
-  (derived from strategy row) instead of hardcoded null
-- **State**: `applyAccountSessionSnapshot` seeds every slice: credentials, operational, presets
-  (`activePreset`), runtime (botStatus, trades, balance…), onboarding
+- **FE**: bridge effect (guarded by per-wallet hydrated/in-flight refs) →
+  `getSession(token)`
+- **API**: `GET /api/v2/session` → `{walletAddress, access, credential, strategy, balanceUsd}`
+- **State**: seeds the onboarding slices from `credential` + `access==="ready"`;
+  the same endpoint feeds `SessionProvider`, which is what the pages read
 
 ### 1.4 Logout
-- **UI**: Profile → logout button → `ConfirmationModal`
-- **FE**: `ProfilePage.handleLogout` (`:154`) → `resetOnboardingState()` (global state → initial) →
-  `disconnectWallet()` → bridge detects disconnect → `clearAuth()` (`bridge:58-60`) + slice resets
-- **Side effects**: `callydus.auth` removed; `pacifica.app-state.v2` rewritten with initial state
+- **UI**: Profile → logout → `ConfirmationModal`
+- **FE**: `ProfilePage.handleLogout` (`:111`) → `resetOnboardingState()` →
+  `disconnectWallet()` → bridge detects disconnect → `clearAuth()`
+- **Side effects**: `callydus.auth`, `pacifica.app-state.v2` and `walletName`
+  removed; token cleared → `SessionProvider` returns to `idle` with no session
 
 ---
 
 ## 2. Onboarding (3 steps, `OnboardingPage` stepper)
 
+Untouched by the v2 rewrite — still on the v1 app-state slices (intentional).
+
 ### 2.1 Validate agent wallet credential
-- **UI**: step form — public key + private key (private key is component-local state since 2026-07-09) + alias
-- **FE**: `handleValidateCredentials` (`OnboardingPage.tsx:751`) → `validateAgentWalletViaBackend`
-- **API**: `POST /api/onboarding/credentials/validate` — derives pubkey from privkey (ed25519),
-  mismatch check, AES-256-GCM encrypt (`crypto/credential-encryption.ts`, key derived per keyId),
-  `upsertAccount` + `upsertCredential` (previous active credential → `replaced`)
+- **UI**: step form — public key + private key (component-local state, never global) + alias
+- **FE**: `handleValidateCredentials` (`OnboardingPage.tsx:759`)
+- **API**: `POST /api/onboarding/credentials/validate` — derives the pubkey from
+  the privkey (ed25519), mismatch check, AES-256-GCM encrypt, `upsertAccount` +
+  `upsertCredential` (previous active credential → `replaced`)
 - **DB**: `accounts`, `credentials`
-- **State**: `credentials.validationStatus=valid`, `credentialId`, `keyFingerprint`
+- **State**: `credentials.validationStatus=valid`
 
 ### 2.2 Builder approval
-- **FE**: onboarding step → signed payload (timestamp + expiryWindow, replay protection)
-- **API**: `POST /api/onboarding/builder/approve` (`onboarding.ts:511`)
+- **FE**: signed payload (timestamp + expiry window, replay protection)
+- **API**: `POST /api/onboarding/builder/approve`
 - **DB**: `builder_approvals`
 - **State**: `builderApproval.approvalStatus=approved`
 
 ### 2.3 Operational verification (probe order)
-- **FE**: `handleRunOperationalCheck` (`OnboardingPage.tsx:824`)
-- **API**: `POST /api/onboarding/credentials/verify-operational` — decrypts credential
-  (`onboarding.ts:377`; failure = key mismatch as in the 2026-07-08 incident; the catch logs
-  credentialId + error message since 2026-07-09, never key material), builds
-  `PacificaClient`, places+cancels probe order (env `PACIFICA_OPERATIONAL_PROBE_*`)
-- **DB**: `credentials.operationallyVerified=true`
-- **State**: `operational.status=verified`, `onboarding.status=ready` → `canAccessProduct=true`
+- **FE**: `handleRunOperationalCheck` (`OnboardingPage.tsx:832`)
+- **API**: `POST /api/onboarding/credentials/verify-operational` — decrypts the
+  credential (failure = key mismatch, as in the 2026-07-08 incident; the catch
+  logs credentialId + message, never key material), builds a `PacificaClient`,
+  places and cancels a probe order
+- **DB**: `credentials.operationallyVerified=true` → drives `access="ready"` in §1.3
+- **State**: `operational.status=verified`, `onboarding.status=ready`
 
 ---
 
 ## 3. Strategy lifecycle
 
-### 3.1 Save draft
-- **UI**: Builder → Save (also implicit before Backtest and Activate)
-- **FE**: `handleSave` (`StrategyBuilderPage.tsx:352`) → `saveYourStrategyViaBackend`
-- **API**: `POST /api/strategies/your/save` (`strategies.ts:81`) — update existing non-stopped
-  strategy or insert new one with `status: "paused"` (since 2026-07-08; saving never starts the bot)
-- **DB**: `strategies.config` (draft JSON), `symbol`
-- **State**: builder `record/draft/savedFingerprint` (local)
+One strategy per user (`getActiveStrategyByUserId`); `strategy.status` is the
+only bot-state truth.
 
-### 3.2 Backtest preview
-- **FE**: `handleBacktest` (`StrategyBuilderPage.tsx:374`) — saves first, then
-  `previewYourStrategyBacktestViaBackend`
-- **API**: `POST /api/strategies/your/backtest-preview` (`strategies.ts:180`) — materializes
-  technical contract, fetches Pacifica candles, `simulatePresetBacktest`
-- **State**: local `preview` + fingerprint (drives the "stale" tag when config drifts)
-- **Known gap**: leverage falls back to 1 and capital to $1000 because `marketInfo`,
-  `symbolOperationalConfigs` and `balance` are stub `[]`/null in `/api/account/presets` —
-  must be fixed in contract v2 (see task #2)
+### 3.1 Save draft
+- **UI**: Builder → Save (also implicit before Backtest/Activate when the draft is dirty)
+- **FE**: `handleSave` (`StrategyBuilderPage.tsx:321`) → `saveStrategy(token, draft)`
+- **API**: `POST /api/v2/strategy` — upsert; **409 `strategy_running`** if the
+  strategy is active (config never changes under a running bot)
+- **DB**: `strategies.config` (draft JSON) + `symbol`, `status="paused"` on insert
+- **State**: local `record/draft/savedFingerprint` — the fingerprint comes from
+  the SERVER echo (jsonb reorders keys) — then `reloadSession()`
+
+### 3.2 Backtest
+- **FE**: `handleBacktest` (`:346`) — saves first only when the draft is dirty,
+  so an active strategy can still be backtested
+- **API**: `POST /api/v2/strategy/backtest` — materializes the technical contract,
+  fetches Pacifica candles in parallel chunks, `simulatePresetBacktest`
+- **Parity with live execution**: leverage 1 and the real `balanceUsd` as initial
+  capital (falls back to $1000 when the balance is ≤ 0 — a position consumes it)
+- **State**: local `preview` + `previewFingerprint` (drives the "stale" tag)
 
 ### 3.3 Activate
-- **UI**: Builder header or Strategies list card
-- **FE**: `handleActivate` (`StrategyBuilderPage.tsx:408` / `StrategiesListPage.tsx:41`) — save → activate
-- **API**: `POST /api/strategies/your/activate` (`strategies.ts:132`) → `strategies.status=active`;
-  response built by `mapStrategyToPresetActivation` (editableConfig derived from the real draft)
-- **Worker**: DbWatcher polls `strategies where status='active'` (`worker/db/queries.ts:24`) →
-  engine starts evaluating signals → orders (always with SL/TP + builderCode)
-- **State**: `presets.activePreset`, `runtime.botStatus=active`, toast
+- **UI**: Builder header or Strategies card
+- **FE**: `handleActivate` (`StrategyBuilderPage.tsx:384` / `StrategiesListPage.tsx:40`)
+- **API**: `POST /api/v2/strategy/activate` → `status="active"`; refuses with
+  `strategy_not_executable` when `activationBlockers` is non-empty
+- **Worker**: DbWatcher (30s poll, signature `id:updatedAt`) picks it up → the
+  engine evaluates once per closed candle → orders (always SL/TP + builderCode)
+- **State**: toast + `reloadSession()`
 
 ### 3.4 Pause — 4 entry points
-- Dashboard toggle (`DashboardPage.tsx:83`), Strategies card (`StrategiesListPage.tsx:64`),
-  Builder lock banner (`StrategyBuilderPage.tsx:437`), Profile replacement flow
-  (`use-agent-wallet-replacement-flow.ts:167`)
-- **API**: `POST /api/runtime/pause` (`runtime.ts:18`) → `strategies.status=paused`
-- **Worker**: strategy drops out of the active poll → no new entries (open trades keep being managed)
-- **State**: `runtime.botStatus=paused` (patch or session reload)
-- Pause visibility follows `runtime.botStatus` (not `activePreset`) since 2026-07-08
+- Dashboard toggle (`DashboardPage.tsx:96`), Strategies card
+  (`StrategiesListPage.tsx:54`), Builder lock banner (`:409`), Profile
+  replacement flow (`use-agent-wallet-replacement-flow.ts:157`)
+- **API**: `POST /api/v2/strategy/pause` → `status="paused"`
+- **Worker**: the strategy drops out of the active poll → no new entries (open
+  trades keep being managed)
+- **State**: `session.strategy.status` after `reloadSession()`
 
 ### 3.5 Resume
-- **UI**: Dashboard toggle only
-- **API**: `POST /api/runtime/resume` → `strategies.status=active`
+- **UI**: Dashboard toggle — resume IS activate (`POST /api/v2/strategy/activate`);
+  there is no separate resume endpoint
 
 ---
 
 ## 4. Trades
 
 ### 4.1 Close trade (two-click confirm)
-- **UI**: Trades page → Close → same button confirms (`confirmingId` arm/disarm)
-- **FE**: `handleClose` (`TradesPage.tsx:152`) → `closeTradeViaBackend`
-- **API**: `POST /api/trades/:id/close` (`trades.ts:10`) — ownership check, then
-  `trades.status=close_requested` (no exchange call from the API)
-- **Worker**: reconcile submits a reduce-only market order for `close_requested` trades
-  (signed with the strategy owner's credential), marks the trade `closing`, and the next
-  tick detects the vanished position and finalizes it as `closed` with `closeReason=manual`
-  (implemented 2026-07-10 — before that the button only flipped the DB status)
-- **State**: `session.reload()` refreshes trades
+- **UI**: Trades page → Close → same button confirms (`confirmingId` arm/disarm, 4s)
+- **FE**: `handleClose` (`TradesPage.tsx:166`) → `closeTrade(token, id)`
+- **API**: `POST /api/v2/trades/:id/close` — ownership check, refuses when the
+  status is not `open`, then `status="close_requested"` (the API never calls the exchange)
+- **Worker**: reconcile submits a reduce-only market order signed with the owner's
+  credential (`bot.ts:521`), marks the trade `closing`; the next tick detects the
+  vanished position and finalizes it as `closed` with `closeReason="manual"`,
+  taking the exit price from the real fill (`/api/v1/positions/history`)
+- **State**: local reload of `getTrades`
 
 ---
 
 ## 5. Profile
 
 ### 5.1 Replace agent wallet
-- **FE**: `use-agent-wallet-replacement-flow.ts` — modal flow entirely on local state
-  (draft keys never touch global state)
-- Steps: pause bot (`/api/runtime/pause`) → validate new credential
-  (`/api/onboarding/credentials/validate`, old credential → `replaced`) → operational check
-  (`/api/onboarding/credentials/verify-operational`) → profile snapshot reapplied
+- **FE**: `use-agent-wallet-replacement-flow.ts` — the whole modal runs on local
+  state (draft keys never touch global state)
+- Steps: pause bot (`POST /api/v2/strategy/pause`) → validate the new credential
+  (`POST /api/onboarding/credentials/validate`, old credential → `replaced`) →
+  operational check (`POST /api/onboarding/credentials/verify-operational`) →
+  `reloadSession()`
 
 ---
 
-## 6. Page data loading (read-only snapshots)
-
-**Rewritten 2026-07-10 (contract v2)**: the per-page snapshot layer was deleted.
-All pages hydrate from the single `SessionProvider` (`src/v2/session.tsx`) plus
-page-local fetches via the typed client (`src/v2/client.ts`). Contract lives in
-`@pacifica/shared/contracts`; every API response is schema-validated server-side
-before sending.
+## 6. Page data loading
 
 | Data | Source |
 |---|---|
@@ -156,42 +167,39 @@ before sending.
 | close trade | `POST /api/v2/trades/:id/close` |
 | (sign-in, bridge) | `POST /api/onboarding/account/lookup` + `GET /api/v2/session` |
 
-API surface is now `auth + onboarding + v2` only — the v1 routes
-(`/api/account/*`, `/api/runtime/*`, `/api/strategies/*`, `/api/trades/*`)
-were removed. Frontend `contracts.ts` shrank to onboarding/auth/wallet
-vocabulary (1443 → 305 lines); global app-state keeps only onboarding slices
-and the toast.
+The API surface is `auth + onboarding + v2` only. Frontend `contracts.ts` keeps
+just the onboarding/auth/wallet vocabulary (1443 → 305 lines); global app-state
+keeps only the onboarding slices and the toast. Server data is never persisted.
 
 ---
 
-## 7. Dead surface inventory (2026-07-09 scan — REMOVED same day)
+## 7. Dead surface inventory (2026-07-09 scan — REMOVED)
 
-Everything below was deleted on 2026-07-09 (except `contracts.ts` schemas and legacy CSS,
-which die with tasks #8/light-theme). Kept here as the record of what existed and why it was dead.
+Historical record of what existed and why it was dead. Everything below was
+deleted on 2026-07-09 (frontend modules, unused API routes) and 2026-07-10
+(the whole v1 contract layer: `/api/account/*`, `/api/runtime/*`,
+`/api/strategies/*`, `/api/trades/*` + their consumers).
 
 ### Frontend — zero production consumers
 | Item | Notes |
 |---|---|
 | `ui/components/PaginationControls.tsx` | whole component |
-| `readOperationalTradesViaBackend` + `applyOperationalTradesSessionSnapshot` | Trades page uses the dashboard snapshot |
+| `readOperationalTradesViaBackend` + `applyOperationalTradesSessionSnapshot` | Trades page used the dashboard snapshot |
 | `readOperationalHistoryViaBackend` + `applyOperationalHistorySessionSnapshot` | History page deleted in redesign phase 5 |
-| `features/onboarding/agent-wallet-validation.ts` (whole module) + its test | superseded by backend validation |
-| `features/runtime/runtime-sync-presentation.ts` (whole module) + its test | no consumers |
-| `features/runtime/bot-status-presentation.ts` (whole module) + its test | no consumers |
-| ~475 of ~900 i18n keys in `shared/i18n/messages.ts` | wizard/history/operations leftovers (list: scan of 2026-07-09; no dynamic `t()` keys exist) |
-| CSS `shell-skeleton`/`sk-*` classes | markup removed 2026-07-09; broader CSS audit pending (light-theme purge) |
-| `types/contracts.ts` unused schemas | not audited individually — whole file dies in task #8 |
+| `features/onboarding/agent-wallet-validation.ts` + test | superseded by backend validation |
+| `features/runtime/runtime-sync-presentation.ts` + test | no consumers |
+| `features/runtime/bot-status-presentation.ts` + test | no consumers |
+| ~475 of ~900 i18n keys | wizard/history/operations leftovers |
+| CSS `shell-skeleton`/`sk-*` classes | markup removed; broader CSS audit pending (light-theme purge) |
 
-### API — routes with no caller (frontend is the only client; worker never calls the API)
+### API — routes with no caller (the worker never calls the API)
 | Route | Notes |
 |---|---|
-| `POST /api/auth/nonce` | only `GET /nonce` is used |
+| `POST /api/auth/nonce` | only `GET /nonce` was used |
 | `POST /api/auth/credentials` | pre-refactor duplicate of onboarding validate |
-| `POST /api/auth/verify-operational` | pre-refactor duplicate of onboarding verify (contains credential decrypt) |
-| `POST /api/backtest/preview` | superseded by `/api/strategies/your/backtest-preview` |
+| `POST /api/auth/verify-operational` | pre-refactor duplicate of onboarding verify (contained credential decrypt) |
+| `POST /api/backtest/preview` | superseded |
 | `POST /api/builder/approve` | superseded by `/api/onboarding/builder/approve` |
-| `GET /api/events` | no caller |
-| `GET /api/positions` | no caller — contains credential decrypt; unnecessary attack surface |
-| `GET /api/strategies`, `POST /api/strategies/:id/activate`, `:id/pause`, `:id/resume`, `PUT /api/strategies/:id` | `/your/*` variants are the live ones |
-| `GET /api/trades` | no caller |
-| `POST /api/account/trades`, `POST /api/account/history` | their pages/appliers are dead |
+| `GET /api/events`, `GET /api/positions` | no caller — positions contained credential decrypt (attack surface) |
+| `GET /api/strategies`, `POST /api/strategies/:id/{activate,pause,resume}`, `PUT /api/strategies/:id` | the `/your/*` variants were the live ones (also dead now) |
+| `GET /api/trades`, `POST /api/account/{trades,history}` | their pages/appliers were dead |

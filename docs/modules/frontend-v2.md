@@ -25,10 +25,14 @@ Typed client + single session snapshot. Pages own their page-local data
 
 ## Decisões Técnicas
 
-- `SessionProvider.reload()` keeps status `"ready"` when a session already
-  exists (background refresh). Pages early-return skeletons on `"loading"`;
-  regressing this makes every pause/resume/save flash the whole page —
-  including unmounting the agent-wallet modal mid-flow (fixed 2026-07-12).
+- `SessionProvider.reload()` keeps status `"ready"` only when the token is the
+  SAME one that produced the current session (background refresh). Pages
+  early-return skeletons on `"loading"`; regressing this makes every
+  pause/resume/save flash the whole page — including unmounting the agent-wallet
+  modal mid-flow. A DIFFERENT token (login or wallet switch) drops the session
+  immediately: another account's balance/strategy must never linger on screen.
+  Both halves matter — the second was a regression introduced by the first
+  (fixed 2026-07-12).
 - `requestSeqRef` guards concurrent reloads and token switches: only the latest
   request's response is applied.
 

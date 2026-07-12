@@ -1,7 +1,10 @@
 # Banco de Dados
 
 Schema Drizzle em `packages/api/src/db/schema.ts`.
-Migrations geradas em `packages/api/drizzle/`.
+Migrations geradas em `packages/api/src/db/migrations/`.
+
+O worker tem uma cópia do schema (`packages/worker/src/db/schema.ts`) com as
+tabelas que ele consome — a de referência é a da API.
 
 ## Comandos
 
@@ -64,9 +67,9 @@ Chaves agent wallet do usuário. Vinculada a `accounts`.
 |-------|------|-------|
 | id | uuid PK | |
 | userId | text | walletAddress do owner (index) |
-| config | jsonb | `StrategyConfig` completa |
+| config | jsonb | o **draft** (`strategyDraftSchema`) — o contrato técnico é derivado em runtime, nunca persistido |
 | symbol | text | ex: `"BTC/USDC"` |
-| status | strategy_status | index |
+| status | strategy_status | index — **default `"active"` no schema**, mas o insert da API força `"paused"`: salvar nunca liga o bot |
 | createdAt | timestamptz | |
 | updatedAt | timestamptz | |
 

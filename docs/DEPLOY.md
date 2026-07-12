@@ -1,12 +1,17 @@
 # Deploy
 
-## API — Lambda via SST v3
+O deploy completo (API + worker + frontend) é disparado ao **publicar um GitHub
+release** (`.github/workflows/deploy.yml`): o workflow roda `npx sst deploy
+--stage production` (Lambda + ECS) e depois dispara o job do Amplify. Os comandos
+manuais abaixo servem para staging e diagnóstico.
+
+## API — Lambda via SST v4
 
 ### Configuração (`sst.config.ts`)
 
 - Runtime: Node.js 22.x, ESM
 - Handler: `packages/api/src/index.handler`
-- Memory: 512 MB
+- Memory: 1024 MB (subiu de 512 MB em 2026-07-10 — backtest de 90d era CPU-bound)
 - Timeout: 29s
 - API Gateway v2 (HTTP API)
 
@@ -64,17 +69,22 @@ npx sst deploy --stage staging
 npx sst deploy --stage production
 ```
 
-## Worker — Docker
+## Worker — ECS Fargate via SST
+
+Em produção o worker é um `sst.aws.Service` (`sst.config.ts`) no cluster
+`PacificaCluster`: o `sst deploy` builda a imagem do `packages/worker/Dockerfile`,
+publica no ECR e substitui a task. Não há passo manual de Docker no deploy.
+
+- Memory: 0.5 GB
+- Env injetado pela task definition (mesmas variáveis do `.env`)
+- Alarme "dead man's switch": ausência de métrica de CPU = worker parado → SNS
+
+Para rodar localmente:
 
 ```bash
-# Build
 docker build -f packages/worker/Dockerfile -t pacifica-worker .
-
-# Run local
 docker run --env-file .env pacifica-worker
 ```
-
-Todas as variáveis de ambiente do worker devem ser injetadas via `--env-file` ou variáveis do container (ECS task definition, etc.).
 
 ## Banco de dados
 
@@ -102,11 +112,20 @@ Variáveis críticas (obrigatórias em todos os ambientes):
 | `AUTH_SIGNING_SECRET` | API | mínimo 32 chars, diferente de `CREDENTIAL_ENCRYPTION_KEY` |
 | `PACIFICA_BUILDER_CODE` | API + Worker | código de builder da Pacifica |
 
-## Frontend
+## Frontend — AWS Amplify
 
-Deploy estático (Vite build). Configurar `VITE_APP_API_BASE_URL` para apontar para a API deployada.
+Build do Vite hospedado no **Amplify** (`trade.callydus.xyz`, config em
+`amplify.yml`). O workflow de release dispara o job com
+`aws amplify start-job --branch-name master --job-type RELEASE` e aguarda o status.
+
+As variáveis `VITE_*` (incluindo `VITE_APP_API_BASE_URL`) são configuradas no app
+do Amplify e ficam **baked no bundle** — mudá-las exige novo build.
 
 ```bash
-pnpm --filter @pacifica/frontend build
-# dist/ → Vercel, S3+CloudFront, etc.
+pnpm --filter @pacifica/frontend build   # dist/
 ```
+
+## Alertas
+
+`sst.config.ts` cria alarmes CloudWatch + tópico SNS (erros da Lambda, worker sem
+task). Requer `ALERT_EMAIL` no ambiente do deploy.

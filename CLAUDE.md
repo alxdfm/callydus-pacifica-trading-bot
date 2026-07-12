@@ -6,7 +6,7 @@ Monorepo de trading automatizado para a exchange Pacifica (Solana/perps).
 
 ```
 packages/
-  api/        Hono + Drizzle — API REST, Lambda-ready (SST v3)
+  api/        Hono + Drizzle — API REST, Lambda-ready (SST v4)
   worker/     Bot WS-first — CandleBuffer in-memory, Drizzle, engine de sinais
   frontend/   React + Vite — UI do usuário
   shared/     Tipos primitivos compartilhados (candle, trade, signal, exchange)
@@ -76,7 +76,11 @@ pnpm --filter @pacifica/api db:studio
 
 ## Deploy
 
-### API — Lambda via SST v3
+Produção só atualiza ao **publicar um GitHub release** — o workflow
+(`.github/workflows/deploy.yml`) roda o `sst deploy` (Lambda + ECS) e dispara o
+job do Amplify. Ver [docs/DEPLOY.md](docs/DEPLOY.md).
+
+### API — Lambda via SST v4
 
 ```bash
 # staging
@@ -94,15 +98,20 @@ Secrets SST necessários (configurar via `npx sst secret set`):
 
 Em `production`, `APP_ORIGIN` é obrigatório no ambiente do deploy.
 
-### Worker — Docker
+### Worker — ECS Fargate via SST
+
+O `sst deploy` builda a imagem do `packages/worker/Dockerfile`, publica no ECR e
+substitui a task. Para rodar local:
 
 ```bash
-# Build da imagem
 docker build -f packages/worker/Dockerfile -t pacifica-worker .
-
-# Run local
 docker run --env-file .env pacifica-worker
 ```
+
+### Frontend — AWS Amplify (`trade.callydus.xyz`)
+
+Build do Vite no Amplify (`amplify.yml`); as variáveis `VITE_*` ficam baked no
+bundle, então mudá-las exige novo build.
 
 ## Arquitetura
 

@@ -19,19 +19,23 @@ Pacifica WS ──▶ Worker (CandleBuffer) ──▶ Engine (evaluateSignal)
 
 | Pacote | Responsabilidade | Deploy |
 |--------|-----------------|--------|
-| `@pacifica/api` | REST API, autenticação, queries, backtest | Lambda (SST v3) |
-| `@pacifica/worker` | Bot WS-first, candles, sinais, ordens | Docker |
-| `@pacifica/frontend` | UI React, onboarding, dashboard | Vercel/S3 |
-| `@pacifica/shared` | Tipos primitivos (Candle, Signal, StrategyConfig) | — |
+| `@pacifica/api` | REST API, autenticação, queries, backtest | Lambda (SST v4) |
+| `@pacifica/worker` | Bot WS-first, candles, sinais, ordens | ECS Fargate (SST v4) |
+| `@pacifica/frontend` | UI React, onboarding, dashboard | AWS Amplify |
+| `@pacifica/shared` | Tipos primitivos (Candle, Signal) + **contrato v2** (`/contracts`, zod) | — |
 | `@pacifica/config` | tsconfig base | — |
 
 ## Separação de responsabilidades
 
 **API** nunca executa ordens. É stateless e serve somente para:
-- Autenticar usuários (SIWS + JWT)
-- CRUD de estratégias e consultas de trades/eventos
-- Backtest preview (simulação histórica)
-- Operações de controle (pause/resume)
+- Autenticar usuários (SIWS + token HMAC) e onboarding de credenciais
+- Snapshot de sessão, estratégia e consultas de trades/eventos (superfície v2)
+- Backtest (simulação histórica)
+- Operações de controle (activate/pause) — escrevem `strategies.status`, quem age é o worker
+
+A API valida as **próprias respostas** contra o contrato de `@pacifica/shared/contracts`
+antes de enviar (violação = 500 + log), então divergência de schema explode no
+servidor em vez de quebrar o parse do cliente.
 
 **Worker** nunca faz HTTP para a API. Toda leitura/escrita de estado é via Drizzle direto no banco.
 
@@ -58,12 +62,14 @@ Pacifica WS ──▶ Worker (CandleBuffer) ──▶ Engine (evaluateSignal)
    → verifySolanaWalletSignature() → issueJWT() → upsertAccount()
    ← {token, expiresAt}
 
-4. POST /api/auth/credentials {mainWalletPublicKey, agentWalletPublicKey, agentWalletPrivateKey}
-   → valida derivação → criptografa AES → upsertCredential()
+4. POST /api/onboarding/credentials/validate {mainWalletPublicKey, agentWalletPublicKey, agentWalletPrivateKey}
+   → valida derivação → criptografa AES-256-GCM → upsertAccount + upsertCredential()
 
-5. POST /api/auth/verify-operational {credentialId, walletAddress}
+5. POST /api/onboarding/builder/approve  → builder_approvals
+
+6. POST /api/onboarding/credentials/verify-operational {credentialId, walletAddress}
    → descriptografa → cria PacificaClient → ordem-probe ALO → cancela
-   → credential.operationallyVerified = true
+   → credential.operationallyVerified = true  → GET /api/v2/session passa a devolver access="ready"
 ```
 
 ## Fluxo de trading (Worker)
@@ -76,34 +82,39 @@ Bootstrap:
   createBot() → tick periódico
   createDbWatcher() → polling de estratégias a cada 30s
 
-Tick (HEARTBEAT_INTERVAL_MS = 15s):
+Tick (HEARTBEAT_INTERVAL_MS = 15s, default):
   Para cada estratégia ativa:
-    reconcileOpenTradesWithExchange()  ← detecta closes por SL/TP
-    if shouldEvaluateSignals():
-      evaluateAndExecute()
+    reconcile()            ← closes por SL/TP + executa close_requested (reduce-only)
+    evaluateAndExecute()   ← só quando há candle FECHADO ainda não avaliado
 
 evaluateAndExecute():
-  candles = CandleBuffer.get(symbol, interval)
-  signal = evaluateSignal(config, candles)   → "none" | "long" | "short"
-  if signal == "none" → skip
-  if posição já aberta → skip
-  buildRiskPlans() → {sl, tp}
-  exchange.createMarketOrder({..., sl, tp})
-  exchange.getPositions() → confirma entrada real
-  exchange.setPositionTpsl() → ajusta proteção pós-slippage
+  config  = materializeYourStrategyTechnicalContract(strategy.config)
+  candles = CandleBuffer.get(symbol, timeframe)
+  signal  = evaluateSignal(config, candles)   → "none" | "long" | "short"
+  if signal == "none" ou posição já aberta → skip
+  saldo   = GET /api/v1/account (available_to_spend); sem saldo → skip
+  notional = saldo × positionSizeValue / 100   (sem alavancagem — ver task #13)
+  buildRiskPlans() → {sl, tp}   (obrigatórios)
+  client.createMarketOrder({..., sl, tp, builderCode})   ← cliente assinado POR estratégia
+  setPositionTpsl() → re-ancora proteção no preço de fill real
   insertTrade(db) + insertEvent(db, "trade_opened")
 ```
+
+A marcação de "candle avaliado" (`lastEvaluatedCandleOpenTime`) acontece **antes**
+da execução: ordem lenta não pode disparar duas vezes no mesmo candle.
 
 ## Fluxo de close manual
 
 ```
-POST /api/trades/:id/close
-→ updateTrade(db, {status: "close_requested"})
+POST /api/v2/trades/:id/close
+→ updateTrade(db, {status: "close_requested"})   ← a API nunca chama a exchange
 
 Bot (próximo tick, reconciliação):
 → detecta status "close_requested"
-→ exchange.closePosition()
-→ aguarda desaparecimento da posição na exchange
+→ createMarketOrder({reduceOnly: true}) assinado com a credencial do dono
+→ updateTrade(db, {status: "closing"})
+→ tick seguinte: posição sumiu da exchange (grace de 120s)
+→ preço de saída e PnL vindos do fill real (/api/v1/positions/history)
 → updateTrade(db, {status: "closed", closeReason: "manual"})
 → insertEvent(db, "trade_closed")
 ```
@@ -127,4 +138,5 @@ Bot (próximo tick, reconciliação):
 | DT-002 | WebSocket na API para push de eventos ao frontend em tempo real |
 | DT-003 | Circuit breaker formal no bot |
 | DT-004 | Testes de integração para `bot.ts` |
-| DT-005 | Substituir `technicalindicators` por implementações puras |
+
+Resolvidos: **DT-005** (indicadores puros com golden tests de paridade em `engine/indicators.ts`).
