@@ -25,20 +25,23 @@ async function fetchChunk(input: {
   startTime: number;
   endTime: number;
 }): Promise<FetchedCandle[] | null> {
-  let response: Response;
+  // Qualquer falha do provider (rede, status, corpo não-JSON) vira `null` —
+  // a rota traduz isso em 503 provider_unavailable retryable
+  let rawPayload: unknown;
 
   try {
-    response = await fetch(
+    const response = await fetch(
       `${input.baseUrl}/api/v1/kline?symbol=${input.symbol}&interval=${input.timeframe}&start_time=${input.startTime}&end_time=${input.endTime}`,
       { headers: { Accept: "application/json" } },
     );
+
+    if (!response.ok) return null;
+
+    rawPayload = (await response.json()) as unknown;
   } catch {
     return null;
   }
 
-  if (!response.ok) return null;
-
-  const rawPayload = (await response.json()) as unknown;
   const rawData =
     rawPayload && typeof rawPayload === "object" && "data" in rawPayload
       ? (rawPayload as { data?: unknown }).data
