@@ -2,8 +2,8 @@
 
 O deploy completo (API + worker + frontend) é disparado ao **publicar um GitHub
 release** (`.github/workflows/deploy.yml`): o workflow roda `npx sst deploy
---stage production` (Lambda + ECS) e depois dispara o job do Amplify. Os comandos
-manuais abaixo servem para staging e diagnóstico.
+--stage production` (Lambdas da API e do worker) e depois dispara o job do
+Amplify. Os comandos manuais abaixo servem para staging e diagnóstico.
 
 ## API — Lambda via SST v4
 
@@ -69,38 +69,50 @@ npx sst deploy --stage staging
 npx sst deploy --stage production
 ```
 
-## Worker — ECS Fargate via SST
+## Worker — Lambda agendada via SST (`sst.aws.Cron`)
 
-Em produção o worker é um `sst.aws.Service` (`sst.config.ts`) no cluster
-`PacificaCluster`: o `sst deploy` builda a imagem do `packages/worker/Dockerfile`,
-publica no ECR e substitui a task. Não há passo manual de Docker no deploy.
+Desde 2026-07-14 o worker não é mais um serviço residente (era ECS Fargate
+24/7): é uma Lambda invocada por um cron do EventBridge **de hora em hora, no
+minuto :01 UTC**. O bot só avalia candle fechado e os timeframes são 1h/4h,
+então o sinal só pode mudar de hora em hora — os fechamentos de 4h são
+subconjunto dos de 1h, um único schedule cobre os dois. SL/TP são submetidos à
+exchange junto com a ordem, então o bot fora do ar entre invocações não
+desprotege posição nenhuma.
 
-- CPU/Memory: 0.25 vCPU / 0.5 GB, `architecture: "arm64"` (Graviton, ~20% mais
-  barato). O runner do CI é x86, então o workflow registra o binfmt do QEMU antes
-  do `sst deploy` para conseguir buildar a imagem em `linux/arm64`.
-- Env injetado pela task definition (mesmas variáveis do `.env`)
-- Alarme "dead man's switch": ausência de métrica de CPU = worker parado → SNS
+Motivação: presença 24/7 mantinha o Neon acordado o mês inteiro (~182 CU-h
+contra 100 do plano Free — o compute seria suspenso no meio do mês) e custava
+~$13/mês de Fargate/rede para não fazer nada entre candles. A Lambda horária
+cai no free tier e deixa o Neon adormecer (~15-20 CU-h/mês).
 
-### Rede: por que não há NAT
+Configuração (`sst.config.ts`):
 
-A VPC é criada **sem NAT** de propósito. O SST coloca os containers de um
-`sst.aws.Service` nas subnets **públicas** com IP público (`assignPublicIp`), então
-a task já sai pela Internet Gateway — um NAT nunca veria tráfego e custaria ~$20/mês
-parado (o SST sobe uma instância NAT + um Elastic IP **por AZ**, e o default é 2 AZs).
+- Handler: `packages/worker/src/handler.handler` (Node.js 22.x, ESM, arm64,
+  512 MB, timeout 2 min) — sem Docker, sem VPC, sem ECR
+- `retries: 0` — **crítico**: EventBridge invoca async e por default re-executa
+  2x em erro; um retry depois de "ordem submetida + crash antes do insert"
+  abriria posição duplicada. O pior caso com 0 é perder uma avaliação horária.
+- `concurrency: { reserved: 1 }` — exclusão mútua real (não existe lease no
+  código; o guard de posição em `bot.ts` é read-then-act)
+- Alarmes (com `ALERT_EMAIL`): `Errors >= 1` em 1h, e dead man's switch
+  `Invocations < 1` por 2h consecutivas com `treatMissingData: breaching` —
+  cron parado é falha silenciosa que nenhum alarme de erro pega
 
-O inbound continua fechado: o SG default da VPC só aceita tráfego do CIDR da própria
-VPC, e o worker não escuta em porta nenhuma (é cliente WS/REST, sem `EXPOSE`).
+Cada invocação: carrega estratégias ativas → busca ~300 candles por
+(símbolo, timeframe) via `/api/v1/kline` → um tick do bot (reconcile +
+avaliação) → snapshot horário de funding/OI → fecha a conexão com o banco.
 
-O único motivo para religar o NAT é precisar de **IP de saída fixo** (allowlist de IP
-na Pacifica ou o IP Allow do Neon) — a task em subnet pública troca de IP a cada
-restart. Nesse caso, o mais barato é `nat: { ec2: { instance: "t4g.nano" } }` com
-`az: 1` (~$7/mês), não o default.
+Consequências operacionais:
 
-Para rodar localmente:
+- Trade fechado por SL/TP na exchange aparece no banco/UI **até 1h depois**
+  (trade-off aceito; o dinheiro está protegido pela exchange o tempo todo)
+- Entrada acontece até ~1 min depois do fechamento do candle
+- IP de saída muda a cada invocação — se a Pacifica ou o Neon um dia exigirem
+  allowlist de IP, o desenho precisa ser revisto
+
+Para rodar localmente (um tick e sai):
 
 ```bash
-docker build -f packages/worker/Dockerfile -t pacifica-worker .
-docker run --env-file .env pacifica-worker
+pnpm --filter @pacifica/worker dev
 ```
 
 ## Banco de dados

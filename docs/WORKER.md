@@ -1,42 +1,50 @@
 # Worker (`@pacifica/worker`)
 
-Bot WS-first de trading automatizado. Roda em **ECS Fargate** (provisionado pelo `sst.config.ts`, imagem via `packages/worker/Dockerfile`), acessa o banco diretamente via Drizzle. Instância única — exclusão mútua garantida por lease no banco.
+Bot de trading **agendado** (desde 2026-07-14; antes era WS-first em ECS
+Fargate 24/7). Roda como Lambda invocada por um `sst.aws.Cron` horário no
+minuto :01 UTC, acessa o banco diretamente via Drizzle. Exclusão mútua vem de
+`concurrency: { reserved: 1 }` na função — nunca duas execuções em paralelo.
+
+O bot só avalia candle FECHADO e os timeframes são 1h/4h, então o sinal só pode
+mudar de hora em hora. SL/TP são submetidos à exchange junto com a ordem: o bot
+fora do ar entre invocações não desprotege posição nenhuma.
 
 ## Estrutura de módulos
 
 ```
 packages/worker/src/
-├── index.ts          bootstrap e inicialização
-├── bot.ts            motor de trading (tick, reconciliação, execução)
-├── candle-buffer.ts  buffer in-memory de candles
-├── ws-feed.ts        conexão WebSocket com Pacifica
-├── db-watcher.ts     polling de estratégias ativas no banco
+├── handler.ts           entry da Lambda: um tick por invocação
+├── index.ts             entry local de dev (invoca o handler uma vez)
+├── bot.ts               motor de trading (tick, reconciliação, execução)
+├── candle-buffer.ts     buffer in-memory de candles
+├── candle-fetch.ts      busca de candles via REST (/api/v1/kline)
+├── market-snapshot.ts   snapshot horário de funding/OI (/api/v1/info)
 ├── config/
-│   └── env.ts        carregamento e validação de env vars
-├── db/               queries Drizzle
+│   └── env.ts           carregamento e validação de env vars
+├── db/                  queries Drizzle
 ├── engine/
-│   ├── evaluator.ts  avaliação de sinais e backtesting
-│   └── indicators.ts implementações puras dos indicadores (golden tests)
+│   ├── evaluator.ts     avaliação de sinais e backtesting
+│   └── indicators.ts    implementações puras dos indicadores (golden tests)
 └── exchange/
     └── pacifica/
-        ├── client.ts   cliente REST assinado
-        ├── adapter.ts  implementa ExchangeInterface
-        └── signing.ts  assinatura ed25519
+        ├── client.ts    cliente REST assinado
+        ├── adapter.ts   implementa ExchangeInterface
+        └── signing.ts   assinatura ed25519
 ```
 
-## Bootstrap (`index.ts`)
+## Handler (`handler.ts`)
 
-Ordem de inicialização:
+Cada invocação é um mundo novo:
 
-1. Carrega `WorkerEnv` do `process.env`
-2. Cria Drizzle client com `DATABASE_URL`
-3. Cria `CandleBuffer(capacity=300)`
-4. Carrega estratégias ativas do DB → extrai `{symbols, intervals}`
-5. Cria `PacificaClient` + `PacificaAdapter`
-6. Cria `createWsFeed()` com símbolos e intervals
-7. Cria `createBot()` e `createDbWatcher()`
-8. Inicia: WS feed → DbWatcher → Bot
-9. Registra handlers `SIGTERM`/`SIGINT` para graceful shutdown
+1. Carrega `WorkerEnv` do `process.env` e cria o Drizzle client
+2. Carrega estratégias ativas do DB → deriva os pares exatos
+   `(símbolo, timeframe)` (`resolveCandlePairs`, sem cross-product)
+3. Busca ~300 candles por par via REST e enche um `CandleBuffer` novo
+4. Cria `createBot()` e roda **um** tick (`runOnce()`)
+5. Grava o snapshot horário de funding/OI (`market-snapshot.ts`)
+6. `finally`: fecha a conexão com o banco (`db.$client.end()`) — em Lambda uma
+   conexão pendurada não é confiável na invocação seguinte e atrasa o
+   autosuspend do Neon
 
 ## CandleBuffer
 
@@ -53,40 +61,15 @@ class CandleBuffer {
 
 **Invariante:** nunca acessa o banco. Apenas memória.
 
-## WsFeed
+## CandleFetch (`candle-fetch.ts`)
 
-Conecta ao WebSocket da Pacifica, faz warm-up via REST e alimenta o `CandleBuffer`.
+`GET /api/v1/kline?symbol={}&interval={}&start_time={}&end_time={}` — endpoint
+no singular, janelas em ms. Mesma tolerância de shape do warm-up antigo do WS
+(camelCase, snake_case e o formato compacto `t/T/o/h/l/c/v`). Falha devolve
+`[]`; quem decide se dá para avaliar é o bot (mínimo de candles), não o fetch.
 
-```typescript
-createWsFeed({
-  wsUrl, restBaseUrl,
-  symbols, intervals,
-  buffer,
-  onWarm?: (symbol, interval) => void
-})
-```
-
-**Warm-up:** `GET /api/v1/kline?symbol={}&interval={}&start_time={}&end_time={}` para cada par (symbol, interval) — endpoint no singular, janelas em ms.
-
-**Candle fechado:** o WS da Pacifica NÃO tem flag `isClosed` — o fechamento é detectado por rollover de `openTime` (`pendingByKey`: quando chega candle com `t` maior, o anterior é considerado fechado e vai pro `buffer.push()`). Ver `docs/modules/worker.md`.
-
-**Reconexão:** backoff exponencial: `min(1000 * 2^attempt, 60000)` ms.
-
-## DbWatcher
-
-Polling a cada 30s (padrão) para detectar mudanças nas estratégias ativas.
-
-```typescript
-createDbWatcher({
-  db,
-  pollIntervalMs = 30000,
-  onStrategiesChanged: (strategies: Strategy[]) => void
-})
-```
-
-Compara a assinatura `id:updatedAt` da lista com a anterior — edições de config em strategy ativa também disparam `onStrategiesChanged()` (hot-reload), não só ativar/pausar.
-
-**DT-001:** substituir por LISTEN/NOTIFY do PostgreSQL.
+O parse pode incluir o candle EM ANDAMENTO — não é problema: o bot filtra por
+`closeTime <= alignToLastClosedCandleEndTime(now)` e só avalia candle fechado.
 
 ## Bot
 
@@ -97,33 +80,41 @@ createBot({
   candleBuffer: CandleBuffer,
   env: WorkerEnv
 })
-// → { start(), stop() }
+// → { runOnce(), onStrategiesChanged() }
 ```
 
-### Ciclo de tick (a cada `HEARTBEAT_INTERVAL_MS` = 15s)
+O bot não tem agendador próprio: quem decide QUANDO tickar é o chamador (o
+handler, invocado pelo cron). As estratégias entram por `onStrategiesChanged()`
+antes do `runOnce()` — não há mais watcher/hot-reload porque cada invocação
+carrega a lista fresca do banco.
+
+### Ciclo de tick (uma vez por invocação)
 
 Para cada estratégia ativa:
 1. **`reconcileOpenTradesWithExchange()`** — busca posições na exchange; se posição desapareceu, detecta motivo (SL/TP/preço atual) e fecha o trade no DB.
-2. Se `shouldEvaluateSignals()` (a cada `ANALYSIS_INTERVAL_MS` = 60s): **`evaluateAndExecute()`**
+2. **`evaluateAndExecute()`** — avalia o último candle fechado e executa se houver sinal.
 
 ### Execução de ordem (`evaluateAndExecute`)
 
 ```
-1. CandleBuffer.get(symbol, interval)
-2. evaluateSignal(config, candles) → signal
-3. signal == "none" → skip
-4. posição já aberta → skip (onePositionPerSymbol)
-5. buildRiskPlans() → {sl, tp}
-6. validateProtectionLevels(side, entryRef, sl, tp)
-7. exchange.getMarketInfo() → tick/lot sizes
-8. Normaliza quantidade
-9. exchange.createMarketOrder({..., sl, tp})
-10. Aguarda 100ms
-11. exchange.getPositions() → confirma entryPrice real
-12. deriveProtectionFromActualEntry() → ajusta sl/tp para slippage real
-13. exchange.setPositionTpsl()
-14. insertTrade(db, {status: "open"})
-15. insertEvent(db, "trade_opened")
+1. CandleBuffer.get(symbol, interval), filtrado a candle fechado
+2. candle já avaliado (lastEvaluatedCandleOpenTime) → skip
+3. evaluateSignal(config, candles) → signal
+4. signal == "none" → skip
+5. posição já aberta no BANCO → skip (onePositionPerSymbol)
+6. posição não registrada na EXCHANGE → skip (guard contra posição órfã:
+   crash entre a ordem e o insert, ou trade manual do usuário — o reconcile
+   só anda banco→exchange e nunca a veria; sem verificar, não entra)
+7. buildRiskPlans() → {sl, tp}
+8. validateProtectionLevels(side, entryRef, sl, tp)
+9. exchange.getMarketInfo() → tick/lot sizes
+10. Normaliza quantidade
+11. exchange.createMarketOrder({..., sl, tp})
+12. exchange.getPositions() → confirma entryPrice real
+13. deriveProtectionFromActualEntry() → ajusta sl/tp para slippage real
+14. exchange.setPositionTpsl()
+15. insertTrade(db, {status: "open"})
+16. insertEvent(db, "trade_opened")
 ```
 
 Se qualquer passo falhar: `insertEvent(db, "order_failed")` com classificação retryable/blocking.
@@ -203,15 +194,12 @@ Replay protection: requisições com `timestamp` fora da janela `expiryWindowMs`
 | `CREDENTIAL_ENCRYPTION_KEY` | — (mín. 32 chars) | sim |
 | `CREDENTIAL_ENCRYPTION_KEY_ID` | `local-dev-v1` | não |
 | `PACIFICA_BUILDER_CODE` | — | sim |
-| `PACIFICA_WS_URL` | `wss://ws.pacifica.fi/ws` | não |
 | `PACIFICA_REST_URL` | `https://api.pacifica.fi` | não |
-| `WORKER_ID` | `worker-local-1` | não |
 | `MARKET_ORDER_SLIPPAGE_PERCENT` | `0.5` | não |
 | `TAKER_FEE_PERCENT` | `0.05` | não |
-| `SCAN_INTERVAL_MS` | `5000` | não |
-| `HEARTBEAT_INTERVAL_MS` | `15000` | não |
-| `ANALYSIS_INTERVAL_MS` | `60000` | não |
-| `LEASE_DURATION_MS` | `45000` | não |
-| `MAX_BACKOFF_MS` | `30000` | não |
 | `PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS` | `30000` | não |
 | `SIGNAL_TRACE_ENABLED` | `false` | não — NUNCA ativar em produção (expõe dados financeiros) |
+
+As variáveis de cadência do worker residente (`SCAN/HEARTBEAT/ANALYSIS_INTERVAL_MS`,
+`LEASE_DURATION_MS`, `MAX_BACKOFF_MS`, `WORKER_ID`, `PACIFICA_WS_URL`) morreram
+com o modelo 24/7 — a cadência agora é o schedule do cron.

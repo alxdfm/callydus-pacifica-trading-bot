@@ -1,6 +1,6 @@
 # Callydus — Pacifica Trading Bot
 
-Monorepo for an automated trading bot running on [Pacifica](https://www.pacifica.fi/) (Solana perps). React frontend, REST API, and a WS-first trading worker — deployed as a single stack on AWS.
+Monorepo for an automated trading bot running on [Pacifica](https://www.pacifica.fi/) (Solana perps). React frontend, REST API, and a scheduled trading worker — deployed as a single stack on AWS.
 
 **Production:** [trade.callydus.xyz](https://trade.callydus.xyz)
 
@@ -9,7 +9,7 @@ Monorepo for an automated trading bot running on [Pacifica](https://www.pacifica
 ```
 packages/
   api/        Hono + Drizzle — REST API, AWS Lambda via SST
-  worker/     WS-first bot — in-memory CandleBuffer, signal engine, order executor (ECS Fargate)
+  worker/     Scheduled bot (hourly Lambda/Cron) — REST candles, signal engine, order executor
   frontend/   React + Vite — deployed on AWS Amplify
   shared/     Shared primitive types (candle, trade, signal, exchange)
   config/     Shared TypeScript config
@@ -66,7 +66,7 @@ pnpm --filter @pacifica/api db:studio   # inspect the database
 
 ## Deployment
 
-Everything ships together when a **GitHub release is published**: the `Deploy` workflow runs typecheck + tests, then `sst deploy --stage production` (API Lambda, worker on ECS Fargate, SNS/CloudWatch alerts) and triggers the Amplify frontend build. Pushes to `master` only run CI.
+Everything ships together when a **GitHub release is published**: the `Deploy` workflow runs typecheck + tests, then `sst deploy --stage production` (API Lambda, worker cron Lambda, SNS/CloudWatch alerts) and triggers the Amplify frontend build. Pushes to `master` only run CI.
 
 Manual deploy from a machine with AWS credentials:
 

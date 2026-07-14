@@ -1,12 +1,26 @@
 # worker (`packages/worker/`)
 
-WS-first bot: CandleBuffer in-memory → engine → executor. Never calls the API
-(Drizzle only); CandleBuffer never touches the DB (see CLAUDE.md invariants).
+Scheduled bot (since 2026-07-14; formerly WS-first on ECS): an hourly
+`sst.aws.Cron` Lambda rebuilds the CandleBuffer from REST and runs ONE tick →
+engine → executor. Never calls the API (Drizzle only); CandleBuffer never
+touches the DB (see CLAUDE.md invariants). Mutual exclusion comes from
+`concurrency: { reserved: 1 }` + `retries: 0` on the function — there is no
+lease in the code, and an async retry after "order placed, crash before insert"
+would double the position.
 
 ## Regras de Negócio
 
 - Evaluation happens once per CLOSED candle. `lastEvaluatedCandleOpenTime` is
-  marked BEFORE order execution so a slow order can't double-fire on the same candle.
+  marked BEFORE order execution so a slow order can't double-fire on the same
+  candle. The map is in-memory (per Lambda container): a cold start CAN
+  re-evaluate a 4h candle already seen — the DB open-position check plus the
+  exchange-side untracked-position guard bound the worst case to "retry an
+  order that FAILED on the same candle", never a duplicate position.
+- Before entering, the bot checks the EXCHANGE for a position on the symbol
+  (not just the DB): reconcile only walks DB→exchange, so an orphan position
+  (crash between order and insert, or a manual user trade) is invisible to it.
+  If positions can't be verified, the entry is skipped — order safety beats a
+  missed candle.
 - Sizing is `available_balance × positionSizeValue / 100`, leverage-less (task
   #13 will change this). Orders below the exchange minimum ($10 notional) get
   pinned to the minimum — with tiny balances the configured % is effectively ignored.
@@ -28,36 +42,30 @@ WS-first bot: CandleBuffer in-memory → engine → executor. Never calls the AP
 
 ## Decisões Técnicas
 
-- **WS protocol (probed live)**: subscribe
-  `{method:"subscribe",params:{source:"candle",symbol,interval}}`; messages
-  `{channel:"candle",data:{t,T,s,i,o,c,h,l,v}}`. There is NO `isClosed` flag —
-  closure is detected by openTime rollover (`pendingByKey`). Warm-up via kline REST.
-- The WS feed subscribes the **cross-product symbol × interval**, and both sides
-  are derived from the active strategies (`resolveSymbols`/`resolveIntervals`) —
-  the interval list used to be hardcoded, which subscribed every builder
-  timeframe for every symbol. A pair that is never subscribed means a strategy
-  that silently never evaluates (it happened with 3m, 2026-07-10), so
-  `setSubscriptions` subscribes any missing pair when a strategy appears, and a
-  reconnect re-subscribes everything (a new socket inherits nothing). Covered by
-  `src/__tests__/unit.test.ts`. 1h/4h were probed live on the WS before being
-  offered (2026-07-14).
-- `intervalToMs` (warm-up range) only parses `m`/`h` and falls back to 5min for
-  anything else. Offering `1d` without fixing it would fetch 25h of daily candles,
-  never warm the buffer past `isWarm`'s 50, and the strategy would never fire —
-  silently. Same failure class as the missing-interval one above.
-- The `prices` WS channel is **global**: one subscribe with NO symbol returns all
-  69 exchange symbols (funding, next_funding, open_interest, oracle, mark, mid,
-  volume_24h, timestamp). Subscribing per symbol would just multiply the same
-  message. `market-recorder.ts` persists it — one row per symbol per minute,
-  bucketed and `onConflictDoNothing` against the unique `(symbol, recorded_at)`
-  index, so a restart mid-minute cannot duplicate. The feed itself never touches
-  the DB; it hands snapshots to the recorder through `onPrices`.
-- The recorder writes `RECORDED_SYMBOLS` (BTC/ETH/SOL — the tradable universe)
+- Candles come from `GET /api/v1/kline` (`candle-fetch.ts`), one request per
+  `(symbol, interval)` pair derived EXACTLY from the active strategies
+  (`resolveCandlePairs`, no cross-product). A pair that is never fetched means a
+  strategy that silently never evaluates (it happened with 3m on the WS era,
+  2026-07-10) — covered by `src/__tests__/unit.test.ts`. The fetch may include
+  the in-progress candle; the bot filters to closed candles
+  (`closeTime <= alignToLastClosedCandleEndTime(now)`), so it is harmless.
+- Interval durations come from `getIntervalDurationMs` (engine), which is fed by
+  the exhaustive `TIMEFRAME_DURATION_MS` record in the shared contract. Offering
+  a new timeframe (e.g. `1d`) without adding it there is a typecheck error, not
+  a silent never-warms-up bug — but the Pacifica kline endpoint must ALSO be
+  probed for the new interval string before offering it.
+- `market-snapshot.ts` records funding/OI/mark **hourly via REST `/api/v1/info`**
+  (the WS `prices` channel died with the resident worker; 1-min resolution was
+  traded away on 2026-07-14 — funding changes hourly, so only intra-hour OI
+  dynamics were lost). Rows are bucketed to the hour and `onConflictDoNothing`
+  against the unique `(symbol, recorded_at)` index, so a re-run inside the same
+  hour cannot duplicate. The insert is AWAITED (a floating promise freezes with
+  the Lambda container and the write is lost), but failures are logged and
+  swallowed — never allowed to reach the order path.
+- The snapshot writes `RECORDED_SYMBOLS` (BTC/ETH/SOL — the tradable universe)
   regardless of which strategies are active. Deriving it from active strategies
   would punch holes in the series exactly during the periods with no bot running,
   and a series with holes is worthless for the backtest it exists to enable.
-  Writes are fire-and-forget: a DB failure is logged and dropped, never allowed
-  to reach the order path.
 - CandleBuffer capacity is 300 and dedupes/replaces by openTime. The backtest
   simulation window mirrors it (`max(requiredPeriod+5, EVALUATION_WINDOW_CANDLES)`)
   — both for parity with live evaluation and because the unbounded window was
@@ -71,10 +79,10 @@ WS-first bot: CandleBuffer in-memory → engine → executor. Never calls the AP
 - `materializeYourStrategyTechnicalContract` is a byte-for-byte port of the API's
   (`engine/evaluator.ts`); parity was verified on real drafts (2026-07-10). Any
   change must land in BOTH copies.
-- db-watcher's change signature includes `updatedAt`, so config edits hot-reload
-  running strategies. `bot.onStrategiesChanged` must be attached to the object
-  RETURNED by `createBot` — attaching to the input was a silent no-op (the
-  "bot never executed" incident).
+- There is no db-watcher/hot-reload anymore: every invocation loads the fresh
+  strategy list and hands it to `bot.onStrategiesChanged()` BEFORE `runOnce()`.
+  `onStrategiesChanged` must be called on the object RETURNED by `createBot` —
+  calling it on the input was a silent no-op (the "bot never executed" incident).
 
 ## O que a Pacifica expõe de dado de mercado (probado ao vivo, 2026-07-14)
 
@@ -87,7 +95,7 @@ possível do impossível não é a lógica, é a existência de **histórico**.
 | `/api/v1/kline` — OHLCV + `v` (volume) + `n` (nº de trades) | **Sim**, 360d+ |
 | `/api/v1/trades` — tape com campo `cause` | **Não** — devolve ~2 min e IGNORA `limit`, `start_time` e `offset` (os três testados) |
 | `/api/v1/book` — profundidade | **Não** — snapshot do instante |
-| `/api/v1/info` e WS `prices` — funding, open interest | **Não** — só o valor corrente |
+| `/api/v1/info` — funding, open interest | **Não** — só o valor corrente (era também o WS `prices`, morto com o worker residente) |
 | WS `liquidations` / `funding_rate` | Não existem (400 "Invalid subscription parameters") |
 
 Consequências, para não serem re-litigadas:
@@ -106,15 +114,21 @@ Consequências, para não serem re-litigadas:
 - **Funding e open interest são a única fonte de sinal ortogonal ao OHLCV** que
   existe aqui — tudo o mais (EMA, RSI, ADX, Donchian, volume profile) é
   transformação do mesmo preço. Não têm histórico, e a única cura para falta de
-  histórico é começar a gravar: é exatamente isso que o `market-recorder` faz.
-  Em alguns meses há série própria contra a qual testar funding extremo e
+  histórico é começar a gravar: é exatamente isso que o `market-snapshot` faz
+  (1 linha/símbolo/hora — resolução plena para funding, que muda de hora em
+  hora). Em alguns meses há série própria contra a qual testar funding extremo e
   divergência de OI. Até lá, funding continua sendo um **custo não modelado** no
   backtest (BTC ~0,017%/dia se o funding for horário — não é fatal perto dos
   0,18% de round-trip, mas a estratégia de 4h segura posição por dias).
 
 ## Problemas Conhecidos
 
-- DT-001 (LISTEN/NOTIFY instead of polling), DT-003 (formal circuit breaker) and
-  DT-004 (integration tests for bot.ts) remain open — see CLAUDE.md.
-- `market_snapshots` cresce ~1.6M linhas/ano e ninguém a poda nem a lê ainda —
-  ela existe só para ter passado quando o sinal de funding/OI for construído.
+- DT-003 (formal circuit breaker) and DT-004 (integration tests for bot.ts)
+  remain open — see CLAUDE.md. DT-001 died with the db-watcher.
+- `market_snapshots` cresce ~26k linhas/ano no snapshot horário (era ~1.6M no
+  recorder por minuto) e ninguém a poda nem a lê ainda — ela existe só para ter
+  passado quando o sinal de funding/OI for construído. As linhas por minuto de
+  antes de 2026-07-14 continuam na tabela.
+- A UI mostra trade fechado por SL/TP com até 1h de atraso (o reconcile roda no
+  tick horário). O dinheiro está protegido pela exchange o tempo todo — é só
+  atraso de exibição, trade-off aceito em 2026-07-14.

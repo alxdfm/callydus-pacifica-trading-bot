@@ -7,7 +7,7 @@ Monorepo de trading automatizado para a exchange Pacifica (Solana/perps).
 ```
 packages/
   api/        Hono + Drizzle — API REST, Lambda-ready (SST v4)
-  worker/     Bot WS-first — CandleBuffer in-memory, Drizzle, engine de sinais
+  worker/     Bot agendado (Lambda/Cron horário) — candles via REST, Drizzle, engine de sinais
   frontend/   React + Vite — UI do usuário
   shared/     Tipos primitivos compartilhados (candle, trade, signal, exchange)
   config/     Configuração TypeScript compartilhada
@@ -49,7 +49,7 @@ pnpm --filter @pacifica/api db:migrate    # aplica no banco
 # Terminal 1 — API (porta 3003)
 pnpm --filter @pacifica/api dev
 
-# Terminal 2 — Worker
+# Terminal 2 — Worker (roda UM tick e sai; repetir para simular o cron)
 pnpm --filter @pacifica/worker dev
 
 # Terminal 3 — Frontend (porta 5173)
@@ -77,8 +77,8 @@ pnpm --filter @pacifica/api db:studio
 ## Deploy
 
 Produção só atualiza ao **publicar um GitHub release** — o workflow
-(`.github/workflows/deploy.yml`) roda o `sst deploy` (Lambda + ECS) e dispara o
-job do Amplify. Ver [docs/DEPLOY.md](docs/DEPLOY.md).
+(`.github/workflows/deploy.yml`) roda o `sst deploy` (Lambdas da API e do
+worker) e dispara o job do Amplify. Ver [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ### API — Lambda via SST v4
 
@@ -98,14 +98,14 @@ Secrets SST necessários (configurar via `npx sst secret set`):
 
 Em `production`, `APP_ORIGIN` é obrigatório no ambiente do deploy.
 
-### Worker — ECS Fargate via SST
+### Worker — Lambda agendada via SST (`sst.aws.Cron`)
 
-O `sst deploy` builda a imagem do `packages/worker/Dockerfile`, publica no ECR e
-substitui a task. Para rodar local:
+Cron horário no minuto :01 UTC invoca `packages/worker/src/handler.handler`
+(um tick: reconcile + avaliação de candle fechado). Não há Docker nem processo
+residente. Para rodar local (um tick e sai):
 
 ```bash
-docker build -f packages/worker/Dockerfile -t pacifica-worker .
-docker run --env-file .env pacifica-worker
+pnpm --filter @pacifica/worker dev
 ```
 
 ### Frontend — AWS Amplify (`trade.callydus.xyz`)
@@ -118,17 +118,23 @@ bundle, então mudá-las exige novo build.
 ### Fluxo de dados
 
 ```
-Pacifica WS ──▶ Worker (CandleBuffer) ──▶ Engine (evaluateSignal)
-                      │                          │
-                      ▼                          ▼
-                  DbWatcher              Executor (ordens)
-                  (strategies)               │
-                      │                    Drizzle DB
-                      └──────────────────────┘
-                                            │
-                                            ▼
-                                        API (Hono) ──▶ Frontend
+Cron horário (:01 UTC)
+        │
+        ▼
+Worker handler ── REST /api/v1/kline ──▶ CandleBuffer ──▶ Engine (evaluateSignal)
+        │                                                        │
+        ├── strategies (Drizzle DB)                              ▼
+        ├── snapshot funding/OI (1/h)                    Executor (ordens)
+        │                                                        │
+        └────────────────────── Drizzle DB ◀─────────────────────┘
+                                    │
+                                    ▼
+                              API (Hono) ──▶ Frontend
 ```
+
+O worker não é residente: cada invocação carrega as estratégias, reconstrói o
+buffer via REST e roda UM tick. SL/TP vivem na exchange (submetidos com a
+ordem), então o bot fora do ar entre invocações não desprotege posição.
 
 ### Regras invioláveis
 
@@ -147,9 +153,10 @@ Schema Drizzle em `packages/api/src/db/schema.ts`. Tabelas principais:
 - `events` — log de eventos operacionais
 - `builder_approvals` — aprovações de builder code
 - `accounts` + `credentials` (via queries em `db/queries/accounts.ts`)
-- `market_snapshots` — funding, open interest e mark/oracle gravados do WS pelo
-  worker (1 linha/símbolo/minuto). A Pacifica não guarda histórico desses dados;
-  gravamos para que um dia sejam backtestáveis. Ver `docs/modules/worker.md`.
+- `market_snapshots` — funding, open interest e mark/oracle gravados via REST
+  pelo worker (1 linha/símbolo/hora — resolução plena para funding, que muda de
+  hora em hora). A Pacifica não guarda histórico desses dados; gravamos para que
+  um dia sejam backtestáveis. Ver `docs/modules/worker.md`.
 
 ### Autenticação
 
@@ -164,9 +171,10 @@ O JWT é enviado como `Authorization: Bearer <token>` nas rotas protegidas.
 
 | ID | Descrição |
 |----|-----------|
-| DT-001 | LISTEN/NOTIFY no DbWatcher em vez de polling |
 | DT-002 | WebSocket na API para push de eventos ao frontend |
 | DT-003 | Circuit breaker formal no bot |
 | DT-004 | Testes de integração para bot.ts |
 
-Resolvidos: DT-005 (indicadores puros com golden tests de paridade em `engine/indicators.ts`).
+Resolvidos: DT-001 (o DbWatcher deixou de existir — o worker agendado carrega
+as estratégias do banco a cada invocação); DT-005 (indicadores puros com golden
+tests de paridade em `engine/indicators.ts`).

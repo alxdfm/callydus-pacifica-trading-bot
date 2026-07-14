@@ -2,17 +2,20 @@
 
 ## Visão geral
 
-Monorepo de trading automatizado para a exchange Pacifica (Solana/perps). Três serviços desacoplados que se comunicam via banco de dados e WebSocket.
+Monorepo de trading automatizado para a exchange Pacifica (Solana/perps). Três serviços desacoplados que se comunicam via banco de dados e REST.
 
 ```
-Pacifica WS ──▶ Worker (CandleBuffer) ──▶ Engine (evaluateSignal)
-                      │                          │
-                      ▼                          ▼
-                  DbWatcher              Executor (ordens)
-                  (strategies)               │
-                      │                    Drizzle DB ◀──▶ API (Hono)
-                      └──────────────────────┘                │
-                                                           Frontend
+Cron horário (:01 UTC)
+        │
+        ▼
+Worker handler ── REST /api/v1/kline ──▶ CandleBuffer ──▶ Engine (evaluateSignal)
+        │                                                        │
+        ├── strategies (Drizzle DB)                              ▼
+        ├── snapshot funding/OI (1/h)                    Executor (ordens)
+        │                                                        │
+        └────────────────────── Drizzle DB ◀─────────────────────┘
+                                    │
+                              API (Hono) ◀──▶ Frontend
 ```
 
 ## Pacotes
@@ -20,7 +23,7 @@ Pacifica WS ──▶ Worker (CandleBuffer) ──▶ Engine (evaluateSignal)
 | Pacote | Responsabilidade | Deploy |
 |--------|-----------------|--------|
 | `@pacifica/api` | REST API, autenticação, queries, backtest | Lambda (SST v4) |
-| `@pacifica/worker` | Bot WS-first, candles, sinais, ordens | ECS Fargate (SST v4) |
+| `@pacifica/worker` | Bot agendado, candles, sinais, ordens | Lambda + Cron horário (SST v4) |
 | `@pacifica/frontend` | UI React, onboarding, dashboard | AWS Amplify |
 | `@pacifica/shared` | Tipos primitivos (Candle, Signal) + **contrato v2** (`/contracts`, zod) | — |
 | `@pacifica/config` | tsconfig base | — |
@@ -75,14 +78,12 @@ servidor em vez de quebrar o parse do cliente.
 ## Fluxo de trading (Worker)
 
 ```
-Bootstrap:
-  loadActiveStrategies(db) → extrai {symbols, intervals}
-  CandleBuffer(capacity=300)
-  createWsFeed() → conecta WS, warm-up REST (300 candles históricos)
-  createBot() → tick periódico
-  createDbWatcher() → polling de estratégias a cada 30s
+Invocação (Cron horário, minuto :01 UTC):
+  loadActiveStrategies(db) → deriva os pares exatos (symbol, timeframe)
+  CandleBuffer(capacity=300) ← REST /api/v1/kline (300 candles por par)
+  createBot() → runOnce()
 
-Tick (HEARTBEAT_INTERVAL_MS = 15s, default):
+Tick (um por invocação):
   Para cada estratégia ativa:
     reconcile()            ← closes por SL/TP + executa close_requested (reduce-only)
     evaluateAndExecute()   ← só quando há candle FECHADO ainda não avaliado
@@ -126,15 +127,14 @@ Bot (próximo tick, reconciliação):
 | Frontend | API | HTTP REST + JWT |
 | Worker | DB | Drizzle (direto) |
 | API | DB | Drizzle (direto) |
-| Worker | Pacifica | WebSocket (candles) + REST assinado (ordens) |
+| Worker | Pacifica | REST (candles/info) + REST assinado (ordens) |
 | API | Pacifica | REST assinado (probe, market info) |
-| DbWatcher | Bot | Callback in-process |
+| Cron (EventBridge) | Worker | Invocação Lambda horária |
 
 ## Débitos técnicos
 
 | ID | Descrição |
 |----|-----------|
-| DT-001 | Substituir polling do `db-watcher.ts` por LISTEN/NOTIFY do PostgreSQL |
 | DT-002 | WebSocket na API para push de eventos ao frontend em tempo real |
 | DT-003 | Circuit breaker formal no bot |
 | DT-004 | Testes de integração para `bot.ts` |

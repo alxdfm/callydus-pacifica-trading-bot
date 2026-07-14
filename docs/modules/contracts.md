@@ -22,7 +22,7 @@ the same schemas; the API validates its own responses against them before sendin
   `credential.operationallyVerified` — the client never computes it.
 - Trade statuses `open → close_requested → closing → closed` mirror the worker's
   real close pipeline; there are no other states.
-- `timeframeSchema` (`3m | 5m | 15m | 1h | 4h`) is what gates the tradable
+- `timeframeSchema` (`1h | 4h` desde 2026-07-14 — o worker agendado avalia de hora em hora, então timeframe sub-horário avaliaria atrasado) is what gates the tradable
   timeframes — the engine and `CandleInterval` already span `1m…1d`. Widening it
   also requires the builder's `TIMEFRAMES` and a duration in
   `TIMEFRAME_DURATION_MS` (an exhaustive `Record` — a missing entry is a

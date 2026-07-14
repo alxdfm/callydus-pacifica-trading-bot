@@ -24,9 +24,8 @@
 |--------|-----------|
 | ORM | **Drizzle ORM v0.41** |
 | Driver de banco | `postgres` (postgres.js v3) |
-| WebSocket client | `ws v8` |
 | Indicadores técnicos | implementações puras em `engine/indicators.ts` (golden tests de paridade) |
-| Deploy | **ECS Fargate** via SST (imagem `packages/worker/Dockerfile`) |
+| Deploy | **Lambda + Cron horário** via SST (`sst.aws.Cron`) |
 
 ## Frontend (`@pacifica/frontend`)
 
@@ -62,7 +61,7 @@
 | Serviço | Plataforma | Config |
 |---------|-----------|--------|
 | API | AWS Lambda via SST v4 | `sst.config.ts` |
-| Worker | ECS Fargate via SST v4 | `sst.config.ts` + `packages/worker/Dockerfile` |
+| Worker | Lambda + Cron horário via SST v4 | `sst.config.ts` (`packages/worker/src/handler.handler`) |
 | Frontend | AWS Amplify (`trade.callydus.xyz`) | `amplify.yml` |
 | Alertas | SNS + CloudWatch alarms | `sst.config.ts` (requer `ALERT_EMAIL`) |
 
