@@ -81,11 +81,12 @@ suavizar). O engine resolve a cadeia recursivamente e descarta o prefixo de
 warm-up (NaN) da série de origem antes de calcular — antes de 2026-07-14 a soma
 rolante carregava esse NaN e a série encadeada saía inteira NaN, o que fazia a
 regra nunca disparar e a estratégia ficar sem operar, sem erro nenhum.
-Referência cíclica (`A` com `source: "A"`, ou `A → B → A`) ainda **não é
-validada**: a resolução recursiva estoura a pilha (`RangeError`). O try/catch do
-`tick()` segura o worker de pé, mas a estratégia nunca avalia e loga erro a cada
-tick; o backtest devolve erro genérico. Validar no materialize (`activationBlockers`)
-é o lugar certo.
+Duas formas de quebrar o encadeamento passam pelo zod (`source` é `z.string()`) e
+são barradas no materialize com o blocker `invalid_indicator_source`: **ciclo**
+(`A → A` ou `A → B → A`, que faria a resolução recursiva estourar a pilha) e
+**nome inexistente** (série toda-NaN → a regra nunca seria satisfeita). Nos dois
+casos a estratégia é salvável mas não ativável — ativar, backtestar e o próprio
+worker recusam contrato nulo.
 
 ### TriggerGroup e TriggerRule
 

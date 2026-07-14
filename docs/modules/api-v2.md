@@ -39,6 +39,9 @@ The only data surface the frontend consumes (besides auth/onboarding).
   CandleBuffer) — with a shorter one the first candles of the period are
   evaluated on less history than the live bot has, which moved a 4h EMA
   strategy by 18 points on BTC (2026-07-14).
+- The backtest is O(candles × window) inside a 29s Lambda, so the route rejects
+  ranges over `MAX_BACKTEST_CANDLES` (`period_too_long`) before fetching. The
+  builder never sends one, but the route is public.
 
 ## Pacifica REST (facts probed live, 2026-07-09/10)
 

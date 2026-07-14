@@ -22,9 +22,13 @@ Typed client + single session snapshot. Pages own their page-local data
 - Backtest runs with leverage 1 and the real available balance as capital
   (live-execution parity). Falls back to $1000 when balance ≤ 0: the contract
   requires positive capital and the balance is ~0 whenever the bot holds a position.
-- Backtest periods go up to 360d. The short ones are useless on the higher
-  timeframes — a 4h EMA cross fires ~1 trade/month, so 7d/30d return a sample of
-  zero to three trades. Any new timeframe needs a period long enough to judge it.
+- Backtest periods go up to 360d, filtered by `maxBacktestDays(timeframe)` from
+  the shared contract — the long ones do not fit the Lambda budget on low
+  timeframes (3m tops out at 125d). Switching to a lower timeframe falls back to
+  the longest period that still fits, and switching back restores the original
+  choice, so no `useEffect` clamps the state behind the user's back.
+  Symmetrically, the short periods are useless on the high timeframes: a 4h EMA
+  cross fires ~1 trade/month, so 7d/30d return a sample of zero to three trades.
 
 ## Decisões Técnicas
 

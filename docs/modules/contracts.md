@@ -24,10 +24,16 @@ the same schemas; the API validates its own responses against them before sendin
   real close pipeline; there are no other states.
 - `timeframeSchema` (`3m | 5m | 15m | 1h | 4h`) is what gates the tradable
   timeframes — the engine and `CandleInterval` already span `1m…1d`. Widening it
-  requires, in the same change, the builder's `TIMEFRAMES` and the worker's `intervals`
-  (WS subscriptions); see [worker.md](worker.md). `1d` is deliberately out: the
+  also requires the builder's `TIMEFRAMES` and a duration in
+  `TIMEFRAME_DURATION_MS` (an exhaustive `Record` — a missing entry is a
+  typecheck error, not a silent prod bug). The worker derives its WS intervals
+  from the active strategies, so it needs no edit. `1d` is deliberately out: the
   ws-feed's `intervalToMs` only parses `m`/`h`, and a daily EMA cross fires 1–3
   times a year, which is no sample to judge a strategy on (2026-07-14).
+- `MAX_BACKTEST_CANDLES` / `maxBacktestDays(timeframe)` is the shared budget for
+  the 29s backtest Lambda: the builder only offers periods that fit and the route
+  rejects the rest (`period_too_long`). 3m × 360d is ~172k candles and does not
+  fit — measured at ~10s of simulation alone, before the 44-chunk candle fetch.
 
 ## Decisões Técnicas
 
