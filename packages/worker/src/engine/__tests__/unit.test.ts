@@ -124,6 +124,31 @@ describe("evaluateSignal", () => {
     expect(evaluateSignal(config, buildCandles([95, 101, 102])).signal).toBe("none");
   });
 
+  it("resolves an indicator whose source is another indicator", () => {
+    // Antes do fix a série encadeada saía toda NaN: a regra nunca era satisfeita
+    // e a estratégia ficava sem disparar, sem erro nenhum
+    const config = buildStrategyConfig({
+      indicators: {
+        EMA3: { type: "ema", period: 3 },
+        SMA_OF_EMA3: { type: "sma", source: "EMA3", period: 2 },
+      },
+      longRules: [
+        {
+          scope: "currentCandle",
+          type: "threshold",
+          indicator: "EMA3",
+          operator: "above",
+          ref: "SMA_OF_EMA3",
+        },
+      ],
+    });
+
+    const result = evaluateSignal(config, buildCandles([10, 11, 12, 13, 14, 15, 16, 17]));
+
+    expect(result.indicators.SMA_OF_EMA3?.current).toBeCloseTo(15.5, 9);
+    expect(result.signal).toBe("long");
+  });
+
   it("returns none when long and short fire simultaneously", () => {
     const rule: TriggerRule = {
       scope: "currentCandle",
@@ -320,8 +345,24 @@ describe("indicators (semantics)", () => {
     expect(atr[1]).toBeCloseTo(10, 9); // |20 - 10| domina
   });
 
+  it("SMA/EMA over an indicator source skip its NaN warm-up prefix", () => {
+    // Uma série de indicador chega com NaN à frente; a soma rolante da SMA e a
+    // seed da EMA carregariam esse NaN para sempre, matando a regra em silêncio
+    const source = [Number.NaN, Number.NaN, 10, 11, 12, 13];
+
+    const sma = calculateSmaSeries(source, 3);
+    const ema = calculateEmaSeries(source, 3);
+
+    expect(sma[3]).toBeNaN(); // ainda só 2 valores válidos
+    expect(sma[4]).toBeCloseTo(11, 9); // média de 10, 11, 12
+    expect(sma[5]).toBeCloseTo(12, 9); // média de 11, 12, 13
+    expect(ema[4]).toBeCloseTo(11, 9);
+    expect(ema[5]).toBeCloseTo(12, 9);
+  });
+
   it("returns all-NaN series for empty input, period < 1 or insufficient data", () => {
     expect(calculateSmaSeries([], 3)).toEqual([]);
+    expect(calculateSmaSeries([Number.NaN, Number.NaN], 2).every(Number.isNaN)).toBe(true);
     expect(calculateEmaSeries([1, 2], 0).every(Number.isNaN)).toBe(true);
     expect(calculateSmaSeries([1, 2], 5).every(Number.isNaN)).toBe(true);
     expect(calculateRsiSeries([1, 2, 3], 3).every(Number.isNaN)).toBe(true);

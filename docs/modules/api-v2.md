@@ -31,8 +31,17 @@ The only data surface the frontend consumes (besides auth/onboarding).
 - `GET /session` fetches the Pacifica balance with a 3s abort timeout and
   returns `balanceUsd: null` on failure — the session must never fail because
   the exchange is slow.
-- Backtest warm-up prepends `max(requiredPeriod+5, 30)` candles before
-  `startTime` and trims curves back to the requested range.
+- Backtest warm-up prepends `max(requiredPeriod+5, EVALUATION_WINDOW_CANDLES)`
+  candles before `startTime` and passes `tradingStartTime: startTime` to the
+  simulator. Those candles are history only: they feed the indicators but open
+  no trades and do not anchor the hold benchmark. The warm-up must cover the
+  simulator's evaluation window (300 candles, mirroring the worker's
+  CandleBuffer) — with a shorter one the first candles of the period are
+  evaluated on less history than the live bot has, which moved a 4h EMA
+  strategy by 18 points on BTC (2026-07-14).
+- The backtest is O(candles × window) inside a 29s Lambda, so the route rejects
+  ranges over `MAX_BACKTEST_CANDLES` (`period_too_long`) before fetching. The
+  builder never sends one, but the route is public.
 
 ## Pacifica REST (facts probed live, 2026-07-09/10)
 

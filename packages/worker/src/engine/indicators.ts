@@ -30,6 +30,21 @@ function alignTrailingIndicatorSeries(
   return out;
 }
 
+/**
+ * Index of the first finite value. Series fed to SMA/EMA can be another
+ * indicator's output, which is NaN-padded while it warms up — the rolling sum
+ * and the EMA seed would carry that NaN forever, so the warm-up prefix has to
+ * be dropped before computing.
+ */
+function firstFiniteIndex(values: number[]): number {
+  for (let i = 0; i < values.length; i += 1) {
+    if (Number.isFinite(values[i]!)) {
+      return i;
+    }
+  }
+  return values.length;
+}
+
 function computeSma(values: number[], period: number): number[] {
   if (values.length < period) {
     return [];
@@ -268,14 +283,22 @@ export function calculateSmaSeries(values: number[], period: number): number[] {
   if (values.length === 0 || period < 1) {
     return createIndicatorNaNSeries(values.length);
   }
-  return alignTrailingIndicatorSeries(computeSma(values, period), values.length);
+  const start = firstFiniteIndex(values);
+  return alignTrailingIndicatorSeries(
+    computeSma(values.slice(start), period),
+    values.length,
+  );
 }
 
 export function calculateEmaSeries(values: number[], period: number): number[] {
   if (values.length === 0 || period < 1) {
     return createIndicatorNaNSeries(values.length);
   }
-  return alignTrailingIndicatorSeries(computeEma(values, period), values.length);
+  const start = firstFiniteIndex(values);
+  return alignTrailingIndicatorSeries(
+    computeEma(values.slice(start), period),
+    values.length,
+  );
 }
 
 export function calculateRsiSeries(values: number[], period: number): number[] {

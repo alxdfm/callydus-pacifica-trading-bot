@@ -12,7 +12,35 @@ import { apiErrorSchema, isoDateTimeSchema } from "./common.js";
 // ---------------------------------------------------------------------------
 
 export const marketSymbolSchema = z.enum(["BTC/USDC", "ETH/USDC", "SOL/USDC"]);
-export const timeframeSchema = z.enum(["3m", "5m", "15m"]);
+export const timeframeSchema = z.enum(["3m", "5m", "15m", "1h", "4h"]);
+
+// O backtest roda numa Lambda de 29s e o custo é O(candles × janela): 3m em
+// 360d são ~172k candles e estouram o limite. O teto abaixo é o que cabe no
+// orçamento com folga para o fetch — a UI só oferece períodos que cabem e a
+// API recusa o resto (defesa em profundidade: a rota é pública)
+export const MAX_BACKTEST_CANDLES = 60_000;
+
+// Record exaustivo: acrescentar um timeframe ao enum sem duração aqui é erro
+// de typecheck, não bug silencioso em produção
+const TIMEFRAME_DURATION_MS: Record<
+  z.infer<typeof timeframeSchema>,
+  number
+> = {
+  "3m": 180_000,
+  "5m": 300_000,
+  "15m": 900_000,
+  "1h": 3_600_000,
+  "4h": 14_400_000,
+};
+
+/** Maior período de backtest que cabe no orçamento de simulação do timeframe. */
+export function maxBacktestDays(
+  timeframe: z.infer<typeof timeframeSchema>,
+): number {
+  return Math.floor(
+    (MAX_BACKTEST_CANDLES * TIMEFRAME_DURATION_MS[timeframe]) / 86_400_000,
+  );
+}
 
 export const triggerScopeSchema = z.enum(["previousCandle", "currentCandle"]);
 
@@ -154,6 +182,7 @@ export const activationBlockerSchema = z.enum([
   "stop_loss_missing",
   "no_entry_rules",
   "symbol_not_supported",
+  "invalid_indicator_source",
 ]);
 
 // A visão do registro persistido — status vem daqui e SÓ daqui

@@ -36,7 +36,7 @@ JSONB em `strategies.config` é o **draft** — fonte única em
 interface StrategyDraft {
   name:      string              // 1–80 chars
   symbol:    "BTC/USDC" | "ETH/USDC" | "SOL/USDC"
-  timeframe: "3m" | "5m" | "15m"
+  timeframe: "3m" | "5m" | "15m" | "1h" | "4h"
 
   indicators: Record<string, IndicatorConfig>
 
@@ -74,6 +74,19 @@ type IndicatorConfig =
   | { type: "donchian"; period: number; band: "upper" | "lower" | "middle" }
   | { type: "adx";      period: number }
 ```
+
+`source` em `sma`/`ema` aceita `"close"` (default do `ema`), `"volume"` ou o
+**nome de outro indicador** do mesmo draft (ex.: `sma` sobre uma `ema`, para
+suavizar). O engine resolve a cadeia recursivamente e descarta o prefixo de
+warm-up (NaN) da série de origem antes de calcular — antes de 2026-07-14 a soma
+rolante carregava esse NaN e a série encadeada saía inteira NaN, o que fazia a
+regra nunca disparar e a estratégia ficar sem operar, sem erro nenhum.
+Duas formas de quebrar o encadeamento passam pelo zod (`source` é `z.string()`) e
+são barradas no materialize com o blocker `invalid_indicator_source`: **ciclo**
+(`A → A` ou `A → B → A`, que faria a resolução recursiva estourar a pilha) e
+**nome inexistente** (série toda-NaN → a regra nunca seria satisfeita). Nos dois
+casos a estratégia é salvável mas não ativável — ativar, backtestar e o próprio
+worker recusam contrato nulo.
 
 ### TriggerGroup e TriggerRule
 

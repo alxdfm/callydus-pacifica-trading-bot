@@ -529,7 +529,8 @@ export type YourStrategyActivationBlocker =
   | "take_profit_missing"
   | "stop_loss_missing"
   | "no_entry_rules"
-  | "symbol_not_supported";
+  | "symbol_not_supported"
+  | "invalid_indicator_source";
 
 export type YourStrategyDraft = {
   name: string;
@@ -549,6 +550,43 @@ export type MaterializedYourStrategy = {
   technicalContract: StrategyConfig | null;
   activationBlockers: YourStrategyActivationBlocker[];
 };
+
+// Séries que o engine resolve sozinho — o resto de um `source` tem que ser
+// outro indicador declarado no mesmo draft
+const BUILT_IN_INDICATOR_SOURCES = new Set(["close", "volume", "PRICE"]);
+
+/**
+ * `source` pode encadear indicadores (ex.: uma sma sobre uma ema). Duas formas
+ * de quebrar isso passam pelo schema: apontar para um indicador inexistente
+ * (série toda-NaN → a regra nunca é satisfeita) e fechar um ciclo (`A → B → A`
+ * → a resolução recursiva estoura a pilha). Nos dois casos a estratégia nunca
+ * operaria, então ela não pode ser ativada.
+ */
+function hasInvalidIndicatorSource(
+  indicators: Record<string, IndicatorConfig>,
+): boolean {
+  const sourceOf = (name: string): string | undefined => {
+    const config = indicators[name];
+    return config && (config.type === "sma" || config.type === "ema")
+      ? config.source
+      : undefined;
+  };
+
+  for (const name of Object.keys(indicators)) {
+    const visited = new Set<string>([name]);
+    let current = sourceOf(name);
+
+    while (current !== undefined && !BUILT_IN_INDICATOR_SOURCES.has(current)) {
+      if (!(current in indicators) || visited.has(current)) {
+        return true;
+      }
+      visited.add(current);
+      current = sourceOf(current);
+    }
+  }
+
+  return false;
+}
 
 function ensureRiskSupportIndicators(
   draft: YourStrategyDraft,
@@ -585,6 +623,10 @@ export function materializeYourStrategyTechnicalContract(
 
   if (takeProfit === null) {
     activationBlockers.push("take_profit_missing");
+  }
+
+  if (hasInvalidIndicatorSource(indicators)) {
+    activationBlockers.push("invalid_indicator_source");
   }
 
   if (activationBlockers.length > 0) {

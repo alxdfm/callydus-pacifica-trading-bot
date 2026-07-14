@@ -24,12 +24,24 @@ WS-first bot: CandleBuffer in-memory → engine → executor. Never calls the AP
   `{method:"subscribe",params:{source:"candle",symbol,interval}}`; messages
   `{channel:"candle",data:{t,T,s,i,o,c,h,l,v}}`. There is NO `isClosed` flag —
   closure is detected by openTime rollover (`pendingByKey`). Warm-up via kline REST.
-- The WS intervals list must cover every timeframe the builder offers. A missing
-  interval (3m, 2026-07-10) means strategies on it silently never evaluate.
+- The WS feed subscribes the **cross-product symbol × interval**, and both sides
+  are derived from the active strategies (`resolveSymbols`/`resolveIntervals`) —
+  the interval list used to be hardcoded, which subscribed every builder
+  timeframe for every symbol. A pair that is never subscribed means a strategy
+  that silently never evaluates (it happened with 3m, 2026-07-10), so
+  `setSubscriptions` subscribes any missing pair when a strategy appears, and a
+  reconnect re-subscribes everything (a new socket inherits nothing). Covered by
+  `src/__tests__/unit.test.ts`. 1h/4h were probed live on the WS before being
+  offered (2026-07-14).
+- `intervalToMs` (warm-up range) only parses `m`/`h` and falls back to 5min for
+  anything else. Offering `1d` without fixing it would fetch 25h of daily candles,
+  never warm the buffer past `isWarm`'s 50, and the strategy would never fire —
+  silently. Same failure class as the missing-interval one above.
 - CandleBuffer capacity is 300 and dedupes/replaces by openTime. The backtest
-  simulation window mirrors it (`max(requiredPeriod+5, 300)`) — both for parity
-  with live evaluation and because the unbounded window was O(n²) and timed out
-  the Lambda.
+  simulation window mirrors it (`max(requiredPeriod+5, EVALUATION_WINDOW_CANDLES)`)
+  — both for parity with live evaluation and because the unbounded window was
+  O(n²) and timed out the Lambda. At 4h those 300 candles are 50 days of history,
+  which caps how long an indicator's lookback can be.
 - Per-strategy signed `PacificaClient` built from the decrypted credential;
   cache invalidated when the credential row changes. Pacifica `account` param =
   `strategy.userId` (main wallet); the agent wallet only signs.
