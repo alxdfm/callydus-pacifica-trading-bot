@@ -165,6 +165,27 @@ async function fetchAvailableBalanceUsd(
   }
 }
 
+// Lambda atrás do API Gateway não responde mais que 6 MB: no período máximo
+// (60k candles) as duas curvas do backtest somam ~6,2 MB e a resposta morre com
+// 502. Nenhum gráfico renderiza 60k pontos — ~2k é mais resolução que a tela.
+// O sumário (ending equity, max drawdown) é calculado ANTES, sobre a série cheia.
+const MAX_CURVE_POINTS = 2_000;
+
+function downsampleCurve<T>(points: T[]): T[] {
+  if (points.length <= MAX_CURVE_POINTS) return points;
+
+  const stride = Math.ceil(points.length / MAX_CURVE_POINTS);
+  const sampled = points.filter((_, i) => i % stride === 0);
+  const last = points[points.length - 1];
+
+  // O último ponto carrega o resultado final — nunca pode cair no stride
+  if (last !== undefined && sampled[sampled.length - 1] !== last) {
+    sampled.push(last);
+  }
+
+  return sampled;
+}
+
 function roundTo(value: number, decimals = 4): number {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
@@ -645,8 +666,8 @@ export function v2Routes(deps: AppDeps): Hono<HonoEnv> {
             drawdownCurve.reduce((max, p) => Math.max(max, p.drawdownPercent), 0),
           ),
         },
-        equityCurve: equityCurve.map((p) => ({ time: p.time, equity: p.equity })),
-        holdCurve: holdCurve.map((p) => ({ time: p.time, equity: p.equity })),
+        equityCurve: downsampleCurve(equityCurve).map((p) => ({ time: p.time, equity: p.equity })),
+        holdCurve: downsampleCurve(holdCurve).map((p) => ({ time: p.time, equity: p.equity })),
         candlesUsed: candles.length,
       });
     } catch (error: unknown) {
