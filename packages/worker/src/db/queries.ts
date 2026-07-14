@@ -1,4 +1,4 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, gte, ne } from "drizzle-orm";
 import type { DrizzleDb } from "./client.js";
 import { accounts, credentials, strategies, trades, events } from "./schema.js";
 
@@ -49,6 +49,24 @@ export async function getOpenTradesForStrategy(
     .from(trades)
     .where(
       and(eq(trades.strategyId, strategyId), ne(trades.status, "closed")),
+    );
+}
+
+/**
+ * Trades da estratégia (qualquer status, incluindo fechados) abertos a partir
+ * de `since`. É o dedupe persistido de "um candle = uma entrada": o mapa em
+ * memória do bot morre com a invocação da Lambda.
+ */
+export async function getTradesForStrategySince(
+  db: DrizzleDb,
+  strategyId: string,
+  since: Date,
+): Promise<Trade[]> {
+  return db
+    .select()
+    .from(trades)
+    .where(
+      and(eq(trades.strategyId, strategyId), gte(trades.openedAt, since)),
     );
 }
 

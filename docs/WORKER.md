@@ -98,10 +98,12 @@ Para cada estratégia ativa:
 
 ```
 1. CandleBuffer.get(symbol, interval), filtrado a candle fechado
-2. candle já avaliado (lastEvaluatedCandleOpenTime) → skip
-3. evaluateSignal(config, candles) → signal
-4. signal == "none" → skip
-5. posição já aberta no BANCO → skip (onePositionPerSymbol)
+2. evaluateSignal(config, candles) → signal
+3. signal == "none" → skip
+4. posição já aberta no BANCO → skip (onePositionPerSymbol)
+5. candle já TEVE trade → skip (dedupe persistido: trades com
+   openedAt >= latestCandle.closeTime — um stop-out intra-candle não
+   reabre a mesma posição no mesmo sinal; ordem falhada pode re-tentar)
 6. posição não registrada na EXCHANGE → skip (guard contra posição órfã:
    crash entre a ordem e o insert, ou trade manual do usuário — o reconcile
    só anda banco→exchange e nunca a veria; sem verificar, não entra)

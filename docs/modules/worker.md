@@ -10,12 +10,15 @@ would double the position.
 
 ## Regras de Negócio
 
-- Evaluation happens once per CLOSED candle. `lastEvaluatedCandleOpenTime` is
-  marked BEFORE order execution so a slow order can't double-fire on the same
-  candle. The map is in-memory (per Lambda container): a cold start CAN
-  re-evaluate a 4h candle already seen — the DB open-position check plus the
-  exchange-side untracked-position guard bound the worst case to "retry an
-  order that FAILED on the same candle", never a duplicate position.
+- Evaluation happens once per CLOSED candle, but ENTRY dedupe is persisted in
+  the DB (`getTradesForStrategySince`): a candle's entry always happens AFTER
+  its closeTime, so any trade (even one already stopped out) with
+  `openedAt >= latestCandle.closeTime` belongs to this candle and blocks a new
+  entry. Without this, an intra-candle stop-out would re-open the same position
+  on the same signal on the next hourly invocation (the old in-memory map dies
+  with the Lambda) — the backtest never re-enters a candle. A FAILED order
+  inserts no trade row, so it may still retry on the next invocation of the
+  same candle (accepted).
 - Before entering, the bot checks the EXCHANGE for a position on the symbol
   (not just the DB): reconcile only walks DB→exchange, so an orphan position
   (crash between order and insert, or a manual user trade) is invisible to it.

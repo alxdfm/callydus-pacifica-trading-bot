@@ -7,6 +7,7 @@ import type { DrizzleDb } from "./db/client.js";
 import {
   getActiveCredentialForWallet,
   getOpenTradesForStrategy,
+  getTradesForStrategySince,
   insertEvent,
   insertTrade,
   updateTrade,
@@ -306,10 +307,6 @@ export function createBot(input: BotInput): {
   const { db, exchange, candleBuffer, env } = input;
 
   let activeStrategies: Strategy[] = [];
-  // Avaliação por candle fechado (paridade com o backtest): guarda o openTime
-  // do último candle avaliado por strategy — sinal sem ordem e ordem falhada
-  // NÃO reavaliam o mesmo candle
-  const lastEvaluatedCandleOpenTime = new Map<string, number>();
   const decryption = new AesCredentialDecryptionService(
     env.CREDENTIAL_ENCRYPTION_KEY,
   );
@@ -727,13 +724,6 @@ export function createBot(input: BotInput): {
 
     if (!latestCandle) return;
 
-    // Um candle fechado = uma avaliação (paridade com o backtest); marca antes
-    // para que sinal sem ordem ou ordem falhada não re-tente no mesmo candle
-    if (lastEvaluatedCandleOpenTime.get(strategy.id) === latestCandle.openTime) {
-      return;
-    }
-    lastEvaluatedCandleOpenTime.set(strategy.id, latestCandle.openTime);
-
     const evaluation = evaluateSignal(config, candles);
 
     if (evaluation.signal === "none") {
@@ -755,6 +745,29 @@ export function createBot(input: BotInput): {
         strategyId: strategy.id,
         symbol: config.symbol,
         signal: evaluation.signal,
+      });
+      return;
+    }
+
+    // Um candle fechado = UMA entrada (paridade com o backtest), persistido no
+    // banco porque o processo morre entre invocações. A entrada de um candle
+    // acontece sempre DEPOIS do closeTime dele, então qualquer trade (mesmo já
+    // fechado por stop) com openedAt >= closeTime pertence a este candle — sem
+    // isto, um stop-out intra-candle reabriria a mesma posição no mesmo sinal.
+    // Ordem FALHADA não insere trade, então ela ainda pode re-tentar na próxima
+    // invocação do mesmo candle.
+    const tradesThisCandle = await getTradesForStrategySince(
+      db,
+      strategy.id,
+      new Date(latestCandle.closeTime),
+    );
+
+    if (tradesThisCandle.some((t) => t.symbol === config.symbol)) {
+      logger.info("[bot] signal skipped — candle already traded", {
+        strategyId: strategy.id,
+        symbol: config.symbol,
+        signal: evaluation.signal,
+        candleOpenTime: latestCandle.openTime,
       });
       return;
     }
