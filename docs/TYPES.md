@@ -66,14 +66,35 @@ obrigatória, ver `docs/modules/worker.md`). Ele nunca é persistido nem trafega
 
 ```typescript
 type IndicatorConfig =
-  | { type: "ema";      period: number; source?: string }
-  | { type: "rsi";      period: number }
-  | { type: "atr";      period: number }
+  | { type: "ema";           period: number; source?: string }
+  | { type: "rsi";           period: number }
+  | { type: "atr";           period: number }
   | { type: "volume" }
-  | { type: "sma";      source: string; period: number }
-  | { type: "donchian"; period: number; band: "upper" | "lower" | "middle" }
-  | { type: "adx";      period: number }
+  | { type: "sma";           source: string; period: number }
+  | { type: "donchian";      period: number; band: "upper" | "lower" | "middle" }
+  | { type: "adx";           period: number }
+  | { type: "volumeProfile"; period: number; level: "poc" | "vah" | "val" }
 ```
+
+`volumeProfile` emite um **preço** (o point of control, ou uma borda da value
+area de 70%), então entra nas regras como `ref` contra `PRICE` igual a uma EMA —
+nenhum trigger novo foi preciso. Três decisões carregam peso:
+
+- **A janela exclui o candle atual**, como no `donchian` e pelo mesmo motivo: com
+  o candle atual dentro, o volume dele próprio puxa o POC e `PRICE crossesAbove
+  POC` nunca dispara limpo.
+- **Cada candle entra como massa pontual no preço típico `(h+l+c)/3`**, e não
+  espalhado pelo range H–L. Sem tick data não sabemos ONDE dentro do candle o
+  volume negociou; espalhá-lo inventaria precisão que o dado não tem.
+- **24 faixas fixas** sobre o range da janela, value area de 70% (convenção do
+  Market Profile). O nº de faixas não é configurável de propósito: é resolução,
+  não preferência, e mais um parâmetro livre é mais espaço para overfit.
+
+Custo: diferente de todos os outros, cada posição é O(period) — as faixas são
+relativas à janela e não deslizam. O engine só lê o último e o penúltimo valor de
+qualquer série (`INDICATOR_TAIL_POSITIONS`), então só essa cauda é calculada;
+calcular a série inteira transformava um backtest de 60k candles em 14s de
+binning puro (medido), contra ~1s hoje.
 
 `source` em `sma`/`ema` aceita `"close"` (default do `ema`), `"volume"` ou o
 **nome de outro indicador** do mesmo draft (ex.: `sma` sobre uma `ema`, para

@@ -75,9 +75,26 @@ Em produção o worker é um `sst.aws.Service` (`sst.config.ts`) no cluster
 `PacificaCluster`: o `sst deploy` builda a imagem do `packages/worker/Dockerfile`,
 publica no ECR e substitui a task. Não há passo manual de Docker no deploy.
 
-- Memory: 0.5 GB
+- CPU/Memory: 0.25 vCPU / 0.5 GB, `architecture: "arm64"` (Graviton, ~20% mais
+  barato). O runner do CI é x86, então o workflow registra o binfmt do QEMU antes
+  do `sst deploy` para conseguir buildar a imagem em `linux/arm64`.
 - Env injetado pela task definition (mesmas variáveis do `.env`)
 - Alarme "dead man's switch": ausência de métrica de CPU = worker parado → SNS
+
+### Rede: por que não há NAT
+
+A VPC é criada **sem NAT** de propósito. O SST coloca os containers de um
+`sst.aws.Service` nas subnets **públicas** com IP público (`assignPublicIp`), então
+a task já sai pela Internet Gateway — um NAT nunca veria tráfego e custaria ~$20/mês
+parado (o SST sobe uma instância NAT + um Elastic IP **por AZ**, e o default é 2 AZs).
+
+O inbound continua fechado: o SG default da VPC só aceita tráfego do CIDR da própria
+VPC, e o worker não escuta em porta nenhuma (é cliente WS/REST, sem `EXPOSE`).
+
+O único motivo para religar o NAT é precisar de **IP de saída fixo** (allowlist de IP
+na Pacifica ou o IP Allow do Neon) — a task em subnet pública troca de IP a cada
+restart. Nesse caso, o mais barato é `nat: { ec2: { instance: "t4g.nano" } }` com
+`az: 1` (~$7/mês), não o default.
 
 Para rodar localmente:
 

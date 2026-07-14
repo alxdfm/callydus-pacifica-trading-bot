@@ -37,6 +37,19 @@ WS-first bot: CandleBuffer in-memory → engine → executor. Never calls the AP
   anything else. Offering `1d` without fixing it would fetch 25h of daily candles,
   never warm the buffer past `isWarm`'s 50, and the strategy would never fire —
   silently. Same failure class as the missing-interval one above.
+- The `prices` WS channel is **global**: one subscribe with NO symbol returns all
+  69 exchange symbols (funding, next_funding, open_interest, oracle, mark, mid,
+  volume_24h, timestamp). Subscribing per symbol would just multiply the same
+  message. `market-recorder.ts` persists it — one row per symbol per minute,
+  bucketed and `onConflictDoNothing` against the unique `(symbol, recorded_at)`
+  index, so a restart mid-minute cannot duplicate. The feed itself never touches
+  the DB; it hands snapshots to the recorder through `onPrices`.
+- The recorder writes `RECORDED_SYMBOLS` (BTC/ETH/SOL — the tradable universe)
+  regardless of which strategies are active. Deriving it from active strategies
+  would punch holes in the series exactly during the periods with no bot running,
+  and a series with holes is worthless for the backtest it exists to enable.
+  Writes are fire-and-forget: a DB failure is logged and dropped, never allowed
+  to reach the order path.
 - CandleBuffer capacity is 300 and dedupes/replaces by openTime. The backtest
   simulation window mirrors it (`max(requiredPeriod+5, EVALUATION_WINDOW_CANDLES)`)
   — both for parity with live evaluation and because the unbounded window was
@@ -55,7 +68,45 @@ WS-first bot: CandleBuffer in-memory → engine → executor. Never calls the AP
   RETURNED by `createBot` — attaching to the input was a silent no-op (the
   "bot never executed" incident).
 
+## O que a Pacifica expõe de dado de mercado (probado ao vivo, 2026-07-14)
+
+Isto decide quais indicadores o produto PODE ter. A regra é única: **um indicador
+que o backtest não enxerga não pode chegar ao builder** — e o que separa o
+possível do impossível não é a lógica, é a existência de **histórico**.
+
+| Fonte | Histórico? |
+|---|---|
+| `/api/v1/kline` — OHLCV + `v` (volume) + `n` (nº de trades) | **Sim**, 360d+ |
+| `/api/v1/trades` — tape com campo `cause` | **Não** — devolve ~2 min e IGNORA `limit`, `start_time` e `offset` (os três testados) |
+| `/api/v1/book` — profundidade | **Não** — snapshot do instante |
+| `/api/v1/info` e WS `prices` — funding, open interest | **Não** — só o valor corrente |
+| WS `liquidations` / `funding_rate` | Não existem (400 "Invalid subscription parameters") |
+
+Consequências, para não serem re-litigadas:
+
+- **Volume profile é viável** e foi implementado: o kline tem volume com 360 dias,
+  então o perfil é aproximável e, principalmente, **backtestável**.
+- **Heatmap de liquidação não é viável.** Não há stream de liquidação; o único
+  rastro seria o `cause` do tape, que tem dois minutos de memória. Não há histórico
+  para construir o heatmap nem para testá-lo. Além disso um heatmap não é dado
+  observado — é dado MODELADO a partir de OI + suposição de alavancagem — e os
+  níveis que realmente movem o BTC estão na Binance/Bybit, não aqui.
+- **Nível de demanda via book não é viável.** Sem histórico → não backtestável. E
+  num perp DEX fino a profundidade é majoritariamente cotação de market maker que
+  evapora na aproximação. O `donchian` já é uma versão crua e testável de "onde o
+  preço achou suporte".
+- **Funding e open interest são a única fonte de sinal ortogonal ao OHLCV** que
+  existe aqui — tudo o mais (EMA, RSI, ADX, Donchian, volume profile) é
+  transformação do mesmo preço. Não têm histórico, e a única cura para falta de
+  histórico é começar a gravar: é exatamente isso que o `market-recorder` faz.
+  Em alguns meses há série própria contra a qual testar funding extremo e
+  divergência de OI. Até lá, funding continua sendo um **custo não modelado** no
+  backtest (BTC ~0,017%/dia se o funding for horário — não é fatal perto dos
+  0,18% de round-trip, mas a estratégia de 4h segura posição por dias).
+
 ## Problemas Conhecidos
 
 - DT-001 (LISTEN/NOTIFY instead of polling), DT-003 (formal circuit breaker) and
   DT-004 (integration tests for bot.ts) remain open — see CLAUDE.md.
+- `market_snapshots` cresce ~1.6M linhas/ano e ninguém a poda nem a lê ainda —
+  ela existe só para ter passado quando o sinal de funding/OI for construído.

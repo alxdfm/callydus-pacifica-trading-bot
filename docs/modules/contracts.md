@@ -34,6 +34,18 @@ the same schemas; the API validates its own responses against them before sendin
   the 29s backtest Lambda: the builder only offers periods that fit and the route
   rejects the rest (`period_too_long`). 3m × 360d is ~172k candles and does not
   fit — measured at ~10s of simulation alone, before the 44-chunk candle fetch.
+- Adding an indicator to `indicatorConfigSchema` is only half the job: both
+  engines (`api/` and `worker/`) switch exhaustively on `type`, so a missing case
+  is a typecheck error — but `shared/src/types/signal.ts` carries a SECOND,
+  hand-written `IndicatorConfig` (the worker imports that one, not the zod
+  inference). Both must gain the member. The builder's `INDICATOR_TYPES`,
+  `describeIndicator`, `suggestIndicatorKey` and `draft-validation.ts`
+  (`resolveIndicatorContext`) also switch on it.
+- An indicator the backtest cannot see must not reach the builder. The product's
+  whole promise is "test before you activate"; a configurable-but-unvalidatable
+  indicator is worse than none. This is the rule that admitted `volumeProfile`
+  (klines carry `v` with 360d of history) and rejected liquidation heatmaps and
+  order-book depth — see `docs/modules/worker.md` for the data probe.
 
 ## Decisões Técnicas
 

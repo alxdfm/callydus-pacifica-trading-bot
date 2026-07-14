@@ -147,6 +147,9 @@ Schema Drizzle em `packages/api/src/db/schema.ts`. Tabelas principais:
 - `events` — log de eventos operacionais
 - `builder_approvals` — aprovações de builder code
 - `accounts` + `credentials` (via queries em `db/queries/accounts.ts`)
+- `market_snapshots` — funding, open interest e mark/oracle gravados do WS pelo
+  worker (1 linha/símbolo/minuto). A Pacifica não guarda histórico desses dados;
+  gravamos para que um dia sejam backtestáveis. Ver `docs/modules/worker.md`.
 
 ### Autenticação
 

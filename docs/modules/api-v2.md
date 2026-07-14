@@ -42,6 +42,13 @@ The only data surface the frontend consumes (besides auth/onboarding).
 - The backtest is O(candles × window) inside a 29s Lambda, so the route rejects
   ranges over `MAX_BACKTEST_CANDLES` (`period_too_long`) before fetching. The
   builder never sends one, but the route is public.
+- Every indicator is recomputed from scratch on the 300-candle window, once per
+  candle — necessary for EMA/RSI/ATR/ADX, which are path-dependent and need the
+  seed. The engine then reads only the last two values of each series. Cheap
+  indicators don't care; `volumeProfile` costs O(period) PER POSITION, so
+  computing the full series cost 14s of pure binning at 60k candles (measured)
+  versus ~1s when only the read tail is computed. Any future indicator that is
+  not O(1) per position has to reckon with the same multiplier.
 
 ## Pacifica REST (facts probed live, 2026-07-09/10)
 
