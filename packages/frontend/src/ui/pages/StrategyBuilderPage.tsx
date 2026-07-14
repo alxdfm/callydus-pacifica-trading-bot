@@ -33,7 +33,7 @@ const presetSymbolSchema = marketSymbolSchema;
 // Constantes e helpers puros
 // ---------------------------------------------------------------------------
 
-const TIMEFRAMES = ["3m", "5m", "15m", "1h", "4h"] as const;
+const TIMEFRAMES = ["1h", "4h"] as const;
 const BACKTEST_PERIODS = [
   { days: 7, labelKey: "builderPeriod7d" },
   { days: 30, labelKey: "builderPeriod30d" },
@@ -151,7 +151,7 @@ function createDefaultDraft(): YourStrategyDraft {
   return {
     name: "YOUR Strategy",
     symbol: "BTC/USDC",
-    timeframe: "5m",
+    timeframe: "4h",
     indicators: {
       EMA9: { type: "ema", period: 9 },
       EMA21: { type: "ema", period: 21 },

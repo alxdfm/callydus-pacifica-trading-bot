@@ -12,7 +12,11 @@ import { apiErrorSchema, isoDateTimeSchema } from "./common.js";
 // ---------------------------------------------------------------------------
 
 export const marketSymbolSchema = z.enum(["BTC/USDC", "ETH/USDC", "SOL/USDC"]);
-export const timeframeSchema = z.enum(["3m", "5m", "15m", "1h", "4h"]);
+// Só 1h/4h desde 2026-07-14: o worker é uma Lambda agendada de hora em hora
+// (avaliação no fechamento do candle), então timeframe sub-horário avaliaria
+// atrasado 3 de cada 4 candles. A pesquisa também mostrou que em 15m a taxa
+// come o sinal — o edge medido está em 4h.
+export const timeframeSchema = z.enum(["1h", "4h"]);
 
 // O backtest roda numa Lambda de 29s e o custo é O(candles × janela): 3m em
 // 360d são ~172k candles e estouram o limite. O teto abaixo é o que cabe no
@@ -26,9 +30,6 @@ const TIMEFRAME_DURATION_MS: Record<
   z.infer<typeof timeframeSchema>,
   number
 > = {
-  "3m": 180_000,
-  "5m": 300_000,
-  "15m": 900_000,
   "1h": 3_600_000,
   "4h": 14_400_000,
 };
