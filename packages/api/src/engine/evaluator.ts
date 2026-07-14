@@ -324,6 +324,12 @@ export type SimulatePresetBacktestInput = {
   leverage?: number;
   feePercent?: number;
   slippagePercent?: number;
+  /**
+   * Start of the period being measured. Candles before it are history only:
+   * they feed the indicators but open no trades and are not priced into the
+   * hold benchmark. Defaults to the first tradable candle (warm-up = lookback).
+   */
+  tradingStartTime?: number;
 };
 
 export type SimulatePresetBacktestResult = {
@@ -527,7 +533,12 @@ export function simulatePresetBacktest(
   let equity = input.initialCapitalUsd;
   let peakEquity = input.initialCapitalUsd;
 
-  const firstTradableCandle = input.candles[requiredPeriod];
+  const startIndex = resolveTradingStartIndex(
+    input.candles,
+    requiredPeriod,
+    input.tradingStartTime,
+  );
+  const firstTradableCandle = input.candles[startIndex];
 
   if (!firstTradableCandle) {
     return {
@@ -559,7 +570,7 @@ export function simulatePresetBacktest(
     openedAt: string;
   } | null = null;
 
-  for (let index = requiredPeriod; index < input.candles.length; index += 1) {
+  for (let index = startIndex; index < input.candles.length; index += 1) {
     const currentCandle = input.candles[index];
 
     if (!currentCandle) {
@@ -583,10 +594,13 @@ export function simulatePresetBacktest(
 
     if (!openPosition) {
       const nextCandle = input.candles[index + 1];
-      // Janela limitada espelhando o CandleBuffer do worker (capacity 300):
-      // é como o bot avalia ao vivo, e a janela crescente era O(n²) — com RSI
-      // em 14k candles estourava o timeout de 29s da Lambda
-      const evaluationWindow = Math.max(requiredPeriod + 5, 300);
+      // Janela limitada espelhando o CandleBuffer do worker: é como o bot
+      // avalia ao vivo, e a janela crescente era O(n²) — com RSI em 14k candles
+      // estourava o timeout de 29s da Lambda
+      const evaluationWindow = Math.max(
+        requiredPeriod + 5,
+        EVALUATION_WINDOW_CANDLES,
+      );
       const candleWindow = input.candles.slice(
         Math.max(0, index + 1 - evaluationWindow),
         index + 1,
@@ -736,6 +750,36 @@ export function simulatePresetBacktest(
     drawdownCurve,
     trades,
   };
+}
+
+/**
+ * Candles the simulator keeps in its evaluation window, mirroring the worker's
+ * CandleBuffer capacity. Callers must warm up at least this many candles before
+ * the measured period, otherwise the backtest evaluates its first candles on a
+ * shorter history than the live bot has.
+ */
+export const EVALUATION_WINDOW_CANDLES = 300;
+
+/**
+ * First candle that may open a trade: the lookback the indicators need, pushed
+ * forward to `tradingStartTime` when the caller measures a specific period.
+ */
+function resolveTradingStartIndex(
+  candles: MarketCandle[],
+  requiredPeriod: number,
+  tradingStartTime: number | undefined,
+): number {
+  if (tradingStartTime === undefined) {
+    return requiredPeriod;
+  }
+
+  const firstInPeriod = candles.findIndex(
+    (candle) => candle.openTime >= tradingStartTime,
+  );
+
+  return firstInPeriod === -1
+    ? candles.length
+    : Math.max(requiredPeriod, firstInPeriod);
 }
 
 export function getRequiredPeriod(technicalContract: PresetTechnicalContract): number {

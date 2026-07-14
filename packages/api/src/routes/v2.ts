@@ -35,6 +35,7 @@ import {
 import { getEventsByStrategyId, type Event } from "../db/queries/events.js";
 import {
   EquityDepletedError,
+  EVALUATION_WINDOW_CANDLES,
   getIntervalDurationMs,
   getRequiredPeriod,
   materializeYourStrategyTechnicalContract,
@@ -549,8 +550,11 @@ export function v2Routes(deps: AppDeps): Hono<HonoEnv> {
         technicalContract.timeframe as MarketCandleInterval,
       );
       const requiredPeriod = getRequiredPeriod(technicalContract);
+      // O warm-up precisa cobrir a janela de avaliação inteira, senão o começo
+      // do período roda com menos histórico do que o bot tem ao vivo
       const warmupStartTime =
-        startTime - intervalMs * Math.max(requiredPeriod + 5, 30);
+        startTime -
+        intervalMs * Math.max(requiredPeriod + 5, EVALUATION_WINDOW_CANDLES);
 
       const candles = await fetchCandlesInChunks({
         baseUrl: deps.env.PACIFICA_REST_BASE_URL,
@@ -579,6 +583,7 @@ export function v2Routes(deps: AppDeps): Hono<HonoEnv> {
           leverage,
           feePercent,
           slippagePercent,
+          tradingStartTime: startTime,
         });
       } catch (error) {
         if (error instanceof EquityDepletedError) {
