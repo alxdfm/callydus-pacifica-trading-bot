@@ -210,3 +210,35 @@ export const authNonces = pgTable(
     index("auth_nonces_wallet_idx").on(t.walletAddress),
   ],
 );
+
+// Funding, open interest e mark/oracle do canal `prices` do WS. A Pacifica NÃO
+// expõe histórico disso em lugar nenhum (probado em 2026-07-14: /api/v1/trades
+// devolve ~2 min e ignora paginação; /api/v1/info só o valor corrente; não há
+// stream de liquidação). Esses dados são ORTOGONAIS ao OHLCV — é a única fonte
+// de sinal que não é uma transformação do preço — e a única forma de um dia
+// backtestar funding extremo ou divergência de OI é começar a gravar agora.
+// O worker escreve uma linha por símbolo por minuto (ver market-recorder.ts).
+export const marketSnapshots = pgTable(
+  "market_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    symbol: text("symbol").notNull(),
+    fundingRate: numeric("funding_rate"),
+    nextFundingRate: numeric("next_funding_rate"),
+    openInterest: numeric("open_interest"),
+    oraclePrice: numeric("oracle_price"),
+    markPrice: numeric("mark_price"),
+    midPrice: numeric("mid_price"),
+    volume24h: numeric("volume_24h"),
+    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    // Idempotência: o recorder trunca o instante ao minuto, então um restart (ou
+    // duas mensagens no mesmo minuto) não duplica a linha — o insert usa
+    // onConflictDoNothing contra este índice.
+    uniqueIndex("market_snapshots_symbol_recorded_at_idx").on(
+      t.symbol,
+      t.recordedAt,
+    ),
+  ],
+);

@@ -7,6 +7,7 @@ import { PacificaClient } from "./exchange/pacifica/client.js";
 import { PacificaAdapter } from "./exchange/pacifica/adapter.js";
 import { createBot } from "./bot.js";
 import { createDbWatcher } from "./db-watcher.js";
+import { createMarketRecorder } from "./market-recorder.js";
 import { getActiveStrategies } from "./db/queries.js";
 
 const env = loadWorkerEnv();
@@ -41,6 +42,12 @@ function resolveIntervals(strategies: { config: unknown }[]): CandleInterval[] {
   ];
 }
 
+// Universo negociável (`marketSymbolSchema`). O recorder grava estes símbolos
+// SEMPRE, independentemente de haver estratégia ativa neles: a série só vale se
+// for contínua, e depender das estratégias abriria buracos exatamente nos
+// períodos sem bot rodando.
+const RECORDED_SYMBOLS = ["BTC", "ETH", "SOL"];
+
 // Resolve initial symbols/intervals from DB before starting the feed
 const initialStrategies = await getActiveStrategies(db);
 const symbols = resolveSymbols(initialStrategies);
@@ -60,12 +67,15 @@ const pacificaClient = new PacificaClient({
 
 const adapter = new PacificaAdapter(pacificaClient);
 
+const marketRecorder = createMarketRecorder({ db, symbols: RECORDED_SYMBOLS });
+
 const wsFeed = createWsFeed({
   wsUrl: env.PACIFICA_WS_URL,
   restBaseUrl: env.PACIFICA_REST_URL,
   symbols,
   intervals,
   buffer,
+  onPrices: marketRecorder.onSnapshots,
 });
 
 const bot = createBot({

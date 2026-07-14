@@ -1,6 +1,7 @@
 import type { Candle, CandleInterval } from "@pacifica/shared";
 import { WebSocket } from "ws";
 import type { CandleBuffer } from "./candle-buffer.js";
+import type { MarketSnapshot } from "./market-recorder.js";
 
 type WsFeedLogger = {
   info: (...a: unknown[]) => void;
@@ -14,6 +15,11 @@ type WsFeedInput = {
   intervals: CandleInterval[];
   buffer: CandleBuffer;
   onWarm?: (symbol: string, interval: CandleInterval) => void;
+  /**
+   * Recebe o canal `prices` (funding, open interest, mark/oracle/mid). O feed
+   * não sabe o que é feito com isso — quem grava é o market-recorder.
+   */
+  onPrices?: (snapshots: MarketSnapshot[]) => void;
   logger?: WsFeedLogger;
 };
 
@@ -91,6 +97,14 @@ export function createWsFeed(input: WsFeedInput): {
       const pending = pendingSubscriptions();
       subscribeTo(socket, pending);
       void warmUpBuffers(pending);
+
+      // Canal `prices` é GLOBAL (um subscribe, sem symbol, devolve os 69
+      // símbolos da exchange) — diferente de `candle`, que é por par
+      if (input.onPrices) {
+        socket.send(
+          JSON.stringify({ method: "subscribe", params: { source: "prices" } }),
+        );
+      }
     });
 
     socket.on("message", (data) => {
@@ -114,10 +128,49 @@ export function createWsFeed(input: WsFeedInput): {
     });
   }
 
+  /** `null` quando o campo vem ausente ou impossível de parsear — nunca 0. */
+  function toNumberOrNull(value: unknown): number | null {
+    if (value === null || value === undefined || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function handlePrices(data: unknown) {
+    if (!Array.isArray(data) || !input.onPrices) return;
+
+    const snapshots: MarketSnapshot[] = [];
+    for (const item of data) {
+      if (!item || typeof item !== "object") continue;
+      const row = item as Record<string, unknown>;
+      const symbol = String(row.symbol ?? "").trim();
+      const timestamp = Number(row.timestamp);
+      if (!symbol || !Number.isFinite(timestamp)) continue;
+
+      snapshots.push({
+        symbol,
+        funding: toNumberOrNull(row.funding),
+        nextFunding: toNumberOrNull(row.next_funding),
+        openInterest: toNumberOrNull(row.open_interest),
+        oracle: toNumberOrNull(row.oracle),
+        mark: toNumberOrNull(row.mark),
+        mid: toNumberOrNull(row.mid),
+        volume24h: toNumberOrNull(row.volume_24h),
+        timestamp,
+      });
+    }
+
+    if (snapshots.length > 0) input.onPrices(snapshots);
+  }
+
   function handleMessage(message: unknown) {
     if (!message || typeof message !== "object") return;
 
     const msg = message as { channel?: unknown; data?: unknown };
+
+    if (msg.channel === "prices") {
+      handlePrices(msg.data);
+      return;
+    }
 
     // Formato real: { channel: "candle", data: { t,T,s,i,o,c,h,l,v } }
     if (msg.channel !== "candle" || !msg.data || typeof msg.data !== "object") {
