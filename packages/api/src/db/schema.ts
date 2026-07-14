@@ -217,7 +217,9 @@ export const authNonces = pgTable(
 // stream de liquidação). Esses dados são ORTOGONAIS ao OHLCV — é a única fonte
 // de sinal que não é uma transformação do preço — e a única forma de um dia
 // backtestar funding extremo ou divergência de OI é começar a gravar agora.
-// O worker escreve uma linha por símbolo por minuto (ver market-recorder.ts).
+// O worker escreve uma linha por símbolo por hora (ver market-snapshot.ts) —
+// resolução plena para funding, que muda de hora em hora; a dinâmica intra-hora
+// de OI foi trade-off aceito em 2026-07-14 junto com o worker agendado.
 export const marketSnapshots = pgTable(
   "market_snapshots",
   {
@@ -233,8 +235,8 @@ export const marketSnapshots = pgTable(
     recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
   },
   (t) => [
-    // Idempotência: o recorder trunca o instante ao minuto, então um restart (ou
-    // duas mensagens no mesmo minuto) não duplica a linha — o insert usa
+    // Idempotência: o snapshot trunca o instante à hora, então uma reexecução
+    // dentro da mesma hora não duplica a linha — o insert usa
     // onConflictDoNothing contra este índice.
     uniqueIndex("market_snapshots_symbol_recorded_at_idx").on(
       t.symbol,

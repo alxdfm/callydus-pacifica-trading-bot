@@ -1,347 +1,178 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { CandleInterval } from "@pacifica/shared";
-import { CandleBuffer } from "../candle-buffer.js";
+import { describe, it, expect } from "vitest";
+import { parseKlinePayload } from "../candle-fetch.js";
+import { parseMarketInfoSnapshots } from "../market-snapshot.js";
+import { resolveCandlePairs } from "../handler.js";
 
 // ---------------------------------------------------------------------------
-// ws-feed: o cross-product símbolo × intervalo é o que mantém o bot vivo — um
-// par não assinado significa estratégia que nunca avalia, e em silêncio
+// candle-fetch: o parse do /api/v1/kline é a única fonte de candles do worker
+// agendado — um shape mal interpretado significa avaliação sobre lixo
 // ---------------------------------------------------------------------------
 
-type Handler = (...args: unknown[]) => void;
+describe("parseKlinePayload", () => {
+  it("parses snake_case rows wrapped in a data envelope", () => {
+    const payload = {
+      data: [
+        {
+          open_time: 1_000,
+          close_time: 4_600_000,
+          open: "100",
+          high: "110",
+          low: "90",
+          close: "105",
+          volume: "12.5",
+        },
+      ],
+    };
 
-class FakeSocket {
-  static instances: FakeSocket[] = [];
-  static OPEN = 1;
+    const candles = parseKlinePayload(payload, "BTC", "1h" as const);
 
-  readyState = 0;
-  sent: string[] = [];
-  private handlers = new Map<string, Handler[]>();
-
-  constructor(public url: string) {
-    FakeSocket.instances.push(this);
-  }
-
-  on(event: string, handler: Handler) {
-    const list = this.handlers.get(event) ?? [];
-    list.push(handler);
-    this.handlers.set(event, list);
-  }
-
-  send(payload: string) {
-    this.sent.push(payload);
-  }
-
-  close() {
-    this.emit("close");
-  }
-
-  emit(event: string, ...args: unknown[]) {
-    for (const handler of this.handlers.get(event) ?? []) handler(...args);
-  }
-
-  open() {
-    this.readyState = FakeSocket.OPEN;
-    this.emit("open");
-  }
-
-  /** Pares assinados nesta conexão, como `SYMBOL_interval`. */
-  subscriptions(): string[] {
-    return this.sent
-      .map((raw) => JSON.parse(raw) as { method: string; params: { symbol: string; interval: string } })
-      .filter((message) => message.method === "subscribe")
-      .map((message) => `${message.params.symbol}_${message.params.interval}`);
-  }
-}
-
-vi.mock("ws", () => ({
-  WebSocket: class {
-    static OPEN = 1;
-    constructor(url: string) {
-      return new FakeSocket(url) as unknown as WebSocket;
-    }
-  },
-}));
-
-const { createWsFeed } = await import("../ws-feed.js");
-
-const silentLogger = { info: () => {}, error: () => {} };
-
-function buildFeed(symbols: string[], intervals: CandleInterval[]) {
-  return createWsFeed({
-    wsUrl: "wss://test",
-    restBaseUrl: "https://test",
-    symbols,
-    intervals,
-    buffer: new CandleBuffer(300),
-    logger: silentLogger,
-  });
-}
-
-describe("createWsFeed subscriptions", () => {
-  beforeEach(() => {
-    FakeSocket.instances = [];
-    // O warm-up dispara fetch REST; aqui só as subscrições importam
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503 })));
+    expect(candles).toHaveLength(1);
+    expect(candles[0]).toMatchObject({
+      symbol: "BTC",
+      interval: "1h",
+      openTime: 1_000,
+      closeTime: 4_600_000,
+      open: 100,
+      high: 110,
+      low: 90,
+      close: 105,
+      volume: 12.5,
+    });
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
+  it("parses the compact ws-style keys (t/T/o/h/l/c/v)", () => {
+    const payload = {
+      data: [{ t: 1, T: 2, o: 1, h: 2, l: 0.5, c: 1.5, v: 3 }],
+    };
+
+    const candles = parseKlinePayload(payload, "ETH", "4h" as const);
+
+    expect(candles).toHaveLength(1);
+    expect(candles[0]?.close).toBe(1.5);
   });
 
-  it("subscribes to every symbol × interval pair on connect", () => {
-    const feed = buildFeed(["BTC", "ETH"], ["15m", "4h"]);
-    feed.start();
-    FakeSocket.instances[0]!.open();
+  it("drops rows with unparseable required fields instead of producing NaN", () => {
+    const payload = {
+      data: [
+        { t: 1, T: 2, o: "abc", h: 2, l: 0.5, c: 1.5 },
+        { t: 3, T: 4, o: 1, h: 2, l: 0.5, c: 1.5 },
+      ],
+    };
 
-    expect(FakeSocket.instances[0]!.subscriptions().sort()).toEqual([
-      "BTC_15m",
-      "BTC_4h",
-      "ETH_15m",
-      "ETH_4h",
-    ]);
+    const candles = parseKlinePayload(payload, "BTC", "1h" as const);
 
-    feed.stop();
+    expect(candles).toHaveLength(1);
+    expect(candles[0]?.openTime).toBe(3);
   });
 
-  it("subscribes only the missing pairs when a new timeframe shows up", () => {
-    const feed = buildFeed(["BTC"], ["15m"]);
-    feed.start();
-    const socket = FakeSocket.instances[0]!;
-    socket.open();
-    expect(socket.subscriptions()).toEqual(["BTC_15m"]);
-
-    // Estratégia nova em 4h no mesmo símbolo: só o par que falta é assinado
-    feed.setSubscriptions(["BTC"], ["15m", "4h"]);
-    expect(socket.subscriptions()).toEqual(["BTC_15m", "BTC_4h"]);
-
-    // Símbolo novo entra com TODOS os intervalos correntes
-    feed.setSubscriptions(["BTC", "SOL"], ["15m", "4h"]);
-    expect(socket.subscriptions().slice(2).sort()).toEqual(["SOL_15m", "SOL_4h"]);
-
-    feed.stop();
-  });
-
-  it("resubscribes everything on reconnect (a new socket inherits nothing)", () => {
-    vi.useFakeTimers();
-
-    const feed = buildFeed(["BTC"], ["4h"]);
-    feed.start();
-    const first = FakeSocket.instances[0]!;
-    first.open();
-    feed.setSubscriptions(["BTC", "ETH"], ["4h"]);
-    expect(first.subscriptions()).toEqual(["BTC_4h", "ETH_4h"]);
-
-    first.close(); // queda → reconnect agendado com backoff
-    vi.advanceTimersByTime(2_000);
-
-    const second = FakeSocket.instances[1];
-    expect(second).toBeDefined();
-    second!.open();
-
-    // Conexão nova reassina os DOIS pares, não só o do boot
-    expect(second!.subscriptions().sort()).toEqual(["BTC_4h", "ETH_4h"]);
-
-    feed.stop();
-    vi.useRealTimers();
-  });
-
-  it("holds pairs until the socket opens when it is down", () => {
-    const feed = buildFeed([], []);
-    feed.start();
-    const socket = FakeSocket.instances[0]!;
-
-    // Ainda desconectado: nada é enviado…
-    feed.setSubscriptions(["BTC"], ["4h"]);
-    expect(socket.subscriptions()).toEqual([]);
-
-    // …mas o par entra assim que a conexão abre
-    socket.open();
-    expect(socket.subscriptions()).toEqual(["BTC_4h"]);
-
-    feed.stop();
+  it("returns empty for a payload without an array", () => {
+    expect(parseKlinePayload({ data: null }, "BTC", "1h" as const)).toEqual([]);
+    expect(parseKlinePayload("nope", "BTC", "1h" as const)).toEqual([]);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Canal `prices` + market-recorder: funding e open interest são o único sinal
-// disponível que NÃO é transformação do OHLCV, e a Pacifica não guarda
-// histórico deles. Se o recorder falha em silêncio, a série nasce furada e só
-// se descobre meses depois — quando já não dá para recuperar o passado.
+// market-snapshot: substitui o recorder do WS — 1 linha/símbolo/hora
 // ---------------------------------------------------------------------------
 
-const { createMarketRecorder } = await import("../market-recorder.js");
+describe("parseMarketInfoSnapshots", () => {
+  const recordedAt = new Date("2026-07-14T15:00:00.000Z");
 
-function pricesMessage(rows: Record<string, unknown>[]) {
-  return JSON.stringify({ channel: "prices", data: rows });
-}
-
-describe("createWsFeed prices channel", () => {
-  beforeEach(() => {
-    FakeSocket.instances = [];
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503 })));
-  });
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("subscribes to prices globally — one subscribe, no symbol", () => {
-    const feed = createWsFeed({
-      wsUrl: "wss://test",
-      restBaseUrl: "https://test",
-      symbols: ["BTC", "ETH"],
-      intervals: ["4h"],
-      buffer: new CandleBuffer(300),
-      logger: silentLogger,
-      onPrices: () => {},
-    });
-    feed.start();
-    FakeSocket.instances[0]!.open();
-
-    const prices = FakeSocket.instances[0]!.sent
-      .map((raw) => JSON.parse(raw) as { params: { source: string; symbol?: string } })
-      .filter((m) => m.params.source === "prices");
-
-    // O canal devolve os 69 símbolos da exchange de uma vez: assinar por símbolo
-    // multiplicaria a mesma mensagem por N
-    expect(prices).toHaveLength(1);
-    expect(prices[0]!.params.symbol).toBeUndefined();
-
-    feed.stop();
-  });
-
-  it("does not subscribe to prices when no recorder is attached", () => {
-    const feed = buildFeed(["BTC"], ["4h"]);
-    feed.start();
-    FakeSocket.instances[0]!.open();
-
-    const sources = FakeSocket.instances[0]!.sent.map(
-      (raw) => (JSON.parse(raw) as { params: { source: string } }).params.source,
-    );
-    expect(sources).not.toContain("prices");
-
-    feed.stop();
-  });
-
-  it("parses a prices payload, keeping absent fields null instead of zero", () => {
-    const received: unknown[] = [];
-    const feed = createWsFeed({
-      wsUrl: "wss://test",
-      restBaseUrl: "https://test",
-      symbols: ["BTC"],
-      intervals: ["4h"],
-      buffer: new CandleBuffer(300),
-      logger: silentLogger,
-      onPrices: (snapshots) => received.push(...snapshots),
-    });
-    feed.start();
-    const socket = FakeSocket.instances[0]!;
-    socket.open();
-
-    socket.emit(
-      "message",
-      pricesMessage([
+  it("keeps only wanted symbols and maps snake_case fields", () => {
+    const payload = {
+      data: [
         {
           symbol: "BTC",
-          funding: "-0.00000833",
-          next_funding: "-0.00000227",
-          oracle: "62939.47",
-          mark: "62910.49",
-          mid: "62887.5",
-          open_interest: "508.46",
-          volume_24h: "498491111.8",
-          timestamp: 1_784_031_648_256,
+          funding_rate: "0.0001",
+          next_funding_rate: "0.0002",
+          open_interest: "1234.5",
+          mark_price: "100000",
         },
-        // sem open_interest: null é obrigatório — 0 seria lido como "sem posições
-        // em aberto", que é uma afirmação de mercado, não um dado faltando
-        { symbol: "ETH", funding: "0.00001", timestamp: 1_784_031_648_256 },
-      ]),
-    );
+        { symbol: "DOGE", funding_rate: "0.001" },
+      ],
+    };
 
-    expect(received).toHaveLength(2);
-    expect(received[0]).toMatchObject({
+    const rows = parseMarketInfoSnapshots(payload, ["BTC", "ETH"], recordedAt);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
       symbol: "BTC",
-      funding: -0.00000833,
-      openInterest: 508.46,
-      mark: 62910.49,
+      fundingRate: "0.0001",
+      nextFundingRate: "0.0002",
+      openInterest: "1234.5",
+      markPrice: "100000",
+      recordedAt,
     });
-    expect(received[1]).toMatchObject({ symbol: "ETH", openInterest: null, mark: null });
+  });
 
-    feed.stop();
+  it("keeps absent fields null instead of zero", () => {
+    const payload = { data: [{ symbol: "SOL", funding: "0.0003" }] };
+
+    const rows = parseMarketInfoSnapshots(payload, ["SOL"], recordedAt);
+
+    expect(rows[0]?.fundingRate).toBe("0.0003");
+    expect(rows[0]?.openInterest).toBeNull();
+    expect(rows[0]?.markPrice).toBeNull();
+  });
+
+  it("drops rows where every market field is null (endpoint shape drift)", () => {
+    const payload = {
+      data: [{ symbol: "BTC", tick_size: "0.1", lot_size: "0.001" }],
+    };
+
+    expect(parseMarketInfoSnapshots(payload, ["BTC"], recordedAt)).toEqual([]);
+  });
+
+  it("accepts an object keyed by symbol", () => {
+    const payload = {
+      data: { BTC: { funding_rate: "0.0001" }, ETH: { funding_rate: "0.0004" } },
+    };
+
+    const rows = parseMarketInfoSnapshots(payload, ["ETH"], recordedAt);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.symbol).toBe("ETH");
   });
 });
 
-describe("createMarketRecorder", () => {
-  function fakeDb() {
-    const inserted: Record<string, unknown>[][] = [];
-    const db = {
-      insert: () => ({
-        values: (rows: Record<string, unknown>[]) => {
-          inserted.push(rows);
-          return { onConflictDoNothing: () => Promise.resolve() };
-        },
-      }),
-    };
-    return { db: db as never, inserted };
-  }
+// ---------------------------------------------------------------------------
+// handler: os pares (símbolo, timeframe) vêm das estratégias ativas — par
+// faltando significa estratégia que nunca avalia, e em silêncio
+// ---------------------------------------------------------------------------
 
-  const snapshot = (symbol: string, timestamp: number) => ({
-    symbol,
-    funding: 0.0001,
-    nextFunding: 0.0002,
-    openInterest: 500,
-    oracle: 60_000,
-    mark: 60_001,
-    mid: 60_002,
-    volume24h: 1_000_000,
-    timestamp,
-  });
+describe("resolveCandlePairs", () => {
+  it("derives exact pairs from strategies, deduplicated", () => {
+    const strategies = [
+      { config: { symbol: "BTC/USDC", timeframe: "4h" } },
+      { config: { symbol: "BTC/USDC", timeframe: "4h" } },
+      { config: { symbol: "ETH/USDC", timeframe: "1h" } },
+    ];
 
-  it("records one row per symbol per minute and drops the rest", () => {
-    const { db, inserted } = fakeDb();
-    const recorder = createMarketRecorder({ db, symbols: ["BTC"], logger: silentLogger });
-
-    const minute = 1_784_031_600_000; // múltiplo de 60s
-    recorder.onSnapshots([snapshot("BTC", minute)]);
-    recorder.onSnapshots([snapshot("BTC", minute + 5_000)]); // mesmo minuto → ignorado
-    recorder.onSnapshots([snapshot("BTC", minute + 59_999)]); // ainda o mesmo
-    recorder.onSnapshots([snapshot("BTC", minute + 60_000)]); // minuto seguinte
-
-    expect(inserted).toHaveLength(2);
-    expect(inserted[0]![0]!.recordedAt).toEqual(new Date(minute));
-    expect(inserted[1]![0]!.recordedAt).toEqual(new Date(minute + 60_000));
-  });
-
-  it("ignores symbols outside the recorded universe", () => {
-    const { db, inserted } = fakeDb();
-    const recorder = createMarketRecorder({ db, symbols: ["BTC", "SOL"], logger: silentLogger });
-
-    // O canal é global: chegam os 69 símbolos da exchange, não só os nossos
-    recorder.onSnapshots([
-      snapshot("BTC", 1_784_031_600_000),
-      snapshot("PUMP", 1_784_031_600_000),
-      snapshot("SOL", 1_784_031_600_000),
+    expect(resolveCandlePairs(strategies)).toEqual([
+      { symbol: "BTC", interval: "4h" },
+      { symbol: "ETH", interval: "1h" },
     ]);
-
-    expect(inserted).toHaveLength(1);
-    expect(inserted[0]!.map((r) => r.symbol)).toEqual(["BTC", "SOL"]);
   });
 
-  it("never lets a failed write escape into the bot", async () => {
-    const db = {
-      insert: () => ({
-        values: () => ({ onConflictDoNothing: () => Promise.reject(new Error("db down")) }),
-      }),
-    } as never;
-    const errors: unknown[][] = [];
-    const recorder = createMarketRecorder({
-      db,
-      symbols: ["BTC"],
-      logger: { info: () => {}, error: (...a) => errors.push(a) },
-    });
+  it("does not cross-multiply symbols and timeframes", () => {
+    const strategies = [
+      { config: { symbol: "BTC/USDC", timeframe: "4h" } },
+      { config: { symbol: "ETH/USDC", timeframe: "1h" } },
+    ];
 
-    // Gravar mercado é acessório: se o banco cai, o bot segue executando ordens
-    expect(() => recorder.onSnapshots([snapshot("BTC", 1_784_031_600_000)])).not.toThrow();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(errors).toHaveLength(1);
+    const pairs = resolveCandlePairs(strategies);
+
+    expect(pairs).toHaveLength(2);
+    expect(pairs).not.toContainEqual({ symbol: "BTC", interval: "1h" });
+  });
+
+  it("skips strategies with malformed symbol or missing timeframe", () => {
+    const strategies = [
+      { config: { symbol: "BTCUSDC", timeframe: "4h" } },
+      { config: { symbol: "BTC/USDC" } },
+      { config: {} },
+    ];
+
+    expect(resolveCandlePairs(strategies)).toEqual([]);
   });
 });

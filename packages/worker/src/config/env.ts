@@ -6,19 +6,12 @@
 export type WorkerEnv = {
   DATABASE_URL: string;
   PACIFICA_REST_URL: string;
-  PACIFICA_WS_URL: string;
   PACIFICA_BUILDER_CODE: string;
   CREDENTIAL_ENCRYPTION_KEY: string;
   CREDENTIAL_ENCRYPTION_KEY_ID: string;
-  WORKER_ID: string;
   MARKET_ORDER_SLIPPAGE_PERCENT: string;
   TAKER_FEE_PERCENT: number;
   SIGNAL_TRACE_ENABLED: boolean;
-  SCAN_INTERVAL_MS: number;
-  HEARTBEAT_INTERVAL_MS: number;
-  ANALYSIS_INTERVAL_MS: number;
-  LEASE_DURATION_MS: number;
-  MAX_BACKOFF_MS: number;
   PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS: number;
 };
 
@@ -67,8 +60,6 @@ export function loadWorkerEnv(): WorkerEnv {
     DATABASE_URL: requireNonEmpty(process.env.DATABASE_URL, "DATABASE_URL"),
     PACIFICA_REST_URL:
       process.env.PACIFICA_REST_URL ?? "https://api.pacifica.fi",
-    PACIFICA_WS_URL:
-      process.env.PACIFICA_WS_URL ?? "wss://ws.pacifica.fi/ws",
     PACIFICA_BUILDER_CODE: requireNonEmpty(
       process.env.PACIFICA_BUILDER_CODE,
       "PACIFICA_BUILDER_CODE",
@@ -80,7 +71,6 @@ export function loadWorkerEnv(): WorkerEnv {
     ),
     CREDENTIAL_ENCRYPTION_KEY_ID:
       process.env.CREDENTIAL_ENCRYPTION_KEY_ID ?? "local-dev-v1",
-    WORKER_ID: process.env.WORKER_ID ?? `worker-local-${process.pid}`,
     MARKET_ORDER_SLIPPAGE_PERCENT:
       process.env.MARKET_ORDER_SLIPPAGE_PERCENT ?? "0.5",
     TAKER_FEE_PERCENT: positiveNumberOrDefault(
@@ -90,26 +80,6 @@ export function loadWorkerEnv(): WorkerEnv {
     SIGNAL_TRACE_ENABLED: booleanFromEnv(
       process.env.SIGNAL_TRACE_ENABLED,
       false,
-    ),
-    SCAN_INTERVAL_MS: positiveNumberOrDefault(
-      process.env.SCAN_INTERVAL_MS,
-      5_000,
-    ),
-    HEARTBEAT_INTERVAL_MS: positiveNumberOrDefault(
-      process.env.HEARTBEAT_INTERVAL_MS,
-      15_000,
-    ),
-    ANALYSIS_INTERVAL_MS: positiveNumberOrDefault(
-      process.env.ANALYSIS_INTERVAL_MS,
-      60_000,
-    ),
-    LEASE_DURATION_MS: positiveNumberOrDefault(
-      process.env.LEASE_DURATION_MS,
-      45_000,
-    ),
-    MAX_BACKOFF_MS: positiveNumberOrDefault(
-      process.env.MAX_BACKOFF_MS,
-      30_000,
     ),
     PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS: positiveNumberOrDefault(
       process.env.PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS,

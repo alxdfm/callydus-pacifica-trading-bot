@@ -215,8 +215,8 @@ export const marketSnapshots = pgTable(
     recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
   },
   (t) => [
-    // Idempotência: o recorder trunca o instante ao minuto, então um restart (ou
-    // duas mensagens no mesmo minuto) não duplica a linha — o insert usa
+    // Idempotência: o snapshot trunca o instante à hora, então uma reexecução
+    // dentro da mesma hora não duplica a linha — o insert usa
     // onConflictDoNothing contra este índice.
     uniqueIndex("market_snapshots_symbol_recorded_at_idx").on(
       t.symbol,

@@ -140,16 +140,10 @@ importers:
       postgres:
         specifier: ^3.4.5
         version: 3.4.9
-      ws:
-        specifier: ^8.20.0
-        version: 8.20.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
         version: 24.12.0
-      '@types/ws':
-        specifier: ^8.18.1
-        version: 8.18.1
       tsx:
         specifier: ^4.20.0
         version: 4.21.0

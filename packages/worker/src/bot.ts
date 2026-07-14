@@ -6,7 +6,6 @@ import { AesCredentialDecryptionService } from "./crypto/credential-encryption.j
 import type { DrizzleDb } from "./db/client.js";
 import {
   getActiveCredentialForWallet,
-  getActiveStrategies,
   getOpenTradesForStrategy,
   insertEvent,
   insertTrade,
@@ -300,14 +299,12 @@ function classifyOrderExecutionFailure(error: unknown): {
 // ---------------------------------------------------------------------------
 
 export function createBot(input: BotInput): {
-  start(): Promise<void>;
-  stop(): Promise<void>;
+  runOnce(): Promise<void>;
   onStrategiesChanged(strategies: Strategy[]): void;
 } {
   const logger = input.logger ?? defaultLogger;
   const { db, exchange, candleBuffer, env } = input;
 
-  let stopped = false;
   let activeStrategies: Strategy[] = [];
   // Avaliação por candle fechado (paridade com o backtest): guarda o openTime
   // do último candle avaliado por strategy — sinal sem ordem e ordem falhada
@@ -762,6 +759,35 @@ export function createBot(input: BotInput): {
       return;
     }
 
+    // O reconcile só anda banco→exchange: posição que existe na exchange mas
+    // não no banco (crash entre a ordem e o insert, ou trade manual do usuário)
+    // é invisível a ele, e abrir por cima dobraria a exposição. Sem conseguir
+    // verificar, não entra — segurança de ordem vale mais que um candle perdido.
+    try {
+      const client = await getStrategyClient(strategy);
+      const exchangePositions = await client.getPositions();
+      const hasUntrackedPosition = exchangePositions.some(
+        (p) => p.symbol === marketSymbol && p.entryPrice,
+      );
+
+      if (hasUntrackedPosition) {
+        logger.warn("[bot] signal skipped — untracked exchange position", {
+          strategyId: strategy.id,
+          symbol: config.symbol,
+          signal: evaluation.signal,
+        });
+        return;
+      }
+    } catch (error) {
+      logger.warn("[bot] signal skipped — could not verify exchange positions", {
+        strategyId: strategy.id,
+        symbol: config.symbol,
+        errorMessage:
+          error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
+
     const signalSide = evaluation.signal as "long" | "short";
     const entryRefPrice = applyAdverseEntrySlippage(
       latestCandle.close,
@@ -962,7 +988,9 @@ export function createBot(input: BotInput): {
     }
   }
 
-  async function tick(): Promise<void> {
+  // Um tick = reconcilia e avalia cada estratégia uma vez. Quem decide QUANDO
+  // tickar é o chamador (em produção, o Cron horário do SST)
+  async function runOnce(): Promise<void> {
     const tickAt = new Date();
     const strategies = activeStrategies.slice();
 
@@ -986,44 +1014,8 @@ export function createBot(input: BotInput): {
     }
   }
 
-  let tickTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function scheduleTick(): void {
-    if (stopped) return;
-    tickTimer = setTimeout(() => {
-      void tick().finally(() => {
-        scheduleTick();
-      });
-    }, env.HEARTBEAT_INTERVAL_MS);
-  }
-
   return {
-    async start(): Promise<void> {
-      stopped = false;
-      logger.info("[bot] starting");
-
-      // Load initial strategies
-      try {
-        activeStrategies = await getActiveStrategies(db);
-        logger.info("[bot] initial strategies loaded", {
-          count: activeStrategies.length,
-        });
-      } catch (err) {
-        logger.error("[bot] failed to load initial strategies", err);
-      }
-
-      scheduleTick();
-    },
-
-    async stop(): Promise<void> {
-      stopped = true;
-      if (tickTimer !== null) {
-        clearTimeout(tickTimer);
-        tickTimer = null;
-      }
-      logger.info("[bot] stopped");
-    },
-
+    runOnce,
     onStrategiesChanged,
   };
 }
