@@ -150,6 +150,18 @@ export const stopLossConfigSchema = z.discriminatedUnion("mode", [
     period: z.number().int().positive(),
     multiplier: z.number().positive(),
   }),
+  // Stop ancorado na borda da value area: long para abaixo da VAL, short acima
+  // da VAH. Diferente dos outros dois, a distância é ASSIMÉTRICA (cada lado tem
+  // a sua) e pode não existir — preço dentro da value area não tem stop válido
+  // naquele lado, e o trade é pulado. O take profit (RR) herda a distância, então
+  // este modo move os DOIS lados do trade.
+  z.object({
+    mode: z.literal("volumeProfile"),
+    period: z.number().int().positive(),
+    // Folga além do nível, em % do preço de entrada: um stop exatamente na borda
+    // da prateleira de volume fica onde a liquidez está, e é varrido por ruído.
+    bufferPercent: z.number().nonnegative(),
+  }),
 ]);
 
 export const takeProfitConfigSchema = z.discriminatedUnion("mode", [

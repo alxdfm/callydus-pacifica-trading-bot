@@ -140,7 +140,24 @@ export interface StopLossAtrConfig {
   multiplier: number;
 }
 
-export type StopLossConfig = StopLossStaticConfig | StopLossAtrConfig;
+/**
+ * Stop anchored on the value-area edge: longs stop below VAL, shorts above VAH.
+ * Unlike the other modes the distance is ASYMMETRIC (each side has its own) and
+ * may not exist at all — price inside the value area has no valid stop on that
+ * side, and the trade is skipped. The RR take profit inherits the distance, so
+ * this mode moves BOTH ends of the trade.
+ */
+export interface StopLossVolumeProfileConfig {
+  mode: "volumeProfile";
+  period: number;
+  /** Slack beyond the level, as a % of the entry price. */
+  bufferPercent: number;
+}
+
+export type StopLossConfig =
+  | StopLossStaticConfig
+  | StopLossAtrConfig
+  | StopLossVolumeProfileConfig;
 
 export interface TakeProfitRrConfig {
   mode: "rr";

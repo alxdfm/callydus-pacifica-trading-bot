@@ -772,6 +772,17 @@ export function createBot(input: BotInput): {
     const riskPlans = buildRiskPlans(config, evaluation.indicators, entryRefPrice);
     const riskPlan = signalSide === "long" ? riskPlans.long : riskPlans.short;
 
+    // Sem stop válido não há ordem — invariante 3. Com stop na value area isso
+    // acontece quando o preço está DENTRO dela: mercado normal, não erro.
+    if (!riskPlan) {
+      logger.warn("[bot] no valid stop for this side, skipping entry", {
+        strategyId: strategy.id,
+        side: signalSide,
+        entryRefPrice,
+      });
+      return;
+    }
+
     try {
       validateProtectionLevels({
         side: signalSide,

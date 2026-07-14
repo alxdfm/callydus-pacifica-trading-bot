@@ -210,10 +210,10 @@ describe("buildRiskPlans", () => {
 
     const plans = buildRiskPlans(config, {}, 100);
 
-    expect(plans.long.stopLossPrice).toBeCloseTo(98);
-    expect(plans.long.takeProfitPrice).toBeCloseTo(104);
-    expect(plans.short.stopLossPrice).toBeCloseTo(102);
-    expect(plans.short.takeProfitPrice).toBeCloseTo(96);
+    expect(plans.long!.stopLossPrice).toBeCloseTo(98);
+    expect(plans.long!.takeProfitPrice).toBeCloseTo(104);
+    expect(plans.short!.stopLossPrice).toBeCloseTo(102);
+    expect(plans.short!.takeProfitPrice).toBeCloseTo(96);
   });
 
   it("derives risk distance from ATR when configured", () => {
@@ -229,9 +229,103 @@ describe("buildRiskPlans", () => {
       100,
     );
 
-    expect(plans.long.riskDistance).toBeCloseTo(3); // 2 * 1.5
-    expect(plans.long.stopLossPrice).toBeCloseTo(97);
-    expect(plans.long.takeProfitPrice).toBeCloseTo(109); // 100 + 3 * 3
+    expect(plans.long!.riskDistance).toBeCloseTo(3); // 2 * 1.5
+    expect(plans.long!.stopLossPrice).toBeCloseTo(97);
+    expect(plans.long!.takeProfitPrice).toBeCloseTo(109); // 100 + 3 * 3
+  });
+
+  it("anchors the stop on the value area edge — asymmetric per side", () => {
+    // O TP é derivado da DISTÂNCIA do stop (modo rr), então ancorar o stop no
+    // VAL/VAH move os DOIS lados do trade, não só o stop.
+    const config = buildStrategyConfig({
+      indicators: {
+        VP_VAL: { type: "volumeProfile", period: 100, level: "val" },
+        VP_VAH: { type: "volumeProfile", period: 100, level: "vah" },
+      },
+      stopLoss: { mode: "volumeProfile", period: 100, bufferPercent: 0 },
+      takeProfitMultiple: 2,
+    });
+
+    const valueArea = {
+      VP_VAL: { previous: 90, current: 90 },
+      VP_VAH: { previous: 105, current: 105 },
+    };
+
+    // Rompimento PARA CIMA (entrada 110, acima da VAH): o long arrisca até a
+    // VAL — 20 — e o alvo herda isso. O short não tem stop nenhum aqui: um stop
+    // na VAH (105) ficaria ABAIXO da entrada, ou seja, seria um alvo, não um
+    // stop. O lado é recusado em vez de inventado.
+    const above = buildRiskPlans(config, valueArea, 110);
+    expect(above.long!.riskDistance).toBeCloseTo(20);
+    expect(above.long!.stopLossPrice).toBeCloseTo(90);
+    expect(above.long!.takeProfitPrice).toBeCloseTo(150); // 110 + 20 * 2
+    expect(above.short).toBeNull();
+
+    // Rompimento PARA BAIXO (entrada 85): espelho exato — agora é o short que
+    // tem stop (na VAH, 105) e o long que não existe
+    const below = buildRiskPlans(config, valueArea, 85);
+    expect(below.short!.riskDistance).toBeCloseTo(20);
+    expect(below.short!.stopLossPrice).toBeCloseTo(105);
+    expect(below.long).toBeNull();
+  });
+
+  it("pushes the stop past the level by the buffer", () => {
+    const config = buildStrategyConfig({
+      indicators: { VP_VAL: { type: "volumeProfile", period: 100, level: "val" } },
+      stopLoss: { mode: "volumeProfile", period: 100, bufferPercent: 1 },
+      takeProfitMultiple: 2,
+    });
+
+    // 1% de 100 = 1 de folga abaixo da VAL (90) → stop em 89, não em 90:
+    // stop exatamente na borda fica onde a liquidez está parada
+    const plans = buildRiskPlans(config, { VP_VAL: { previous: 90, current: 90 } }, 100);
+
+    expect(plans.long!.stopLossPrice).toBeCloseTo(89);
+    expect(plans.long!.riskDistance).toBeCloseTo(11);
+  });
+
+  it("returns null for a side with no valid stop instead of inventing one", () => {
+    const config = buildStrategyConfig({
+      indicators: {
+        VP_VAL: { type: "volumeProfile", period: 100, level: "val" },
+        VP_VAH: { type: "volumeProfile", period: 100, level: "vah" },
+      },
+      stopLoss: { mode: "volumeProfile", period: 100, bufferPercent: 0 },
+    });
+
+    // Preço DENTRO da value area [90, 105]: o long ainda tem stop (a VAL está
+    // abaixo), mas o short precisaria de um stop na VAH... que também está
+    // acima, então esse lado funciona. O caso sem stop é o preço ABAIXO da VAL:
+    const insideVa = buildRiskPlans(
+      config,
+      { VP_VAL: { previous: 90, current: 90 }, VP_VAH: { previous: 105, current: 105 } },
+      100,
+    );
+    expect(insideVa.long).not.toBeNull();
+    expect(insideVa.short).not.toBeNull();
+
+    // preço 85, abaixo da VAL → um stop de long em 90 ficaria ACIMA da entrada.
+    // Isso não é erro: é mercado. O lado é recusado e o bot pula o trade
+    // (invariante 3), em vez de abrir posição com proteção invertida.
+    const belowVa = buildRiskPlans(
+      config,
+      { VP_VAL: { previous: 90, current: 90 }, VP_VAH: { previous: 105, current: 105 } },
+      85,
+    );
+    expect(belowVa.long).toBeNull();
+    expect(belowVa.short).not.toBeNull();
+  });
+
+  it("returns null while the profile is still warming up", () => {
+    const config = buildStrategyConfig({
+      indicators: { VP_VAL: { type: "volumeProfile", period: 100, level: "val" } },
+      stopLoss: { mode: "volumeProfile", period: 100, bufferPercent: 0 },
+    });
+
+    // série ainda NaN → nenhum stop derivável → nenhum trade
+    const plans = buildRiskPlans(config, { VP_VAL: { previous: null, current: null } }, 100);
+    expect(plans.long).toBeNull();
+    expect(plans.short).toBeNull();
   });
 
   it("throws when ATR stop loss cannot be derived", () => {

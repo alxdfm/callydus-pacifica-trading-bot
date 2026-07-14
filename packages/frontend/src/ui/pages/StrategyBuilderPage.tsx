@@ -61,6 +61,23 @@ const VOLUME_PROFILE_LEVEL_LABELS: Record<"poc" | "vah" | "val", string> = {
   val: "VAL (value area low)",
 };
 
+type StopLossMode = YourStrategyDraft["risk"]["stopLoss"]["mode"];
+
+function defaultStopLossFor(
+  mode: StopLossMode,
+): YourStrategyDraft["risk"]["stopLoss"] {
+  switch (mode) {
+    case "atr":
+      return { mode: "atr", period: 14, multiplier: 1.5 };
+    case "volumeProfile":
+      // 0.5% de folga abaixo da VAL: um stop exatamente na borda fica onde a
+      // liquidez está parada e é varrido por ruído
+      return { mode: "volumeProfile", period: 100, bufferPercent: 0.5 };
+    case "static":
+      return { mode: "static", unit: "percent", value: 3 };
+  }
+}
+
 const THRESHOLD_OPERATORS = ["above", "below", "atOrAbove", "atOrBelow", "equal"] as const;
 const CROSS_OPERATORS = ["crossesAbove", "crossesBelow"] as const;
 
@@ -601,10 +618,7 @@ export function StrategyBuilderPage() {
                     patchDraft({
                       risk: {
                         ...draft.risk,
-                        stopLoss:
-                          event.target.value === "atr"
-                            ? { mode: "atr", period: 14, multiplier: 1.5 }
-                            : { mode: "static", unit: "percent", value: 3 },
+                        stopLoss: defaultStopLossFor(event.target.value as StopLossMode),
                       },
                     })
                   }
@@ -612,6 +626,7 @@ export function StrategyBuilderPage() {
                 >
                   <option value="static">{t("builderStopLossStatic")}</option>
                   <option value="atr">{t("builderStopLossAtr")}</option>
+                  <option value="volumeProfile">{t("builderStopLossVolumeProfile")}</option>
                 </select>
               </div>
               {draft.risk.stopLoss.mode === "static" ? (
@@ -634,7 +649,7 @@ export function StrategyBuilderPage() {
                     value={draft.risk.stopLoss.value}
                   />
                 </div>
-              ) : (
+              ) : draft.risk.stopLoss.mode === "atr" ? (
                 <>
                   <div className="builder-field">
                     <label htmlFor="builder-sl-period">{t("builderAtrPeriodLabel")}</label>
@@ -679,6 +694,60 @@ export function StrategyBuilderPage() {
                       step={0.1}
                       type="number"
                       value={draft.risk.stopLoss.multiplier}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="builder-field">
+                    <label htmlFor="builder-sl-vp-period">{t("builderVolumeProfilePeriodLabel")}</label>
+                    <input
+                      disabled={isEditingBlocked}
+                      id="builder-sl-vp-period"
+                      min={1}
+                      onChange={(event) =>
+                        patchDraft({
+                          risk: {
+                            ...draft.risk,
+                            stopLoss: {
+                              mode: "volumeProfile",
+                              period: Number(event.target.value),
+                              bufferPercent:
+                                draft.risk.stopLoss.mode === "volumeProfile"
+                                  ? draft.risk.stopLoss.bufferPercent
+                                  : 0.5,
+                            },
+                          },
+                        })
+                      }
+                      type="number"
+                      value={draft.risk.stopLoss.period}
+                    />
+                  </div>
+                  <div className="builder-field">
+                    <label htmlFor="builder-sl-vp-buffer">{t("builderVolumeProfileBufferLabel")}</label>
+                    <input
+                      disabled={isEditingBlocked}
+                      id="builder-sl-vp-buffer"
+                      min={0}
+                      onChange={(event) =>
+                        patchDraft({
+                          risk: {
+                            ...draft.risk,
+                            stopLoss: {
+                              mode: "volumeProfile",
+                              period:
+                                draft.risk.stopLoss.mode === "volumeProfile"
+                                  ? draft.risk.stopLoss.period
+                                  : 100,
+                              bufferPercent: Number(event.target.value),
+                            },
+                          },
+                        })
+                      }
+                      step={0.1}
+                      type="number"
+                      value={draft.risk.stopLoss.bufferPercent}
                     />
                   </div>
                 </>

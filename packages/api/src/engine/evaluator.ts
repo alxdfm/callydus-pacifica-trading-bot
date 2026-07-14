@@ -171,7 +171,23 @@ type StopLossAtrConfig = {
   multiplier: number;
 };
 
-type StopLossConfig = StopLossStaticConfig | StopLossAtrConfig;
+/**
+ * Stop anchored on the value-area edge: longs stop below VAL, shorts above VAH.
+ * The distance is ASYMMETRIC (each side has its own) and may not exist at all —
+ * price inside the value area has no valid stop on that side, and the trade is
+ * skipped. The RR take profit inherits it, so this mode moves BOTH ends.
+ */
+type StopLossVolumeProfileConfig = {
+  mode: "volumeProfile";
+  period: number;
+  /** Slack beyond the level, as a % of the entry price. */
+  bufferPercent: number;
+};
+
+type StopLossConfig =
+  | StopLossStaticConfig
+  | StopLossAtrConfig
+  | StopLossVolumeProfileConfig;
 
 type TakeProfitRrConfig = {
   mode: "rr";
@@ -439,34 +455,44 @@ export function evaluateSignal(
   };
 }
 
+/**
+ * A side comes back `null` when the config admits no valid stop there — with a
+ * value-area stop that happens whenever price sits inside the value area, which
+ * is a normal market state, not an error. Callers must skip the trade.
+ */
 export function buildRiskPlans(
   technicalContract: PresetTechnicalContract,
   indicators: Record<string, { previous: number | null; current: number | null }>,
   entryPrice: number,
 ) {
-  const riskDistance = resolveRiskDistance(
+  const distances = resolveRiskDistances(
     technicalContract,
     indicators,
     entryPrice,
   );
+  const rrMultiple = technicalContract.risk.takeProfit.multiple;
 
   return {
-    long: {
-      side: "long" as const,
-      entryPrice,
-      stopLossPrice: entryPrice - riskDistance,
-      takeProfitPrice:
-        entryPrice + riskDistance * technicalContract.risk.takeProfit.multiple,
-      riskDistance,
-    },
-    short: {
-      side: "short" as const,
-      entryPrice,
-      stopLossPrice: entryPrice + riskDistance,
-      takeProfitPrice:
-        entryPrice - riskDistance * technicalContract.risk.takeProfit.multiple,
-      riskDistance,
-    },
+    long:
+      distances.long === null
+        ? null
+        : {
+            side: "long" as const,
+            entryPrice,
+            stopLossPrice: entryPrice - distances.long,
+            takeProfitPrice: entryPrice + distances.long * rrMultiple,
+            riskDistance: distances.long,
+          },
+    short:
+      distances.short === null
+        ? null
+        : {
+            side: "short" as const,
+            entryPrice,
+            stopLossPrice: entryPrice + distances.short,
+            takeProfitPrice: entryPrice - distances.short * rrMultiple,
+            riskDistance: distances.short,
+          },
   };
 }
 
@@ -664,27 +690,29 @@ export function simulatePresetBacktest(
           evaluation.indicators,
           entryPrice,
         );
-        const quantity = notionalUsd / entryPrice;
-        const entryFeeUsd = notionalUsd * feeRate;
+        const riskPlan =
+          evaluation.signal === "long" ? riskPlans.long : riskPlans.short;
 
-        openPosition = {
-          id: `${currentCandle.closeTime}-${evaluation.signal}`,
-          side: evaluation.signal,
-          entryPrice,
-          stopLossPrice:
-            evaluation.signal === "long"
-              ? riskPlans.long.stopLossPrice
-              : riskPlans.short.stopLossPrice,
-          takeProfitPrice:
-            evaluation.signal === "long"
-              ? riskPlans.long.takeProfitPrice
-              : riskPlans.short.takeProfitPrice,
-          quantity,
-          capitalAllocated,
-          leverageUsed: leverage,
-          entryFeeUsd,
-          openedAt: new Date(nextCandle.openTime).toISOString(),
-        };
+        // Sem stop válido não há trade — o bot ao vivo pula igual (invariante 3).
+        // Com stop na value area isso ocorre quando o preço está DENTRO dela, e
+        // o backtest tem que refletir essa recusa, não inventar uma proteção.
+        if (riskPlan) {
+          const quantity = notionalUsd / entryPrice;
+          const entryFeeUsd = notionalUsd * feeRate;
+
+          openPosition = {
+            id: `${currentCandle.closeTime}-${evaluation.signal}`,
+            side: evaluation.signal,
+            entryPrice,
+            stopLossPrice: riskPlan.stopLossPrice,
+            takeProfitPrice: riskPlan.takeProfitPrice,
+            quantity,
+            capitalAllocated,
+            leverageUsed: leverage,
+            entryFeeUsd,
+            openedAt: new Date(nextCandle.openTime).toISOString(),
+          };
+        }
       }
     }
 
@@ -809,10 +837,14 @@ export function getRequiredPeriod(technicalContract: PresetTechnicalContract): n
     },
   );
 
+  const stopLoss = technicalContract.risk.stopLoss;
   const stopLossPeriod =
-    technicalContract.risk.stopLoss.mode === "atr"
-      ? technicalContract.risk.stopLoss.period
-      : 1;
+    stopLoss.mode === "atr"
+      ? stopLoss.period
+      : stopLoss.mode === "volumeProfile"
+        ? // janela exclui o candle atual, igual ao indicador
+          stopLoss.period + 1
+        : 1;
 
   return Math.max(...indicatorPeriods, stopLossPeriod);
 }
@@ -928,6 +960,29 @@ function ensureRiskSupportIndicators(
         type: "atr",
         period: atrPeriod,
       };
+    }
+  }
+
+  // Stop na value area precisa das DUAS bordas: long para abaixo da VAL, short
+  // para acima da VAH. O usuário não precisa declarar nenhuma delas no builder.
+  if (draft.risk.stopLoss.mode === "volumeProfile") {
+    const period = draft.risk.stopLoss.period;
+
+    for (const level of ["val", "vah"] as const) {
+      const alreadyExists = Object.values(indicators).some(
+        (indicator) =>
+          indicator.type === "volumeProfile" &&
+          indicator.level === level &&
+          indicator.period === period,
+      );
+
+      if (!alreadyExists) {
+        indicators[`VP_AUTO_${period}_${level.toUpperCase()}`] = {
+          type: "volumeProfile",
+          period,
+          level,
+        };
+      }
     }
   }
 
@@ -1323,24 +1378,79 @@ function didRuleGroupPass(
     : evaluations.some((evaluation) => evaluation.satisfied);
 }
 
-function resolveRiskDistance(
+function resolveRiskDistances(
   technicalContract: PresetTechnicalContract,
   indicators: Record<string, { previous: number | null; current: number | null }>,
   entryPrice: number,
-): number {
-  if (technicalContract.risk.stopLoss.mode === "static") {
-    return entryPrice * (technicalContract.risk.stopLoss.value / 100);
+): { long: number | null; short: number | null } {
+  const stopLoss = technicalContract.risk.stopLoss;
+
+  if (stopLoss.mode === "static") {
+    const distance = entryPrice * (stopLoss.value / 100);
+    return { long: distance, short: distance };
   }
 
-  const atrIndicator = findAtrIndicatorName(technicalContract);
-  const atrValue =
-    (atrIndicator ? indicators[atrIndicator]?.current : null) ?? null;
+  if (stopLoss.mode === "atr") {
+    const atrIndicator = findAtrIndicatorName(technicalContract);
+    const atrValue =
+      (atrIndicator ? indicators[atrIndicator]?.current : null) ?? null;
 
-  if (typeof atrValue === "number" && Number.isFinite(atrValue) && atrValue > 0) {
-    return atrValue * technicalContract.risk.stopLoss.multiplier;
+    if (
+      typeof atrValue === "number" &&
+      Number.isFinite(atrValue) &&
+      atrValue > 0
+    ) {
+      const distance = atrValue * stopLoss.multiplier;
+      return { long: distance, short: distance };
+    }
+
+    // Indicador de ATR ausente é BUG de configuração (o materialize injeta um),
+    // não estado de mercado — tem que ser barulhento, não virar "não opera nunca"
+    throw new Error("ATR-based stop loss could not be derived from indicator evaluation.");
   }
 
-  throw new Error("ATR-based stop loss could not be derived from indicator evaluation.");
+  // Value area: long para abaixo da VAL, short para acima da VAH. Cada lado tem
+  // a SUA distância, e um lado pode não ter stop nenhum — se o preço está dentro
+  // da value area, a borda oposta fica do lado errado da entrada. Isso é mercado
+  // normal (só não dá para operar aquele lado ali), então devolve null e o
+  // chamador pula o trade.
+  const valName = findVolumeProfileName(technicalContract, "val", stopLoss.period);
+  const vahName = findVolumeProfileName(technicalContract, "vah", stopLoss.period);
+  const val = (valName ? indicators[valName]?.current : null) ?? null;
+  const vah = (vahName ? indicators[vahName]?.current : null) ?? null;
+
+  const buffer = entryPrice * (stopLoss.bufferPercent / 100);
+
+  const longDistance =
+    typeof val === "number" && Number.isFinite(val)
+      ? entryPrice - val + buffer
+      : null;
+  const shortDistance =
+    typeof vah === "number" && Number.isFinite(vah)
+      ? vah - entryPrice + buffer
+      : null;
+
+  return {
+    long: longDistance !== null && longDistance > 0 ? longDistance : null,
+    short: shortDistance !== null && shortDistance > 0 ? shortDistance : null,
+  };
+}
+
+function findVolumeProfileName(
+  technicalContract: PresetTechnicalContract,
+  level: "vah" | "val",
+  period: number,
+): string | null {
+  for (const [name, config] of Object.entries(technicalContract.indicators)) {
+    if (
+      config.type === "volumeProfile" &&
+      config.level === level &&
+      config.period === period
+    ) {
+      return name;
+    }
+  }
+  return null;
 }
 
 function findAtrIndicatorName(technicalContract: PresetTechnicalContract): string | null {

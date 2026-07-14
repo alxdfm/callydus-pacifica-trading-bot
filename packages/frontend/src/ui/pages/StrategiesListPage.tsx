@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Trade } from "@pacifica/shared/contracts";
+import type { StrategyDraft, Trade } from "@pacifica/shared/contracts";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useActionToast } from "../../features/runtime/use-action-toast";
 import { useI18n } from "../../shared/i18n/I18nProvider";
@@ -8,6 +8,17 @@ import { formatSignedUsd } from "../../shared/format";
 import { activateStrategy, getTrades, pauseStrategy } from "../../v2/client";
 import { useSession } from "../../v2/session";
 import { LoadingPanel } from "../components/LoadingPanel";
+
+function describeStopLoss(stopLoss: StrategyDraft["risk"]["stopLoss"]): string {
+  switch (stopLoss.mode) {
+    case "static":
+      return `${stopLoss.value}%`;
+    case "atr":
+      return `ATR(${stopLoss.period})×${stopLoss.multiplier}`;
+    case "volumeProfile":
+      return `VA(${stopLoss.period})${stopLoss.bufferPercent ? ` +${stopLoss.bufferPercent}%` : ""}`;
+  }
+}
 
 export function StrategiesListPage() {
   const { t } = useI18n();
@@ -101,12 +112,7 @@ export function StrategiesListPage() {
             <div className="strategy-card__meta">
               <span><b>{strategy.draft.symbol}</b></span>
               <span>{strategy.draft.timeframe}</span>
-              <span>
-                SL{" "}
-                {strategy.draft.risk.stopLoss.mode === "static"
-                  ? `${strategy.draft.risk.stopLoss.value}%`
-                  : `ATR(${strategy.draft.risk.stopLoss.period})×${strategy.draft.risk.stopLoss.multiplier}`}
-              </span>
+              <span>SL {describeStopLoss(strategy.draft.risk.stopLoss)}</span>
               {strategy.draft.risk.takeProfit ? (
                 <span>TP RR {strategy.draft.risk.takeProfit.multiple}</span>
               ) : null}
