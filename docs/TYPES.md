@@ -36,7 +36,7 @@ JSONB em `strategies.config` é o **draft** — fonte única em
 interface StrategyDraft {
   name:      string              // 1–80 chars
   symbol:    "BTC/USDC" | "ETH/USDC" | "SOL/USDC"
-  timeframe: "3m" | "5m" | "15m"
+  timeframe: "3m" | "5m" | "15m" | "1h" | "4h"
 
   indicators: Record<string, IndicatorConfig>
 
@@ -74,6 +74,18 @@ type IndicatorConfig =
   | { type: "donchian"; period: number; band: "upper" | "lower" | "middle" }
   | { type: "adx";      period: number }
 ```
+
+`source` em `sma`/`ema` aceita `"close"` (default do `ema`), `"volume"` ou o
+**nome de outro indicador** do mesmo draft (ex.: `sma` sobre uma `ema`, para
+suavizar). O engine resolve a cadeia recursivamente e descarta o prefixo de
+warm-up (NaN) da série de origem antes de calcular — antes de 2026-07-14 a soma
+rolante carregava esse NaN e a série encadeada saía inteira NaN, o que fazia a
+regra nunca disparar e a estratégia ficar sem operar, sem erro nenhum.
+Referência cíclica (`A` com `source: "A"`, ou `A → B → A`) ainda **não é
+validada**: a resolução recursiva estoura a pilha (`RangeError`). O try/catch do
+`tick()` segura o worker de pé, mas a estratégia nunca avalia e loga erro a cada
+tick; o backtest devolve erro genérico. Validar no materialize (`activationBlockers`)
+é o lugar certo.
 
 ### TriggerGroup e TriggerRule
 

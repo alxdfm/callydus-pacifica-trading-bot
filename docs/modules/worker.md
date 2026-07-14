@@ -26,10 +26,17 @@ WS-first bot: CandleBuffer in-memory → engine → executor. Never calls the AP
   closure is detected by openTime rollover (`pendingByKey`). Warm-up via kline REST.
 - The WS intervals list must cover every timeframe the builder offers. A missing
   interval (3m, 2026-07-10) means strategies on it silently never evaluate.
+  Currently `1m, 3m, 5m, 15m, 1h, 4h` — 1h/4h were probed live on the WS before
+  being offered (2026-07-14).
+- `intervalToMs` (warm-up range) only parses `m`/`h` and falls back to 5min for
+  anything else. Offering `1d` without fixing it would fetch 25h of daily candles,
+  never warm the buffer past `isWarm`'s 50, and the strategy would never fire —
+  silently. Same failure class as the missing-interval one above.
 - CandleBuffer capacity is 300 and dedupes/replaces by openTime. The backtest
-  simulation window mirrors it (`max(requiredPeriod+5, 300)`) — both for parity
-  with live evaluation and because the unbounded window was O(n²) and timed out
-  the Lambda.
+  simulation window mirrors it (`max(requiredPeriod+5, EVALUATION_WINDOW_CANDLES)`)
+  — both for parity with live evaluation and because the unbounded window was
+  O(n²) and timed out the Lambda. At 4h those 300 candles are 50 days of history,
+  which caps how long an indicator's lookback can be.
 - Per-strategy signed `PacificaClient` built from the decrypted credential;
   cache invalidated when the credential row changes. Pacifica `account` param =
   `strategy.userId` (main wallet); the agent wallet only signs.

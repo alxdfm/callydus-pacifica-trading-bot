@@ -22,6 +22,9 @@ Typed client + single session snapshot. Pages own their page-local data
 - Backtest runs with leverage 1 and the real available balance as capital
   (live-execution parity). Falls back to $1000 when balance ≤ 0: the contract
   requires positive capital and the balance is ~0 whenever the bot holds a position.
+- Backtest periods go up to 360d. The short ones are useless on the higher
+  timeframes — a 4h EMA cross fires ~1 trade/month, so 7d/30d return a sample of
+  zero to three trades. Any new timeframe needs a period long enough to judge it.
 
 ## Decisões Técnicas
 

@@ -22,6 +22,12 @@ the same schemas; the API validates its own responses against them before sendin
   `credential.operationallyVerified` — the client never computes it.
 - Trade statuses `open → close_requested → closing → closed` mirror the worker's
   real close pipeline; there are no other states.
+- `timeframeSchema` (`3m | 5m | 15m | 1h | 4h`) is what gates the tradable
+  timeframes — the engine and `CandleInterval` already span `1m…1d`. Widening it
+  requires, in the same change, the builder's `TIMEFRAMES` and the worker's `intervals`
+  (WS subscriptions); see [worker.md](worker.md). `1d` is deliberately out: the
+  ws-feed's `intervalToMs` only parses `m`/`h`, and a daily EMA cross fires 1–3
+  times a year, which is no sample to judge a strategy on (2026-07-14).
 
 ## Decisões Técnicas
 
