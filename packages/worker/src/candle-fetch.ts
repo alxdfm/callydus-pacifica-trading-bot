@@ -4,6 +4,10 @@ import type { Candle, CandleInterval } from "@pacifica/shared";
 // Busca de candles via REST (/api/v1/kline) — era o warm-up do ws-feed.
 // No modelo de execução agendada este fetch é a ÚNICA fonte de candles: cada
 // invocação reconstrói o buffer do zero a partir do histórico da exchange.
+//
+// CÓPIA DELIBERADA: o parse de linha do kline é gêmeo do fetchChunk em
+// packages/api/src/exchange/pacifica/candles.ts (worker não importa da api).
+// Mudança de shape no endpoint deve pousar NOS DOIS arquivos.
 // ---------------------------------------------------------------------------
 
 type CandleFetchLogger = {

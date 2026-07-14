@@ -18,6 +18,9 @@ export type FetchedCandle = {
 const MAX_CANDLES_PER_REQUEST = 4000;
 const MAX_CONCURRENT_CHUNKS = 3;
 
+// CÓPIA DELIBERADA: o parse de linha do kline é gêmeo do parseKlinePayload em
+// packages/worker/src/candle-fetch.ts (worker não importa da api). Mudança de
+// shape no endpoint deve pousar NOS DOIS arquivos.
 async function fetchChunk(input: {
   baseUrl: string;
   symbol: string;
