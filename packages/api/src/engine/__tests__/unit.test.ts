@@ -58,10 +58,26 @@ describe("indicators (semantics)", () => {
     expect(calculateRsiSeries(flat, 3).at(-1)).toBe(100);
   });
 
+  it("SMA/EMA over an indicator source skip its NaN warm-up prefix", () => {
+    // Uma série de indicador chega com NaN à frente; a soma rolante da SMA e a
+    // seed da EMA carregariam esse NaN para sempre, matando a regra em silêncio
+    const source = [Number.NaN, Number.NaN, 10, 11, 12, 13];
+
+    const sma = calculateSmaSeries(source, 3);
+    const ema = calculateEmaSeries(source, 3);
+
+    expect(sma[3]).toBeNaN(); // ainda só 2 valores válidos
+    expect(sma[4]).toBeCloseTo(11, 9); // média de 10, 11, 12
+    expect(sma[5]).toBeCloseTo(12, 9); // média de 11, 12, 13
+    expect(ema[4]).toBeCloseTo(11, 9);
+    expect(ema[5]).toBeCloseTo(12, 9);
+  });
+
   it("returns all-NaN series for empty input, period < 1 or insufficient data", () => {
     expect(calculateSmaSeries([], 3)).toEqual([]);
     expect(calculateEmaSeries([1, 2], 0).every(Number.isNaN)).toBe(true);
     expect(calculateSmaSeries([1, 2], 5).every(Number.isNaN)).toBe(true);
+    expect(calculateSmaSeries([Number.NaN, Number.NaN], 2).every(Number.isNaN)).toBe(true);
     expect(calculateAtrSeries([1, 2, 3], [1, 2], [1, 2, 3], 1).every(Number.isNaN)).toBe(true);
   });
 
