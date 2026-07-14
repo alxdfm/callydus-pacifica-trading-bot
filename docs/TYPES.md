@@ -136,12 +136,36 @@ type TriggerRule =
 
 ```typescript
 type StopLossConfig =
-  | { mode: "static"; value: number; unit: "percent" }
-  | { mode: "atr";    period: number; multiplier: number }
+  | { mode: "static";        value: number; unit: "percent" }
+  | { mode: "atr";           period: number; multiplier: number }
+  | { mode: "volumeProfile"; period: number; bufferPercent: number }
 
 type TakeProfitConfig =
   | { mode: "rr"; multiple: number }    // risk:reward
 ```
+
+O take profit **não olha indicador nenhum** — ele deriva da DISTÂNCIA do stop
+(`entrada ± RR × distância`). Consequência: o modo de stop escolhe os dois lados
+do trade, não só o stop.
+
+`volumeProfile` ancora o stop na borda da value area — long abaixo da VAL, short
+acima da VAH, com `bufferPercent` de folga além do nível (um stop exatamente na
+borda fica onde a liquidez está parada e é varrido por ruído). Ele quebra duas
+premissas que os outros dois modos escondiam:
+
+1. **A distância é assimétrica**: cada lado tem a sua. `buildRiskPlans` devolve
+   `{ long, short }` calculados separadamente, não um escalar espelhado.
+2. **Pode não existir stop**: se o preço está do lado errado do nível, aquele lado
+   volta `null` e o trade é PULADO — em ambos os engines e no backtest. Isso é
+   mercado normal, não erro. Ordem sem stop nunca é submetida (invariante 3).
+
+**Medido e NÃO recomendado** (4h, 360d, 3 símbolos, 2026-07-14): contra a
+referência (stop ATR×3, RR 3) o stop de value area empata no in-sample (55,6% vs
+51,2%, mas com 17 trades contra 26) e **perde no out-of-sample de 120d** (15,8%
+vs 18,4%, com o BTC indo a −8,0%). É a assinatura de overfit. O volume profile
+paga como **filtro de entrada** (exigir PRICE fora da value area melhora os 3
+símbolos em 21/21 combinações de parâmetro), não como âncora de stop. O modo
+continua disponível, mas quem ligar precisa saber que a medição foi contrária.
 
 ## Trade (tipos runtime)
 
