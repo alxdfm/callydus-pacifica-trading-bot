@@ -32,11 +32,13 @@ const presetSymbolSchema = marketSymbolSchema;
 // Constantes e helpers puros
 // ---------------------------------------------------------------------------
 
-const TIMEFRAMES = ["3m", "5m", "15m"] as const;
+const TIMEFRAMES = ["3m", "5m", "15m", "1h", "4h"] as const;
 const BACKTEST_PERIODS = [
   { days: 7, labelKey: "builderPeriod7d" },
   { days: 30, labelKey: "builderPeriod30d" },
   { days: 90, labelKey: "builderPeriod90d" },
+  { days: 180, labelKey: "builderPeriod180d" },
+  { days: 360, labelKey: "builderPeriod360d" },
 ] as const;
 
 type IndicatorTypeOption = PresetIndicatorConfig["type"];

@@ -12,7 +12,7 @@ import { apiErrorSchema, isoDateTimeSchema } from "./common.js";
 // ---------------------------------------------------------------------------
 
 export const marketSymbolSchema = z.enum(["BTC/USDC", "ETH/USDC", "SOL/USDC"]);
-export const timeframeSchema = z.enum(["3m", "5m", "15m"]);
+export const timeframeSchema = z.enum(["3m", "5m", "15m", "1h", "4h"]);
 
 export const triggerScopeSchema = z.enum(["previousCandle", "currentCandle"]);
 

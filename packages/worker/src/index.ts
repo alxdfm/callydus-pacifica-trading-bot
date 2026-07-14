@@ -30,8 +30,8 @@ function resolveSymbols(strategies: { config: unknown }[]): string[] {
 const initialStrategies = await getActiveStrategies(db);
 const symbols = resolveSymbols(initialStrategies);
 
-// Cobre todos os timeframes que o builder oferece (3m/5m/15m) + 1m de margem
-const intervals = ["1m", "3m", "5m", "15m"] as const;
+// Cobre todos os timeframes que o builder oferece (3m/5m/15m/1h/4h) + 1m de margem
+const intervals = ["1m", "3m", "5m", "15m", "1h", "4h"] as const;
 
 const pacificaClient = new PacificaClient({
   apiBaseUrl: env.PACIFICA_REST_URL,

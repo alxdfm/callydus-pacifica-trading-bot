@@ -308,6 +308,8 @@ export const messages = {
     builderPeriod7d: "last 7 days",
     builderPeriod30d: "last 30 days",
     builderPeriod90d: "last 90 days",
+    builderPeriod180d: "last 180 days",
+    builderPeriod360d: "last 360 days",
     builderSave: "Save",
     builderActivate: "Activate",
     builderDiscard: "Discard changes",

@@ -221,7 +221,7 @@ export type PresetEditableConfig = {
 
 export type YourStrategyDraft = {
   name: string;
-  timeframe: "3m" | "5m" | "15m";
+  timeframe: "3m" | "5m" | "15m" | "1h" | "4h";
   symbol: PresetSymbol;
   indicators: Record<string, IndicatorConfig>;
   entry: {
