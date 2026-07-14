@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   marketSymbolSchema,
+  maxBacktestDays,
   strategyDraftSchema,
   type BacktestResponse,
   type IndicatorConfig,
@@ -180,6 +181,25 @@ export function StrategyBuilderPage() {
   const [busy, setBusy] = useState<"save" | "activate" | "backtest" | "pause" | null>(null);
   const [statusTone, setStatusTone] = useState<"info" | "success" | "danger" | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Períodos longos só cabem no orçamento da Lambda em timeframes altos —
+  // 3m/360d são ~172k candles e a API recusa. Quem manda é o contrato
+  const availablePeriods = useMemo(
+    () =>
+      BACKTEST_PERIODS.filter(
+        (period) =>
+          period.days <=
+          maxBacktestDays(draft?.timeframe ?? TIMEFRAMES[0]),
+      ),
+    [draft?.timeframe],
+  );
+  // Trocar para um timeframe menor pode invalidar o período escolhido: cai para
+  // o maior que ainda cabe (e volta ao original se o timeframe subir de novo)
+  const selectedPeriodDays = availablePeriods.some(
+    (period) => period.days === periodDays,
+  )
+    ? periodDays
+    : (availablePeriods.at(-1)?.days ?? BACKTEST_PERIODS[0].days);
 
   // O draft local inicializa UMA vez a partir do snapshot de sessão; edições
   // subsequentes vivem só aqui até o save
@@ -362,7 +382,7 @@ export function StrategyBuilderPage() {
 
     const endTime = Date.now();
     const result = await runBacktest(token, {
-      startTime: endTime - periodDays * 24 * 60 * 60 * 1000,
+      startTime: endTime - selectedPeriodDays * 24 * 60 * 60 * 1000,
       endTime,
       initialCapitalUsd,
       leverage: backtestLeverage,
@@ -733,9 +753,9 @@ export function StrategyBuilderPage() {
                   borderRadius: "var(--radius-sm)",
                   padding: "5px 10px",
                 }}
-                value={periodDays}
+                value={selectedPeriodDays}
               >
-                {BACKTEST_PERIODS.map((period) => (
+                {availablePeriods.map((period) => (
                   <option key={period.days} value={period.days}>{t(period.labelKey)}</option>
                 ))}
               </select>

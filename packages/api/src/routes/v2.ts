@@ -8,6 +8,7 @@ import {
   eventsResponseSchema,
   marketSymbolSchema,
   marketsResponseSchema,
+  MAX_BACKTEST_CANDLES,
   saveStrategyRequestSchema,
   sessionResponseSchema,
   strategyResponseSchema,
@@ -549,6 +550,16 @@ export function v2Routes(deps: AppDeps): Hono<HonoEnv> {
       const intervalMs = getIntervalDurationMs(
         technicalContract.timeframe as MarketCandleInterval,
       );
+      // O custo da simulação é O(candles × janela) e a Lambda corta em 29s
+      if (Math.ceil((endTime - startTime) / intervalMs) > MAX_BACKTEST_CANDLES) {
+        return errorJson(
+          c,
+          400,
+          "period_too_long",
+          "Backtest period is too long for this timeframe. Shorten the period or use a higher timeframe.",
+        );
+      }
+
       const requiredPeriod = getRequiredPeriod(technicalContract);
       // O warm-up precisa cobrir a janela de avaliação inteira, senão o começo
       // do período roda com menos histórico do que o bot tem ao vivo
