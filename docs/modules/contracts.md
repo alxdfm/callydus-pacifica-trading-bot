@@ -41,6 +41,13 @@ the same schemas; the API validates its own responses against them before sendin
   inference). Both must gain the member. The builder's `INDICATOR_TYPES`,
   `describeIndicator`, `suggestIndicatorKey` and `draft-validation.ts`
   (`resolveIndicatorContext`) also switch on it.
+- `stopLoss` has three modes and the take profit has ONE (`rr`, derived from the
+  stop distance). So the stop mode picks both ends of the trade — there is no
+  independent target. `volumeProfile` (stop on the value-area edge) broke two
+  assumptions the other modes hid: the risk distance is now ASYMMETRIC per side,
+  and a side can have NO valid stop, in which case the trade is skipped rather
+  than protected by an invented level. It is measured WORSE than the ATR stop —
+  see `docs/TYPES.md`; the mode exists but is not the recommendation.
 - An indicator the backtest cannot see must not reach the builder. The product's
   whole promise is "test before you activate"; a configurable-but-unvalidatable
   indicator is worse than none. This is the rule that admitted `volumeProfile`

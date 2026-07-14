@@ -17,6 +17,14 @@ WS-first bot: CandleBuffer in-memory → engine → executor. Never calls the AP
   misclassified everything as "system").
 - Reconcile waits a 120s grace period before treating a missing position as
   closed (order propagation on the exchange is not instant).
+- **A signal is not enough to trade: the side also needs a valid stop.**
+  `buildRiskPlans` returns `{ long, short }` computed INDEPENDENTLY (the risk
+  distance used to be one mirrored scalar) and either side can be `null`. With a
+  value-area stop that happens whenever price sits on the wrong side of the level
+  — normal market, not an error. The bot logs and skips the entry; the backtest
+  skips it too, so both agree. An order without a stop is never submitted
+  (invariante 3), and the take profit is derived from the stop distance, so a
+  missing stop means no target either.
 
 ## Decisões Técnicas
 
