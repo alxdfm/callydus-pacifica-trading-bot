@@ -66,58 +66,42 @@ export default $config({
     });
 
     // -------------------------------------------------------------------
-    // Worker — ECS Fargate (1 instância)
+    // Worker — Lambda agendada (decisão 2026-07-14; antes era ECS Fargate 24/7)
     // -------------------------------------------------------------------
-    // ATENÇÃO: NÃO existe lease/exclusão mútua no worker (LEASE_DURATION_MS e
-    // WORKER_ID são lidos em config/env.ts mas nunca usados). Enquanto isso for
-    // verdade, duas tasks simultâneas abrem ordens duplicadas — o guard em
-    // bot.ts é um read-then-act sem índice único. Por isso o deployment abaixo
-    // derruba a task antiga ANTES de subir a nova.
-    // -------------------------------------------------------------------
-    // Sem NAT de propósito: o SST coloca os containers nas subnets públicas com
-    // IP público (`assignPublicIp`), então a task já sai pela Internet Gateway e
-    // um NAT nunca chegaria a ver tráfego — seria ~$20/mês parado. O inbound
-    // continua fechado pelo SG default da VPC, que só aceita o CIDR da própria
-    // VPC, e o worker não escuta em porta nenhuma.
-    // Só volte a ligar NAT se precisar de IP de saída fixo (ex.: allowlist de IP
-    // na Pacifica ou no Neon) — nesse caso use `nat: { ec2: { instance:
-    // "t4g.nano" } }` com `az: 1`.
-    const vpc = new sst.aws.Vpc("PacificaVpc");
-    const cluster = new sst.aws.Cluster("PacificaCluster", { vpc });
-
-    const worker = new sst.aws.Service("PacificaWorker", {
-      cluster,
-      image: {
-        context: ".",
-        dockerfile: "packages/worker/Dockerfile",
-      },
-      // Graviton: ~20% mais barato que x86 no Fargate. Exige buildar a imagem em
-      // linux/arm64 — ver o setup do QEMU no workflow de deploy.
-      architecture: "arm64",
-      transform: {
-        // O default do ECS (min 100% / max 200%) sobe a task nova antes de
-        // drenar a antiga — dois bots vivos por ~1 min a cada deploy. Sem lease,
-        // isso é ordem duplicada. 0%/100% troca isso por ~1 min de downtime no
-        // deploy, que para 1 worker é o trade certo.
-        service: (args) => {
-          args.deploymentMinimumHealthyPercent = 0;
-          args.deploymentMaximumPercent = 100;
+    // O bot só avalia candle FECHADO, e com timeframes de 1h/4h o sinal só pode
+    // mudar de hora em hora — presença contínua era desperdício (e mantinha o
+    // Neon acordado 24/7, estourando as 100 CU-h do plano Free). SL/TP são
+    // submetidos à exchange junto com a ordem, então o bot ficar fora do ar
+    // entre invocações não desprotege posição nenhuma.
+    //
+    // cron no minuto :01 UTC — os fechamentos de 4h são subconjunto dos de 1h,
+    // então um único schedule horário cobre os dois timeframes.
+    const workerCron = new sst.aws.Cron("PacificaWorkerCron", {
+      schedule: "cron(1 * * * ? *)",
+      function: {
+        handler: "packages/worker/src/handler.handler",
+        runtime: "nodejs22.x",
+        architecture: "arm64",
+        memory: "512 MB",
+        timeout: "2 minutes",
+        // EventBridge invoca async e por default re-executa 2x em erro. Um
+        // retry depois de "ordem submetida + crash antes do insert" abriria
+        // posição duplicada — o pior caso com 0 é perder uma avaliação horária.
+        retries: 0,
+        // Exclusão mútua real: nunca duas execuções em paralelo (não existe
+        // lease no código — o guard de posição em bot.ts é read-then-act)
+        concurrency: { reserved: 1 },
+        nodejs: { format: "esm" as const },
+        environment: {
+          NODE_ENV: "production",
+          DATABASE_URL: DATABASE_URL.value,
+          CREDENTIAL_ENCRYPTION_KEY: CREDENTIAL_ENCRYPTION_KEY.value,
+          CREDENTIAL_ENCRYPTION_KEY_ID:
+            process.env.CREDENTIAL_ENCRYPTION_KEY_ID ?? "v2",
+          PACIFICA_BUILDER_CODE: PACIFICA_BUILDER_CODE.value,
+          PACIFICA_REST_URL:
+            process.env.PACIFICA_REST_BASE_URL ?? "https://api.pacifica.fi",
         },
-      },
-      cpu: "0.25 vCPU",
-      memory: "0.5 GB",
-      environment: {
-        NODE_ENV: "production",
-        DATABASE_URL: DATABASE_URL.value,
-        CREDENTIAL_ENCRYPTION_KEY: CREDENTIAL_ENCRYPTION_KEY.value,
-        CREDENTIAL_ENCRYPTION_KEY_ID:
-          process.env.CREDENTIAL_ENCRYPTION_KEY_ID ?? "v2",
-        PACIFICA_BUILDER_CODE: PACIFICA_BUILDER_CODE.value,
-        PACIFICA_REST_URL:
-          process.env.PACIFICA_REST_BASE_URL ?? "https://api.pacifica.fi",
-        PACIFICA_WS_URL:
-          process.env.PACIFICA_WS_URL ?? "wss://ws.pacifica.fi/ws",
-        WORKER_ID: `worker-${$app.stage}-1`,
       },
     });
 
@@ -148,17 +132,33 @@ export default $config({
         okActions: [alertTopic.arn],
       });
 
-      // Dead man's switch do worker: sem métrica de CPU = worker parado
-      new aws.cloudwatch.MetricAlarm("PacificaWorkerDownAlarm", {
-        alarmDescription: "Pacifica worker has no running task",
-        namespace: "AWS/ECS",
-        metricName: "CPUUtilization",
-        dimensions: {
-          ClusterName: cluster.nodes.cluster.name,
-          ServiceName: worker.nodes.service.name,
-        },
-        statistic: "SampleCount",
-        period: 300,
+      // Tick do worker falhando (com retries: 0 não há segunda chance na hora)
+      new aws.cloudwatch.MetricAlarm("PacificaWorkerErrorsAlarm", {
+        alarmDescription: "Pacifica worker tick failed",
+        namespace: "AWS/Lambda",
+        metricName: "Errors",
+        dimensions: { FunctionName: workerCron.nodes.function.name },
+        statistic: "Sum",
+        period: 3600,
+        evaluationPeriods: 1,
+        threshold: 1,
+        comparisonOperator: "GreaterThanOrEqualToThreshold",
+        treatMissingData: "notBreaching",
+        alarmActions: [alertTopic.arn],
+        okActions: [alertTopic.arn],
+      });
+
+      // Dead man's switch: o cron é horário, então uma hora sem invocação
+      // NENHUMA significa schedule quebrado/desabilitado — falha silenciosa
+      // que nenhum alarme de erro pega. 2 períodos para não flapar com o
+      // alinhamento dos buckets do CloudWatch.
+      new aws.cloudwatch.MetricAlarm("PacificaWorkerSilentAlarm", {
+        alarmDescription: "Pacifica worker cron is not being invoked",
+        namespace: "AWS/Lambda",
+        metricName: "Invocations",
+        dimensions: { FunctionName: workerCron.nodes.function.name },
+        statistic: "Sum",
+        period: 3600,
         evaluationPeriods: 2,
         threshold: 1,
         comparisonOperator: "LessThanThreshold",

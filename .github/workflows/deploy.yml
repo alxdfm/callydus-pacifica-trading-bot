@@ -39,13 +39,6 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # O worker roda em Fargate arm64; o runner é x86, então o build da imagem
-      # em linux/arm64 depende do binfmt do QEMU registrado.
-      - name: Set up QEMU (build arm64 da imagem do worker)
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Deploy backend (SST)
         run: npx sst deploy --stage production
         env:
