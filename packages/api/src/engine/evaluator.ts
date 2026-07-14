@@ -46,7 +46,8 @@ export type YourStrategyActivationBlocker =
   | "take_profit_missing"
   | "stop_loss_missing"
   | "no_entry_rules"
-  | "symbol_not_supported";
+  | "symbol_not_supported"
+  | "invalid_indicator_source";
 
 type IndicatorEmaConfig = {
   type: "ema";
@@ -221,7 +222,11 @@ export type PresetEditableConfig = {
 
 export type YourStrategyDraft = {
   name: string;
-  timeframe: "3m" | "5m" | "15m" | "1h" | "4h";
+  // O engine roda em qualquer intervalo; quem restringe o que é ofertável é o
+  // `timeframeSchema` do contrato. Repetir a lista aqui só criava um tipo que
+  // mentia em silêncio quando o enum crescia (a rota faz cast de jsonb, então
+  // o typecheck não pegava)
+  timeframe: MarketCandleInterval;
   symbol: PresetSymbol;
   indicators: Record<string, IndicatorConfig>;
   entry: {
@@ -344,6 +349,18 @@ export type MaterializedYourStrategy = {
   technicalContract: PresetTechnicalContract | null;
   activationBlockers: YourStrategyActivationBlocker[];
 };
+
+// ---------------------------------------------------------------------------
+// Constantes
+// ---------------------------------------------------------------------------
+
+/**
+ * Candles the simulator keeps in its evaluation window, mirroring the worker's
+ * CandleBuffer capacity. Callers must warm up at least this many candles before
+ * the measured period, otherwise the backtest evaluates its first candles on a
+ * shorter history than the live bot has.
+ */
+export const EVALUATION_WINDOW_CANDLES = 300;
 
 // ---------------------------------------------------------------------------
 // Public functions
@@ -480,6 +497,10 @@ export function materializeYourStrategyTechnicalContract(
 
   if (takeProfit === null) {
     activationBlockers.push("take_profit_missing");
+  }
+
+  if (hasInvalidIndicatorSource(indicators)) {
+    activationBlockers.push("invalid_indicator_source");
   }
 
   if (activationBlockers.length > 0) {
@@ -752,36 +773,6 @@ export function simulatePresetBacktest(
   };
 }
 
-/**
- * Candles the simulator keeps in its evaluation window, mirroring the worker's
- * CandleBuffer capacity. Callers must warm up at least this many candles before
- * the measured period, otherwise the backtest evaluates its first candles on a
- * shorter history than the live bot has.
- */
-export const EVALUATION_WINDOW_CANDLES = 300;
-
-/**
- * First candle that may open a trade: the lookback the indicators need, pushed
- * forward to `tradingStartTime` when the caller measures a specific period.
- */
-function resolveTradingStartIndex(
-  candles: MarketCandle[],
-  requiredPeriod: number,
-  tradingStartTime: number | undefined,
-): number {
-  if (tradingStartTime === undefined) {
-    return requiredPeriod;
-  }
-
-  const firstInPeriod = candles.findIndex(
-    (candle) => candle.openTime >= tradingStartTime,
-  );
-
-  return firstInPeriod === -1
-    ? candles.length
-    : Math.max(requiredPeriod, firstInPeriod);
-}
-
 export function getRequiredPeriod(technicalContract: PresetTechnicalContract): number {
   const indicatorPeriods = Object.values(technicalContract.indicators).map(
     (indicator) => {
@@ -846,6 +837,65 @@ export function toPacificaMarketSymbol(symbol: string): string | null {
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * First candle that may open a trade: the lookback the indicators need, pushed
+ * forward to `tradingStartTime` when the caller measures a specific period.
+ */
+function resolveTradingStartIndex(
+  candles: MarketCandle[],
+  requiredPeriod: number,
+  tradingStartTime: number | undefined,
+): number {
+  if (tradingStartTime === undefined) {
+    return requiredPeriod;
+  }
+
+  const firstInPeriod = candles.findIndex(
+    (candle) => candle.openTime >= tradingStartTime,
+  );
+
+  return firstInPeriod === -1
+    ? candles.length
+    : Math.max(requiredPeriod, firstInPeriod);
+}
+
+// Séries que o engine resolve sozinho — o resto de um `source` tem que ser
+// outro indicador declarado no mesmo draft
+const BUILT_IN_INDICATOR_SOURCES = new Set(["close", "volume", "PRICE"]);
+
+/**
+ * `source` pode encadear indicadores (ex.: uma sma sobre uma ema). Duas formas
+ * de quebrar isso passam pelo schema: apontar para um indicador inexistente
+ * (série toda-NaN → a regra nunca é satisfeita) e fechar um ciclo (`A → B → A`
+ * → a resolução recursiva estoura a pilha). Nos dois casos a estratégia nunca
+ * operaria, então ela não pode ser ativada.
+ */
+function hasInvalidIndicatorSource(
+  indicators: Record<string, IndicatorConfig>,
+): boolean {
+  const sourceOf = (name: string): string | undefined => {
+    const config = indicators[name];
+    return config && (config.type === "sma" || config.type === "ema")
+      ? config.source
+      : undefined;
+  };
+
+  for (const name of Object.keys(indicators)) {
+    const visited = new Set<string>([name]);
+    let current = sourceOf(name);
+
+    while (current !== undefined && !BUILT_IN_INDICATOR_SOURCES.has(current)) {
+      if (!(current in indicators) || visited.has(current)) {
+        return true;
+      }
+      visited.add(current);
+      current = sourceOf(current);
+    }
+  }
+
+  return false;
+}
 
 function ensureRiskSupportIndicators(
   draft: YourStrategyDraft,

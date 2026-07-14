@@ -8,9 +8,11 @@ import {
   calculateAdxSeries,
 } from "../indicators.js";
 import {
+  materializeYourStrategyTechnicalContract,
   simulatePresetBacktest,
   type MarketCandle,
   type PresetTechnicalContract,
+  type YourStrategyDraft,
 } from "../evaluator.js";
 import { indicatorGoldens } from "./indicator-goldens.js";
 
@@ -157,6 +159,75 @@ function buildSimContract(): PresetTechnicalContract {
     },
   };
 }
+
+describe("materializeYourStrategyTechnicalContract", () => {
+  function buildDraft(indicators: Record<string, unknown>): YourStrategyDraft {
+    return {
+      name: "d",
+      timeframe: "4h",
+      symbol: "BTC/USDC",
+      indicators: indicators as YourStrategyDraft["indicators"],
+      entry: {
+        long: {
+          enabled: true,
+          trigger: {
+            type: "all",
+            rules: [
+              { scope: "currentCandle", type: "threshold", indicator: "PRICE", operator: "above", value: 0 },
+            ],
+          },
+        },
+        short: { enabled: false, trigger: { type: "all", rules: [] } },
+      },
+      risk: {
+        stopLoss: { mode: "static", value: 2, unit: "percent" },
+        takeProfit: { mode: "rr", multiple: 2 },
+      },
+      positionSizeType: "balance_percent",
+      positionSizeValue: 100,
+    };
+  }
+
+  it("accepts a source chained onto another indicator", () => {
+    const result = materializeYourStrategyTechnicalContract(
+      buildDraft({
+        EMA20: { type: "ema", period: 20 },
+        SMA_OF_EMA20: { type: "sma", source: "EMA20", period: 5 },
+        VOL_SMA: { type: "sma", source: "volume", period: 20 },
+      }),
+    );
+
+    expect(result.activationBlockers).toEqual([]);
+    expect(result.technicalContract).not.toBeNull();
+  });
+
+  // Sem isto, a resolução recursiva do source estoura a pilha em runtime
+  it("blocks activation on a cyclic source", () => {
+    const selfReferencing = materializeYourStrategyTechnicalContract(
+      buildDraft({ A: { type: "sma", source: "A", period: 5 } }),
+    );
+    const mutual = materializeYourStrategyTechnicalContract(
+      buildDraft({
+        A: { type: "sma", source: "B", period: 5 },
+        B: { type: "sma", source: "A", period: 5 },
+      }),
+    );
+
+    expect(selfReferencing.activationBlockers).toContain("invalid_indicator_source");
+    expect(selfReferencing.technicalContract).toBeNull();
+    expect(mutual.activationBlockers).toContain("invalid_indicator_source");
+    expect(mutual.technicalContract).toBeNull();
+  });
+
+  it("blocks activation on a source pointing at an indicator that does not exist", () => {
+    const result = materializeYourStrategyTechnicalContract(
+      buildDraft({ SMA: { type: "sma", source: "EMA_TYPO", period: 5 } }),
+    );
+
+    expect(result.activationBlockers).toContain("invalid_indicator_source");
+    expect(result.technicalContract).toBeNull();
+  });
+});
 
 describe("simulatePresetBacktest", () => {
   const candles = buildSimCandles([100, 101, 102, 103, 104, 105, 106, 107, 108, 109]);
