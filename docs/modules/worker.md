@@ -3,10 +3,13 @@
 Scheduled bot (since 2026-07-14; formerly WS-first on ECS): an hourly
 `sst.aws.Cron` Lambda rebuilds the CandleBuffer from REST and runs ONE tick →
 engine → executor. Never calls the API (Drizzle only); CandleBuffer never
-touches the DB (see CLAUDE.md invariants). Mutual exclusion comes from
-`concurrency: { reserved: 1 }` + `retries: 0` on the function — there is no
-lease in the code, and an async retry after "order placed, crash before insert"
-would double the position.
+touches the DB (see CLAUDE.md invariants). Mutual exclusion is a Postgres
+**advisory lock** at the top of the handler (released by the `sql.end()` in the
+finally) — Lambda reserved concurrency is NOT available on this account (new
+free-plan accounts cap total concurrency at 10 and AWS requires 10 unreserved,
+so `PutFunctionConcurrency` rejects any value; it failed the first deploy).
+`retries: 0` stays essential: an async retry after "order placed, crash before
+insert" would double the position.
 
 ## Regras de Negócio
 

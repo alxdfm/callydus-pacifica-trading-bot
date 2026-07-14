@@ -31,6 +31,12 @@ const WARMUP_CANDLE_COUNT = 300;
 // períodos sem bot rodando.
 const RECORDED_SYMBOLS = ["BTC", "ETH", "SOL"];
 
+// Chave arbitrária e estável do advisory lock "tick do worker". Exclusão mútua
+// vem daqui, não de reserved concurrency da Lambda: a conta (plano free novo)
+// tem limite de 10 execuções concorrentes e a AWS exige 10 NÃO reservadas —
+// PutFunctionConcurrency com qualquer valor é rejeitado nessa conta.
+const TICK_ADVISORY_LOCK_KEY = 0x7ac1f1ca;
+
 /** Pares (símbolo, timeframe) exatos das estratégias ativas — sem cross-product. */
 export function resolveCandlePairs(strategies: { config: unknown }[]): {
   symbol: string;
@@ -58,11 +64,26 @@ export function resolveCandlePairs(strategies: { config: unknown }[]): {
 export async function handler(): Promise<{
   strategies: number;
   pairs: number;
+  skipped?: boolean;
 }> {
   const env = loadWorkerEnv();
   const db = createDrizzleClient(env.DATABASE_URL);
 
   try {
+    // O lock é da CONEXÃO e morre junto com o sql.end() do finally. Se outra
+    // invocação está no meio do tick (fire duplicado do EventBridge, invocação
+    // manual), esta desiste em vez de correr em paralelo — os guards do bot
+    // são read-then-act e não sobrevivem a concorrência real. O ::bigint
+    // desfaz a ambiguidade de overload do pg_try_advisory_lock.
+    const lockRows = await db.$client`
+      select pg_try_advisory_lock(${TICK_ADVISORY_LOCK_KEY}::bigint) as locked
+    `;
+
+    if (!lockRows[0]?.locked) {
+      console.warn("[handler] another tick holds the lock, skipping");
+      return { strategies: 0, pairs: 0, skipped: true };
+    }
+
     const strategies = await getActiveStrategies(db);
     const pairs = resolveCandlePairs(strategies);
 

@@ -88,9 +88,10 @@ export default $config({
         // retry depois de "ordem submetida + crash antes do insert" abriria
         // posição duplicada — o pior caso com 0 é perder uma avaliação horária.
         retries: 0,
-        // Exclusão mútua real: nunca duas execuções em paralelo (não existe
-        // lease no código — o guard de posição em bot.ts é read-then-act)
-        concurrency: { reserved: 1 },
+        // SEM concurrency.reserved de propósito: a conta (plano free novo) tem
+        // limite de 10 execuções concorrentes e a AWS exige 10 não reservadas,
+        // então PutFunctionConcurrency é rejeitado com qualquer valor. A
+        // exclusão mútua vem do advisory lock do Postgres no início do handler.
         nodejs: { format: "esm" as const },
         environment: {
           NODE_ENV: "production",

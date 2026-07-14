@@ -91,8 +91,12 @@ Configuração (`sst.config.ts`):
 - `retries: 0` — **crítico**: EventBridge invoca async e por default re-executa
   2x em erro; um retry depois de "ordem submetida + crash antes do insert"
   abriria posição duplicada. O pior caso com 0 é perder uma avaliação horária.
-- `concurrency: { reserved: 1 }` — exclusão mútua real (não existe lease no
-  código; o guard de posição em `bot.ts` é read-then-act)
+- Exclusão mútua: **advisory lock do Postgres** no início do handler
+  (`pg_try_advisory_lock`; solto no `sql.end()` do finally). NÃO usar
+  `concurrency: { reserved: N }`: a conta (plano free novo) tem limite de 10
+  execuções concorrentes e a AWS exige 10 não reservadas — o
+  `PutFunctionConcurrency` é rejeitado com qualquer valor (falha real do
+  primeiro deploy, 2026-07-14)
 - Alarmes (com `ALERT_EMAIL`): `Errors >= 1` em 1h, e dead man's switch
   `Invocations < 1` por 2h consecutivas com `treatMissingData: breaching` —
   cron parado é falha silenciosa que nenhum alarme de erro pega
