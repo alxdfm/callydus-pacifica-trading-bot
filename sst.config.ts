@@ -66,14 +66,23 @@ export default $config({
     });
 
     // -------------------------------------------------------------------
-    // Worker — ECS Fargate (1 instância; lease no banco garante exclusão mútua)
-    // NAT via EC2 (fck-nat) — ~10x mais barato que NAT Gateway gerenciado
+    // Worker — ECS Fargate (1 instância)
     // -------------------------------------------------------------------
-    // t4g.micro: única opção ARM free-tier-eligible (conta no plano free
-    // só pode lançar instâncias free-tier-eligible)
-    const vpc = new sst.aws.Vpc("PacificaVpc", {
-      nat: { ec2: { instance: "t4g.micro" } },
-    });
+    // ATENÇÃO: NÃO existe lease/exclusão mútua no worker (LEASE_DURATION_MS e
+    // WORKER_ID são lidos em config/env.ts mas nunca usados). Enquanto isso for
+    // verdade, duas tasks simultâneas abrem ordens duplicadas — o guard em
+    // bot.ts é um read-then-act sem índice único. Por isso o deployment abaixo
+    // derruba a task antiga ANTES de subir a nova.
+    // -------------------------------------------------------------------
+    // Sem NAT de propósito: o SST coloca os containers nas subnets públicas com
+    // IP público (`assignPublicIp`), então a task já sai pela Internet Gateway e
+    // um NAT nunca chegaria a ver tráfego — seria ~$20/mês parado. O inbound
+    // continua fechado pelo SG default da VPC, que só aceita o CIDR da própria
+    // VPC, e o worker não escuta em porta nenhuma.
+    // Só volte a ligar NAT se precisar de IP de saída fixo (ex.: allowlist de IP
+    // na Pacifica ou no Neon) — nesse caso use `nat: { ec2: { instance:
+    // "t4g.nano" } }` com `az: 1`.
+    const vpc = new sst.aws.Vpc("PacificaVpc");
     const cluster = new sst.aws.Cluster("PacificaCluster", { vpc });
 
     const worker = new sst.aws.Service("PacificaWorker", {
@@ -81,6 +90,19 @@ export default $config({
       image: {
         context: ".",
         dockerfile: "packages/worker/Dockerfile",
+      },
+      // Graviton: ~20% mais barato que x86 no Fargate. Exige buildar a imagem em
+      // linux/arm64 — ver o setup do QEMU no workflow de deploy.
+      architecture: "arm64",
+      transform: {
+        // O default do ECS (min 100% / max 200%) sobe a task nova antes de
+        // drenar a antiga — dois bots vivos por ~1 min a cada deploy. Sem lease,
+        // isso é ordem duplicada. 0%/100% troca isso por ~1 min de downtime no
+        // deploy, que para 1 worker é o trade certo.
+        service: (args) => {
+          args.deploymentMinimumHealthyPercent = 0;
+          args.deploymentMaximumPercent = 100;
+        },
       },
       cpu: "0.25 vCPU",
       memory: "0.5 GB",
