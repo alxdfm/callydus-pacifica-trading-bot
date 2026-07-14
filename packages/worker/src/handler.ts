@@ -73,17 +73,25 @@ export async function handler(): Promise<{
 
     const buffer = new CandleBuffer(WARMUP_CANDLE_COUNT);
 
-    for (const { symbol, interval } of pairs) {
-      const candles = await fetchCandles({
-        restBaseUrl: env.PACIFICA_REST_URL,
-        symbol,
-        interval,
-        intervalMs: getIntervalDurationMs(interval),
-        count: WARMUP_CANDLE_COUNT,
-      });
+    // Pares são independentes — busca em paralelo; o push por par continua
+    // em ordem (o buffer descarta candle fora de ordem dentro do MESMO par)
+    const candlesByPair = await Promise.all(
+      pairs.map(({ symbol, interval }) =>
+        fetchCandles({
+          restBaseUrl: env.PACIFICA_REST_URL,
+          symbol,
+          interval,
+          intervalMs: getIntervalDurationMs(interval),
+          count: WARMUP_CANDLE_COUNT,
+        }),
+      ),
+    );
 
+    for (const [index, candles] of candlesByPair.entries()) {
+      const pair = pairs[index];
+      if (!pair) continue;
       for (const candle of candles) {
-        buffer.push(symbol, interval, candle);
+        buffer.push(pair.symbol, pair.interval, candle);
       }
     }
 
