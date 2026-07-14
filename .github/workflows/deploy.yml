@@ -39,6 +39,21 @@ jobs:
       - name: Test
         run: pnpm test
 
+      # Migrations rodam ANTES do deploy: código novo nunca chega à Lambda sem
+      # a tabela/coluna que ele espera (foi assim que market_snapshots faltou em
+      # produção — o workflow não migrava). A URL vem do secret DatabaseUrl do
+      # próprio SST para não duplicar segredo no GitHub; o valor nunca é
+      # impresso no log.
+      - name: Run database migrations
+        run: |
+          DATABASE_URL="$(npx sst secret list --stage production | grep '^DatabaseUrl=' | cut -d= -f2-)"
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DatabaseUrl secret not found in SST stage production"
+            exit 1
+          fi
+          export DATABASE_URL
+          pnpm --filter @pacifica/api db:migrate
+
       - name: Deploy backend (SST)
         run: npx sst deploy --stage production
         env:

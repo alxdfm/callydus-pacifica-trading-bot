@@ -123,6 +123,12 @@ pnpm --filter @pacifica/worker dev
 
 Qualquer PostgreSQL é compatível (RDS, Neon, Supabase como provider de Postgres, etc.).
 
+**Em produção as migrations rodam sozinhas**: o `deploy.yml` aplica
+`db:migrate` ANTES do `sst deploy`, lendo a URL do secret `DatabaseUrl` do SST
+(sem segredo duplicado no GitHub). Antes disso o workflow não migrava — foi
+assim que a `market_snapshots` ficou faltando em produção (2026-07-14). Os
+comandos abaixo continuam valendo para desenvolvimento local.
+
 ```bash
 # Gera migration SQL
 pnpm --filter @pacifica/api db:generate
