@@ -1,3 +1,4 @@
+import type { CandleInterval } from "@pacifica/shared";
 import { loadWorkerEnv } from "./config/env.js";
 import { CandleBuffer } from "./candle-buffer.js";
 import { createDrizzleClient } from "./db/client.js";
@@ -26,12 +27,24 @@ function resolveSymbols(strategies: { config: unknown }[]): string[] {
   ];
 }
 
-// Resolve initial symbols from DB before starting the feed
+// Assina só os timeframes que as estratégias ativas usam — assinar a lista
+// inteira do builder multiplicava os canais do WS por símbolo à toa. O draft já
+// vem validado contra `timeframeSchema` no save, então o valor é confiável.
+function resolveIntervals(strategies: { config: unknown }[]): CandleInterval[] {
+  return [
+    ...new Set(
+      strategies.flatMap((s) => {
+        const config = s.config as { timeframe?: string };
+        return config.timeframe ? [config.timeframe as CandleInterval] : [];
+      }),
+    ),
+  ];
+}
+
+// Resolve initial symbols/intervals from DB before starting the feed
 const initialStrategies = await getActiveStrategies(db);
 const symbols = resolveSymbols(initialStrategies);
-
-// Cobre todos os timeframes que o builder oferece (3m/5m/15m/1h/4h) + 1m de margem
-const intervals = ["1m", "3m", "5m", "15m", "1h", "4h"] as const;
+const intervals = resolveIntervals(initialStrategies);
 
 const pacificaClient = new PacificaClient({
   apiBaseUrl: env.PACIFICA_REST_URL,
@@ -50,8 +63,8 @@ const adapter = new PacificaAdapter(pacificaClient);
 const wsFeed = createWsFeed({
   wsUrl: env.PACIFICA_WS_URL,
   restBaseUrl: env.PACIFICA_REST_URL,
-  symbols: [...symbols],
-  intervals: [...intervals],
+  symbols,
+  intervals,
   buffer,
 });
 
@@ -67,7 +80,11 @@ const dbWatcher = createDbWatcher({
   pollIntervalMs: 30_000,
   onStrategiesChanged: (strategies) => {
     // Estratégia ativada depois do boot precisa entrar no feed (subscribe+warm-up)
-    wsFeed.setSymbols(resolveSymbols(strategies));
+    // — pode trazer símbolo novo, timeframe novo, ou os dois
+    wsFeed.setSubscriptions(
+      resolveSymbols(strategies),
+      resolveIntervals(strategies),
+    );
     bot.onStrategiesChanged(strategies);
   },
 });
