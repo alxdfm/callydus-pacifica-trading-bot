@@ -13,6 +13,7 @@ import {
   calculateAtrSeries,
   calculateDonchianSeries,
   calculateAdxSeries,
+  calculateVolumeProfileSeries,
 } from "../indicators.js";
 import { indicatorGoldens } from "./indicator-goldens.js";
 
@@ -444,6 +445,84 @@ describe("calculateAdxSeries", () => {
     const { highs, lows, closes } = trendCandles(Array.from({ length: 5 }, (_, i) => 100 + i));
     // period 3 exige 2*3 = 6 candles → 5 é insuficiente
     expect(calculateAdxSeries(highs, lows, closes, 3).every(Number.isNaN)).toBe(true);
+  });
+});
+
+// Espelho dos testes do engine da API — os dois pacotes duplicam o engine por
+// design, então a semântica do volume profile é verificada nos dois lados.
+describe("calculateVolumeProfileSeries", () => {
+  // Candles achatados (h = l = c) para o preço típico cair exatamente no preço
+  const flat = (prices: number[]) => ({ highs: prices, lows: prices, closes: prices });
+
+  it("puts the POC on the heaviest price cluster, not the widest move", () => {
+    const { highs, lows, closes } = flat([100, 100, 100, 100, 100, 100, 100, 120, 120]);
+    const volumes = [10, 10, 10, 10, 10, 10, 10, 1, 1];
+
+    const poc = calculateVolumeProfileSeries(highs, lows, closes, volumes, 8, "poc");
+    // faixa da janela = [100, 120] / 24 faixas → o POC é o centro da 1ª faixa
+    expect(poc[8]).toBeCloseTo(100 + 0.5 * (20 / 24), 6);
+    expect(poc.slice(0, 8).every(Number.isNaN)).toBe(true);
+  });
+
+  it("ignores the current candle (same reason as donchian)", () => {
+    // Volume ENORME a 120 no candle atual: se ele entrasse na janela o POC
+    // saltaria para 120 e uma regra de PRICE cruzando o POC nunca dispararia.
+    const { highs, lows, closes } = flat([100, 100, 100, 100, 100, 100, 100, 120, 120]);
+    const volumes = [10, 10, 10, 10, 10, 10, 10, 1, 1000];
+
+    const poc = calculateVolumeProfileSeries(highs, lows, closes, volumes, 8, "poc");
+    expect(poc[8]).toBeCloseTo(100 + 0.5 * (20 / 24), 6);
+  });
+
+  it("brackets the POC with the value area (VAL <= POC <= VAH)", () => {
+    const { highs, lows, closes } = flat([100, 101, 102, 103, 104, 105, 106, 107, 108]);
+    const volumes = [1, 1, 1, 50, 50, 1, 1, 1, 1];
+
+    const args = [highs, lows, closes, volumes, 8] as const;
+    const val = calculateVolumeProfileSeries(...args, "val")[8]!;
+    const poc = calculateVolumeProfileSeries(...args, "poc")[8]!;
+    const vah = calculateVolumeProfileSeries(...args, "vah")[8]!;
+
+    expect(val).toBeLessThanOrEqual(poc);
+    expect(poc).toBeLessThanOrEqual(vah);
+    expect(poc).toBeGreaterThan(102);
+    expect(poc).toBeLessThan(105);
+  });
+
+  it("returns NaN for a window with no traded volume", () => {
+    const { highs, lows, closes } = flat([100, 101, 102, 103, 104, 105, 106, 107, 108]);
+    const volumes = Array.from({ length: 9 }, () => 0);
+    // zero não pode virar "preço": uma regra de cruzamento o trataria como nível real
+    expect(calculateVolumeProfileSeries(highs, lows, closes, volumes, 8, "poc")[8]).toBeNaN();
+  });
+
+  it("tail matches the full series (the engine's fast path)", () => {
+    // O engine só calcula as 2 últimas posições porque cada uma custa O(period).
+    // Se a cauda divergisse da série completa, o bot ao vivo estaria lendo um
+    // indicador diferente do testado — este é O teste da otimização.
+    const prices = Array.from({ length: 120 }, (_, i) => 100 + Math.sin(i / 7) * 12);
+    const highs = prices.map((p) => p + 0.7);
+    const lows = prices.map((p) => p - 0.9);
+    const volumes = prices.map((_, i) => 10 + ((i * 37) % 23));
+
+    for (const level of ["poc", "vah", "val"] as const) {
+      const full = calculateVolumeProfileSeries(highs, lows, prices, volumes, 40, level);
+      const tail = calculateVolumeProfileSeries(highs, lows, prices, volumes, 40, level, 2);
+
+      expect(tail.at(-1)).toBe(full.at(-1));
+      expect(tail.at(-2)).toBe(full.at(-2));
+      expect(tail.slice(0, -2).every(Number.isNaN)).toBe(true);
+    }
+  });
+
+  it("collapses the three levels on a flat window", () => {
+    const { highs, lows, closes } = flat(Array.from({ length: 9 }, () => 100));
+    const volumes = Array.from({ length: 9 }, () => 10);
+    const args = [highs, lows, closes, volumes, 8] as const;
+
+    expect(calculateVolumeProfileSeries(...args, "poc")[8]).toBe(100);
+    expect(calculateVolumeProfileSeries(...args, "vah")[8]).toBe(100);
+    expect(calculateVolumeProfileSeries(...args, "val")[8]).toBe(100);
   });
 });
 

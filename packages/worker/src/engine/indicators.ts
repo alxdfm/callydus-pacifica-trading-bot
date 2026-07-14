@@ -199,6 +199,175 @@ function computeDonchian(
   return out;
 }
 
+// Nº de faixas de preço do volume profile. Fixo de propósito: é resolução, não
+// preferência, e deixar o usuário mexer só abriria espaço para overfit.
+const VOLUME_PROFILE_BINS = 24;
+// Convenção do Market Profile: a value area é o miolo que concentra 70% do volume
+const VOLUME_PROFILE_VALUE_AREA_RATIO = 0.7;
+
+function computeVolumeProfile(
+  highs: number[],
+  lows: number[],
+  closes: number[],
+  volumes: number[],
+  period: number,
+  level: "poc" | "vah" | "val",
+  tailPositions: number,
+): number[] {
+  // Janela = os `period` candles ANTERIORES (exclui o atual), mesma razão do
+  // donchian: com o candle atual dentro da janela o volume dele próprio puxaria
+  // o POC, e uma regra de PRICE cruzando o POC nunca dispararia limpa.
+  if (highs.length <= period) {
+    return [];
+  }
+
+  // Cada posição custa O(period) para re-binar a janela — diferente de EMA/RSI,
+  // que são O(1) por posição. Calcular a série toda a cada candle do backtest
+  // custava 14s de binning puro em 60k candles; `tailPositions` limita o cálculo
+  // às posições que o engine de fato lê (ver INDICATOR_TAIL_POSITIONS).
+  const firstPosition = Math.max(period, highs.length - tailPositions);
+
+  const out: number[] = [];
+  const binVolumes = new Array<number>(VOLUME_PROFILE_BINS).fill(0);
+
+  // Deques monotônicas dão o max/min da janela deslizante em O(1) amortizado
+  const maxDeque: number[] = [];
+  const minDeque: number[] = [];
+  let maxHead = 0;
+  let minHead = 0;
+  let totalVolume = 0;
+
+  function pushRange(index: number): void {
+    while (
+      maxDeque.length > maxHead &&
+      highs[maxDeque[maxDeque.length - 1]!]! <= highs[index]!
+    ) {
+      maxDeque.pop();
+    }
+    maxDeque.push(index);
+
+    while (
+      minDeque.length > minHead &&
+      lows[minDeque[minDeque.length - 1]!]! >= lows[index]!
+    ) {
+      minDeque.pop();
+    }
+    minDeque.push(index);
+  }
+
+  // Semeia a janela [firstPosition - period, firstPosition)
+  for (let j = firstPosition - period; j < firstPosition; j += 1) {
+    pushRange(j);
+    totalVolume += volumes[j]!;
+  }
+
+  for (let i = firstPosition; i < highs.length; i += 1) {
+    // Invariante: ao entrar na iteração as deques e o totalVolume cobrem
+    // exatamente a janela [i - period, i) — o candle atual fica de fora
+    const rangeHigh = highs[maxDeque[maxHead]!]!;
+    const rangeLow = lows[minDeque[minHead]!]!;
+
+    out.push(
+      resolveLevel(i, rangeLow, rangeHigh, totalVolume, binVolumes, level, {
+        highs,
+        lows,
+        closes,
+        volumes,
+        period,
+      }),
+    );
+
+    // Desliza a janela: sai o candle i - period, entra o candle i
+    const leaving = i - period;
+    totalVolume = totalVolume - volumes[leaving]! + volumes[i]!;
+    if (maxDeque[maxHead] === leaving) maxHead += 1;
+    if (minDeque[minHead] === leaving) minHead += 1;
+    pushRange(i);
+  }
+
+  return out;
+}
+
+function resolveLevel(
+  i: number,
+  rangeLow: number,
+  rangeHigh: number,
+  totalVolume: number,
+  binVolumes: number[],
+  level: "poc" | "vah" | "val",
+  series: {
+    highs: number[];
+    lows: number[];
+    closes: number[];
+    volumes: number[];
+    period: number;
+  },
+): number {
+  const { highs, lows, closes, volumes, period } = series;
+
+  // Janela achatada (todos os candles no mesmo preço): os três níveis colapsam
+  if (!(rangeHigh > rangeLow)) {
+    return Number.isFinite(rangeHigh) ? rangeHigh : Number.NaN;
+  }
+
+  // Sem volume negociado o perfil não tem o que dizer — NaN, e não zero: zero
+  // seria um "preço" e as regras de cruzamento o tratariam como nível real
+  if (totalVolume <= 0) {
+    return Number.NaN;
+  }
+
+  binVolumes.fill(0);
+  const binWidth = (rangeHigh - rangeLow) / VOLUME_PROFILE_BINS;
+
+  for (let j = i - period; j < i; j += 1) {
+    // Sem tick data não sabemos ONDE dentro do candle o volume negociou;
+    // espalhá-lo pelo range H–L inventaria precisão que o dado não tem. Cada
+    // candle entra como massa pontual no preço típico (h+l+c)/3.
+    const typicalPrice = (highs[j]! + lows[j]! + closes[j]!) / 3;
+    const bin = Math.min(
+      VOLUME_PROFILE_BINS - 1,
+      Math.floor((typicalPrice - rangeLow) / binWidth),
+    );
+    binVolumes[bin] = binVolumes[bin]! + volumes[j]!;
+  }
+
+  let pocBin = 0;
+  for (let bin = 1; bin < VOLUME_PROFILE_BINS; bin += 1) {
+    if (binVolumes[bin]! > binVolumes[pocBin]!) {
+      pocBin = bin;
+    }
+  }
+
+  if (level === "poc") {
+    return rangeLow + (pocBin + 0.5) * binWidth;
+  }
+
+  // Value area: expande do POC sempre para o vizinho de maior volume até cobrir
+  // os 70%. O laço sempre termina — a soma das faixas é o totalVolume.
+  let lowBin = pocBin;
+  let highBin = pocBin;
+  let covered = binVolumes[pocBin]!;
+  const target = totalVolume * VOLUME_PROFILE_VALUE_AREA_RATIO;
+
+  while (covered < target && (lowBin > 0 || highBin < VOLUME_PROFILE_BINS - 1)) {
+    const below = lowBin > 0 ? binVolumes[lowBin - 1]! : -1;
+    const above =
+      highBin < VOLUME_PROFILE_BINS - 1 ? binVolumes[highBin + 1]! : -1;
+
+    if (above >= below) {
+      highBin += 1;
+      covered += above;
+    } else {
+      lowBin -= 1;
+      covered += below;
+    }
+  }
+
+  return level === "vah"
+    ? rangeLow + (highBin + 1) * binWidth
+    : rangeLow + lowBin * binWidth;
+}
+
 function computeAdx(
   highs: number[],
   lows: number[],
@@ -339,6 +508,51 @@ export function calculateDonchianSeries(
   }
   return alignTrailingIndicatorSeries(
     computeDonchian(highs, lows, period, band),
+    len,
+  );
+}
+
+/**
+ * Volume profile of the PREVIOUS `period` candles, emitted as a price (POC or a
+ * value-area edge) and aligned to the input length.
+ *
+ * Unlike every other indicator here, each position costs O(period) — the price
+ * bins are relative to the window, so they cannot be slid incrementally.
+ * `tailPositions` caps how many trailing positions are actually computed;
+ * earlier ones stay NaN. The engine only ever reads the last two values of a
+ * series (currentCandle/previousCandle), and computing the rest turned a
+ * 60k-candle backtest into 14s of pure binning. Omit it for the full series.
+ */
+export function calculateVolumeProfileSeries(
+  highs: number[],
+  lows: number[],
+  closes: number[],
+  volumes: number[],
+  period: number,
+  level: "poc" | "vah" | "val",
+  tailPositions: number = Number.POSITIVE_INFINITY,
+): number[] {
+  const len = highs.length;
+  if (len === 0 || period < 1 || tailPositions < 1) {
+    return createIndicatorNaNSeries(len);
+  }
+  if (
+    len !== lows.length ||
+    len !== closes.length ||
+    len !== volumes.length
+  ) {
+    return createIndicatorNaNSeries(len);
+  }
+  return alignTrailingIndicatorSeries(
+    computeVolumeProfile(
+      highs,
+      lows,
+      closes,
+      volumes,
+      period,
+      level,
+      tailPositions,
+    ),
     len,
   );
 }

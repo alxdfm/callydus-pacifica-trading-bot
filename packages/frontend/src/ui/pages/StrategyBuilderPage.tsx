@@ -52,7 +52,14 @@ const INDICATOR_TYPES: { value: IndicatorTypeOption; label: string }[] = [
   { value: "volume", label: "Volume" },
   { value: "donchian", label: "Donchian" },
   { value: "adx", label: "ADX" },
+  { value: "volumeProfile", label: "Volume Profile" },
 ];
+
+const VOLUME_PROFILE_LEVEL_LABELS: Record<"poc" | "vah" | "val", string> = {
+  poc: "POC (point of control)",
+  vah: "VAH (value area high)",
+  val: "VAL (value area low)",
+};
 
 const THRESHOLD_OPERATORS = ["above", "below", "atOrAbove", "atOrBelow", "equal"] as const;
 const CROSS_OPERATORS = ["crossesAbove", "crossesBelow"] as const;
@@ -83,6 +90,8 @@ function describeIndicator(config: PresetIndicatorConfig): string {
       return `Donchian(${config.period}) · ${config.band}`;
     case "adx":
       return `ADX(${config.period})`;
+    case "volumeProfile":
+      return `VolProfile(${config.period}) · ${config.level}`;
   }
 }
 
@@ -106,6 +115,8 @@ function suggestIndicatorKey(
         return `DONCH${config.period}${config.band.charAt(0).toUpperCase()}`;
       case "adx":
         return `ADX${config.period}`;
+      case "volumeProfile":
+        return `VP${config.period}${config.level.toUpperCase()}`;
     }
   })();
 
@@ -807,6 +818,7 @@ function IndicatorsSection(props: {
   const [newType, setNewType] = useState<IndicatorTypeOption>("ema");
   const [newPeriod, setNewPeriod] = useState(14);
   const [newBand, setNewBand] = useState<"upper" | "lower" | "middle">("upper");
+  const [newLevel, setNewLevel] = useState<"poc" | "vah" | "val">("poc");
 
   function buildConfig(): PresetIndicatorConfig {
     switch (newType) {
@@ -824,6 +836,8 @@ function IndicatorsSection(props: {
         return { type: "donchian", period: newPeriod, band: newBand };
       case "adx":
         return { type: "adx", period: newPeriod };
+      case "volumeProfile":
+        return { type: "volumeProfile", period: newPeriod, level: newLevel };
     }
   }
 
@@ -885,6 +899,23 @@ function IndicatorsSection(props: {
               <option value="upper">upper</option>
               <option value="lower">lower</option>
               <option value="middle">middle</option>
+            </select>
+          </div>
+        ) : null}
+        {newType === "volumeProfile" ? (
+          <div className="builder-field">
+            <label htmlFor="builder-ind-level">{t("builderIndicatorLevelLabel")}</label>
+            <select
+              disabled={disabled}
+              id="builder-ind-level"
+              onChange={(event) => setNewLevel(event.target.value as "poc" | "vah" | "val")}
+              value={newLevel}
+            >
+              {(["poc", "vah", "val"] as const).map((level) => (
+                <option key={level} value={level}>
+                  {VOLUME_PROFILE_LEVEL_LABELS[level]}
+                </option>
+              ))}
             </select>
           </div>
         ) : null}

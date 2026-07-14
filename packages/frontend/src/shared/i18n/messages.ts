@@ -277,6 +277,7 @@ export const messages = {
     builderIndicatorTypeLabel: "Type",
     builderIndicatorPeriodLabel: "Period",
     builderIndicatorBandLabel: "Band",
+    builderIndicatorLevelLabel: "Level",
     builderStopLossLabel: "Stop loss",
     builderStopLossStatic: "Static %",
     builderStopLossAtr: "ATR multiple",

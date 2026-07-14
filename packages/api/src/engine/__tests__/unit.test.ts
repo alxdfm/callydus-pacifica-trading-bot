@@ -6,6 +6,7 @@ import {
   calculateAtrSeries,
   calculateDonchianSeries,
   calculateAdxSeries,
+  calculateVolumeProfileSeries,
 } from "../indicators.js";
 import {
   materializeYourStrategyTechnicalContract,
@@ -99,6 +100,87 @@ describe("indicators (semantics)", () => {
     const highs = closes.map((c) => c + 1);
     const lows = closes.map((c) => c - 1);
     expect(calculateAdxSeries(highs, lows, closes, 3).at(-1)).toBeCloseTo(100, 6);
+  });
+
+  // Candles achatados (h = l = c) para o preço típico cair exatamente no preço
+  const flat = (prices: number[]) => ({ highs: prices, lows: prices, closes: prices });
+
+  it("volume profile puts the POC on the heaviest price cluster, not the widest move", () => {
+    // 7 candles com volume pesado em 100 e um espigão a 120 com volume ínfimo:
+    // o POC segue o VOLUME, não a excursão de preço
+    const { highs, lows, closes } = flat([100, 100, 100, 100, 100, 100, 100, 120, 120]);
+    const volumes = [10, 10, 10, 10, 10, 10, 10, 1, 1];
+
+    const poc = calculateVolumeProfileSeries(highs, lows, closes, volumes, 8, "poc");
+    // faixa da janela = [100, 120] / 24 faixas → o POC é o centro da 1ª faixa
+    expect(poc[8]).toBeCloseTo(100 + 0.5 * (20 / 24), 6);
+    // prefixo de warm-up: a janela precisa de period + 1 candles
+    expect(poc.slice(0, 8).every(Number.isNaN)).toBe(true);
+  });
+
+  it("volume profile ignores the current candle (same reason as donchian)", () => {
+    // O candle atual (índice 8) carrega volume ENORME a 120. Se entrasse na
+    // janela, o POC saltaria para 120 e uma regra de PRICE cruzando o POC
+    // nunca dispararia limpa.
+    const { highs, lows, closes } = flat([100, 100, 100, 100, 100, 100, 100, 120, 120]);
+    const volumes = [10, 10, 10, 10, 10, 10, 10, 1, 1000];
+
+    const poc = calculateVolumeProfileSeries(highs, lows, closes, volumes, 8, "poc");
+    expect(poc[8]).toBeCloseTo(100 + 0.5 * (20 / 24), 6);
+  });
+
+  it("volume profile brackets the POC with the value area (VAL <= POC <= VAH)", () => {
+    const { highs, lows, closes } = flat([100, 101, 102, 103, 104, 105, 106, 107, 108]);
+    const volumes = [1, 1, 1, 50, 50, 1, 1, 1, 1];
+
+    const args = [highs, lows, closes, volumes, 8] as const;
+    const val = calculateVolumeProfileSeries(...args, "val")[8]!;
+    const poc = calculateVolumeProfileSeries(...args, "poc")[8]!;
+    const vah = calculateVolumeProfileSeries(...args, "vah")[8]!;
+
+    expect(val).toBeLessThanOrEqual(poc);
+    expect(poc).toBeLessThanOrEqual(vah);
+    // o volume está concentrado em 103–104, então a value area cerca essa zona
+    expect(poc).toBeGreaterThan(102);
+    expect(poc).toBeLessThan(105);
+  });
+
+  it("volume profile returns NaN for a window with no traded volume", () => {
+    const { highs, lows, closes } = flat([100, 101, 102, 103, 104, 105, 106, 107, 108]);
+    const volumes = Array.from({ length: 9 }, () => 0);
+    // zero não pode virar "preço": uma regra de cruzamento o trataria como nível real
+    expect(calculateVolumeProfileSeries(highs, lows, closes, volumes, 8, "poc")[8]).toBeNaN();
+  });
+
+  it("volume profile tail matches the full series (the engine's fast path)", () => {
+    // O engine só calcula as 2 últimas posições porque cada uma custa O(period).
+    // Se a cauda divergisse da série completa, o backtest e o bot ao vivo
+    // estariam lendo um indicador diferente do testado — este é O teste da
+    // otimização.
+    const prices = Array.from({ length: 120 }, (_, i) => 100 + Math.sin(i / 7) * 12);
+    const highs = prices.map((p) => p + 0.7);
+    const lows = prices.map((p) => p - 0.9);
+    const volumes = prices.map((_, i) => 10 + ((i * 37) % 23));
+
+    for (const level of ["poc", "vah", "val"] as const) {
+      const full = calculateVolumeProfileSeries(highs, lows, prices, volumes, 40, level);
+      const tail = calculateVolumeProfileSeries(highs, lows, prices, volumes, 40, level, 2);
+
+      expect(tail.at(-1)).toBe(full.at(-1));
+      expect(tail.at(-2)).toBe(full.at(-2));
+      // e tudo antes da cauda fica NaN, sem inventar valor
+      expect(tail.slice(0, -2).every(Number.isNaN)).toBe(true);
+    }
+  });
+
+  it("volume profile collapses the three levels on a flat window", () => {
+    const { highs, lows, closes } = flat(Array.from({ length: 9 }, () => 100));
+    const volumes = Array.from({ length: 9 }, () => 10);
+    const args = [highs, lows, closes, volumes, 8] as const;
+
+    expect(calculateVolumeProfileSeries(...args, "poc")[8]).toBe(100);
+    expect(calculateVolumeProfileSeries(...args, "vah")[8]).toBe(100);
+    expect(calculateVolumeProfileSeries(...args, "val")[8]).toBe(100);
   });
 });
 

@@ -55,6 +55,17 @@ export interface IndicatorAdxConfig {
   period: number;
 }
 
+/**
+ * Volume profile over the PREVIOUS `period` candles (current candle excluded,
+ * same reason as Donchian). Emits a PRICE: the point of control or an edge of
+ * the 70% value area, so rules compare it against PRICE like any EMA.
+ */
+export interface IndicatorVolumeProfileConfig {
+  type: "volumeProfile";
+  period: number;
+  level: "poc" | "vah" | "val";
+}
+
 export type IndicatorConfig =
   | IndicatorEmaConfig
   | IndicatorRsiConfig
@@ -62,7 +73,8 @@ export type IndicatorConfig =
   | IndicatorVolumeConfig
   | IndicatorSmaConfig
   | IndicatorDonchianConfig
-  | IndicatorAdxConfig;
+  | IndicatorAdxConfig
+  | IndicatorVolumeProfileConfig;
 
 export interface ThresholdValueRule {
   scope: TriggerScope;

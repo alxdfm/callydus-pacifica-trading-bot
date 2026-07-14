@@ -87,6 +87,13 @@ export const indicatorConfigSchema = z.discriminatedUnion("type", [
     type: z.literal("adx"),
     period: z.number().int().positive(),
   }),
+  // POC / bordas da value area do volume profile. São PREÇOS, então entram nas
+  // regras como `ref` contra PRICE — nenhum trigger novo é necessário.
+  z.object({
+    type: z.literal("volumeProfile"),
+    period: z.number().int().positive(),
+    level: z.enum(["poc", "vah", "val"]),
+  }),
 ]);
 
 export const triggerRuleSchema = z.union([

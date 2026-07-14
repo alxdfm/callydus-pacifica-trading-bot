@@ -24,6 +24,8 @@ function resolveIndicatorContext(
   if (indicator.type === "adx") return "adx";
   // bandas do donchian vivem no gráfico de preço — comparáveis a PRICE/EMA/SMA
   if (indicator.type === "donchian") return "price";
+  // POC e bordas da value area também são preços (é o ponto do indicador)
+  if (indicator.type === "volumeProfile") return "price";
   if (indicator.type === "atr") return "atr";
   if (indicator.type === "volume") return "volume";
 

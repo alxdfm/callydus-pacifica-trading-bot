@@ -2,6 +2,7 @@ import {
   calculateAdxSeries,
   calculateAtrSeries,
   calculateDonchianSeries,
+  calculateVolumeProfileSeries,
   calculateEmaSeries,
   calculateRsiSeries,
   calculateSmaSeries,
@@ -86,6 +87,12 @@ type IndicatorAdxConfig = {
   period: number;
 };
 
+type IndicatorVolumeProfileConfig = {
+  type: "volumeProfile";
+  period: number;
+  level: "poc" | "vah" | "val";
+};
+
 type IndicatorConfig =
   | IndicatorEmaConfig
   | IndicatorRsiConfig
@@ -93,7 +100,8 @@ type IndicatorConfig =
   | IndicatorVolumeConfig
   | IndicatorSmaConfig
   | IndicatorDonchianConfig
-  | IndicatorAdxConfig;
+  | IndicatorAdxConfig
+  | IndicatorVolumeProfileConfig;
 
 type TriggerScope = "previousCandle" | "currentCandle";
 type ThresholdOperator = "above" | "below" | "atOrAbove" | "atOrBelow" | "equal";
@@ -260,6 +268,12 @@ type IndicatorSnapshot = {
   previous: number | null;
   current: number | null;
 };
+
+// O engine lê exatamente estes dois pontos de cada série (scopes currentCandle e
+// previousCandle) — nada olha mais fundo. Indicadores caros por posição (volume
+// profile) só calculam essa cauda. Um scope novo que leia mais atrás precisa
+// subir este número JUNTO, senão a série vem NaN e a regra morre em silêncio.
+const INDICATOR_TAIL_POSITIONS = 2;
 
 export type EvaluatedPresetSignal = {
   signal: PresetSignal;
@@ -783,6 +797,7 @@ export function getRequiredPeriod(technicalContract: PresetTechnicalContract): n
         case "sma":
           return indicator.period;
         case "donchian":
+        case "volumeProfile":
           // janela exclui o candle atual → precisa de period + 1 candles
           return indicator.period + 1;
         case "adx":
@@ -992,6 +1007,17 @@ function buildIndicatorSeriesMap(
           lowSeries,
           closeSeries,
           config.period,
+        );
+        break;
+      case "volumeProfile":
+        cache[indicatorName] = calculateVolumeProfileSeries(
+          highSeries,
+          lowSeries,
+          closeSeries,
+          volumeSeries,
+          config.period,
+          config.level,
+          INDICATOR_TAIL_POSITIONS,
         );
         break;
     }
