@@ -9,6 +9,7 @@ import {
   upsertCredential,
   type Credential,
 } from "../db/queries/accounts.js";
+import { builderApprovals } from "../db/schema.js";
 import { AesCredentialEncryptionService } from "../crypto/credential-encryption.js";
 import {
   buildSigningKeyFromPrivateKey,
@@ -657,6 +658,30 @@ export function onboardingRoutes(deps: AppDeps): Hono<HonoEnv> {
           canProceed: false,
         },
         400,
+      );
+    }
+
+    // Auditoria local da aprovação (a fonte da verdade segue sendo a exchange):
+    // upsert contra o índice único (user, builder) — re-aprovação atualiza fee
+    // e data. Best-effort: a aprovação JÁ aconteceu na Pacifica, então falha de
+    // gravação não pode virar erro para o cliente (re-tentar re-aprovaria à toa).
+    try {
+      await deps.db
+        .insert(builderApprovals)
+        .values({
+          userId: mainWalletPublicKey,
+          builderCode,
+          maxFeeRate,
+          approvedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [builderApprovals.userId, builderApprovals.builderCode],
+          set: { maxFeeRate, approvedAt: new Date() },
+        });
+    } catch (error: unknown) {
+      console.error(
+        "[onboarding/builder/approve] failed to record approval",
+        error instanceof Error ? error.message : error,
       );
     }
 
