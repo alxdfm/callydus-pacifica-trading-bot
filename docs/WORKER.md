@@ -197,6 +197,7 @@ Replay protection: requisições com `timestamp` fora da janela `expiryWindowMs`
 | `CREDENTIAL_ENCRYPTION_KEY_ID` | `local-dev-v1` | não |
 | `PACIFICA_BUILDER_CODE` | — | sim |
 | `PACIFICA_REST_URL` | `https://api.pacifica.fi` | não |
+| `PACIFICA_WS_URL` | `wss://ws.pacifica.fi/ws` | não — usado só pelo snapshot horário (um frame de `prices` e fecha) |
 | `MARKET_ORDER_SLIPPAGE_PERCENT` | `0.5` | não |
 | `TAKER_FEE_PERCENT` | `0.05` | não |
 | `PACIFICA_SIGNATURE_EXPIRY_WINDOW_MS` | `30000` | não |

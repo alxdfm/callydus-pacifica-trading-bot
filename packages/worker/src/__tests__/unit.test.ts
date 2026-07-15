@@ -133,6 +133,36 @@ describe("parseMarketInfoSnapshots", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.symbol).toBe("ETH");
   });
+
+  it("maps the full ws prices-channel shape (the only source of OI/mark/volume)", () => {
+    const payload = {
+      data: [
+        {
+          symbol: "BTC",
+          funding: "0.0000125",
+          next_funding: "0.0000125",
+          open_interest: "499.22953",
+          oracle: "64980",
+          mark: "64976",
+          mid: "64977.5",
+          volume_24h: "502703208.58",
+          timestamp: 1_784_000_000_000,
+        },
+      ],
+    };
+
+    const rows = parseMarketInfoSnapshots(payload, ["BTC"], recordedAt);
+
+    expect(rows[0]).toMatchObject({
+      symbol: "BTC",
+      fundingRate: "0.0000125",
+      openInterest: "499.22953",
+      oraclePrice: "64980",
+      markPrice: "64976",
+      midPrice: "64977.5",
+      volume24h: "502703208.58",
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

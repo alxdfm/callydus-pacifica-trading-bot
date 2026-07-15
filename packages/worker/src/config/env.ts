@@ -6,6 +6,9 @@
 export type WorkerEnv = {
   DATABASE_URL: string;
   PACIFICA_REST_URL: string;
+  // Usado só pelo snapshot horário (um frame do canal `prices` e fecha) — o
+  // REST não expõe OI/mark/mid/volume em endpoint nenhum
+  PACIFICA_WS_URL: string;
   PACIFICA_BUILDER_CODE: string;
   CREDENTIAL_ENCRYPTION_KEY: string;
   CREDENTIAL_ENCRYPTION_KEY_ID: string;
@@ -60,6 +63,8 @@ export function loadWorkerEnv(): WorkerEnv {
     DATABASE_URL: requireNonEmpty(process.env.DATABASE_URL, "DATABASE_URL"),
     PACIFICA_REST_URL:
       process.env.PACIFICA_REST_URL ?? "https://api.pacifica.fi",
+    PACIFICA_WS_URL:
+      process.env.PACIFICA_WS_URL ?? "wss://ws.pacifica.fi/ws",
     PACIFICA_BUILDER_CODE: requireNonEmpty(
       process.env.PACIFICA_BUILDER_CODE,
       "PACIFICA_BUILDER_CODE",

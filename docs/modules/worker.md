@@ -60,14 +60,17 @@ insert" would double the position.
   a new timeframe (e.g. `1d`) without adding it there is a typecheck error, not
   a silent never-warms-up bug — but the Pacifica kline endpoint must ALSO be
   probed for the new interval string before offering it.
-- `market-snapshot.ts` records funding/OI/mark **hourly via REST `/api/v1/info`**
-  (the WS `prices` channel died with the resident worker; 1-min resolution was
-  traded away on 2026-07-14 — funding changes hourly, so only intra-hour OI
-  dynamics were lost). Rows are bucketed to the hour and `onConflictDoNothing`
-  against the unique `(symbol, recorded_at)` index, so a re-run inside the same
-  hour cannot duplicate. The insert is AWAITED (a floating promise freezes with
-  the Lambda container and the write is lost), but failures are logged and
-  swallowed — never allowed to reach the order path.
+- `market-snapshot.ts` records funding/OI/mark **hourly from ONE ws `prices`
+  frame** (native Node 22 WebSocket: connect → first frame → close, ~2s). REST
+  is only a funding fallback: `/api/v1/info` carries funding_rate alone — OI,
+  mark, mid and volume exist in NO REST endpoint (probed 2026-07-15 after the
+  first snapshot landed with OI null). 1-min resolution was traded away on
+  2026-07-14 — funding changes hourly, so only intra-hour OI dynamics were
+  lost. Rows are bucketed to the hour and `onConflictDoNothing` against the
+  unique `(symbol, recorded_at)` index, so a re-run inside the same hour cannot
+  duplicate. The insert is AWAITED (a floating promise freezes with the Lambda
+  container and the write is lost), but failures are logged and swallowed —
+  never allowed to reach the order path.
 - The snapshot writes `RECORDED_SYMBOLS` (BTC/ETH/SOL — the tradable universe)
   regardless of which strategies are active. Deriving it from active strategies
   would punch holes in the series exactly during the periods with no bot running,
@@ -101,7 +104,8 @@ possível do impossível não é a lógica, é a existência de **histórico**.
 | `/api/v1/kline` — OHLCV + `v` (volume) + `n` (nº de trades) | **Sim**, 360d+ |
 | `/api/v1/trades` — tape com campo `cause` | **Não** — devolve ~2 min e IGNORA `limit`, `start_time` e `offset` (os três testados) |
 | `/api/v1/book` — profundidade | **Não** — snapshot do instante |
-| `/api/v1/info` — funding, open interest | **Não** — só o valor corrente (era também o WS `prices`, morto com o worker residente) |
+| `/api/v1/info` — funding_rate/next_funding_rate | **Não** — só o valor corrente, e SÓ funding (sem OI/mark/mid/volume) |
+| WS `prices` — funding, OI, oracle/mark/mid, volume_24h | **Não** — só o instante; é a ÚNICA fonte de OI/mark (não há REST equivalente; probado 2026-07-15). O snapshot horário lê um frame e fecha |
 | WS `liquidations` / `funding_rate` | Não existem (400 "Invalid subscription parameters") |
 
 Consequências, para não serem re-litigadas:

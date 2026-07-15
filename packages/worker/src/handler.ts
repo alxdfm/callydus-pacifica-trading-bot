@@ -143,6 +143,7 @@ export async function handler(): Promise<{
     await recordHourlySnapshots({
       db,
       restBaseUrl: env.PACIFICA_REST_URL,
+      wsUrl: env.PACIFICA_WS_URL,
       symbols: RECORDED_SYMBOLS,
     });
 
